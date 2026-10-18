@@ -239,7 +239,6 @@ html.lock, html.lock body { overflow: hidden; overscroll-behavior: none; }
 /* keyword toccabili: popup con la spiegazione della regola */
 .ico.kwlink { cursor: pointer; }
 .fx .ico.kw { white-space: normal; max-width: calc(100% - .2em); box-sizing: border-box; }
-.kwtx .ico.trt, .kwtx .ico.ocol.oc-white { box-shadow: inset 0 0 0 1px var(--line); }
 .ico.kwlink:hover { filter: brightness(1.12); }
 .ico.kwlink:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .ico.kw.kwlink.open::after { content: " \25BE"; font-size: .85em; }
@@ -248,18 +247,7 @@ html.lock, html.lock body { overflow: hidden; overscroll-behavior: none; }
 .kwexb { display: block; }
 .kwexb .ico.trt, .kwexb .ico.ocol.oc-white { box-shadow: inset 0 0 0 1px var(--line); }
 @media (prefers-reduced-motion: reduce) { .kwexp { animation: none; } }
-.kwlay { position: fixed; inset: 0; z-index: 320; }
-.kwpop { position: fixed; width: min(340px, calc(100vw - 24px)); box-sizing: border-box; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px 13px; box-shadow: 0 16px 44px rgba(0,0,0,.35); animation: kwin .14s ease-out; outline: none; }
-.kwpop.up { transform-origin: 50% 100%; }
-.kwpop.dn { transform-origin: 50% 0; }
-.kwhd { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.kwhd .ico { font-size: .95rem; }
-.kwtx { margin: 0; font-size: .92rem; line-height: 1.5; color: var(--ink); white-space: normal; }
-.kwar { position: absolute; width: 12px; height: 12px; background: var(--surface); border: 1px solid var(--line); transform: translateX(-50%) rotate(45deg); }
-.kwpop.dn .kwar { top: -7px; border-right: 0; border-bottom: 0; }
-.kwpop.up .kwar { bottom: -7px; border-left: 0; border-top: 0; }
 @keyframes kwin { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .kwpop { animation: none; } }
 .stat.wide { grid-column: 1 / -1; }
 .alts { display: flex; flex-direction: column; align-items: center; gap: 14px; }
 .altsec { margin-top: 26px; }
@@ -2824,7 +2812,7 @@ body.mob.kbd .mbot.on::after { display: none; }
     });
     return target;
   }
-  // ---- Spiegazione delle keyword: toccando ＜Raid＞, ＜Security A. +1＞... si apre un popup con la regola in inglese
+  // ---- Spiegazione delle keyword: toccando ＜Raid＞, ＜Security A. +1＞... si apre sotto la riga la regola in inglese
   // spiegata per intero (basata sui promemoria ufficiali), adattata ai valori scritti sulla carta (numeri, colori, tratti).
   function kwN(n, s, p) { n = Math.abs(+n); return n + " " + (n === 1 ? s : p); }
   function kwArg(inner, name) { var a = inner.slice(name.length).trim(); return a.replace(/\)\/\(/g, "/").replace(/^\((.*)\)$/, "$1").trim(); }
@@ -2895,16 +2883,14 @@ body.mob.kbd .mbot.on::after { display: none; }
     };
     return FIX[k] || FIX[k.replace(/\s*\(.*$/, "")] || null;
   }
-  var kwEl = null, kwBack = false;
   function kwWire(b, inner) {
     b.classList.add("kwlink"); b.setAttribute("role", "button"); b.tabIndex = 0; b.removeAttribute("title");
-    b.setAttribute("aria-label", inner + ": spiegazione della regola (in inglese)");
+    b.setAttribute("aria-label", inner + ": mostra la spiegazione della regola"); b.setAttribute("aria-expanded", "false");
     b.onclick = function (e) { e.stopPropagation(); e.preventDefault(); kwAct(b, inner); };
     b.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); kwAct(b, inner); } };
   }
-  // due modi da confrontare: "pop" = popup, "inline" = la keyword si espande e il testo si apre sotto la riga
-  var KWMODE = /[?&]kw=inline\b/.test(location.search) ? "inline" : "pop";
-  function kwAct(b, inner) { if (KWMODE === "inline") kwToggle(b, inner); else openKw(b, inner); }
+  // la keyword si espande: il testo si apre in un riquadro sotto la riga (scelta dell'utente al posto del popup)
+  function kwAct(b, inner) { kwToggle(b, inner); }
   function kwToggle(b, inner) {
     if (b._exp) {
       var pn = b._exp, nx = pn.nextSibling;
@@ -2937,34 +2923,6 @@ body.mob.kbd .mbot.on::after { display: none; }
     }
     b._exp = pn; b.classList.add("open"); b.setAttribute("aria-expanded", "true");
   }
-  function openKw(anchor, inner) {
-    var fresh = !kwEl;
-    if (fresh) {
-      kwEl = el("div", "kwlay"); kwEl.onclick = function (e) { if (e.target === kwEl) closeKw(); };
-      document.body.appendChild(kwEl); pushOverlay("kw");
-    }
-    kwEl.innerHTML = "";
-    var p = el("div", "kwpop"); p.setAttribute("role", "dialog"); p.setAttribute("aria-label", inner);
-    var hd = el("div", "kwhd"), chip = el("span", "ico " + (/^(Overflow\s*)?-\d+$/.test(inner) ? "ovf" : /^Arts Digivolve/.test(inner) ? "grn" : "kw"), /^-\d+$/.test(inner) ? "Overflow " + inner : inner.length > 24 ? inner.replace(/\s*\(.*$/, "") : inner);
-    hd.appendChild(chip); p.appendChild(hd);
-    p.appendChild(rich(el("p", "kwtx"), kwInfo(inner), true));
-    var arr = el("span", "kwar"); p.appendChild(arr);
-    kwEl.appendChild(p);
-    // posizione: sotto la keyword se c'è spazio, altrimenti sopra; centrata sulla keyword e dentro lo schermo
-    var r = anchor.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight, w = p.offsetWidth, h = p.offsetHeight;
-    var x = Math.max(12, Math.min(vw - w - 12, r.left + r.width / 2 - w / 2)), below = r.bottom + 10 + h <= vh - 12 || r.top - 10 - h < 12;
-    var y = below ? Math.min(r.bottom + 10, vh - h - 12) : r.top - 10 - h;
-    p.style.left = x + "px"; p.style.top = Math.max(12, y) + "px"; p.classList.add(below ? "dn" : "up");
-    arr.style.left = Math.max(14, Math.min(w - 14, r.left + r.width / 2 - x)) + "px";
-    if (!fresh) p.style.animation = "none";
-    p.tabIndex = -1; p.focus({ preventScroll: true });
-  }
-  function closeKw(fromPop) {
-    if (!kwEl) return;
-    kwEl.remove(); kwEl = null;
-    if (!fromPop && history.state && history.state.ov === "kw") { kwBack = true; history.back(); }
-  }
-  window.addEventListener("resize", function () { if (kwEl) closeKw(); });
   // nel testo libero i colori scritti con la maiuscola (Red, Blue/Yellow...) diventano i tag colorati, con la parola com'è scritta sulla carta
   var COLRE = /(^|[^\w-])(Red|Blue|Yellow|Green|Black|Purple|White)(?![\w-])/g;
   function colText(target, s) {
@@ -3314,7 +3272,6 @@ body.mob.kbd .mbot.on::after { display: none; }
     window.scrollTo(0, 0); render();
   }
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && kwEl) { closeKw(); return; }
     if (e.key === "Escape" && ddPop) { var k0 = ddOpen; closeFilters(); var b0 = document.querySelector('.dd[data-k="' + k0 + '"]'); if (b0) b0.focus(); return; }
     if (e.key === "Escape" && st.open != null) closeSheet();
     // desktop: frecce della tastiera per la carta precedente/successiva
@@ -3523,8 +3480,6 @@ body.mob.kbd .mbot.on::after { display: none; }
   }, { passive: true });
   window.addEventListener("popstate", function (e) {
     var s2 = e.state || {};
-    if (kwBack) { kwBack = false; return; }
-    if (kwEl) { closeKw(true); return; }
     if (menuEl.classList.contains("open") && s2.ov !== "menu") { menuOpen(false, true); return; }
     if (st.open != null && s2.ov === "sheet" && SHSTACK.length > (s2.nest || 0)) { st.open = SHSTACK.pop(); drawSheet(); return; }
     if (st.open != null && s2.ov !== "sheet") { SHSTACK = []; st.open = null; drawSheet(); afterSheet(); return; }
