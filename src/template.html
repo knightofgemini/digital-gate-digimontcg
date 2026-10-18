@@ -1059,7 +1059,9 @@ body.mob .mfbar .dd { flex: none; }
 .ddg:first-of-type { padding-top: 2px; }
 .ddpop.exps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .ddpop.nums .ddo { font-size: .88rem; }
-.ddfind { position: sticky; top: -6px; z-index: 1; margin: -6px -6px 4px; padding: 0 12px; height: 46px; border: 0; border-bottom: 1px solid var(--line); border-radius: 14px 14px 0 0; background: var(--surface); color: var(--ink); font: 400 16px var(--font-body); outline: none; flex: none; }
+.ddpop.hasfind { overflow: hidden; padding: 0; gap: 0; }
+.ddlist { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 2px; padding: 6px; }
+.ddfind { flex: none; margin: 0; padding: 0 12px; height: 48px; border: 0; border-top: 1px solid var(--line); border-radius: 0 0 14px 14px; background: var(--surface-2); color: var(--ink); font: 400 16px var(--font-body); outline: none; }
 .ddo[hidden] { display: none; }
 /* Prodotti: schede + ordine */
 .msegrow { display: flex; align-items: center; gap: 8px; margin: 12px 0; }
@@ -2228,7 +2230,7 @@ body.mob.kbd .dkbar, body.mob.dkopen .dkbar { display: none; }
       return [TYPES[t], items];
     }).filter(function (g) { return g[1].length; });
   }
-  var DDN = { qm: "Cerca in", color: "Colore", ct: "Tipologia", lv: "Livello", cost: "Costo", attr: "Attribute", sp: "Type", rar: "Rarità", exp: "Espansione" };
+  var DDN = { qm: "Cerca in", color: "Colore", ct: "Tipologia", lv: "Livello", cost: "Costo", attr: "Attributo", sp: "Tipo", rar: "Rarità", exp: "Espansione" };
   function ddOptions(kind) {
     if (kind === "qm") return [["", "Tutto (nome, codice e testo)"], ["name", "Solo nel nome"], ["text", "Solo nel testo"]];
     if (kind === "color") return [["", "Tutti i colori", "conic-gradient(" + Object.keys(COLORS).map(function (k, i, a) { return colorVar(k) + " " + (i / a.length * 360).toFixed(2) + "deg " + ((i + 1) / a.length * 360).toFixed(2) + "deg"; }).join(", ") + ")"]].concat(Object.keys(COLORS).map(function (k) { return [k, k, colorVar(k)]; }));
@@ -2291,8 +2293,10 @@ body.mob.kbd .dkbar, body.mob.dkopen .dkbar { display: none; }
     var grid = kind === "lv" || kind === "cost" || kind === "rar" || kind === "exp";
     var pop = el("div", "ddpop" + (grid ? " nums" : "") + (kind === "exp" ? " exps" : "")); pop.setAttribute("role", "listbox"); pop.setAttribute("aria-label", DDN[kind]);
     var cur = ddVal(kind), items = [];
+    // Tipo: elenco che scorre e, in fondo (vicino al pulsante e sopra la tastiera), il campo per cercare
+    var box = pop; if (kind === "sp") { pop.classList.add("hasfind"); box = el("div", "ddlist"); pop.appendChild(box); }
     ddOptions(kind).forEach(function (o, i) {
-      if (o[0] === null) { pop.appendChild(el("div", "ddg", o[1])); return; }
+      if (o[0] === null) { box.appendChild(el("div", "ddg", o[1])); return; }
       var on = cur === o[0];
       var it = el("button", "ddo" + (i === 0 ? " all" : "")); it.type = "button"; it.setAttribute("role", "option"); it.setAttribute("aria-selected", String(on));
       if (o[2]) { var d = el("i"); d.style.background = o[2]; it.appendChild(d); }
@@ -2300,29 +2304,37 @@ body.mob.kbd .dkbar, body.mob.dkopen .dkbar { display: none; }
       if (on && !grid) { var ok = el("span", "ok", "✓"); ok.setAttribute("aria-hidden", "true"); it.appendChild(ok); }
       it.onclick = function (e) { e.stopPropagation(); setFlt(kind, o[0]); syncSelects(); closeFilters(); render(); };
       it.setAttribute("data-f", fold(o[1])); items.push(it);
-      pop.appendChild(it);
+      box.appendChild(it);
     });
-    // Type: centinaia di voci, campo per cercarle
     if (kind === "sp") {
-      var fi = el("input", "ddfind"); fi.type = "search"; fi.placeholder = "Cerca un Type, es. Dragonkin"; fi.setAttribute("aria-label", "Cerca un Type"); fi.autocomplete = "off";
-      fi.oninput = function () { var f = fold(fi.value); items.forEach(function (it, j) { it.hidden = !!f && (j === 0 || it.getAttribute("data-f").indexOf(f) < 0); }); };
+      var fi = el("input", "ddfind"); fi.type = "search"; fi.placeholder = "Cerca un tipo, es. Dragonkin"; fi.setAttribute("aria-label", "Cerca un tipo"); fi.autocomplete = "off"; fi.enterKeyHint = "done";
+      fi.oninput = function () { var f = fold(fi.value); items.forEach(function (it, j) { it.hidden = !!f && (j === 0 || it.getAttribute("data-f").indexOf(f) < 0); }); if (pop._place) pop._place(); box.scrollTop = box.scrollHeight; };
       fi.onclick = function (e) { e.stopPropagation(); };
-      pop.insertBefore(fi, pop.firstChild);
+      pop.appendChild(fi);
     }
     document.body.appendChild(pop); ddPop = pop;
     var r = btnEl.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight;
     var w = Math.min(vw - 16, Math.max(r.width, kind === "qm" || kind === "sp" || kind === "exp" ? 280 : 210));
     var left = Math.max(8, Math.min(r.left, vw - w - 8));
     pop.style.width = w + "px"; pop.style.left = left + "px";
-    var below = vh - r.bottom - 12, above = r.top - 12, ph = pop.scrollHeight;
-    if (ph > below && above > below) { pop.style.maxHeight = Math.min(ph, above) + "px"; pop.style.top = Math.max(8, r.top - 6 - Math.min(ph, above)) + "px"; }
-    else { pop.style.top = (r.bottom + 6) + "px"; pop.style.maxHeight = Math.max(160, below) + "px"; }
+    // al massimo metà schermo; sopra il pulsante resta ancorata dal basso (e sale sopra la tastiera se si scrive)
+    var cap = Math.round(vh / 2), below = vh - r.bottom - 12, above = r.top - 12, ph = pop.scrollHeight;
+    if (ph > below && above > below) {
+      var base = vh - (r.top - 6);
+      pop._place = function () {
+        var vv = window.visualViewport, ih = window.innerHeight, kb = vv ? Math.max(0, ih - vv.height - vv.offsetTop) : 0;
+        var b = Math.max(base - (vh - ih), kb + 8);
+        pop.style.top = "auto"; pop.style.bottom = b + "px"; pop.style.maxHeight = Math.max(120, Math.min(cap, ih - b - 8)) + "px";
+      };
+      pop._place();
+    } else { pop.style.top = (r.bottom + 6) + "px"; pop.style.maxHeight = Math.min(cap, Math.max(160, below)) + "px"; }
     var sel = pop.querySelector('[aria-selected="true"]') || pop.querySelector(".ddo"); if (sel) { sel.focus({ preventScroll: true }); if (kind === "sp" || kind === "exp") sel.scrollIntoView({ block: "center" }); }
   }
   document.addEventListener("pointerdown", function (e) { if (ddPop && !ddPop.contains(e.target) && !(e.target.closest && e.target.closest(".dd"))) closeFilters(); }, true);
   function ddTyping() { return ddPop && ddPop.contains(document.activeElement) && document.activeElement.tagName === "INPUT"; }
   window.addEventListener("scroll", function () { if (ddPop && !ddTyping()) closeFilters(); }, { passive: true });
-  window.addEventListener("resize", function () { if (ddPop && !ddTyping()) closeFilters(); });
+  window.addEventListener("resize", function () { if (ddPop && !ddTyping()) closeFilters(); else if (ddPop && ddPop._place) ddPop._place(); });
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", function () { if (ddPop && ddPop._place && ddTyping()) ddPop._place(); });
   function collSummary() {
     var uniq = 0, tot = 0, dup = 0, done = 0, started = [];
     CARDS.forEach(function (c) { if (owned(c)) uniq++; });
