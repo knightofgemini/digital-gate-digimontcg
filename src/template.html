@@ -1686,7 +1686,7 @@ body.mob .hrow { grid-template-columns: minmax(0, 1fr); margin-top: 22px; }
     var sm = document.createElement("summary"); sm.setAttribute("aria-label", "Dettagli prezzo CardTrader"); sm.appendChild(row); d.appendChild(sm);
     d.addEventListener("toggle", function () { ctDetOpen = d.open; });
     var g = el("div", "pgrid");
-    [["Lingua", "Inglese"], ["Condizione", "Near Mint"], ["Offerte", p ? String(p[1]) : "0"], ["Aggiornato", (CTP.d || "").split("-").reverse().join("/")]].forEach(function (x) {
+    [["Lingua", "Inglese"], ["Condizione", "Near Mint"], ["Offerte", p ? String(p[1]) : "0"], ["Data", (CTP.d || "").split("-").reverse().join("/")]].forEach(function (x) {
       var r = el("div", "pc"); r.appendChild(el("span", "", x[0])); r.appendChild(el("b", "", x[1])); g.appendChild(r);
     });
     d.appendChild(g);
