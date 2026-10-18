@@ -4815,7 +4815,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     if (SCH.length) {
       var clr = el("button", "schclr", "Svuota"); clr.type = "button";
       clr.onclick = function () {
-        askConfirm({ title: "Svuotare la cronologia?",
+        askConfirm({ title: "Svuotare la cronologia delle scansioni?",
           text: "La cronologia di tutte le scansioni effettuate verrà cancellata definitivamente.", ok: "Svuota",
           onOk: function () { SCH = []; schSave(); schBadge(); schDraw(); } });
       };
