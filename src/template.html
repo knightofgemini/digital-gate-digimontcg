@@ -1038,6 +1038,71 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
 .idet p { margin: 0; padding: 0 16px 16px; color: var(--ink-2); line-height: 1.6; font-size: .92rem; }
 @media (prefers-reduced-motion: reduce) { .ptile, .tile { transition: none; } .ptile:hover { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .progress i { transition: none; } }
+/* ottobre 2026 (modifiche 18/10): niente evidenziazione al tocco, filtri a griglia, ordine prodotti, +/− con pressione lunga */
+html, body, button, a, [role="button"], input, label, summary { -webkit-tap-highlight-color: transparent; }
+.qbtn, .qn { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
+.qbtn.full { background: var(--cyan); border-color: var(--cyan); color: #06222a; }
+.qn[role="button"] { cursor: text; border-radius: 6px; }
+.qin { width: 42px; height: 30px; box-sizing: border-box; padding: 0 2px; border: 1.5px solid var(--cyan); border-radius: 8px; background: var(--bg); color: var(--ink); text-align: center; font: 700 1rem var(--font-display); font-variant-numeric: tabular-nums; outline: none; }
+.qpop { position: fixed; z-index: 300; pointer-events: none; transform: translate(-50%, -100%) translateY(-6px) scale(.9); opacity: 0; padding: 5px 10px; border-radius: 9px; background: var(--ink); color: var(--bg); font: 700 .95rem var(--font-display); font-variant-numeric: tabular-nums; box-shadow: 0 6px 18px rgba(0,0,0,.3); transition: opacity .12s, transform .12s; white-space: nowrap; }
+.qpop::after { content: ""; position: absolute; left: 50%; bottom: -5px; margin-left: -5px; border: 5px solid transparent; border-bottom: 0; border-top-color: var(--ink); }
+.qpop.on { opacity: 1; transform: translate(-50%, -100%) translateY(-10px) scale(1); }
+/* elenco: barretta dei colori staccata dalla miniatura */
+.tbw { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.tbw .thumb { margin-left: 0; }
+.tbw .tband { display: block; height: 4px; border-radius: 2px; }
+/* filtri: griglia a tre colonne */
+body.mob .mfbar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+body.mob .mfbar[hidden] { display: none; }
+body.mob .mfbar .dd { flex: none; }
+.ddg { grid-column: 1 / -1; padding: 8px 6px 2px; font: 600 .62rem var(--font-display); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+.ddg:first-of-type { padding-top: 2px; }
+.ddpop.exps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.ddpop.nums .ddo { font-size: .88rem; }
+.ddfind { position: sticky; top: -6px; z-index: 1; margin: -6px -6px 4px; padding: 0 12px; height: 46px; border: 0; border-bottom: 1px solid var(--line); border-radius: 14px 14px 0 0; background: var(--surface); color: var(--ink); font: 400 16px var(--font-body); outline: none; flex: none; }
+.ddo[hidden] { display: none; }
+/* Prodotti: schede + ordine */
+.msegrow { display: flex; align-items: center; gap: 8px; margin: 12px 0; }
+.msegrow .mseg { flex: 1; margin: 0; min-width: 0; }
+.vbtns.pord { flex: none; }
+.vbtns.pord .vbtn { width: 42px; height: 42px; border-radius: 10px; }
+.vbtns.pord .vbtn svg { width: 20px; height: 20px; }
+.mbx svg { width: 22px; height: 22px; transform: rotate(180deg); transition: transform .15s; }
+.mbx.open svg { transform: none; }
+.mbx[hidden], .mbf[hidden] { display: none; }
+.mbpx { padding: 0 2px 2px; margin: 0 -14px; padding-left: 14px; padding-right: 14px; }
+.mbpx[hidden] { display: none; }
+.mbpx .chip { flex: none; box-shadow: 0 4px 12px rgba(0,0,0,.18); }
+body.mob.hasmbot.hasmbotx { padding-bottom: calc(184px + env(safe-area-inset-bottom, 0px)); }
+body.mob.hasmbot.hasmbotx.hasmbotc { padding-bottom: calc(226px + env(safe-area-inset-bottom, 0px)); }
+/* Deckbuilding */
+.dta { resize: none; }
+.dimpb { display: flex; gap: 8px; align-items: center; }
+.mdkh { margin: 10px 2px 12px -6px; gap: 4px; }
+.mdkh .mexp svg { transition: transform .15s; }
+.mdkh .mexp[aria-expanded="true"] svg { transform: rotate(180deg); }
+.mdkacts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 44px; gap: 8px; }
+.mdkacts .btn { justify-content: center; padding: 0 8px; }
+.mdkacts .dtrash { padding: 0; width: 44px; color: var(--c-red); }
+.mdkacts .dtrash svg { width: 19px; height: 19px; }
+.mdkacts .dcovb { grid-column: 1 / -1; }
+.dcov { margin: 0 0 12px; }
+.dcovh { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.dcov .sub { margin: 4px 0 10px; color: var(--ink-2); font-size: .85rem; }
+.dcovg { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 10px; }
+.dcovi { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; border: 0; background: none; color: var(--ink-2); font: 600 .7rem var(--font-display); cursor: pointer; }
+.dcovi .pic { width: 100%; aspect-ratio: 5 / 7; border-radius: 6px; overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); }
+.dcovi .pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dcovi .pic.noimg img { display: none; }
+.dcovi[aria-pressed="true"] { color: var(--accent); }
+.dcovi[aria-pressed="true"] .pic { outline: 2px solid var(--accent); outline-offset: 2px; }
+body.mob .dkbar { display: flex; gap: 8px; align-items: center; }
+body.mob .dkbar .dkbarb { flex: 1; min-width: 0; }
+body.mob .dkbar .mbf { width: 48px; height: 48px; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+body.mob.kbd .dkbar, body.mob.dkopen .dkbar { display: none; }
+.dkhd { gap: 10px; }
+.dkfine { padding: 0 4px 0 0; }
+.dkvrow { display: flex; justify-content: flex-end; margin-top: 10px; }
 </style>
 
 <section id="dg-boot" class="dg-boot" aria-label="Animazione di avvio di Digital Gate">
@@ -1181,7 +1246,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
   });
 
   var VIEW0 = "list"; try { VIEW0 = localStorage.getItem("dgm-view") === "grid" ? "grid" : "list"; } catch (e) {}
-  var st = { ownOnly: false, tab0: 1, view: VIEW0, qm: "", tab: "home", type: "ALL", setId: null, q: "", color: "", ct: "", lv: "", cost: "", shown: PAGE, open: null };
+  var st = { ownOnly: false, tab0: 1, view: VIEW0, qm: "", tab: "home", type: "ALL", setId: null, q: "", color: "", ct: "", lv: "", cost: "", attr: "", sp: "", rar: "", exp: "", shown: PAGE, open: null };
   var out = document.getElementById("out"), chips = document.getElementById("chips"), qi = document.getElementById("q");
   var sheet = document.getElementById("sheet");
 
@@ -1212,7 +1277,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     items.forEach(function (it) { var o2 = el("option", "", it[1]); o2.value = it[0]; s.appendChild(o2); });
   }
   fillSelect("f-color", "Colore", "Qualsiasi colore", Object.keys(COLORS).map(function (k) { return [k, COLORS[k]]; }));
-  fillSelect("f-type", "Tipo", "Qualsiasi tipo", CARDTYPES.map(function (k) { return [k, k]; }));
+  fillSelect("f-type", "Tipologia", "Qualsiasi tipologia", CARDTYPES.map(function (k) { return [k, k]; }));
   fillSelect("f-lv", "Livello", "Qualsiasi livello", [2, 3, 4, 5, 6, 7].map(function (n) { return ["Lv." + n, "Lv." + n]; }));
   ["f-color", "f-type", "f-lv"].forEach(function (id) {
     document.getElementById(id).addEventListener("change", function (e) {
@@ -1333,7 +1398,11 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     });
   }
   // telefono: ogni sezione (Carte, Collezione, editor del mazzo) ricorda la propria ricerca e i propri filtri
-  var FKEYS = ["q", "qm", "color", "ct", "lv", "cost"], FSTORE = {};
+  var FKEYS = ["q", "qm", "color", "ct", "lv", "cost", "attr", "sp", "rar", "exp"], FSTORE = {};
+  // tutti i filtri (senza il testo cercato)
+  var FLT = ["qm", "color", "ct", "lv", "cost", "attr", "sp", "rar", "exp"];
+  function resetFlt() { FLT.forEach(function (k) { st[k] = ""; }); }
+  function anyFlt() { return FLT.some(function (k) { return k !== "qm" && st[k]; }); }
   function fctx(p) { return p === "cards" || p === "coll" || p === "deck" ? p : "other"; }
   function go(where) {
     var from = curPage();
@@ -1344,7 +1413,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
       FKEYS.forEach(function (k) { st[k] = nx[k] || ""; }); qi.value = st.q; syncSelects();
     }
     // passando da Prodotti (o da un prodotto) a Ricerca carte o Collezione la ricerca riparte da zero
-    if ((where === "cards" || where === "coll") && (from === "sets" || from === "soon")) { qi.value = ""; st.q = ""; st.qm = ""; st.color = st.ct = st.lv = st.cost = ""; syncSelects(); }
+    if ((where === "cards" || where === "coll") && (from === "sets" || from === "soon")) { qi.value = ""; st.q = ""; resetFlt(); syncSelects(); }
     st.setId = null; st.back = null; st.shown = PAGE; st.ownOnly = false;
     if (where === "home") st.tab = "home";
     else if (where === "sets") { st.tab = "sets"; st.type = "ALL"; qi.value = ""; st.q = ""; }
@@ -1382,20 +1451,24 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
   }
   // con la tastiera aperta la barra in basso si nasconde (non copre il campo)
   document.addEventListener("focusin", function (e) { if (!DESK && /^(INPUT|TEXTAREA)$/.test(e.target.tagName) && !/checkbox|radio/.test(e.target.type)) document.body.classList.add("kbd"); });
+  // telefono: "Invio"/"OK" sulla tastiera chiude la tastiera
+  document.addEventListener("keydown", function (e) { if (!DESK && e.key === "Enter" && e.target && e.target.tagName === "INPUT" && !e.defaultPrevented) e.target.blur(); });
   document.addEventListener("focusout", function () { setTimeout(function () { var a = document.activeElement; if (!a || !/^(INPUT|TEXTAREA)$/.test(a.tagName)) document.body.classList.remove("kbd"); }, 60); });
   menuScrim.onclick = function () { menuOpen(false); };
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && menuEl.classList.contains("open")) menuOpen(false); });
   document.getElementById("tab-cards").onclick = function () { st.tab = "cards"; st.setId = null; st.shown = PAGE; render(); };
 
   var CHIPS = [["ALL", "Tutti"], ["SOON", "In arrivo"], ["BT", "Booster"], ["EX", "Extra"], ["ST", "Starter"], ["LM", "Limited"], ["PB", "Premium"], ["AL", "Altri"]];
+  // telefono: i tipi di prodotto stanno in basso, sotto la ricerca, e si aprono con il pulsante accanto al campo
   function drawChips() {
-    chips.innerHTML = "";
+    var box = !DESK && mbotPx ? mbotPx : chips;
+    chips.innerHTML = ""; if (mbotPx) mbotPx.innerHTML = "";
     CHIPS.forEach(function (c) {
       if (!DESK && c[0] === "SOON") return;
       var b = el("button", "chip", c[1]); b.type = "button";
       b.setAttribute("aria-pressed", st.type === c[0] ? "true" : "false");
       b.onclick = function () { st.type = c[0]; render(); };
-      chips.appendChild(b);
+      box.appendChild(b);
     });
   }
 
@@ -1555,14 +1628,29 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     };
     return t;
   }
-  // telefono: in Prodotti due schede, "Usciti" e "Prossime uscite"
+  // telefono: in Prodotti due schede, "Rilasciati" e "In arrivo"; accanto, per i rilasciati, l'ordine: per data di uscita o per tipo
+  st.pord = "type"; try { if (localStorage.getItem("dg-pord") === "date") st.pord = "date"; } catch (e) {}
+  var ICO_CAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h3"/></svg>';
+  var ICO_GRP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="7" height="7" rx="1.5"/><rect x="13.5" y="4" width="7" height="7" rx="1.5"/><path d="M4 15.5h16M4 19.5h16"/></svg>';
   function segProd(active) {
+    var row = el("div", "msegrow");
     var sg = el("div", "mseg"); sg.setAttribute("role", "tablist"); sg.setAttribute("aria-label", "Vista prodotti");
-    [["sets", "Usciti"], ["soon", "In arrivo · " + (DATA.upcoming || []).length]].forEach(function (x) {
+    [["sets", "Rilasciati"], ["soon", "In arrivo · " + (DATA.upcoming || []).length]].forEach(function (x) {
       var b = el("button", "", x[1]); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(active === x[0]));
       b.onclick = function () { if (active !== x[0]) go(x[0]); }; sg.appendChild(b);
     });
-    out.appendChild(sg);
+    row.appendChild(sg);
+    if (active === "sets") {
+      var vb = el("span", "vbtns pord");
+      [["date", "Ordine cronologico di uscita (senza Starter Deck e Premium Bandai)", ICO_CAL], ["type", "Ordine per tipo di prodotto", ICO_GRP]].forEach(function (v) {
+        var bt = el("button", "vbtn"); bt.type = "button"; bt.innerHTML = v[2]; bt.title = v[1];
+        bt.setAttribute("aria-label", v[1]); bt.setAttribute("aria-pressed", String(st.pord === v[0]));
+        bt.onclick = function () { if (st.pord === v[0]) return; st.pord = v[0]; try { localStorage.setItem("dg-pord", v[0]); } catch (e) {} window.scrollTo(0, 0); render(); };
+        vb.appendChild(bt);
+      });
+      row.appendChild(vb);
+    }
+    out.appendChild(row);
   }
   function renderSets() {
     pageTitle("Prodotti", "Artwork, contenuto e avanzamento della tua collezione per ogni prodotto, dal più recente.");
@@ -1579,6 +1667,19 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
       return false;
     });
     if (!list.length) { out.appendChild(el("p", "empty", "Nessun set corrisponde ai filtri.")); return; }
+    // telefono, ordine cronologico: tutte le espansioni dalla più recente, senza Starter Deck e Premium Bandai (a meno di sceglierne il tipo)
+    if (!DESK && st.pord === "date") {
+      var cl = list.filter(function (s) { return !s.up && s.date && s.date.charAt(0) !== "0" && (st.type !== "ALL" || (s.type !== "ST" && s.type !== "PB")); })
+        .sort(function (a, b) { return (a.date < b.date ? 1 : a.date > b.date ? -1 : 0) || numOf(b.code) - numOf(a.code); });
+      if (!cl.length) { out.appendChild(el("p", "empty", "Nessun set corrisponde ai filtri.")); return; }
+      var years = [];
+      cl.forEach(function (s) { var y = s.date.slice(0, 4); if (!years.length || years[years.length - 1][0] !== y) years.push([y, []]); years[years.length - 1][1].push(s); });
+      years.forEach(function (y) {
+        var gh = el("div", "group-title"); gh.appendChild(el("span", "", y[0] + " · " + y[1].length)); out.appendChild(gh);
+        var gr = el("div", "pgrid"); y[1].forEach(function (s) { gr.appendChild(prodTile(s, hits[s.id])); }); out.appendChild(gr);
+      });
+      return;
+    }
     if (true) {
       Object.keys(TYPES).forEach(function (t) {
         var items = list.filter(function (s) { return s.type === t; });
@@ -1629,6 +1730,9 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     if (st.ct && c.ct.indexOf(st.ct) < 0) return false;
     if (st.lv && c.lv !== st.lv) return false;
     if (st.cost && costOf(c).indexOf(st.cost) < 0) return false;
+    if (st.attr && c.attr !== st.attr) return false;
+    if (st.sp && traitsOf(c).indexOf(st.sp) < 0) return false;
+    if (st.rar && (c.rar || "").trim() !== st.rar) return false;
     if (q) {
       var hay = st.qm === "name" ? c.nb : st.qm === "text" ? c.tb : c.nb + c.tb;
       var parts = q.split(" ");
@@ -1637,13 +1741,74 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     return true;
   }
 
+  // ---- Pulsanti + e − (collezione e mazzi): tenendo premuto, dopo HOLD ms si aggiungono/tolgono 4 copie (con un'etichetta sopra il pulsante)
+  // e, continuando a tenere premuto, altre 4 ogni HOLD/2 ms. Toccando il numero si scrive direttamente quante copie.
+  var HOLD = 550, qpopEl = null, qpopT = 0;
+  function qPop(btn, txt) {
+    if (!qpopEl) { qpopEl = el("div", "qpop"); qpopEl.setAttribute("role", "status"); document.body.appendChild(qpopEl); }
+    clearTimeout(qpopT); qpopEl.textContent = txt;
+    var r = btn.getBoundingClientRect(); qpopEl.style.left = (r.left + r.width / 2) + "px"; qpopEl.style.top = r.top + "px";
+    qpopEl.classList.remove("on"); void qpopEl.offsetWidth; qpopEl.classList.add("on");
+  }
+  function qPopHide(ms) { clearTimeout(qpopT); qpopT = setTimeout(function () { if (qpopEl) qpopEl.classList.remove("on"); }, ms || 0); }
+  function qLocked(b) { return !b || b.disabled || b.classList.contains("lock"); }
+  // btn: pulsante; sign: +1/−1; step(): copie cambiate con un passo da 4 (0 = nessuna); show(): aggiorna il numero; done(): fine (ridisegna)
+  function holdWire(btn, sign, step, show, done) {
+    var t1 = null, t2 = null, tot = 0, x0 = 0, y0 = 0;
+    btn.oncontextmenu = function (e) { e.preventDefault(); };
+    function clear() { clearTimeout(t1); clearInterval(t2); t1 = t2 = null; }
+    function tick() {
+      var k = step();
+      if (k) { tot += k; show(); qPop(btn, (sign > 0 ? "+" : "−") + tot); if (navigator.vibrate) try { navigator.vibrate(12); } catch (e) {} }
+      else { clearInterval(t2); t2 = null; }
+    }
+    function off() { document.removeEventListener("pointerup", up, true); document.removeEventListener("pointercancel", up, true); document.removeEventListener("pointermove", move, true); }
+    // il ridisegno avviene dopo il "clic" che segue il rilascio (che viene ignorato)
+    function up() { off(); clear(); if (btn._held) { qPopHide(800); setTimeout(done, 0); } }
+    function move(e) { if (!btn._held && (Math.abs(e.clientX - x0) > 12 || Math.abs(e.clientY - y0) > 12)) { clear(); off(); } }
+    btn.addEventListener("pointerdown", function (e) {
+      if (e.button || qLocked(btn)) return;
+      clear(); off(); btn._held = false; tot = 0; x0 = e.clientX; y0 = e.clientY;
+      document.addEventListener("pointerup", up, true); document.addEventListener("pointercancel", up, true); document.addEventListener("pointermove", move, true);
+      t1 = setTimeout(function () { t1 = null; btn._held = true; tick(); if (tot) t2 = setInterval(tick, HOLD / 2); }, HOLD);
+    });
+  }
+  // dopo una pressione lunga il "clic" che segue non deve aggiungere un'altra copia
+  function heldClick(b) { if (b._held) { b._held = false; return true; } return false; }
+  // tocco sul numero: tastiera numerica per scrivere quante copie
+  function qnEdit(n, cur, apply, lockedBy) {
+    n.setAttribute("role", "button"); n.tabIndex = 0; n.setAttribute("aria-label", "Scrivi il numero di copie");
+    n.onclick = function (e) {
+      e.stopPropagation(); if (lockedBy && qLocked(lockedBy)) return;
+      var inp = el("input", "qin"); inp.type = "text"; inp.inputMode = "numeric"; inp.pattern = "[0-9]*"; inp.enterKeyHint = "done"; inp.maxLength = 3;
+      inp.value = String(cur()); inp.setAttribute("aria-label", "Numero di copie");
+      n.parentNode.replaceChild(inp, n); inp.focus(); inp.select();
+      var fin = false;
+      function end(ok) {
+        if (fin) return; fin = true; var v = parseInt(inp.value.replace(/\D/g, ""), 10);
+        if (ok && !isNaN(v) && v !== cur()) apply(Math.max(0, Math.min(999, v)));
+        else if (inp.parentNode) inp.parentNode.replaceChild(n, inp);
+      }
+      inp.onkeydown = function (ev) { ev.stopPropagation(); if (ev.key === "Enter") { ev.preventDefault(); end(true); inp.blur(); } else if (ev.key === "Escape") { end(false); } };
+      inp.onblur = function () { end(true); };
+      inp.onclick = function (ev) { ev.stopPropagation(); };
+      inp.oninput = function () { var d = inp.value.replace(/\D/g, ""); if (d !== inp.value) inp.value = d; };
+    };
+    n.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); n.onclick(e); } };
+  }
   function qtyControl(c, onChange) {
     var w = el("span", "qty");
-    var m = el("button", "qbtn", "−"); m.type = "button"; m.setAttribute("aria-label", "Una in meno");
+    var m = el("button", "qbtn", "−"); m.type = "button"; m.setAttribute("aria-label", "Una in meno (tieni premuto per toglierne 4)");
     var n = el("span", "qn", String(owned(c)));
-    var p = el("button", "qbtn" + (owned(c) ? "" : " on"), "+"); p.type = "button"; p.setAttribute("aria-label", "Una in più");
-    m.onclick = function (e) { e.stopPropagation(); if (owned(c) > 0) { qty[c.k] = owned(c) - 1; if (!qty[c.k]) delete qty[c.k]; save(); onChange(); } };
-    p.onclick = function (e) { e.stopPropagation(); qty[c.k] = owned(c) + 1; save(); onChange(); };
+    // il + della collezione resta sempre arancione
+    var p = el("button", "qbtn on", "+"); p.type = "button"; p.setAttribute("aria-label", "Una in più (tieni premuto per aggiungerne 4)");
+    function setQ(v) { if (v > 0) qty[c.k] = v; else delete qty[c.k]; save(); }
+    m.onclick = function (e) { e.stopPropagation(); if (heldClick(m)) return; if (owned(c) > 0) { setQ(owned(c) - 1); onChange(); } };
+    p.onclick = function (e) { e.stopPropagation(); if (heldClick(p)) return; setQ(owned(c) + 1); onChange(); };
+    var show = function () { n.textContent = String(owned(c)); };
+    holdWire(p, 1, function () { setQ(owned(c) + 4); return 4; }, show, onChange);
+    holdWire(m, -1, function () { var k = Math.min(4, owned(c)); if (k) setQ(owned(c) - k); return k; }, show, onChange);
+    qnEdit(n, function () { return owned(c); }, function (v) { setQ(v); onChange(); }, p);
     w.appendChild(m); w.appendChild(n); w.appendChild(p);
     return w;
   }
@@ -1740,7 +1905,8 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
   // righe prezzo di tutti i negozi, una sotto l'altra
   function priceLines(c, wide) { return [priceLine(c, wide), ctLine(c, wide)].filter(Boolean); }
   // telefono, vista a elenco: barretta dei colori sotto la miniatura e i due negozi in un'unica pastiglia
-  function thumbBand(c) { var t = picBox("thumb", "t", c), b = el("i", "tband"); b.style.background = gradient(c.colors, "to right"); t.appendChild(b); return t; }
+  // miniatura con, poco sotto e staccata, la barretta dei colori (come nella scheda carta)
+  function thumbBand(c) { var w = el("div", "tbw"), b = el("i", "tband"); w.appendChild(picBox("thumb", "t", c)); b.style.background = gradient(c.colors, "to right"); w.appendChild(b); return w; }
   function pricePill(c) {
     var cm = priceCovered(c), ct = ctCovered(c); if (!cm && !ct) return null;
     var w = el("div", "ppill"), lab = [];
@@ -1937,10 +2103,10 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
           ea.appendChild(btn("Cerca carte", "pri", function () { go("cards"); })); ea.appendChild(btn("Esplora i prodotti", "", function () { go("sets"); }));
           e0.appendChild(ea); out.appendChild(e0); return;
         }
-        if (!q && !st.color && !st.ct && !st.lv && !st.cost) { collSummary(); out.appendChild(secHead("Le tue carte")); }
+        if (!q && !anyFlt()) { collSummary(); out.appendChild(secHead("Le tue carte")); }
       }
     }
-    var list = (st.setId ? cardsOfSet(st.setId) : CARDS).filter(function (c) { return cardMatches(c, q); });
+    var list = (st.setId ? cardsOfSet(st.setId) : srcCards()).filter(function (c) { return cardMatches(c, q); });
     LASTN = list.length;
     if (q) {
       list = list.map(function (c, j) { return { c: c, j: j, r: relevance(c, q) }; })
@@ -2002,7 +2168,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     var a = el("aside", "panel fside"); a.setAttribute("aria-label", "Filtri");
     var fh = el("div", "fh"); fh.appendChild(el("b", "", "Filtri"));
     var rs = el("button", "", "Azzera"); rs.type = "button";
-    rs.onclick = function () { st.color = st.ct = st.lv = st.cost = ""; st.qm = ""; st.shown = PAGE; syncSelects(); render(); };
+    rs.onclick = function () { resetFlt(); st.shown = PAGE; syncSelects(); render(); };
     fh.appendChild(rs); a.appendChild(fh);
     function grp(label) { var g = el("div", "fgrp"); g.appendChild(el("span", "", label)); a.appendChild(g); return g; }
     function set(k, v) { st[k] = v; st.shown = PAGE; syncSelects(); render(); }
@@ -2019,7 +2185,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
       b.onclick = function () { set("color", st.color === k ? "" : k); }; sw.appendChild(b);
     });
     g2.appendChild(sw);
-    var g3 = grp("Tipo di carta"), to = el("div", "fopts");
+    var g3 = grp("Tipologia"), to = el("div", "fopts");
     CARDTYPES.forEach(function (k) { var b = el("button", "fopt", k); b.type = "button"; b.setAttribute("aria-pressed", String(st.ct === k)); b.onclick = function () { set("ct", st.ct === k ? "" : k); }; to.appendChild(b); });
     g3.appendChild(to);
     var g4 = grp("Livello"), lo = el("div", "fopts");
@@ -2029,41 +2195,74 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
   }
   // ---- Telefono: menù a tendina indipendenti sotto la ricerca (Cerca in, Colore, Tipo e, secondo il tipo, Livello e/o Costo)
   var DDCHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
-  // Digimon → livello; Tamer e Option → costo; Digimon/Option → entrambi
+  // Digimon (e Digimon/Option) → anche il livello; costo, attribute, type, rarità ed espansione sempre
   function ddKinds() {
     var k = ["qm", "color", "ct"];
     if (st.ct === "Digimon" || st.ct === "Digimon/Option") k.push("lv");
-    if (st.ct === "Tamer" || st.ct === "Option" || st.ct === "Digimon/Option") k.push("cost");
+    k.push("cost", "rar", "attr", "sp", "exp");
     return k;
   }
   function costOf(c) { var a = []; if (c.play !== "" && c.play != null) a.push(String(c.play)); if (c.x && c.x.d && c.x.d.c != null && c.x.d.c !== "") a.push(String(c.x.d.c)); return a; }
+  function traitsOf(c) { if (!c.trs) c.trs = (c.sp || "").split("/").map(function (t) { return t.trim(); }).filter(Boolean); return c.trs; }
+  var RARORD = ["C", "U", "R", "SR", "SEC", "UR", "P"];
   function ddValues(kind) {
     var seen = {};
     CARDS.forEach(function (c) {
       if (st.ct && c.ct.indexOf(st.ct) < 0) return;
       if (kind === "lv") { if (c.lv) seen[c.lv] = 1; }
+      else if (kind === "attr") { if (c.attr && c.attr !== "NO DATA") seen[c.attr] = 1; }
+      else if (kind === "sp") traitsOf(c).forEach(function (v) { seen[v] = 1; });
+      else if (kind === "rar") { var r = (c.rar || "").trim(); if (r) seen[r] = 1; }
       else costOf(c).forEach(function (v) { seen[v] = 1; });
     });
-    return Object.keys(seen).sort(function (x, y) { return parseInt(x.replace(/\D/g, ""), 10) - parseInt(y.replace(/\D/g, ""), 10); });
+    var ks = Object.keys(seen);
+    if (kind === "rar") return ks.sort(function (x, y) { return (RARORD.indexOf(x) + 99) % 100 - (RARORD.indexOf(y) + 99) % 100; });
+    if (kind === "attr") { var AO = ["Vaccine", "Virus", "Data", "Free", "Variable", "Unknown"]; return ks.sort(function (x, y) { var a = AO.indexOf(x), b = AO.indexOf(y); return ((a < 0 ? 99 : a) - (b < 0 ? 99 : b)) || (x < y ? -1 : 1); }); }
+    if (kind === "sp") return ks.sort(function (x, y) { return x.toLowerCase() < y.toLowerCase() ? -1 : 1; });
+    return ks.sort(function (x, y) { return parseInt(x.replace(/\D/g, ""), 10) - parseInt(y.replace(/\D/g, ""), 10); });
   }
-  var DDN = { qm: "Cerca in", color: "Colore", ct: "Tipo", lv: "Livello", cost: "Costo" };
+  // espansioni: solo il codice, per tipo (Booster, Extra, Starter…) dal più recente
+  function expGroups() {
+    return Object.keys(TYPES).map(function (t) {
+      var items = SETS.filter(function (x) { return x.type === t; }).sort(function (a, b) { return ((b.date || "") < (a.date || "") ? -1 : (b.date || "") > (a.date || "") ? 1 : 0) || numOf(b.code) - numOf(a.code); });
+      return [TYPES[t], items];
+    }).filter(function (g) { return g[1].length; });
+  }
+  var DDN = { qm: "Cerca in", color: "Colore", ct: "Tipologia", lv: "Livello", cost: "Costo", attr: "Attribute", sp: "Type", rar: "Rarità", exp: "Espansione" };
   function ddOptions(kind) {
     if (kind === "qm") return [["", "Tutto (nome, codice e testo)"], ["name", "Solo nel nome"], ["text", "Solo nel testo"]];
     if (kind === "color") return [["", "Tutti i colori", "conic-gradient(" + Object.keys(COLORS).map(function (k, i, a) { return colorVar(k) + " " + (i / a.length * 360).toFixed(2) + "deg " + ((i + 1) / a.length * 360).toFixed(2) + "deg"; }).join(", ") + ")"]].concat(Object.keys(COLORS).map(function (k) { return [k, k, colorVar(k)]; }));
-    if (kind === "ct") return [["", "Tutti i tipi"]].concat(CARDTYPES.map(function (k) { return [k, k]; }));
-    if (kind === "lv") return [["", "Tutti"]].concat(ddValues("lv").map(function (v) { return [v, v]; }));
-    return [["", "Tutti"]].concat(ddValues("cost").map(function (v) { return [v, v]; }));
+    if (kind === "ct") return [["", "Tutte le tipologie"]].concat(CARDTYPES.map(function (k) { return [k, k]; }));
+    if (kind === "exp") { var o = [["", "Tutte le espansioni"]]; expGroups().forEach(function (g) { o.push([null, g[0]]); g[1].forEach(function (x) { o.push([x.id, x.code]); }); }); return o; }
+    return [["", "Tutti"]].concat(ddValues(kind).map(function (v) { return [v, v]; }));
   }
+  // nella pagina di un prodotto l'espansione è quella del prodotto
+  function expCur() { return st.tab === "cards" && st.setId && SETBY[st.setId] ? st.setId : st.exp; }
+  function ddVal(kind) { return kind === "exp" ? expCur() || "" : st[kind] || ""; }
   function ddShown(kind) {
-    var v = st[kind]; if (!v) return kind === "qm" ? "Tutto" : kind === "color" || kind === "ct" ? "Tutti" : "Tutti";
+    var v = ddVal(kind); if (!v) return kind === "qm" ? "Tutto" : kind === "exp" || kind === "ct" ? "Tutte" : "Tutti";
+    if (kind === "exp") return SETBY[v] ? SETBY[v].code : v;
     return kind === "qm" ? (v === "name" ? "Nome" : "Testo") : v;
+  }
+  // scelta di un filtro (anche dalle etichette): nella pagina di un prodotto cambiare espansione apre l'altro prodotto,
+  // "Tutte" porta alla Ricerca carte con lo stesso testo e gli stessi filtri
+  function setFlt(kind, v) {
+    if (kind === "exp" && st.tab === "cards" && st.setId && SETBY[st.setId]) {
+      if (v === st.setId) return;
+      if (v) { st.setId = v; st.exp = ""; st.shown = PAGE; window.scrollTo(0, 0); return; }
+      st.setId = null; st.back = null; st.exp = ""; st.ownOnly = false; st.shown = PAGE; window.scrollTo(0, 0); return;
+    }
+    st[kind] = v; if (kind === "ct") ddFix(); st.shown = PAGE;
   }
   // quando cambia il tipo, livello e costo restano solo se ancora sensati
   function ddFix() {
     var k = ddKinds();
     if (k.indexOf("lv") < 0) st.lv = ""; else if (st.lv && ddValues("lv").indexOf(st.lv) < 0) st.lv = "";
     if (k.indexOf("cost") < 0) st.cost = ""; else if (st.cost && ddValues("cost").indexOf(st.cost) < 0) st.cost = "";
+    ["attr", "sp", "rar"].forEach(function (x) { if (st[x] && ddValues(x).indexOf(st[x]) < 0) st[x] = ""; });
   }
+  // carte da cui cercare: quelle dell'espansione scelta (anche alternative art e ristampe uscite lì) o tutto il catalogo
+  function srcCards() { return st.exp && SETBY[st.exp] ? cardsOfSet(st.exp) : CARDS; }
   var ddOpen = null, ddPop = null;
   function closeFilters() {
     if (!ddPop) return false;
@@ -2089,29 +2288,41 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
   function openDD(kind, btnEl) {
     closeFilters();
     ddOpen = kind; btnEl.setAttribute("aria-expanded", "true");
-    var pop = el("div", "ddpop" + (kind === "lv" || kind === "cost" ? " nums" : "")); pop.setAttribute("role", "listbox"); pop.setAttribute("aria-label", DDN[kind]);
+    var grid = kind === "lv" || kind === "cost" || kind === "rar" || kind === "exp";
+    var pop = el("div", "ddpop" + (grid ? " nums" : "") + (kind === "exp" ? " exps" : "")); pop.setAttribute("role", "listbox"); pop.setAttribute("aria-label", DDN[kind]);
+    var cur = ddVal(kind), items = [];
     ddOptions(kind).forEach(function (o, i) {
-      var on = (st[kind] || "") === o[0];
+      if (o[0] === null) { pop.appendChild(el("div", "ddg", o[1])); return; }
+      var on = cur === o[0];
       var it = el("button", "ddo" + (i === 0 ? " all" : "")); it.type = "button"; it.setAttribute("role", "option"); it.setAttribute("aria-selected", String(on));
       if (o[2]) { var d = el("i"); d.style.background = o[2]; it.appendChild(d); }
       it.appendChild(el("span", "", o[1]));
-      if (on && kind !== "lv" && kind !== "cost") { var ok = el("span", "ok", "✓"); ok.setAttribute("aria-hidden", "true"); it.appendChild(ok); }
-      it.onclick = function (e) { e.stopPropagation(); st[kind] = o[0]; if (kind === "ct") ddFix(); st.shown = PAGE; syncSelects(); closeFilters(); render(); };
+      if (on && !grid) { var ok = el("span", "ok", "✓"); ok.setAttribute("aria-hidden", "true"); it.appendChild(ok); }
+      it.onclick = function (e) { e.stopPropagation(); setFlt(kind, o[0]); syncSelects(); closeFilters(); render(); };
+      it.setAttribute("data-f", fold(o[1])); items.push(it);
       pop.appendChild(it);
     });
+    // Type: centinaia di voci, campo per cercarle
+    if (kind === "sp") {
+      var fi = el("input", "ddfind"); fi.type = "search"; fi.placeholder = "Cerca un Type, es. Dragonkin"; fi.setAttribute("aria-label", "Cerca un Type"); fi.autocomplete = "off";
+      fi.oninput = function () { var f = fold(fi.value); items.forEach(function (it, j) { it.hidden = !!f && (j === 0 || it.getAttribute("data-f").indexOf(f) < 0); }); };
+      fi.onclick = function (e) { e.stopPropagation(); };
+      pop.insertBefore(fi, pop.firstChild);
+    }
     document.body.appendChild(pop); ddPop = pop;
     var r = btnEl.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight;
-    var w = Math.min(vw - 16, Math.max(r.width, kind === "qm" ? 250 : 210));
+    var w = Math.min(vw - 16, Math.max(r.width, kind === "qm" || kind === "sp" || kind === "exp" ? 280 : 210));
     var left = Math.max(8, Math.min(r.left, vw - w - 8));
     pop.style.width = w + "px"; pop.style.left = left + "px";
     var below = vh - r.bottom - 12, above = r.top - 12, ph = pop.scrollHeight;
     if (ph > below && above > below) { pop.style.maxHeight = Math.min(ph, above) + "px"; pop.style.top = Math.max(8, r.top - 6 - Math.min(ph, above)) + "px"; }
     else { pop.style.top = (r.bottom + 6) + "px"; pop.style.maxHeight = Math.max(160, below) + "px"; }
-    var sel = pop.querySelector('[aria-selected="true"]') || pop.firstChild; if (sel) sel.focus({ preventScroll: true });
+    var sel = pop.querySelector('[aria-selected="true"]') || pop.querySelector(".ddo"); if (sel) { sel.focus({ preventScroll: true }); if (kind === "sp" || kind === "exp") sel.scrollIntoView({ block: "center" }); }
   }
   document.addEventListener("pointerdown", function (e) { if (ddPop && !ddPop.contains(e.target) && !(e.target.closest && e.target.closest(".dd"))) closeFilters(); }, true);
-  window.addEventListener("scroll", function () { if (ddPop) closeFilters(); }, { passive: true });
-  window.addEventListener("resize", function () { if (ddPop) closeFilters(); });
+  function ddTyping() { return ddPop && ddPop.contains(document.activeElement) && document.activeElement.tagName === "INPUT"; }
+  window.addEventListener("scroll", function () { if (ddPop && !ddTyping()) closeFilters(); }, { passive: true });
+  window.addEventListener("resize", function () { if (ddPop && !ddTyping()) closeFilters(); });
   function collSummary() {
     var uniq = 0, tot = 0, dup = 0, done = 0, started = [];
     CARDS.forEach(function (c) { if (owned(c)) uniq++; });
@@ -2926,14 +3137,18 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
   // telefono: nella pagina di un prodotto la ricerca (con i menù dei filtri) scende sotto la scheda del prodotto
   var phead = document.getElementById("phead"), psearch = document.getElementById("psearch"), mfbarEl = document.getElementById("mfbar");
   // ---- Telefono: ricerca in basso (Carte, Collezione, Prodotti, pagina prodotto) con foglio "Filtri" e filtri attivi come etichette
-  var mbotEl = null, mbotQ = null, mbotChips = null, mbotFbtn = null, mfsEl = null, mfsScrim = null, mfsBody = null, mfsGo = null, LASTN = -1;
+  var mbotPx = null, mbotXbtn = null, mbotEl = null, mbotQ = null, mbotChips = null, mbotFbtn = null, mfsEl = null, mfsScrim = null, mfsBody = null, mfsGo = null, LASTN = -1;
   var FICO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>';
   function mbotBuild() {
     if (mbotEl) return;
     mbotEl = el("div", "mbot"); mbotChips = el("div", "mbchips");
     var row = el("div", "mbrow"); mbotQ = el("div", "mbq"); row.appendChild(mbotQ);
     mbotFbtn = el("button", "mbf"); mbotFbtn.type = "button"; mbotFbtn.onclick = function () { openMfs(); }; row.appendChild(mbotFbtn);
-    mbotEl.appendChild(mbotChips); mbotEl.appendChild(row); document.body.appendChild(mbotEl);
+    // Prodotti: pulsante che apre/chiude, sotto la ricerca, la riga dei tipi di prodotto
+    mbotXbtn = el("button", "mbf mbx"); mbotXbtn.type = "button"; mbotXbtn.innerHTML = DDCHEV;
+    mbotXbtn.onclick = function () { st.pchips = !st.pchips; render(); }; row.appendChild(mbotXbtn);
+    mbotPx = el("div", "chips mbpx");
+    mbotEl.appendChild(mbotChips); mbotEl.appendChild(row); mbotEl.appendChild(mbotPx); document.body.appendChild(mbotEl);
     mfsScrim = el("div", "mfscrim"); mfsScrim.onclick = function () { closeMfs(); }; document.body.appendChild(mfsScrim);
     mfsEl = el("section", "mfsheet"); mfsEl.setAttribute("aria-label", "Filtri");
     var hb = el("button", "dkhandle"); hb.type = "button"; hb.setAttribute("aria-label", "Chiudi i filtri"); hb.appendChild(el("i")); hb.onclick = function () { closeMfs(); };
@@ -2952,7 +3167,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
   }
   function openMfs() { if (st.mfs) return; st.mfs = true; pushOverlay("mfsheet"); render(); }
   function closeMfs() { closeFilters(); if (history.state && history.state.ov === "mfsheet") history.back(); else { st.mfs = false; render(); } }
-  function clearFlt() { st.qm = st.color = st.ct = st.lv = st.cost = ""; st.shown = PAGE; syncSelects(); render(); }
+  function clearFlt() { resetFlt(); st.shown = PAGE; syncSelects(); render(); }
   // filtri attivi: [tipo, etichetta]
   function fltActive() {
     var a = [];
@@ -2961,6 +3176,10 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     if (st.ct) a.push(["ct", st.ct]);
     if (st.lv) a.push(["lv", st.lv]);
     if (st.cost) a.push(["cost", "Costo " + st.cost]);
+    if (st.rar) a.push(["rar", st.rar]);
+    if (st.attr) a.push(["attr", st.attr]);
+    if (st.sp) a.push(["sp", st.sp]);
+    if (st.exp && SETBY[st.exp]) a.push(["exp", SETBY[st.exp].code]);
     return a;
   }
   function drawMbot(hasF) { drawFlt(mbotChips, mbotFbtn, hasF); document.body.classList.toggle("hasmbotc", hasF && fltActive().length > 0); }
@@ -2972,7 +3191,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
       var b = el("button", "mbchip"); b.type = "button"; b.setAttribute("aria-label", "Togli il filtro " + f[1]);
       if (f[0] === "color") { var i = el("i"); i.style.background = colorVar(st.color); b.appendChild(i); }
       b.appendChild(el("span", "", f[1])); b.appendChild(el("b", "", "✕"));
-      b.onclick = function () { st[f[0]] = ""; if (f[0] === "ct") ddFix(); st.shown = PAGE; syncSelects(); render(); };
+      b.onclick = function () { setFlt(f[0], ""); syncSelects(); render(); };
       mbotChips.appendChild(b);
     });
     if (act.length) { var z = el("button", "mbclr", "Azzera"); z.type = "button"; z.onclick = clearFlt; mbotChips.appendChild(z); }
@@ -3029,7 +3248,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     document.getElementById("mfbar").hidden = noF || DESK;
     document.getElementById("qm-name").setAttribute("aria-pressed", String(st.qm === "name"));
     document.getElementById("qm-text").setAttribute("aria-pressed", String(st.qm === "text"));
-    chips.hidden = !isSets || (!DESK && isSoon);
+    chips.hidden = !isSets || !DESK;
     qi.hidden = isSoon || isHome || isUp || dkNoSearch;
     document.getElementById("hint").textContent = "Carte in inglese, da una raccolta pubblica aggiornata fino a BT26, EX13 e ST24, più promo e RB01. Quantità e collezione restano salvate in questo browser.";
     qi.placeholder = prodM ? (DESK ? "Cerca in questo prodotto, es. Agumon" : "Cerca in " + (SETBY[st.setId] ? SETBY[st.setId].code : "questo prodotto") + ", es. Agumon") : botM && st.ownOnly ? "Cerca nella collezione…" : botM && st.tab === "cards" ? "Cerca per nome, codice o testo…" : botM ? "Cerca per set, codice o Digimon…" : dkM ? "Cerca una carta, es. Agumon" : isDeck ? "Cerca una carta da aggiungere, es. Agumon o BT1-010" : isSets ? "Cerca per set, codice o Digimon, es. BT10 o Omnimon" :
@@ -3050,6 +3269,11 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
       if (st.mfs && !hasF && !hasFd) st.mfs = false;
       mbotEl.classList.toggle("on", botM); mfsEl.classList.toggle("on", !!st.mfs); mfsScrim.classList.toggle("on", !!st.mfs);
       drawMbot(hasF);
+      var px = botM && isSets && !isSoon;
+      mbotXbtn.hidden = !px; mbotPx.hidden = !(px && st.pchips);
+      mbotXbtn.classList.toggle("open", !!st.pchips); mbotXbtn.classList.toggle("on", px && st.type !== "ALL" && st.type !== "SOON");
+      mbotXbtn.setAttribute("aria-expanded", String(!!st.pchips)); mbotXbtn.setAttribute("aria-label", st.pchips ? "Nascondi i tipi di prodotto" : "Mostra i tipi di prodotto");
+      document.body.classList.toggle("hasmbotx", px && !!st.pchips);
       if (dkFbtn) drawFlt(dkMfSlot, dkFbtn, hasFd);
     }
     document.body.classList.toggle("hasmbot", botM);
@@ -3227,18 +3451,32 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     var w = el("span", "qty");
     var m = el("button", "qbtn", "−"); m.type = "button"; m.setAttribute("aria-label", "Togli dal mazzo");
     var n = el("span", "qn", String(inDeck(d, c)));
-    var err = addError(d, c);
-    var p = el("button", "qbtn" + (err ? " off" : " on"), "+"); p.type = "button"; p.setAttribute("aria-label", "Aggiungi al mazzo");
+    var err = addError(d, c), full = err && codeTotal(d, c.code) >= maxCopies(c);
+    // + arancione finché si può aggiungere, blu quando la carta ha raggiunto le copie massime (4x), spento per gli altri limiti
+    var p = el("button", "qbtn" + (!err ? " on" : full ? " full" : " off"), "+"); p.type = "button"; p.setAttribute("aria-label", "Aggiungi al mazzo (tieni premuto per aggiungerne 4)");
     if (!maxCopies(c)) {
       n.textContent = inDeck(d, c) ? "Bandita (" + inDeck(d, c) + ")" : "Bandita"; n.className = "qn qban";
       (inDeck(d, c) ? [p] : [m, p]).forEach(function (bt) { bt.innerHTML = LOCK; bt.className = "qbtn lock"; bt.disabled = true; bt.setAttribute("aria-label", "Carta bandita"); });
       w.appendChild(m); w.appendChild(n); w.appendChild(p); return w;
     }
     if (maxCopies(c) === 1 && codeTotal(d, c.code) >= 1) { p.textContent = "MAX"; p.className = "qbtn qmax"; }
-    m.onclick = function (e) { e.stopPropagation(); var k = inDeck(d, c); if (k > 0) { if (k === 1) delete d.cards[c.k]; else d.cards[c.k] = k - 1; d.upd = Date.now(); saveDecks(); onChange(); } };
-    p.onclick = function (e) { e.stopPropagation(); var er = addError(d, c); if (er) { toast(er); return; } d.cards[c.k] = inDeck(d, c) + 1; d.upd = Date.now(); saveDecks(); onChange(); };
+    m.setAttribute("aria-label", "Togli dal mazzo (tieni premuto per toglierne 4)");
+    m.onclick = function (e) { e.stopPropagation(); if (heldClick(m)) return; var k = inDeck(d, c); if (k > 0) { if (k === 1) delete d.cards[c.k]; else d.cards[c.k] = k - 1; d.upd = Date.now(); saveDecks(); onChange(); } };
+    p.onclick = function (e) { e.stopPropagation(); if (heldClick(p)) return; var er = addError(d, c); if (er) { toast(er); return; } d.cards[c.k] = inDeck(d, c) + 1; d.upd = Date.now(); saveDecks(); onChange(); };
+    var show = function () { n.textContent = String(inDeck(d, c)); };
+    holdWire(p, 1, function () { var a = deckAdd(d, c, 4, true); return a; }, show, onChange);
+    holdWire(m, -1, function () { var k = Math.min(4, inDeck(d, c)); if (k) { if (k === inDeck(d, c)) delete d.cards[c.k]; else d.cards[c.k] = inDeck(d, c) - k; d.upd = Date.now(); saveDecks(); } return k; }, show, onChange);
+    qnEdit(n, function () { return inDeck(d, c); }, function (v) { var k = inDeck(d, c); if (v <= k) { if (v) d.cards[c.k] = v; else delete d.cards[c.k]; d.upd = Date.now(); saveDecks(); } else deckAdd(d, c, v - k); onChange(); }, p);
     w.appendChild(m); w.appendChild(n); w.appendChild(p);
     return w;
+  }
+  // aggiunge fino a n copie rispettando regole e lista ban; se non ne entra nessuna (o meno di quelle chieste) mostra il motivo
+  function deckAdd(d, c, n, quiet) {
+    var a = 0, er = "";
+    while (a < n) { er = addError(d, c); if (er) break; d.cards[c.k] = inDeck(d, c) + 1; a++; }
+    if (a) { d.upd = Date.now(); saveDecks(); }
+    if (er && (!a || !quiet)) toast(er);
+    return a;
   }
   function banBadge(c, d) {
     var mx = maxCopies(c);
@@ -3307,25 +3545,55 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     var a = el("a", "", "Fonte ufficiale"); a.href = BAN.source; a.target = "_blank"; a.rel = "noopener"; p.appendChild(a);
     return p;
   }
-  function importPanel(onDone, label) {
+  function importPanel(onDone, label, onClose) {
     var box = el("div", "dimport");
     var ta = el("textarea", "dta"); ta.rows = 8; ta.placeholder = "Incolla qui la lista, una carta per riga, es.\n4 Agumon BT1-010\n4 BT14-002";
     var go2 = el("button", "dbtn on", label); go2.type = "button";
+    var cls = el("button", "dbtn", "Chiudi"); cls.type = "button";
+    cls.onclick = function () { if (box.parentNode) box.parentNode.removeChild(box); if (onClose) onClose(); };
     go2.onclick = function () {
       var r = parseDeck(ta.value);
       if (!Object.keys(r.cards).length) { toast("Nessun codice carta riconosciuto."); return; }
       onDone(r.cards);
       if (r.unknown.length) toast("Codici non riconosciuti: " + r.unknown.slice(0, 5).join(", ") + (r.unknown.length > 5 ? "…" : ""));
     };
-    box.appendChild(ta); box.appendChild(go2);
+    var bb = el("div", "dimpb"); bb.appendChild(go2); bb.appendChild(cls);
+    box.appendChild(ta); box.appendChild(bb);
     return box;
   }
   // ---- Deckbuilding su desktop
   function deckCover(d) {
+    if (d.cover && d.cards[d.cover]) { var cv = entryByKey(d.cover); if (cv) return cv; }
     var best = null, bs = -1;
     Object.keys(d.cards).forEach(function (k) { var c = entryByKey(k); if (!c || !/^Digimon/.test(c.ct)) return; var sc = lvNum(c) * 10 + d.cards[k]; if (sc > bs) { bs = sc; best = c; } });
     return best;
   }
+  // "Modifica copertina mazzo": si sceglie una delle carte del mazzo (o la scelta automatica)
+  function coverPanel(d, slot, onDone) {
+    var box = el("div", "panel dcov"), hd = el("div", "dcovh");
+    hd.appendChild(el("b", "", "Modifica copertina mazzo"));
+    var x = el("button", "dbtn", "Chiudi"); x.type = "button"; x.onclick = function () { slot.innerHTML = ""; }; hd.appendChild(x);
+    box.appendChild(hd);
+    box.appendChild(el("p", "sub", "Tocca la carta da usare come copertina del mazzo."));
+    var g = el("div", "dcovg"), auto = !(d.cover && d.cards[d.cover]);
+    var a = el("button", "dcovi auto"); a.type = "button"; a.setAttribute("aria-pressed", String(auto));
+    var ac = deckCover({ cards: d.cards }); var ap = ac ? picBox("pic", "t", ac) : el("div", "pic"); a.appendChild(ap); a.appendChild(el("span", "", "Automatica"));
+    a.onclick = function () { delete d.cover; d.upd = Date.now(); saveDecks(); slot.innerHTML = ""; toast("Copertina automatica."); onDone(); };
+    g.appendChild(a);
+    var seen = {};
+    deckGroups(d).forEach(function (gr) { gr[1].forEach(function (c) {
+      if (seen[c.k]) return; seen[c.k] = 1;
+      var b = el("button", "dcovi"); b.type = "button"; b.setAttribute("aria-pressed", String(!auto && d.cover === c.k)); b.setAttribute("aria-label", c.name + " " + c.code);
+      var pc = picBox("pic", "t", c); pc.style.background = gradient(c.colors, "to bottom"); b.appendChild(pc); b.appendChild(el("span", "", c.code));
+      b.onclick = function () { d.cover = c.k; d.upd = Date.now(); saveDecks(); slot.innerHTML = ""; toast("Copertina: " + c.name + "."); onDone(); };
+      g.appendChild(b);
+    }); });
+    if (Object.keys(seen).length === 0) box.appendChild(el("p", "sub", "Il mazzo è vuoto: aggiungi delle carte per sceglierne una come copertina."));
+    else box.appendChild(g);
+    slot.innerHTML = ""; slot.appendChild(box);
+  }
+  var ICO_TRASH = '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>';
+  var ICO_IMG = '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 16l-5-5-8.5 8.5"/>';
   function deckColors(d) {
     var cnt = {};
     Object.keys(d.cards).forEach(function (k) { var c = entryByKey(k); if (!c) return; c.colors.forEach(function (x) { cnt[x] = (cnt[x] || 0) + d.cards[k]; }); });
@@ -3335,7 +3603,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     pageTitle("Deckbuilding", "Dall'idea al mazzo: componi, controlla le regole e la lista ban, esporta.");
     var acts = el("div", "dacts"), slot = el("div");
     acts.appendChild(btn("Nuovo mazzo", "pri", function () { var d = newDeck("Nuovo mazzo " + (decks.length + 1)); openDeck(d.id); }, ICO_PLUS));
-    acts.appendChild(btn("Importa da testo", "", function () { slot.innerHTML = ""; slot.appendChild(importPanel(function (cards) { var d = newDeck("Mazzo importato", cards); openDeck(d.id); }, "Crea mazzo")); slot.querySelector("textarea").focus(); }));
+    acts.appendChild(btn("Importa", "", function () { slot.innerHTML = ""; slot.appendChild(importPanel(function (cards) { var d = newDeck("Mazzo importato", cards); openDeck(d.id); }, "Crea mazzo")); slot.querySelector("textarea").focus(); }));
     out.appendChild(acts); out.appendChild(slot);
     var g = el("div", "dkgrid");
     decks.slice().sort(function (a, b) { return b.upd - a.upd; }).forEach(function (d) {
@@ -3429,6 +3697,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     }));
     acts.appendChild(btn("Importa", "", function () { slot.innerHTML = ""; slot.appendChild(importPanel(function (cards) { d.cards = cards; d.upd = Date.now(); saveDecks(); render(); }, "Sostituisci il contenuto")); }));
     acts.appendChild(btn("Svuota", "", function () { if (confirm("Togliere tutte le carte da \"" + d.name + "\"?")) { d.cards = {}; d.upd = Date.now(); saveDecks(); render(); } }));
+    acts.appendChild(btn("Modifica copertina", "", function () { coverPanel(d, slot, function () {}); }, ICO_IMG));
     var del = btn("Elimina mazzo", "", function () { if (confirm("Eliminare il mazzo \"" + d.name + "\"?")) { decks = decks.filter(function (x) { return x !== d; }); saveDecks(); st.deckId = null; render(); } }); del.style.color = "var(--c-red)";
     acts.appendChild(del); hd.appendChild(acts); out.appendChild(hd); out.appendChild(slot);
     var lay = el("div", "dklay"), left = el("section"); left.setAttribute("aria-label", "Aggiungi carte");
@@ -3440,7 +3709,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
       e.appendChild(el("p", "", "Scrivi un nome, un codice o una parola dell'effetto nella barra in alto, oppure scegli colore, tipo e livello. Il + aggiunge la carta al mazzo."));
       left.appendChild(e); left.appendChild(banNote()); return;
     }
-    var list = CARDS.filter(function (c) { return deckable(c) && cardMatches(c, q); });
+    var list = srcCards().filter(function (c) { return deckable(c) && cardMatches(c, q); });
     if (q) list = list.map(function (c, j) { return { c: c, j: j, r: relevance(c, q) }; }).sort(function (a, b2) { return (a.r - b2.r) || (a.j - b2.j); }).map(function (o) { return o.c; });
     gt2.firstChild.textContent = "Aggiungi carte · " + list.length + (list.length === 1 ? " trovata" : " trovate");
     if (!list.length) left.appendChild(el("p", "empty", "Nessuna carta corrisponde alla ricerca."));
@@ -3527,7 +3796,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
   function dkGid(g) { return "dkg-" + g.replace(/\W/g, ""); }
   // "+ Aggiungi" di un gruppo: apre la ricerca già filtrata per quel tipo e livello
   function dkAddTo(g) {
-    st.q = ""; qi.value = ""; st.cost = "";
+    st.q = ""; qi.value = ""; resetFlt();
     if (g === "Digi-Egg") { st.ct = "Digi-Egg"; st.lv = ""; }
     else if (/^Lv\./.test(g)) { st.ct = "Digimon"; st.lv = g; }
     else if (g === "Digimon") { st.ct = "Digimon"; st.lv = ""; }
@@ -3579,13 +3848,17 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
   // risultati della ricerca nel foglio (stessa vista a elenco/griglia del resto dell'app)
   function dkSheetResults(d) {
     var keep = dkBody.scrollTop; dkBody.innerHTML = "";
-    var q = normQ(st.q), filt = q || st.color || st.ct || st.lv || st.cost;
+    var q = normQ(st.q), filt = q || anyFlt();
     var info = el("div", "dkinfo2"), lab = el("span", "");
     var sv = st.view; st.view = st.dkVw || "list";
     var vt = viewToggle(); Array.prototype.forEach.call(vt.children, function (bt, i) { bt.onclick = function () { st.dkVw = i ? "grid" : "list"; try { localStorage.setItem("dg-dkview", st.dkVw); } catch (e) {} render(); }; });
     info.appendChild(lab); info.appendChild(vt); dkBody.appendChild(info);
-    if (!filt) { st.view = sv; lab.textContent = "Cerca una carta"; dkBody.appendChild(el("p", "hint dnote", "Scrivi un nome, un codice o una parola dell'effetto, oppure scegli colore e tipo nei menù. Il + aggiunge la carta al mazzo e la vedi comparire nella sua pila.")); return; }
-    var list = CARDS.filter(function (c) { return deckable(c) && cardMatches(c, q); });
+    if (!filt) {
+      st.view = sv; lab.textContent = "Cerca una carta"; info.removeChild(vt);
+      dkBody.appendChild(el("p", "hint dnote", "Scrivi un nome, un codice o una parola dell'effetto, oppure utilizza i filtri."));
+      var vr = el("div", "dkvrow"); vr.appendChild(vt); dkBody.appendChild(vr); return;
+    }
+    var list = srcCards().filter(function (c) { return deckable(c) && cardMatches(c, q); });
     LASTN = list.length;
     if (q) list = list.map(function (c, j) { return { c: c, j: j, r: relevance(c, q) }; }).sort(function (a, b2) { return (a.r - b2.r) || (a.j - b2.j); }).map(function (o) { return o.c; });
     lab.textContent = list.length + (list.length === 1 ? " carta trovata" : " carte trovate");
@@ -3607,8 +3880,8 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     bk.onclick = function () { st.deckId = null; st.dkView = ""; st.dkSel = null; qi.value = ""; st.q = ""; window.scrollTo(0, 0); render(); }; hd.appendChild(bk);
     var ni = el("input", "dname"); ni.value = d.name; ni.setAttribute("aria-label", "Nome del mazzo"); ni.maxLength = 60;
     ni.onchange = function () { d.name = ni.value.trim() || d.name; ni.value = d.name; d.upd = Date.now(); saveDecks(); }; hd.appendChild(ni);
-    var mb = el("button", "mclose"); mb.type = "button"; mb.setAttribute("aria-label", "Azioni del mazzo: esporta, importa, svuota, elimina"); mb.setAttribute("aria-expanded", String(!!st.dkActs));
-    mb.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';
+    var mb = el("button", "mclose mexp"); mb.type = "button"; mb.setAttribute("aria-label", (st.dkActs ? "Nascondi" : "Mostra") + " le azioni del mazzo: esporta, importa, svuota, copertina, elimina"); mb.setAttribute("aria-expanded", String(!!st.dkActs));
+    mb.innerHTML = DDCHEV;
     mb.onclick = function () { st.dkActs = !st.dkActs; render(); }; hd.appendChild(mb);
     out.appendChild(hd);
     var acts = el("div", "mdkacts"), slot = el("div"); acts.hidden = !st.dkActs;
@@ -3618,10 +3891,15 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
       var fallback = function () { slot.innerHTML = ""; var ta = el("textarea", "dta"); ta.rows = 10; ta.value = t; ta.readOnly = true; slot.appendChild(ta); ta.focus(); ta.select(); };
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, fallback); else fallback();
     }));
-    acts.appendChild(btn("Importa", "", function () { slot.innerHTML = ""; slot.appendChild(importPanel(function (cards) { d.cards = cards; d.upd = Date.now(); saveDecks(); st.dkActs = false; render(); }, "Sostituisci il contenuto")); }));
+    acts.appendChild(btn("Importa", "", function () { slot.innerHTML = ""; slot.appendChild(importPanel(function (cards) { d.cards = cards; d.upd = Date.now(); saveDecks(); st.dkActs = false; render(); }, "Sostituisci il contenuto")); var t = slot.querySelector("textarea"); if (t) t.focus(); }));
     acts.appendChild(btn("Svuota", "", function () { if (confirm("Togliere tutte le carte da \"" + d.name + "\"?")) { d.cards = {}; d.upd = Date.now(); saveDecks(); render(); } }));
-    var del = btn("Elimina mazzo", "", function () { if (confirm("Eliminare il mazzo \"" + d.name + "\"?")) { decks = decks.filter(function (x) { return x !== d; }); saveDecks(); st.deckId = null; st.dkActs = false; render(); } }); del.style.color = "var(--c-red)";
-    acts.appendChild(del); out.appendChild(acts); out.appendChild(slot);
+    // Elimina mazzo: cestino sulla stessa riga degli altri pulsanti
+    var del = btn("", "dtrash", function () { if (confirm("Eliminare il mazzo \"" + d.name + "\"?")) { decks = decks.filter(function (x) { return x !== d; }); saveDecks(); st.deckId = null; st.dkActs = false; render(); } }, ICO_TRASH);
+    del.setAttribute("aria-label", "Elimina mazzo"); del.title = "Elimina mazzo";
+    acts.appendChild(del);
+    var cvb = btn("Modifica copertina mazzo", "dcovb", function () { coverPanel(d, slot, function () { render(); }); }, ICO_IMG);
+    acts.appendChild(cvb);
+    out.appendChild(acts); out.appendChild(slot);
     // conteggi + curva (tocca un livello per andarci) + stato: Bozza se manca solo qualche carta, errori veri a parte
     var panel = el("div", "dstat");
     [["Principale", s.main, 50, s.main === 50], ["Digi-Egg", s.egg, 5, s.egg <= 5]].forEach(function (x) {
@@ -3659,7 +3937,10 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
       var ab = el("div", "dkbar"), ai = el("button", "dkbarb"); ai.type = "button";
       ai.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><span>Cerca e aggiungi carte…</span>';
       ai.onclick = function () { st.q = ""; qi.value = ""; st.ct = st.lv = st.cost = ""; syncSelects(); openDkSheet(1, true); dkToFirst(); };
-      ab.appendChild(ai); out.appendChild(ab);
+      var nf = fltActive().length, fb = el("button", "mbf" + (nf ? " on" : "")); fb.type = "button";
+      fb.innerHTML = FICO + (nf ? '<span class="mbn">' + nf + "</span>" : ""); fb.setAttribute("aria-label", "Filtra" + (nf ? ": " + nf + (nf === 1 ? " filtro attivo" : " filtri attivi") : ""));
+      fb.onclick = function () { openDkSheet(1, false); dkToFirst(); openMfs(); };
+      ab.appendChild(ai); ab.appendChild(fb); out.appendChild(ab);
       if (st.dkSheet) {
         dkSheetResults(d);
         // la carta appena aggiunta: porta la sua pila in vista sopra il foglio
@@ -3796,7 +4077,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     var q = normQ(st.q), filt = q || st.color || st.ct || st.lv;
     var gt2 = el("div", "group-title withv"); gt2.appendChild(el("span", "", "Aggiungi carte")); if (!any) gt2.appendChild(viewToggle()); out.appendChild(gt2);
     if (!filt) { out.appendChild(el("p", "hint dnote", "Usa la ricerca e i filtri in alto per trovare le carte da aggiungere.")); out.appendChild(banNote()); return; }
-    var list = CARDS.filter(function (c) { return deckable(c) && cardMatches(c, q); });
+    var list = srcCards().filter(function (c) { return deckable(c) && cardMatches(c, q); });
     if (q) list = list.map(function (c, j) { return { c: c, j: j, r: relevance(c, q) }; }).sort(function (a, b2) { return (a.r - b2.r) || (a.j - b2.j); }).map(function (o) { return o.c; });
     if (!list.length) out.appendChild(el("p", "empty", "Nessuna carta corrisponde alla ricerca."));
     var ul2 = el("div", st.view === "grid" ? "grid" : "list"); list.slice(0, st.shown).forEach(function (c) { ul2.appendChild(deckRow(d, c)); }); out.appendChild(ul2);
