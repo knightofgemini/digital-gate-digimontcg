@@ -227,50 +227,20 @@ html.lock, html.lock body { overflow: hidden; overscroll-behavior: none; }
 .upd h3 { margin: 0 0 8px; font-family: var(--font-display); font-size: 1.1rem; }
 .upd p { margin: 0 0 6px; color: var(--ink-2); font-size: .9rem; }
 .upd .dacts { justify-content: flex-end; margin-bottom: 0; }
-/* richiesta di conferma (svuota/elimina mazzo, svuota cronologia delle scansioni):
-   foglio dal basso sul telefono, finestra al centro su PC; in cima le carte coinvolte a ventaglio con il distintivo ottagonale rosso */
-.cfmscrim { position: fixed; inset: 0; z-index: 960; background: rgba(6,10,20,.55); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); display: flex; align-items: flex-end; justify-content: center; padding: 0; animation: cfmfade .18s ease-out; }
-.cfmbox { position: relative; width: 100%; max-width: 520px; box-sizing: border-box; background: var(--surface); color: var(--ink); border-radius: 22px 22px 0 0; padding: 10px 20px calc(18px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -18px 50px rgba(0,0,0,.35); text-align: center; animation: cfmup .24s cubic-bezier(.2,.8,.2,1); }
-.cfmbox::before { content: ""; display: block; width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 0 auto 6px; }
-.cfmfan { position: relative; height: 128px; margin: 10px auto 14px; width: 190px; }
-.cfmfan .c { position: absolute; left: 50%; bottom: 0; width: 76px; aspect-ratio: 63 / 88; margin-left: -38px; border-radius: 6px; overflow: hidden; background: var(--surface-2); box-shadow: 0 8px 20px rgba(0,0,0,.28); transform-origin: 50% 120%; animation: cfmcard .32s cubic-bezier(.2,.8,.2,1) both; }
-.cfmfan .c img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.cfmfan .c.noimg img { visibility: hidden; }
-.cfmfan .c:nth-child(1) { z-index: 3; --r: 0deg; --x: 0px; }
-.cfmfan .c:nth-child(2) { z-index: 2; --r: -13deg; --x: -34px; }
-.cfmfan .c:nth-child(3) { z-index: 1; --r: 13deg; --x: 34px; }
-.cfmfan .c { transform: translateX(var(--x)) rotate(var(--r)); }
-.cfmfan.n1 .c:nth-child(1) { --r: -3deg; }
-.cfmfan.n2 .c:nth-child(1) { --r: 7deg; --x: 16px; }
-.cfmfan.n2 .c:nth-child(2) { --r: -8deg; --x: -16px; }
-.cfmfan.n0 { height: 72px; }
-.cfmbadge { position: absolute; z-index: 4; right: 22px; bottom: -8px; width: 44px; height: 44px; display: grid; place-items: center; color: #fff; background: #d4373a; clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%); filter: drop-shadow(0 4px 10px rgba(0,0,0,.3)); }
-.cfmfan.n0 .cfmbadge { right: auto; left: 50%; bottom: 6px; margin-left: -30px; width: 60px; height: 60px; }
-.cfmbadge svg { width: 22px; height: 22px; }
-.cfmfan.n0 .cfmbadge svg { width: 28px; height: 28px; }
-.cfmbox h3 { margin: 0 0 6px; font: 700 1.28rem/1.25 var(--font-display); letter-spacing: .01em; text-wrap: balance; }
-.cfmbox h3 q { quotes: "“" "”"; color: var(--ink); }
-.cfmbox p { margin: 0 auto; max-width: 34ch; color: var(--ink-2); font-size: .92rem; line-height: 1.5; text-wrap: pretty; }
-.cfmbox .cfmn { display: inline-block; margin: 0 0 10px; padding: 3px 10px; border-radius: 99px; background: var(--surface-2); color: var(--ink); font: 600 .78rem var(--font-display); }
-.cfmacts { display: grid; gap: 8px; margin-top: 20px; }
-.cfmacts button { min-height: 50px; border-radius: 14px; font: 700 1rem var(--font-display); letter-spacing: .01em; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-.cfmacts button svg { width: 19px; height: 19px; }
-.cfmacts .go { border: 0; background: #d4373a; color: #fff; box-shadow: 0 6px 18px rgba(212,55,58,.35); }
-.cfmacts .go:active { transform: translateY(1px); }
-.cfmacts .no { border: 1px solid var(--line); background: transparent; color: var(--ink); font-weight: 600; }
+/* richiesta di conferma (svuota/elimina mazzo, svuota cronologia delle scansioni): finestra sottile al centro, senza icone */
+.cfmscrim { position: fixed; inset: 0; z-index: 960; background: rgba(6,10,20,.5); display: flex; align-items: center; justify-content: center; padding: 24px; animation: cfmfade .15s ease-out; }
+.cfmbox { width: 100%; max-width: 320px; box-sizing: border-box; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 16px; padding: 16px 16px 14px; box-shadow: 0 16px 44px rgba(0,0,0,.35); animation: cfmpop .15s ease-out; }
+.cfmbox h3 { margin: 0 0 4px; font: 700 1.02rem/1.3 var(--font-display); }
+.cfmbox h3 q { quotes: "“" "”"; }
+.cfmbox p { margin: 0; color: var(--ink-2); font-size: .86rem; line-height: 1.45; }
+.cfmacts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.cfmacts button { min-height: 38px; padding: 0 14px; border-radius: 10px; font: 600 .9rem var(--font-display); cursor: pointer; }
+.cfmacts .no { border: 1px solid var(--line); background: transparent; color: var(--ink); }
+.cfmacts .go { border: 0; background: #d4373a; color: #fff; }
 .cfmacts button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-@media (min-width: 700px), (hover: hover) and (pointer: fine) {
-  .cfmscrim { align-items: center; padding: 16px; }
-  .cfmbox { max-width: 400px; border-radius: 22px; padding: 22px 24px 20px; box-shadow: 0 24px 70px rgba(0,0,0,.45); animation-name: cfmpop; }
-  .cfmbox::before { display: none; }
-  .cfmacts { grid-template-columns: 1fr 1fr; }
-  .cfmacts .no { order: -1; }
-}
 @keyframes cfmfade { from { opacity: 0; } }
-@keyframes cfmup { from { transform: translateY(100%); } }
-@keyframes cfmpop { from { transform: scale(.96); opacity: 0; } }
-@keyframes cfmcard { from { transform: translateX(0) rotate(0) translateY(10px); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .cfmscrim, .cfmbox, .cfmfan .c { animation: none; } }
+@keyframes cfmpop { from { transform: scale(.97); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .cfmscrim, .cfmbox { animation: none; } }
 .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: .88rem; max-width: calc(100vw - 32px); box-shadow: 0 6px 24px rgba(0,0,0,.3); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 200; }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
 .tagrows { margin-bottom: 12px; display: grid; gap: 6px; }
@@ -4844,8 +4814,8 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     if (SCH.length) {
       var clr = el("button", "schclr", "Svuota"); clr.type = "button";
       clr.onclick = function () {
-        askConfirm({ title: "Svuotare la cronologia?", count: SCH.length === 1 ? "1 scansione" : SCH.length + " scansioni", pics: SCH.slice(0, 3).map(schEntry),
-          text: "Le scansioni vengono tolte da questo elenco. Le carte già aggiunte restano nella collezione.", ok: "Svuota cronologia",
+        askConfirm({ title: "Svuotare la cronologia?",
+          text: (SCH.length === 1 ? "La scansione viene tolta" : "Le " + SCH.length + " scansioni vengono tolte") + ". Le carte già aggiunte restano nella collezione.", ok: "Svuota",
           onOk: function () { SCH = []; schSave(); schBadge(); schDraw(); } });
       };
       hd.appendChild(clr);
@@ -4904,51 +4874,36 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
   }
   function scOpenCard(a) { if (!a) return; closeScan(function () { st.open = a; st.shTab = "fx"; drawSheet(); }); }
   // ---- Richiesta di conferma nello stile dell'app (sostituisce la finestra di sistema del browser/APK)
-  // o = { title, text, count, ok, pics: [carte], onOk }
+  // o = { title, text, ok, onOk }
   function askConfirm(o) {
     var prev = document.querySelector(".cfmscrim"); if (prev) prev.remove();
     var sc = el("div", "upd-scrim cfmscrim"), box = el("div", "cfmbox"), keep = document.activeElement;
     box.setAttribute("role", "alertdialog"); box.setAttribute("aria-modal", "true");
-    var pics = (o.pics || []).filter(Boolean).slice(0, 3), fan = el("div", "cfmfan n" + pics.length);
-    pics.forEach(function (c) { fan.appendChild(picBox("c", "t", c)); });
-    var bd = el("div", "cfmbadge"); bd.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICO_TRASH + "</svg>";
-    fan.appendChild(bd); box.appendChild(fan);
     var h = el("h3"); h.id = "cfm-t"; (Array.isArray(o.title) ? o.title : [o.title]).forEach(function (x, i) { h.appendChild(i % 2 ? el("q", "", x) : document.createTextNode(x)); });
     box.appendChild(h); box.setAttribute("aria-labelledby", "cfm-t");
-    if (o.count) box.appendChild(el("span", "cfmn", o.count));
     var pp = el("p", "", o.text); pp.id = "cfm-d"; box.appendChild(pp); box.setAttribute("aria-describedby", "cfm-d");
     var row = el("div", "cfmacts"), ok = el("button", "go"), no = el("button", "no", "Annulla");
-    ok.innerHTML = bd.innerHTML; ok.appendChild(document.createTextNode(o.ok));
+    ok.textContent = o.ok;
     no.type = ok.type = "button";
     function close() { sc.remove(); document.removeEventListener("keydown", kd, true); if (keep && keep.focus) try { keep.focus(); } catch (e) {} }
     function kd(e) { if (e.key === "Escape") { e.stopImmediatePropagation(); e.preventDefault(); close(); } }
     no.onclick = close; ok.onclick = function () { close(); o.onOk(); };
     sc.onclick = function (e) { if (e.target === sc) close(); };
-    var y0 = null;
-    box.addEventListener("touchstart", function (e) { y0 = e.touches[0].clientY; }, { passive: true });
-    box.addEventListener("touchend", function (e) { if (y0 != null && e.changedTouches[0].clientY - y0 > 70) close(); y0 = null; });
-    row.appendChild(ok); row.appendChild(no); box.appendChild(row); sc.appendChild(box); document.body.appendChild(sc);
+    row.appendChild(no); row.appendChild(ok); box.appendChild(row); sc.appendChild(box); document.body.appendChild(sc);
     document.addEventListener("keydown", kd, true);
     no.focus({ preventScroll: true });
-  }
-  // carte da mostrare nella conferma di un mazzo: copertina e poi quelle con più copie
-  function deckPics(d) {
-    var cv = deckCover(d), ks = Object.keys(d.cards).sort(function (a, b) { return d.cards[b] - d.cards[a]; }), out = cv ? [cv] : [], seen = {};
-    if (cv) seen[cv.code] = 1;
-    ks.forEach(function (k) { var c = entryByKey(k); if (c && !seen[c.code] && out.length < 3) { seen[c.code] = 1; out.push(c); } });
-    return out;
   }
   function deckN(d) { var n = 0; Object.keys(d.cards).forEach(function (k) { n += d.cards[k]; }); return n; }
   function cfmEmptyDeck(d) {
     var n = deckN(d);
-    askConfirm({ title: ["Svuotare ", d.name, "?"], count: n === 1 ? "1 carta" : n + " carte", pics: deckPics(d),
-      text: "Tutte le carte escono dal mazzo. Nome e mazzo restano, vuoti.", ok: "Svuota mazzo",
+    askConfirm({ title: ["Svuotare ", d.name, "?"],
+      text: (n === 1 ? "La carta esce" : "Le " + n + " carte escono") + " dal mazzo, che resta vuoto.", ok: "Svuota",
       onOk: function () { d.cards = {}; d.upd = Date.now(); saveDecks(); render(); } });
   }
   function cfmDelDeck(d, after) {
     var n = deckN(d);
-    askConfirm({ title: ["Eliminare ", d.name, "?"], count: n ? (n === 1 ? "1 carta" : n + " carte") : "Mazzo vuoto", pics: deckPics(d),
-      text: "Il mazzo viene cancellato per sempre. La tua collezione non cambia.", ok: "Elimina mazzo",
+    askConfirm({ title: ["Eliminare ", d.name, "?"],
+      text: "Il mazzo viene cancellato per sempre. La collezione non cambia.", ok: "Elimina",
       onOk: function () { decks = decks.filter(function (x) { return x !== d; }); saveDecks(); st.deckId = null; if (after) after(); render(); } });
   }
   var statsReady = false;
