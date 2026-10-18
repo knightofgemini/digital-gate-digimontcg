@@ -291,32 +291,36 @@ html.lock, html.lock body { overflow: hidden; overscroll-behavior: none; }
 .pline.pna .pval { color: var(--ink-2); font-weight: 500; }
 .rside { display: flex; flex-direction: column; align-items: stretch; gap: 6px; min-width: 0; }
 .rside .pline { margin-top: 0; }
-.pbox .pmain { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
-.pbox .phead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.pbox .pshop { display: flex; align-items: center; gap: 8px; font: 600 .95rem var(--font-body); min-width: 0; }
-.pbox .pshop .cmk { width: 20px; height: 20px; }
-.pbox .ptr { text-align: right; }
-.pbox .ptr span { display: block; font-size: .66rem; color: var(--ink-2); }
-.pbox .pbig { font: 700 1.3rem var(--font-display); color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.pbox .pbig small { font-size: .7em; color: var(--ink-2); font-weight: 600; margin-left: 2px; }
-.pbox .pgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+.pbox { margin: 10px 0 12px; }
+.pbox .pmain { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.pbox .pmain > * + * { border-top: 1px solid var(--line); }
+.pbox .prow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto 18px; align-items: center; gap: 8px; padding: 10px 12px; }
+.pbox .pshop { display: flex; align-items: center; gap: 8px; min-width: 0; font: 600 .92rem var(--font-body); }
+.pbox .pshop .cmk, .pbox .pshop .ctk { width: 20px; height: 20px; }
+.pbox .pname { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pbox .pval2 { font: 700 1.05rem var(--font-display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pbox .pval2.na { color: var(--ink-2); font-weight: 500; }
+.pbox .ptag { font: 700 .6rem var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); border: 1px solid var(--line); border-radius: 5px; padding: 3px 6px; line-height: 1; min-width: 4.6em; text-align: center; }
+.pbox .ptag.off { visibility: hidden; }
+.pbox details > summary { list-style: none; cursor: pointer; }
+.pbox details > summary::-webkit-details-marker { display: none; }
+.pbox details > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.pbox .pchev { width: 18px; height: 18px; background: var(--ink-2); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat; transition: transform .2s; }
+.pbox .pchev.off { visibility: hidden; }
+.pbox details[open] .pchev { transform: rotate(180deg); }
+.pbox .pgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 0 12px; }
 .pbox .pc { display: flex; justify-content: space-between; gap: 8px; padding: 6px 8px; border-radius: 8px; background: var(--surface-2); font-size: .78rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .pbox .pc b { color: var(--ink); font-weight: 600; white-space: nowrap; }
-.fx.pbox p.pnote { background: none; border: 0; padding: 6px 2px 0; font-size: .72rem; color: var(--ink-2); }
-.fx.pbox p.pnone { font-size: .86rem; }
+.fx.pbox p.pnote { background: none; border: 0; padding: 6px 12px 10px; margin: 0; font-size: .72rem; color: var(--ink-2); }
 .pline.wide { grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; padding: 10px 12px; border-radius: 10px; font-size: 1rem; margin-top: 8px; }
 .pline.wide .cmk { width: 22px; height: 22px; }
 .pline.wide .ptag { font-size: .7rem; padding: 4px 8px; border-radius: 6px; letter-spacing: .08em; text-transform: uppercase; }
-.sgrid .sl .pbox { margin-top: 14px; }
 .alt .pline { justify-self: center; width: 100%; }
 .ctk { display: inline-block; flex: none; width: 16px; height: 16px; }
 .ctk svg { display: block; width: 100%; height: 100%; }
 .pline.wide .ctk { width: 22px; height: 22px; }
 .pline + .pline { margin-top: 4px; }
 .pline.wide + .pline.wide { margin-top: 6px; }
-.pbox .pmain + .pmain { margin-top: 8px; }
-.pbox .pshop .ctk { width: 20px; height: 20px; }
-.fx.pbox p.pct { margin: 8px 0 0; padding: 0; background: none; border: 0; font-size: .74rem; color: var(--ink-2); }
 body.desk .alts .alt .pline { grid-template-columns: 13px minmax(0, 1fr) auto; gap: 4px; padding: 4px 5px; font-size: .74rem; }
 body.desk .alts .alt .pline .cmk, body.desk .alts .alt .pline .ctk { width: 13px; height: 13px; }
 body.desk .alts .alt .pline .pval { overflow: hidden; }
@@ -1641,42 +1645,45 @@ body.mob .hrow { grid-template-columns: minmax(0, 1fr); margin-top: 22px; }
   }
   // righe prezzo di tutti i negozi, una sotto l'altra
   function priceLines(c, wide) { return [priceLine(c, wide), ctLine(c, wide)].filter(Boolean); }
+  // Riquadro prezzi compatto della scheda carta: una riga per negozio; i dettagli Cardmarket si aprono a richiesta
+  var cmDetOpen = false;
   function priceBox(c) {
     if (!priceCovered(c) && !ctCovered(c)) return null;
-    var b = el("div", "fx pbox"); b.appendChild(el("h3", "", "Prezzo"));
-    var cmb = cmBox(c); if (cmb) b.appendChild(cmb);
-    var ctb = ctBox(c); if (ctb) b.appendChild(ctb);
-    var note = [];
-    if (priceCovered(c)) note.push("Cardmarket: guida prezzi del " + fmtDate(PRICES.d) + ", dati aggregati che non distinguono lingua o condizione.");
-    if (ctCovered(c)) note.push("CardTrader: offerte in vendita il " + fmtDate(CTP.d) + ", solo carte in inglese Near Mint.");
-    b.appendChild(el("p", "pnote", note.join(" ")));
+    var b = el("div", "fx pbox"), box = el("div", "pmain");
+    if (priceCovered(c)) box.appendChild(cmRow(c));
+    if (ctCovered(c)) box.appendChild(ctRow(c));
+    b.appendChild(box);
     return b;
   }
-  function ctBox(c) {
-    if (!ctCovered(c)) return null;
-    var p = ctOf(c), m = el("div", "pmain"), hd = el("div", "phead"), shop = el("div", "pshop");
-    shop.appendChild(ctMark()); shop.appendChild(el("span", "", "CardTrader")); hd.appendChild(shop); m.appendChild(hd);
-    if (!p || p[0] == null) { m.appendChild(el("p", "pct", "Nessuna offerta in inglese Near Mint al momento.")); return m; }
-    var tr = el("div", "ptr"), big = el("b", "pbig");
-    tr.appendChild(el("span", "", "Minimo · EN · NM"));
-    big.textContent = eurN(p[0]); big.appendChild(el("small", "", "€")); tr.appendChild(big); hd.appendChild(tr);
-    m.appendChild(el("p", "pct", p[1] === 1 ? "1 offerta in inglese Near Mint tra le più economiche" : p[1] + " offerte in inglese Near Mint tra le più economiche"));
-    return m;
+  function prRow(mark, name, val, tag) {
+    var r = el("div", "prow"), sh = el("span", "pshop");
+    sh.appendChild(mark); sh.appendChild(el("span", "pname", name)); r.appendChild(sh);
+    r.appendChild(el("b", "pval2" + (val == null ? " na" : ""), val == null ? "N/D" : eurN(val) + " €"));
+    r.appendChild(el("span", "ptag" + (val == null || !tag ? " off" : ""), val == null ? "" : tag));
+    return r;
   }
-  function cmBox(c) {
-    if (!priceCovered(c)) return null;
-    var p = priceOf(c), m = el("div", "pmain"), hd = el("div", "phead"), shop = el("div", "pshop");
-    shop.appendChild(cmMark()); shop.appendChild(el("span", "", "Cardmarket")); hd.appendChild(shop); m.appendChild(hd);
-    if (!p) { m.appendChild(el("p", "pct", "Prezzo non disponibile: questa versione non è stata abbinata con certezza al prodotto giusto su Cardmarket.")); return m; }
-    var tr = el("div", "ptr"), big = el("b", "pbig"), useLow = p[0] == null && p[1] != null;
-    tr.appendChild(el("span", "", useLow ? "Offerta più bassa" : "Trend Cardmarket"));
-    big.textContent = eurN(useLow ? p[1] : p[0]); big.appendChild(el("small", "", "€")); tr.appendChild(big); hd.appendChild(tr);
+  function cmRow(c) {
+    var p = priceOf(c), useLow = p && p[0] == null && p[1] != null;
+    var row = prRow(cmMark(), "Cardmarket", p ? (useLow ? p[1] : p[0]) : null, useLow ? "Minimo" : "Trend");
+    var chev = el("span", "pchev"); chev.setAttribute("aria-hidden", "true"); row.appendChild(chev);
+    if (!p) { chev.classList.add("off"); row.title = "Questa versione non è stata abbinata con certezza al prodotto giusto su Cardmarket"; return row; }
+    var d = document.createElement("details"); d.className = "cmdet"; d.open = cmDetOpen;
+    var sm = document.createElement("summary"); sm.setAttribute("aria-label", "Dettagli prezzo Cardmarket"); sm.appendChild(row); d.appendChild(sm);
+    d.addEventListener("toggle", function () { cmDetOpen = d.open; });
     var g = el("div", "pgrid");
     [["Più basso", p[1]], ["Media 1 g", p[2]], ["Media 7 g", p[3]], ["Media 30 g", p[4]]].forEach(function (x) {
       var r = el("div", "pc"); r.appendChild(el("span", "", x[0])); r.appendChild(el("b", "", eur(x[1]))); g.appendChild(r);
     });
-    m.appendChild(g);
-    return m;
+    d.appendChild(g);
+    d.appendChild(el("p", "pnote", "Guida prezzi del " + fmtDate(PRICES.d) + ": dati aggregati che non distinguono lingua o condizione."));
+    return d;
+  }
+  function ctRow(c) {
+    var p = ctOf(c), has = p && p[0] != null;
+    var row = prRow(ctMark(), "CardTrader", has ? p[0] : null, "Minimo");
+    var sp = el("span", "pchev off"); sp.setAttribute("aria-hidden", "true"); row.appendChild(sp);
+    row.title = has ? "Offerta più bassa in inglese Near Mint (" + (p[1] === 1 ? "1 offerta" : p[1] + " offerte") + "), " + fmtDate(CTP.d) : "Nessuna offerta in inglese Near Mint al momento";
+    return row;
   }
 
   // ---- Scheda prodotto: caratteristiche dal sito ufficiale Bandai (src/products.json, da tools/fetch_products.py)
@@ -2581,7 +2588,6 @@ body.mob .hrow { grid-template-columns: minmax(0, 1fr); margin-top: 22px; }
       d3.appendChild(rich(el("b", "l"), ex.spec.join(" • "))); stats.appendChild(d3);
     }
     if (stats.children.length) sh.appendChild(stats);
-    var pbx = priceBox(c); if (pbx) sh.appendChild(pbx);
     var ace = ex.ace.map(function (l) {
       var m = l.match(/Overflow\s*＜(-\d+)＞/);
       return m ? "⟦Overflow " + m[1] + "⟧ " + ((c.x && c.x.o) || "(As this card moves from the battle area or under a card to another area, lose " + m[1].slice(1) + " memory.)") : l;
@@ -2605,6 +2611,7 @@ body.mob .hrow { grid-template-columns: minmax(0, 1fr); margin-top: 22px; }
     }
     own.appendChild(oq);
     sh.appendChild(own);
+    var pbx = priceBox(c); if (pbx) sh.appendChild(pbx);
     var alts = altsOf(c).filter(function (a) { return a.k !== c.k; });
     if (c.suf) alts.unshift(c.__proto__ && c.__proto__.code === c.code && !c.__proto__.suf ? c.__proto__ : null);
     alts = alts.filter(Boolean).filter(function (a) { return a.k !== c.k; });
@@ -2662,9 +2669,10 @@ body.mob .hrow { grid-template-columns: minmax(0, 1fr); margin-top: 22px; }
       var ob = el("div", "mown");
       kids.forEach(function (k) { if (k.classList.contains("own")) ob.appendChild(k); });
       p1.appendChild(ob);
+      kids.forEach(function (k) { if (k.classList.contains("pbox")) p1.appendChild(k); });
       // 3) dati ed effetti
       kids.forEach(function (k) {
-        if (k === art || k.classList.contains("own") || k.classList.contains("altsec")) return;
+        if (k === art || k.classList.contains("own") || k.classList.contains("pbox") || k.classList.contains("altsec")) return;
         p1.appendChild(k);
       });
       if (preSec) p1.appendChild(preSec);
@@ -2722,7 +2730,7 @@ body.mob .hrow { grid-template-columns: minmax(0, 1fr); margin-top: 22px; }
       var sg = el("div", "sgrid"), sL = el("div", "sl"), sR = el("div", "sr");
       Array.prototype.slice.call(sh.children).forEach(function (k) {
         if (k === hint || k === head || k.classList.contains("sep")) return;
-        (k.classList.contains("art") || k.classList.contains("altsec") || k.classList.contains("pbox") ? sL : sR).appendChild(k);
+        (k.classList.contains("art") || k.classList.contains("altsec") || k.classList.contains("pbox") || k.classList.contains("own") ? sL : sR).appendChild(k);
       });
       sg.appendChild(sL); sg.appendChild(sR); sh.appendChild(sg);
     }
