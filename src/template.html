@@ -2945,18 +2945,22 @@ body.mob.kbd .mbot.on::after { display: none; }
     p.insertBefore(document.createTextNode("\n"), p.firstChild); p.insertBefore(h, p.firstChild);
     return f;
   }
-  // le keyword iniziali (＜Raid＞ ＜Blocker＞ ...), una per riga nel testo, vanno tutte su una riga sola
+  // le righe fatte solo di keyword (＜Raid＞ ＜Blocker＞ ...), una per riga nel testo, vanno tutte su una riga sola,
+  // ovunque si trovino nell'effetto (non solo all'inizio, es. dopo [Hand] [Counter] ＜Blast Digivolve＞)
   function kwJoin(text) {
-    var ls = String(text).split("\n"), i = 0;
-    while (i < ls.length && /^\s*(＜[^＞]+＞\s*)+$/.test(ls[i])) i++;
-    if (i < 2) return text;
-    return [ls.slice(0, i).map(function (s) { return s.trim(); }).join(" ")].concat(ls.slice(i)).join("\n");
+    var out = [], run = [];
+    String(text).split("\n").forEach(function (l) {
+      if (/^\s*(＜[^＞]+＞\s*)+$/.test(l)) { run.push(l.trim()); return; }
+      if (run.length) { out.push(run.join(" ")); run = []; }
+      out.push(l);
+    });
+    if (run.length) out.push(run.join(" "));
+    return out.join("\n");
   }
-  // la spiegazione tra parentesi dopo una keyword (es. ＜Alliance＞ (When this Digimon attacks…)) non si mostra:
-  // come per tutte le altre keyword, si legge toccando la keyword
+  // la spiegazione tra parentesi dopo ＜Alliance＞ e ＜Arts Digivolve＞ non si mostra: come per le altre keyword,
+  // si legge toccando la keyword (Use Req. e Overflow invece la tengono, scelta dell'utente)
   function kwNoRem(text) {
-    return String(text).replace(/(＜[^＞\n]+＞)[ \t]*\((?:[^()\n]|\([^()\n]*\))*\)/g, function (all, kw) { return kwInfo(kw.slice(1, -1)) ? kw : all; })
-      .replace(/(⟦[^⟧\n]+⟧)[ \t]*\((?:[^()\n]|\([^()\n]*\))*\)/g, "$1");
+    return String(text).replace(/(＜(?:Alliance|Arts Digivolve)＞)[ \t]*\((?:[^()\n]|\([^()\n]*\))*\)/g, "$1");
   }
   function fx(title, text) {
     if (!text) return null;
