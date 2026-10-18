@@ -1020,6 +1020,8 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
 .dkq #q { width: 100%; }
 .dkfine { flex: none; height: 46px; padding: 0 8px 0 10px; border: 0; background: none; color: var(--cyan); font: 700 1rem var(--font-display); cursor: pointer; }
 .dkmf { flex: none; }
+.dkchips:not(:empty) { margin-top: 8px; flex: none; }
+.dkhd .mbf { width: 46px; height: 46px; box-shadow: none; }
 .dkbody { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 10px 0 calc(16px + env(safe-area-inset-bottom, 0px)); }
 .dkinfo2 { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 8px; font: 600 .7rem var(--font-display); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
 /* Informazioni a sezioni */
@@ -2955,7 +2957,9 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     if (st.cost) a.push(["cost", "Costo " + st.cost]);
     return a;
   }
-  function drawMbot(hasF) {
+  function drawMbot(hasF) { drawFlt(mbotChips, mbotFbtn, hasF); document.body.classList.toggle("hasmbotc", hasF && fltActive().length > 0); }
+  function drawFlt(chipsEl, fbtn, hasF) {
+    var mbotChips = chipsEl, mbotFbtn = fbtn;
     var act = hasF ? fltActive() : [];
     mbotChips.innerHTML = "";
     act.forEach(function (f) {
@@ -2970,7 +2974,6 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     mbotFbtn.innerHTML = FICO + (act.length ? '<span class="mbn">' + act.length + "</span>" : "");
     mbotFbtn.setAttribute("aria-label", "Filtri" + (act.length ? ": " + act.length + (act.length === 1 ? " attivo" : " attivi") : ""));
     mbotFbtn.setAttribute("aria-expanded", String(!!st.mfs));
-    document.body.classList.toggle("hasmbotc", !!act.length);
   }
   // telefono: se la tastiera è aperta, appena si scorre con il dito fuori dal campo si chiude
   (function () {
@@ -2990,8 +2993,8 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     vv.addEventListener("resize", kb); vv.addEventListener("scroll", kb);
   })();
   function placeSearch(mode) {
-    if (mode === "deck") dkSheetBuild(); if (mode === "bottom") mbotBuild();
-    var tq = mode === "prod" ? psearch : mode === "deck" ? dkQSlot : mode === "bottom" ? mbotQ : null, tf = mode === "prod" ? psearch : mode === "deck" ? dkMfSlot : mode === "bottom" ? mfsBody : null;
+    if (mode === "deck") { dkSheetBuild(); mbotBuild(); } if (mode === "bottom") mbotBuild();
+    var tq = mode === "prod" ? psearch : mode === "deck" ? dkQSlot : mode === "bottom" ? mbotQ : null, tf = mode === "prod" ? psearch : mode === "deck" ? mfsBody : mode === "bottom" ? mfsBody : null;
     if (tq) { if (qi.parentNode !== tq) { tq.appendChild(qi); tf.appendChild(mfbarEl); } }
     else if (qi.parentNode === psearch || (dkQSlot && qi.parentNode === dkQSlot) || (mbotQ && qi.parentNode === mbotQ)) { var w = document.querySelector(".bar .wrap"); w.insertBefore(qi, document.getElementById("qmodes")); w.insertBefore(mfbarEl, chips); }
   }
@@ -3009,7 +3012,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     var dkM = dkEd && !!st.dkSheet;
     // telefono: nelle sezioni con ricerca il campo sta in basso, sopra la barra di navigazione
     var botM = !DESK && !dkEd && !isUp && (st.tab === "cards" || (isSets && !isSoon));
-    if (st.mfs && !botM) { st.mfs = false; if (history.state && history.state.ov === "mfsheet") replaceNext = true; }
+    if (st.mfs && !botM && !dkM) { st.mfs = false; if (history.state && history.state.ov === "mfsheet") replaceNext = true; }
     LASTN = -1;
     var dkNoSearch = !DESK && isDeck && st.deckId && !dkM;
     var noF = isSets || isHome || isUp || sideF || dkNoSearch;
@@ -3037,10 +3040,11 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     if (DESK) { menuEl.setAttribute("aria-hidden", "false"); drawMenu(); }
     barEl.classList.toggle("empty-m", !DESK && ((qi.hidden && chips.hidden) || prodM || dkM || (botM && chips.hidden)));
     if (mbotEl) {
-      var hasF = botM && !document.getElementById("mfbar").hidden;
-      if (st.mfs && !hasF) st.mfs = false;
+      var mfOn = !document.getElementById("mfbar").hidden, hasF = botM && mfOn, hasFd = dkM && mfOn;
+      if (st.mfs && !hasF && !hasFd) st.mfs = false;
       mbotEl.classList.toggle("on", botM); mfsEl.classList.toggle("on", !!st.mfs); mfsScrim.classList.toggle("on", !!st.mfs);
       drawMbot(hasF);
+      if (dkFbtn) drawFlt(dkMfSlot, dkFbtn, hasFd);
     }
     document.body.classList.toggle("hasmbot", botM);
     drawTabbar(); if (!DESK) drawMfbar();
@@ -3440,7 +3444,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
   // ---- Editor del mazzo sul telefono: il mazzo in pile per livello (scorrimento verticale), curva che porta al livello,
   // "+ Aggiungi" per livello e barra "Cerca e aggiungi carte" che aprono il foglio di ricerca dal basso (st.dkSheet: 0 chiuso, 1 metà, 2 alto)
   function dkView() { return st.dkView === "stats" ? "stats" : "deck"; }
-  var dkSheetEl = null, dkQSlot = null, dkMfSlot = null, dkBody = null;
+  var dkSheetEl = null, dkQSlot = null, dkMfSlot = null, dkBody = null, dkFbtn = null;
   try { st.dkVw = localStorage.getItem("dg-dkview") === "grid" ? "grid" : "list"; } catch (e) { st.dkVw = "list"; }
   function dkSheetBuild() {
     if (dkSheetEl) return;
@@ -3448,8 +3452,9 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     var hb = el("button", "dkhandle"); hb.type = "button"; hb.setAttribute("aria-label", "Ingrandisci o riduci la ricerca"); hb.appendChild(el("i"));
     hb.onclick = function () { st.dkSheet = st.dkSheet === 2 ? 1 : 2; render(); };
     var hd = el("div", "dkhd"); dkQSlot = el("div", "dkq"); hd.appendChild(dkQSlot);
+    dkFbtn = el("button", "mbf"); dkFbtn.type = "button"; dkFbtn.onclick = function () { if (document.activeElement === qi) qi.blur(); openMfs(); }; hd.appendChild(dkFbtn);
     var fine = el("button", "dkfine", "Fine"); fine.type = "button"; fine.onclick = function () { closeDkSheet(); }; hd.appendChild(fine);
-    dkMfSlot = el("div", "dkmf"); dkBody = el("div", "dkbody");
+    dkMfSlot = el("div", "mbchips dkchips"); dkBody = el("div", "dkbody");
     dkSheetEl.appendChild(hb); dkSheetEl.appendChild(hd); dkSheetEl.appendChild(dkMfSlot); dkSheetEl.appendChild(dkBody);
     // trascinando la maniglia: in su si allarga, in giù si riduce o si chiude
     var y0 = null;
@@ -3462,6 +3467,15 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
       });
     });
     document.body.appendChild(dkSheetEl);
+  }
+  // inquadra la pila toccata con, sotto, la sua barra −/+ (nella parte di schermo non coperta dal foglio o dalla barra in basso)
+  function dkFrame() {
+    requestAnimationFrame(function () {
+      var p = document.querySelector(".dkpile.dksel-on"), b = document.querySelector(".dksel"); if (!p) return;
+      var top = p.getBoundingClientRect().top, bot = (b || p).getBoundingClientRect().bottom;
+      var free = st.dkSheet && dkSheetEl ? dkSheetEl.getBoundingClientRect().top : window.innerHeight - 140;
+      if (top < 64 || bot > free - 8) window.scrollTo({ top: top + window.pageYOffset - 70, behavior: "smooth" });
+    });
   }
   // porta in vista la prima carta del mazzo (sopra il foglio di ricerca)
   function dkToFirst() {
@@ -3519,7 +3533,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
         for (var i = 0; i < Math.min(q, 4); i++) { var pc = picBox("dkc", "t", c); pc.style.background = gradient(c.colors, "to bottom"); p.appendChild(pc); }
         p.appendChild(el("span", "dkn", "×" + q));
         if (st.dkNew === c.k) p.appendChild(el("span", "dknew", "Nuova"));
-        p.onclick = function () { st.dkSel = sel ? null : c.k; st.dkNew = null; render(); };
+        p.onclick = function () { st.dkSel = sel ? null : c.k; st.dkNew = null; render(); if (!sel) dkFrame(); };
         pl.appendChild(p);
       });
       sec.appendChild(pl);
@@ -3551,6 +3565,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     info.appendChild(lab); info.appendChild(vt); dkBody.appendChild(info);
     if (!filt) { st.view = sv; lab.textContent = "Cerca una carta"; dkBody.appendChild(el("p", "hint dnote", "Scrivi un nome, un codice o una parola dell'effetto, oppure scegli colore e tipo nei menù. Il + aggiunge la carta al mazzo e la vedi comparire nella sua pila.")); return; }
     var list = CARDS.filter(function (c) { return deckable(c) && cardMatches(c, q); });
+    LASTN = list.length;
     if (q) list = list.map(function (c, j) { return { c: c, j: j, r: relevance(c, q) }; }).sort(function (a, b2) { return (a.r - b2.r) || (a.j - b2.j); }).map(function (o) { return o.c; });
     lab.textContent = list.length + (list.length === 1 ? " carta trovata" : " carte trovate");
     if (!list.length) dkBody.appendChild(el("p", "empty", "Nessuna carta corrisponde alla ricerca."));
