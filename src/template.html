@@ -236,6 +236,24 @@ html.lock, html.lock body { overflow: hidden; overscroll-behavior: none; }
 .ico.tagb { background: var(--surface-2); color: var(--ink); }
 .ico.kw { background: linear-gradient(#d8661f, #a2400c); border-radius: 0; padding: .08em .75em; clip-path: polygon(.45em 0, calc(100% - .45em) 0, 100% 50%, calc(100% - .45em) 100%, .45em 100%, 0 50%); }
 .ico.trt { background: #fff; color: #000; }
+/* keyword toccabili: popup con la spiegazione della regola */
+.ico.kwlink { cursor: pointer; }
+.fx .ico.kw { white-space: normal; max-width: calc(100% - .2em); box-sizing: border-box; }
+.kwtx .ico.trt, .kwtx .ico.ocol.oc-white { box-shadow: inset 0 0 0 1px var(--line); }
+.ico.kwlink:hover { filter: brightness(1.12); }
+.ico.kwlink:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.kwlay { position: fixed; inset: 0; z-index: 320; }
+.kwpop { position: fixed; width: min(340px, calc(100vw - 24px)); box-sizing: border-box; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px 13px; box-shadow: 0 16px 44px rgba(0,0,0,.35); animation: kwin .14s ease-out; outline: none; }
+.kwpop.up { transform-origin: 50% 100%; }
+.kwpop.dn { transform-origin: 50% 0; }
+.kwhd { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.kwhd .ico { font-size: .95rem; }
+.kwtx { margin: 0; font-size: .92rem; line-height: 1.5; color: var(--ink); white-space: normal; }
+.kwar { position: absolute; width: 12px; height: 12px; background: var(--surface); border: 1px solid var(--line); transform: translateX(-50%) rotate(45deg); }
+.kwpop.dn .kwar { top: -7px; border-right: 0; border-bottom: 0; }
+.kwpop.up .kwar { bottom: -7px; border-left: 0; border-top: 0; }
+@keyframes kwin { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .kwpop { animation: none; } }
 .stat.wide { grid-column: 1 / -1; }
 .alts { display: flex; flex-direction: column; align-items: center; gap: 14px; }
 .altsec { margin-top: 26px; }
@@ -2796,9 +2814,114 @@ body.mob.kbd .mbot.on::after { display: none; }
       if (!(i % 2)) { colText(target, part); return; }
       var inner = part.slice(1, -1).replace(/\u00a0/g, " "), cls = part.charAt(0) === "⟦" ? "ovf" : part.charAt(0) === "＜" ? (/^Arts Digivolve/.test(inner) ? "grn" : "kw") : iconClass(inner);
       var b = el("span", "ico " + cls, inner); b.title = part; target.appendChild(b);
+      if ((cls === "kw" || cls === "ovf" || /^Arts Digivolve/.test(inner)) && kwInfo(inner)) kwWire(b, inner);
     });
     return target;
   }
+  // ---- Spiegazione delle keyword: toccando ＜Raid＞, ＜Security A. +1＞... si apre un popup con la regola in italiano,
+  // adattata ai valori scritti sulla carta (numeri, colori, tratti). Testi basati sui promemoria ufficiali (ottobre 2026).
+  function kwN(n, s, p) { n = Math.abs(+n); return n + " " + (n === 1 ? s : p); }
+  function kwArg(inner, name) { var a = inner.slice(name.length).trim(); return a.replace(/\)\/\(/g, "/").replace(/^\((.*)\)$/, "$1").trim(); }
+  function kwInfo(inner) {
+    var k = String(inner).replace(/ /g, " ").trim(), m, a;
+    if ((m = k.match(/^Security A\.\s*([+-])\s*(\d+)\}?$/))) {
+      return m[1] === "+" ? "Quando attacca il giocatore avversario, questo Digimon controlla " + kwN(m[2], "carta", "carte") + " della sicurezza in più (normalmente se ne controlla 1, quindi qui " + (1 + +m[2]) + ")."
+        : "Quando attacca il giocatore avversario, questo Digimon controlla " + kwN(m[2], "carta", "carte") + " della sicurezza in meno. Se il numero di controlli scende a 0 o meno, non ne controlla nessuna.";
+    }
+    if (/^Security A\.\s*[+-]?$/.test(k)) return "Security Attack indica quante carte della sicurezza controlla un Digimon quando attacca il giocatore avversario: con + ne controlla di più, con − di meno (normalmente 1).";
+    if ((m = k.match(/^Draw (\d+)$/))) return "Pesca " + kwN(m[1], "carta", "carte") + " dal tuo mazzo.";
+    if ((m = k.match(/^De-Digivolve (\d+)$/))) return "Scarta la carta in cima a 1 Digimon avversario, " + (+m[1] === 1 ? "una volta" : "fino a " + m[1] + " volte") + ". Non si può andare oltre le carte di livello 3: quando in cima c'è una carta di livello 3 ci si ferma.";
+    if (k === "De-Digivolve") return "Scarta la carta in cima a un Digimon avversario, tante volte quante indica il numero. Non si può andare oltre le carte di livello 3: quando in cima c'è una carta di livello 3 ci si ferma.";
+    if ((m = k.match(/^Recovery \+(\d+)(\s*\(Deck\))?$/))) return "Metti " + (+m[1] === 1 ? "la prima carta" : "le prime " + m[1] + " carte") + " del tuo mazzo in cima alla tua sicurezza.";
+    if ((m = k.match(/^Digi-Burst (up to )?(\d+)$/))) return "Puoi scartare " + (m[1] ? "fino a " : "") + kwN(m[2], "carta", "carte") + " tra le carte digievoluzione di questo Digimon per attivare l'effetto scritto sotto.";
+    if (k === "Digi-Burst") return "Puoi scartare il numero indicato di carte digievoluzione di questo Digimon per attivare l'effetto scritto sotto.";
+    if ((m = k.match(/^Material Save (\d+)$/))) return "Quando questo Digimon sta per essere eliminato, puoi mettere sotto 1 dei tuoi Tamer " + kwN(m[1], "carta", "carte") + " tra le sue carte digievoluzione che fanno parte dei suoi requisiti DigiXros.";
+    if ((m = k.match(/^Fragment \((\d+)\)$/))) return "Quando questo Digimon sta per essere eliminato, puoi scartare " + kwN(m[1], "carta", "carte") + " qualsiasi tra le sue carte digievoluzione: così non viene eliminato.";
+    if ((m = k.match(/^Link \+(\d+)$/))) return "Aumenta di " + m[1] + " il numero massimo di carte Link che questo Digimon può avere. Normalmente un Digimon ne può avere 1, quindi questo fino a " + (1 + +m[1]) + ".";
+    if ((m = k.match(/^Digisorption -(\d+)$/))) return "Quando uno dei tuoi Digimon sta per digievolvere in questa carta dalla mano, puoi sospendere 1 dei tuoi Digimon per ridurre di " + m[1] + " il costo in memoria della digievoluzione.";
+    if (k === "Digisorption") return "Quando uno dei tuoi Digimon sta per digievolvere in questa carta dalla mano, puoi sospendere 1 dei tuoi Digimon per ridurre il costo in memoria della digievoluzione del valore indicato.";
+    if ((m = k.match(/^(?:Overflow\s*)?-(\d+)$/))) return "Quando questa carta lascia il campo, o da sotto un'altra carta passa in un'area diversa da queste, perdi " + m[1] + " memoria. Non succede quando entra in campo o viene messa sotto una carta.";
+    if (/^Decode\b/.test(k)) { a = kwArg(k, "Decode"); return "Quando questo Digimon sta per lasciare l'area di battaglia (non in battaglia), puoi giocare senza pagarne il costo 1 delle sue carte digievoluzione" + (a ? " che corrisponde a: " + a + "." : " indicata dall'effetto."); }
+    if (/^Decoy\b/.test(k)) {
+      a = kwArg(k, "Decoy");
+      var who = /trait$/.test(a) ? "Digimon con il tratto " + a.replace(/\s*trait$/, "").replace(/ or /g, " o ") : "Digimon " + a.split("/").join(" o ");
+      return "Quando un altro tuo " + who + " sta per essere eliminato da un effetto dell'avversario, puoi eliminare questo Digimon per salvarne 1.";
+    }
+    if (/^Partition\b/.test(k)) { a = kwArg(k, "Partition"); return "Se questo Digimon ha tra le carte digievoluzione ciascuna delle carte indicate (" + a + ") e sta per lasciare l'area di battaglia, non per un tuo effetto né in battaglia, puoi giocare 1 carta di ciascun tipo indicato senza pagarne i costi."; }
+    if (/^Overclock\b/.test(k)) { a = kwArg(k, "Overclock").replace(/\s*Trait$/i, ""); return "Alla fine del tuo turno, eliminando 1 tuo Token o 1 altro tuo Digimon" + (a ? " con il tratto " + a : " del tratto indicato") + ", questo Digimon attacca un giocatore senza sospendersi."; }
+    if (/^Use Req\./.test(k)) { a = kwArg(k, "Use Req."); return "Puoi usare questa carta ignorando i requisiti di colore se hai in gioco le carte indicate: " + a + ". Normalmente per usare una Option serve avere in gioco un Digimon o un Tamer del suo colore."; }
+    if (/^Detach\b/.test(k)) { a = kwArg(k, "Detach").replace(/\s*trait$/, ""); return "Quando questo Digimon sta per lasciare l'area di battaglia, non per un tuo effetto, puoi scartare 1 delle sue carte Link" + (a ? " con il tratto " + a : " indicate") + ": così resta in campo."; }
+    if (/^Succession\b/.test(k)) { a = kwArg(k, "Succession"); return "Questo Digimon ottiene tutti gli effetti, tranne ＜Succession＞, della carta indicata (" + a + ") che si trova più in alto tra le sue carte digievoluzione."; }
+    if (/^Blast DNA Digivolve\b/.test(k)) { a = kwArg(k, "Blast DNA Digivolve"); return "1 dei tuoi Digimon indicati e 1 carta indicata nella tua mano (" + a + ") possono fare la DNA Digivolve in questa carta. Si usa dalla mano nel momento del Counter, cioè quando un Digimon avversario attacca."; }
+    var FIX = {
+      "Blocker": "Nel momento del blocco, quando un Digimon avversario attacca, puoi sospendere questo Digimon per bloccare: diventa lui il bersaglio dell'attacco.",
+      "Piercing": "Quando questo Digimon attacca un Digimon avversario, lo elimina e sopravvive alla battaglia, controlla comunque le carte della sicurezza che controllerebbe normalmente.",
+      "Reboot": "Questo Digimon si riattiva (torna non sospeso) anche durante la fase di riattivazione dell'avversario.",
+      "Save": "Puoi mettere questa carta sotto 1 dei tuoi Tamer.",
+      "Delay": "Dal turno successivo a quello in cui l'hai messa in campo, puoi scartare questa carta per attivare l'effetto scritto sotto.",
+      "Jamming": "Questo Digimon non può essere eliminato nelle battaglie contro i Digimon della sicurezza.",
+      "Rush": "Questo Digimon può attaccare nel turno in cui entra in gioco.",
+      "Retaliation": "Quando questo Digimon viene eliminato perché ha perso una battaglia, elimina anche il Digimon contro cui stava combattendo.",
+      "Alliance": "Quando questo Digimon attacca, puoi sospendere 1 dei tuoi altri Digimon: per quell'attacco questo Digimon aggiunge ai suoi i DP del Digimon sospeso e ottiene ＜Security A. +1＞.",
+      "Raid": "Quando questo Digimon attacca, puoi spostare l'attacco su 1 Digimon avversario non sospeso con i DP più alti.",
+      "Barrier": "Quando questo Digimon sta per essere eliminato in battaglia, puoi scartare la carta in cima alla tua sicurezza: così non viene eliminato.",
+      "Blast Digivolve": "1 dei tuoi Digimon può digievolvere in questa carta senza pagarne il costo. Si usa dalla mano nel momento del Counter, cioè quando un Digimon avversario attacca.",
+      "Armor Purge": "Quando questo Digimon sta per essere eliminato, puoi scartare la sua carta in cima: così non viene eliminato.",
+      "Collision": "Durante l'attacco di questo Digimon, tutti i Digimon avversari ottengono ＜Blocker＞ e l'avversario deve bloccare, se può.",
+      "Fortitude": "Quando questo Digimon viene eliminato mentre ha carte digievoluzione, gioca questa carta senza pagarne il costo.",
+      "Evade": "Quando questo Digimon sta per essere eliminato, puoi sospenderlo: così non viene eliminato.",
+      "Blitz": "Se il tuo avversario ha 1 o più memoria, questo Digimon può attaccare.",
+      "Training": "Nella fase principale puoi sospendere questo Digimon per mettere la prima carta del tuo mazzo, coperta, come sua carta digievoluzione più in basso. Funziona anche nell'area di allevamento.",
+      "Arts Digivolve": "Dopo averla usata come Option, invece di scartarla, una delle tue carte in campo può digievolvere in questa carta senza pagarne il costo.",
+      "Vortex": "Alla fine del tuo turno questo Digimon può attaccare un Digimon avversario, anche nel turno in cui è stato giocato.",
+      "Scapegoat": "Quando questo Digimon sta per essere eliminato, non da un tuo effetto, puoi eliminare 1 dei tuoi altri Digimon: così questo non viene eliminato.",
+      "Execute": "Alla fine del tuo turno questo Digimon può attaccare, anche un Digimon avversario non sospeso. Alla fine di quell'attacco questo Digimon viene eliminato.",
+      "Iceclad": "Nelle battaglie di questo Digimon, tranne contro i Digimon della sicurezza, si confronta il numero di carte digievoluzione invece dei DP.",
+      "Progress": "Mentre questo Digimon attacca, gli effetti dell'avversario non hanno effetto su di lui.",
+      "Mind Link": "Metti questo Tamer come carta digievoluzione più in basso del Digimon indicato, se tra le sue carte digievoluzione non c'è già una carta Tamer.",
+      "Guard": "Quando un altro tuo Digimon sta per lasciare l'area di battaglia per un effetto dell'avversario, puoi eliminare questo Digimon: così l'altro resta in campo.",
+      "Ascension": "Quando questo Digimon viene eliminato, puoi mettere questa carta in cima alla tua sicurezza.",
+      "Engage": "Alla fine del tuo turno questo Digimon può attaccare.",
+      "Decode": "Quando questo Digimon sta per lasciare l'area di battaglia (non in battaglia), puoi giocare senza pagarne il costo 1 delle sue carte digievoluzione indicate.",
+      "Overclock": "Alla fine del tuo turno, eliminando 1 tuo Token o 1 altro tuo Digimon del tratto indicato, questo Digimon attacca un giocatore senza sospendersi."
+    };
+    return FIX[k] || FIX[k.replace(/\s*\(.*$/, "")] || null;
+  }
+  var kwEl = null, kwBack = false;
+  function kwWire(b, inner) {
+    b.classList.add("kwlink"); b.setAttribute("role", "button"); b.tabIndex = 0; b.removeAttribute("title");
+    b.setAttribute("aria-label", inner + ": spiegazione della regola");
+    b.onclick = function (e) { e.stopPropagation(); e.preventDefault(); openKw(b, inner); };
+    b.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); openKw(b, inner); } };
+  }
+  function openKw(anchor, inner) {
+    var fresh = !kwEl;
+    if (fresh) {
+      kwEl = el("div", "kwlay"); kwEl.onclick = function (e) { if (e.target === kwEl) closeKw(); };
+      document.body.appendChild(kwEl); pushOverlay("kw");
+    }
+    kwEl.innerHTML = "";
+    var p = el("div", "kwpop"); p.setAttribute("role", "dialog"); p.setAttribute("aria-label", inner);
+    var hd = el("div", "kwhd"), chip = el("span", "ico " + (/^(Overflow\s*)?-\d+$/.test(inner) ? "ovf" : /^Arts Digivolve/.test(inner) ? "grn" : "kw"), /^-\d+$/.test(inner) ? "Overflow " + inner : inner.length > 24 ? inner.replace(/\s*\(.*$/, "") : inner);
+    hd.appendChild(chip); p.appendChild(hd);
+    p.appendChild(rich(el("p", "kwtx"), kwInfo(inner)));
+    var arr = el("span", "kwar"); p.appendChild(arr);
+    kwEl.appendChild(p);
+    // posizione: sotto la keyword se c'è spazio, altrimenti sopra; centrata sulla keyword e dentro lo schermo
+    var r = anchor.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight, w = p.offsetWidth, h = p.offsetHeight;
+    var x = Math.max(12, Math.min(vw - w - 12, r.left + r.width / 2 - w / 2)), below = r.bottom + 10 + h <= vh - 12 || r.top - 10 - h < 12;
+    var y = below ? Math.min(r.bottom + 10, vh - h - 12) : r.top - 10 - h;
+    p.style.left = x + "px"; p.style.top = Math.max(12, y) + "px"; p.classList.add(below ? "dn" : "up");
+    arr.style.left = Math.max(14, Math.min(w - 14, r.left + r.width / 2 - x)) + "px";
+    if (!fresh) p.style.animation = "none";
+    p.tabIndex = -1; p.focus({ preventScroll: true });
+  }
+  function closeKw(fromPop) {
+    if (!kwEl) return;
+    kwEl.remove(); kwEl = null;
+    if (!fromPop && history.state && history.state.ov === "kw") { kwBack = true; history.back(); }
+  }
+  window.addEventListener("resize", function () { if (kwEl) closeKw(); });
   // nel testo libero i colori scritti con la maiuscola (Red, Blue/Yellow...) diventano i tag colorati, con la parola com'è scritta sulla carta
   var COLRE = /(^|[^\w-])(Red|Blue|Yellow|Green|Black|Purple|White)(?![\w-])/g;
   function colText(target, s) {
@@ -3148,6 +3271,7 @@ body.mob.kbd .mbot.on::after { display: none; }
     window.scrollTo(0, 0); render();
   }
   document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && kwEl) { closeKw(); return; }
     if (e.key === "Escape" && ddPop) { var k0 = ddOpen; closeFilters(); var b0 = document.querySelector('.dd[data-k="' + k0 + '"]'); if (b0) b0.focus(); return; }
     if (e.key === "Escape" && st.open != null) closeSheet();
     // desktop: frecce della tastiera per la carta precedente/successiva
@@ -3356,6 +3480,8 @@ body.mob.kbd .mbot.on::after { display: none; }
   }, { passive: true });
   window.addEventListener("popstate", function (e) {
     var s2 = e.state || {};
+    if (kwBack) { kwBack = false; return; }
+    if (kwEl) { closeKw(true); return; }
     if (menuEl.classList.contains("open") && s2.ov !== "menu") { menuOpen(false, true); return; }
     if (st.open != null && s2.ov === "sheet" && SHSTACK.length > (s2.nest || 0)) { st.open = SHSTACK.pop(); drawSheet(); return; }
     if (st.open != null && s2.ov !== "sheet") { SHSTACK = []; st.open = null; drawSheet(); afterSheet(); return; }
