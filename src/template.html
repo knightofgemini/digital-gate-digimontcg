@@ -1011,7 +1011,8 @@ body.mob.kbd .dkbar, body.mob.dkopen .dkbar { display: none; }
 .mcurve .curve div.go { cursor: pointer; }
 body.mob .dstat .mcurve { grid-column: 1 / -1; }
 body.mob .dksheet.on { display: flex; flex-direction: column; position: fixed; left: 0; right: 0; bottom: 0; z-index: 17; height: 62vh; background: var(--bg); border-radius: 20px 20px 0 0; border-top: 1px solid var(--line); box-shadow: 0 -14px 36px rgba(0,0,0,.35); padding: 0 14px; box-sizing: border-box; }
-body.mob .dksheet.on.full, body.mob.kbd .dksheet.on { height: calc(100% - 52px - env(safe-area-inset-top, 0px)); }
+body.mob .dksheet.on.full { height: calc(100% - 52px - env(safe-area-inset-top, 0px)); }
+body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0px) - 52px)); }
 .dkhandle { flex: none; height: 26px; border: 0; background: none; display: grid; place-items: center; cursor: pointer; padding: 0; }
 .dkhandle i { display: block; width: 40px; height: 5px; border-radius: 3px; background: var(--line); }
 .dkhd { display: flex; gap: 6px; align-items: center; flex: none; }
@@ -3507,7 +3508,7 @@ body.mob .dksheet.on.full, body.mob.kbd .dksheet.on { height: calc(100% - 52px -
     });
     if (!any) {
       var e = el("div", "panel cempty"); e.appendChild(el("p", "", "Il mazzo è vuoto: cerca le carte e aggiungile con +, oppure importa una lista dal ⋯ in alto."));
-      e.appendChild(btn("Aggiungi carte", "pri", function () { openDkSheet(2, true); }, ICO_PLUS)); wrap.appendChild(e);
+      e.appendChild(btn("Aggiungi carte", "pri", function () { openDkSheet(1, false); }, ICO_PLUS)); wrap.appendChild(e);
     }
     return wrap;
   }
@@ -3592,7 +3593,7 @@ body.mob .dksheet.on.full, body.mob.kbd .dksheet.on { height: calc(100% - 52px -
       out.appendChild(dkPiles(d));
       var ab = el("div", "dkbar"), ai = el("button", "dkbarb"); ai.type = "button";
       ai.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Cerca e aggiungi carte…</span>';
-      ai.onclick = function () { st.q = ""; qi.value = ""; st.ct = st.lv = st.cost = ""; syncSelects(); openDkSheet(2, true); };
+      ai.onclick = function () { st.q = ""; qi.value = ""; st.ct = st.lv = st.cost = ""; syncSelects(); openDkSheet(1, false); };
       ab.appendChild(ai); out.appendChild(ab);
       if (st.dkSheet) {
         dkSheetResults(d);
@@ -3777,6 +3778,8 @@ body.mob .dksheet.on.full, body.mob.kbd .dksheet.on { height: calc(100% - 52px -
       if (closeFilters()) return;
       if (menuEl.classList.contains("open")) { menuOpen(false); return; }
       if (st.open != null) return;
+      if (st.mfs) { closeMfs(); return; }
+      if (st.dkSheet) { closeDkSheet(); return; }
       var atHome = st.tab === "home" && !st.setId;
       if (history.state && history.state.d > 0) { history.back(); return; }
       if (st.tab === "deck" && st.deckId) { st.deckId = null; render(); return; }
