@@ -3119,7 +3119,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
   window.addEventListener("scroll", function () {
     var y = window.pageYOffset || 0, dy = y - lastY; lastY = y;
     if (y < 60) { showBar(true); upAcc = downAcc = 0; return; }
-    if (dy > 0) { downAcc += dy; upAcc = 0; if (downAcc > 30) { showBar(false); if (document.activeElement === qi) qi.blur(); } }
+    if (dy > 0) { downAcc += dy; upAcc = 0; if (downAcc > 30) { showBar(false); if (document.activeElement === qi && barEl.contains(qi)) qi.blur(); } }
     else if (dy < 0) { upAcc -= dy; downAcc = 0; if (upAcc > 220) showBar(true); }
   }, { passive: true });
   qi.addEventListener("focus", function () { showBar(true); });
