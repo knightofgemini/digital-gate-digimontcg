@@ -230,10 +230,10 @@ html.lock, html.lock body { overflow: hidden; overscroll-behavior: none; }
 /* richiesta di conferma (svuota/elimina mazzo, svuota cronologia delle scansioni): finestra sottile al centro, senza icone */
 .cfmscrim { position: fixed; inset: 0; z-index: 960; background: rgba(6,10,20,.5); display: flex; align-items: center; justify-content: center; padding: 24px; animation: cfmfade .15s ease-out; }
 .cfmbox { width: 100%; max-width: 320px; box-sizing: border-box; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 16px; padding: 16px 16px 14px; box-shadow: 0 16px 44px rgba(0,0,0,.35); animation: cfmpop .15s ease-out; }
-.cfmbox h3 { margin: 0 0 4px; font: 700 1.02rem/1.3 var(--font-display); }
+.cfmbox h3 { margin: 0 0 4px; font: 700 1.02rem/1.3 var(--font-display); color: var(--accent); }
+.cfmbox .cfmw { color: var(--accent); font-weight: 700; }
 .cfmbox h3 q { quotes: "“" "”"; }
 .cfmbox p { margin: 0; color: var(--ink-2); font-size: .86rem; line-height: 1.45; }
-.cfmbox p.cfmnote { margin-top: 6px; font-size: .8rem; }
 .cfmacts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
 .cfmacts button { min-height: 38px; padding: 0 14px; border-radius: 10px; font: 600 .9rem var(--font-display); cursor: pointer; }
 .cfmacts .no { border: 1px solid var(--line); background: transparent; color: var(--ink); }
@@ -4816,7 +4816,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
       var clr = el("button", "schclr", "Svuota"); clr.type = "button";
       clr.onclick = function () {
         askConfirm({ title: "Svuotare la cronologia?",
-          text: ["Verranno tolte tutte le scansioni dall'elenco: non potrai recuperarle.", "Le carte che hai già aggiunto restano nella tua collezione."], ok: "Svuota",
+          text: "La cronologia di tutte le scansioni effettuate verrà cancellata definitivamente.", ok: "Svuota",
           onOk: function () { SCH = []; schSave(); schBadge(); schDraw(); } });
       };
       hd.appendChild(clr);
@@ -4882,7 +4882,9 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     box.setAttribute("role", "alertdialog"); box.setAttribute("aria-modal", "true");
     var h = el("h3"); h.id = "cfm-t"; (Array.isArray(o.title) ? o.title : [o.title]).forEach(function (x, i) { h.appendChild(i % 2 ? el("q", "", x) : document.createTextNode(x)); });
     box.appendChild(h); box.setAttribute("aria-labelledby", "cfm-t");
-    var pp = el("div", "cfmtx"); pp.id = "cfm-d"; (Array.isArray(o.text) ? o.text : [o.text]).forEach(function (x, i) { pp.appendChild(el("p", i ? "cfmnote" : "", x)); });
+    var pp = el("div", "cfmtx"); pp.id = "cfm-d";
+    // testo con "Attenzione:" in arancione davanti
+    var pw = el("p"); pw.appendChild(el("b", "cfmw", "Attenzione:")); pw.appendChild(document.createTextNode(" " + o.text)); pp.appendChild(pw);
     box.appendChild(pp); box.setAttribute("aria-describedby", "cfm-d");
     var row = el("div", "cfmacts"), ok = el("button", "go"), no = el("button", "no", "Annulla");
     ok.textContent = o.ok;
@@ -4898,12 +4900,12 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
   function deckN(d) { var n = 0; Object.keys(d.cards).forEach(function (k) { n += d.cards[k]; }); return n; }
   function cfmEmptyDeck(d) {
     askConfirm({ title: ["Svuotare il mazzo ", d.name, "?"],
-      text: ["Verranno tolte tutte le carte. Il mazzo resterà tra i tuoi mazzi, con lo stesso nome, pronto da ricomporre.", "La tua collezione non cambia."], ok: "Svuota",
+      text: "Tutte le carte inserite verranno rimosse dalla lista.", ok: "Svuota",
       onOk: function () { d.cards = {}; d.upd = Date.now(); saveDecks(); render(); } });
   }
   function cfmDelDeck(d, after) {
     askConfirm({ title: ["Eliminare il mazzo ", d.name, "?"],
-      text: ["Il mazzo e le sue carte verranno cancellati definitivamente: non potrai recuperarlo.", "Per tenerne una copia usa prima Esporta. La tua collezione non cambia."], ok: "Elimina",
+      text: "Il mazzo verrà cancellato definitivamente.", ok: "Elimina",
       onOk: function () { decks = decks.filter(function (x) { return x !== d; }); saveDecks(); st.deckId = null; if (after) after(); render(); } });
   }
   var statsReady = false;
