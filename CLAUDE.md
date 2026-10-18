@@ -37,6 +37,7 @@ Esiste come **sito** (GitHub Pages) e come **APK Android** (Capacitor). Ogni mod
 - `tools/fetch_products.py` + `tools/product_fixes.json` – caratteristiche dei prodotti dal sito ufficiale (uscita anche per regione, pre-release, prezzo, numero di carte, contenuto, rarità, immagine della confezione) in `src/products.json`, una voce per codice set; parte dall'indice del ramo `set-assets`. Va rilanciato quando escono prodotti nuovi (anche via `analysis.yml`). `tools/build.py` le aggiunge ai dati come `products`.
 - `tools/fetch_product_images.py` – confezioni (`pk` in `products.json`) in `www/prod/CODICE.webp`.
 - `tools/apply_errata_images.py` – mette le immagini post-errata (`src/errata/KEY.webp`) come principali e salva l'originale in `www/img/pre/`.
+- **Link (Appmon)**: `make_data2.py` scrive in `extra` anche `LinkReq:` (requisito e costo, es. `[Link] [Appmon] trait: Cost 3`) e `LinkDP:` (es. `+3000 DP`) prima di `Link:` (effetto); la scheda carta li mostra in "Regole Link" in quest'ordine, come sulla carta (`splitExtra`). Ottobre 2026: aggiunti ai dati esistenti (77 carte) senza rigenerare tutto.
 - Formato carta in `data.json`: `[code,name,lv,colors,ct,form,attr,sp(trait),dp,play,evo,eff,inh,sec,extra,rar,setId,{x}]`; `x.d` = lato Option delle Digimon/Option, `x.o` = spiegazione Overflow.
 - Formato set: `{id,code,name,type,n,date,v:[idx | [idx,suf,versionIdx,mark,cls]]}`.
 

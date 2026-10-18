@@ -2999,7 +2999,12 @@ body.mob.kbd .mbot.on::after { display: none; }
     var r = { alt: [], spec: [], rule: [], other: [], link: [], asm: [], xros: [], ace: [] };
     (c.extra || "").split("\n").forEach(function (line) {
       if (!line.trim()) return;
-      line = line.replace(/\u00a0/g, " ").replace(/^Link:\s*/, "[Link] ");
+      line = line.replace(/\u00a0/g, " ");
+      // Regole Link (Appmon): requisito e costo con il tag [Link], poi i Link DP, poi l'effetto Link (come sulla carta)
+      if (/^LinkReq:/.test(line)) { r.link.push(line.replace(/^LinkReq:\s*/, "").trim()); r.lreq = true; return; }
+      if (/^LinkDP:/.test(line)) { r.link.push("Link DP: " + line.replace(/^LinkDP:\s*/, "").trim()); return; }
+      if (/^Link:/.test(line) && r.lreq) { r.link.push(line.replace(/^Link:\s*/, "").trim()); return; }
+      line = line.replace(/^Link:\s*/, "[Link] ");
       var body = line.replace(/^[^:\[]+:\s*(?=\[)/, ""), tg = body.match(/^\[([^\]]+)\]/);
       if (/\[Rule\]/.test(line)) r.rule.push(line.replace(/^.*?\[Rule\]\s*/, ""));
       else if (tg && EVOTAG.test(tg[1])) body.split(/\s*(?=\[(?:Digivolve|DNA Digivolve|Burst Digivolve|App Fusion|Fusionize)\])/).forEach(function (x) { x = x.trim(); if (x) (/^\[Digivolve\]/.test(x) ? r.alt : r.spec).push(x); });

@@ -64,7 +64,7 @@ for n,k in best.items():
     for c in k.get("digivolveCondition") or []:
         evo.append(("Lv."+str(c.get("level",""))+" "+str(c.get("color","")) + ": " + str(c.get("cost",""))).strip())
     extra=[]
-    for lab,key in (("Digievoluzione speciale","specialDigivolve"),("DNA Digivolve","dnaDigivolve"),("Digi-Xros","digiXros"),("Burst Digivolve","burstDigivolve"),("Assembly","assembly"),("Effetto ACE","aceEffect"),("Regola","rule"),("Link","linkEffect")):
+    for lab,key in (("Digievoluzione speciale","specialDigivolve"),("DNA Digivolve","dnaDigivolve"),("Digi-Xros","digiXros"),("Burst Digivolve","burstDigivolve"),("Assembly","assembly"),("Effetto ACE","aceEffect"),("Regola","rule"),("LinkReq","linkRequirement"),("LinkDP","linkDP"),("Link","linkEffect")):
         v=cl(k.get(key))
         v=re.sub(r"w/\[(\d+)\](\s*)trait: Cost ([A-Z]+)", lambda m: "w/["+m.group(3)+"]"+m.group(2)+"trait: Cost "+m.group(1), v)  # errore nella fonte: tratto e costo invertiti
         if v: extra.append(lab+": "+v)
