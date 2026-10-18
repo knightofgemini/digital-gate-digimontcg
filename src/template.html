@@ -233,6 +233,7 @@ html.lock, html.lock body { overflow: hidden; overscroll-behavior: none; }
 .cfmbox h3 { margin: 0 0 4px; font: 700 1.02rem/1.3 var(--font-display); }
 .cfmbox h3 q { quotes: "“" "”"; }
 .cfmbox p { margin: 0; color: var(--ink-2); font-size: .86rem; line-height: 1.45; }
+.cfmbox p.cfmnote { margin-top: 6px; font-size: .8rem; }
 .cfmacts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
 .cfmacts button { min-height: 38px; padding: 0 14px; border-radius: 10px; font: 600 .9rem var(--font-display); cursor: pointer; }
 .cfmacts .no { border: 1px solid var(--line); background: transparent; color: var(--ink); }
@@ -4881,7 +4882,8 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     box.setAttribute("role", "alertdialog"); box.setAttribute("aria-modal", "true");
     var h = el("h3"); h.id = "cfm-t"; (Array.isArray(o.title) ? o.title : [o.title]).forEach(function (x, i) { h.appendChild(i % 2 ? el("q", "", x) : document.createTextNode(x)); });
     box.appendChild(h); box.setAttribute("aria-labelledby", "cfm-t");
-    var pp = el("p", "", o.text); pp.id = "cfm-d"; box.appendChild(pp); box.setAttribute("aria-describedby", "cfm-d");
+    var pp = el("div", "cfmtx"); pp.id = "cfm-d"; (Array.isArray(o.text) ? o.text : [o.text]).forEach(function (x, i) { pp.appendChild(el("p", i ? "cfmnote" : "", x)); });
+    box.appendChild(pp); box.setAttribute("aria-describedby", "cfm-d");
     var row = el("div", "cfmacts"), ok = el("button", "go"), no = el("button", "no", "Annulla");
     ok.textContent = o.ok;
     no.type = ok.type = "button";
@@ -4894,16 +4896,27 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     no.focus({ preventScroll: true });
   }
   function deckN(d) { var n = 0; Object.keys(d.cards).forEach(function (k) { n += d.cards[k]; }); return n; }
+  // quante carte ci sono nel mazzo principale e quante Digi-Egg, in parole
+  function deckParts(d) {
+    var m = 0, g = 0;
+    Object.keys(d.cards).forEach(function (k) { var c = entryByKey(k); if (c && isEgg(c)) g += d.cards[k]; else m += d.cards[k]; });
+    var a = [];
+    if (m) a.push(m === 1 ? "1 carta del mazzo principale" : m + " carte del mazzo principale");
+    if (g) a.push(g === 1 ? "1 Digi-Egg" : g + " Digi-Egg");
+    return { n: m + g, txt: a.join(" e ") };
+  }
   function cfmEmptyDeck(d) {
-    var n = deckN(d);
-    askConfirm({ title: ["Svuotare ", d.name, "?"],
-      text: (n === 1 ? "La carta esce" : "Le " + n + " carte escono") + " dal mazzo, che resta vuoto.", ok: "Svuota",
+    var p = deckParts(d);
+    askConfirm({ title: ["Svuotare il mazzo ", d.name, "?"],
+      text: p.n ? ["Verranno tolte tutte le carte: " + p.txt + ". Il mazzo resterà tra i tuoi mazzi, con lo stesso nome, pronto da ricomporre.",
+        "La tua collezione non cambia."] : ["Il mazzo è già vuoto."], ok: "Svuota",
       onOk: function () { d.cards = {}; d.upd = Date.now(); saveDecks(); render(); } });
   }
   function cfmDelDeck(d, after) {
-    var n = deckN(d);
-    askConfirm({ title: ["Eliminare ", d.name, "?"],
-      text: "Il mazzo viene cancellato per sempre. La collezione non cambia.", ok: "Elimina",
+    var p = deckParts(d);
+    askConfirm({ title: ["Eliminare il mazzo ", d.name, "?"],
+      text: [(p.n ? "Il mazzo e le sue carte (" + p.txt + ") verranno cancellati" : "Il mazzo verrà cancellato") + " definitivamente: non potrai recuperarlo.",
+        p.n ? "Per tenerne una copia usa prima Esporta. La tua collezione non cambia." : "La tua collezione non cambia."], ok: "Elimina",
       onOk: function () { decks = decks.filter(function (x) { return x !== d; }); saveDecks(); st.deckId = null; if (after) after(); render(); } });
   }
   var statsReady = false;
