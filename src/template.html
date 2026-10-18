@@ -1163,10 +1163,46 @@ body.mob.kbd .mbot.on::after { display: none; }
 .scfoot .scpic { flex: none; height: 46px; padding: 0 16px 0 12px; border-radius: 23px; border: 1px solid rgba(255,255,255,.18); background: rgba(19,27,46,.72); color: #f1f4f9; display: flex; align-items: center; gap: 8px; font: 600 .9rem var(--font-display); cursor: pointer; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .scfoot .scpic svg { width: 20px; height: 20px; }
 .scfoot .scpic.big { margin: 0 auto; height: 52px; padding: 0 22px 0 18px; border-radius: 26px; background: #ff7a3d; border-color: #ff7a3d; color: #1a0b03; font-size: 1rem; }
-.scan.res .scfoot, .scan.res .scstat { display: none; }
+.scan.res .scfoot, .scan.res .scstat, .scan.hist .scfoot, .scan.hist .scstat { display: none; }
 /* risultato: foglio dal basso sopra la fotocamera */
 .scres { position: absolute; left: 0; right: 0; bottom: 0; max-height: 76%; overflow-y: auto; background: var(--bg); color: var(--ink); border-radius: 20px 20px 0 0; box-shadow: 0 -14px 40px rgba(0,0,0,.5); padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; transform: translateY(105%); transition: transform .24s ease-out; touch-action: pan-y; }
-.scan.res .scres { transform: none; }
+.scan.res .scres:not(.schist), .scan.hist .schist { transform: none; }
+.scan.hist .scframe { opacity: .35; }
+.schist { max-height: 86%; min-height: 50%; }
+.scok > span { flex: 1; min-width: 0; }
+.schl { flex: none; display: flex; align-items: center; gap: 5px; height: 32px; padding: 0 11px 0 9px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 600 .78rem var(--font-display); letter-spacing: 0; text-transform: none; cursor: pointer; }
+.schl svg { width: 16px; height: 16px; }
+.scfoot .schb b { min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 10px; background: #63d5ee; color: #06222a; font: 700 .72rem/20px var(--font-display); }
+.schh { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.schh h2 { margin: 0; display: flex; align-items: center; gap: 8px; font: 700 1.2rem var(--font-display); }
+.schh h2 svg { width: 22px; height: 22px; color: var(--accent); }
+.schclr { min-height: 36px; border: 0; background: none; color: var(--ink-2); font: 600 .85rem var(--font-display); cursor: pointer; }
+.schclr.sure { color: var(--c-red); }
+.schsum { margin: 4px 0 12px; font-size: .85rem; color: var(--ink-2); }
+.schall { width: 100%; justify-content: center; min-height: 46px; margin-bottom: 4px; }
+.schlist .sch:first-child { margin-top: 8px; }
+.schrow { display: flex; align-items: center; gap: 12px; padding: 8px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; }
+.schrow:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.scan .schrow .thumb { flex: none; width: 46px; border-radius: 4px; overflow: hidden; }
+.scan .schrow .thumb img { display: block; width: 100%; aspect-ratio: 63 / 88; object-fit: cover; }
+.schrow .tx { flex: 1; min-width: 0; }
+.schrow .nm { font: 700 .98rem/1.2 var(--font-display); white-space: nowrap; }
+.schrow .cd { font: 600 .76rem var(--font-display); color: var(--ink-2); margin-top: 2px; }
+.schrow .cd i { font-style: normal; color: var(--accent); }
+.schrow .mt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 5px; font-size: .74rem; color: var(--ink-2); }
+.schrow .mt span { padding: 1px 7px; border-radius: 6px; font: 600 .68rem/1.5 var(--font-display); }
+.schrow .mt .todo { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.schrow .mt .ok { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); }
+.schrow .mt .maybe { background: var(--surface-2); color: var(--ink-2); }
+.schrow .side { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.schrow .qty .qbtn { width: 34px; height: 34px; }
+.schrm { width: 28px; height: 28px; border-radius: 50%; border: 0; background: none; color: var(--ink-2); display: grid; place-items: center; cursor: pointer; padding: 0; }
+.schrm svg { width: 16px; height: 16px; }
+.schempty { text-align: center; padding: 22px 12px 10px; color: var(--ink-2); }
+.schempty svg { width: 38px; height: 38px; color: var(--accent); }
+.schempty b { display: block; margin: 8px 0 4px; font: 700 1.05rem var(--font-display); color: var(--ink); }
+.schempty p { margin: 0; font-size: .88rem; line-height: 1.45; }
+.schback { width: 100%; justify-content: center; min-height: 46px; margin-top: 8px; }
 .scres .grab { display: block; width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 2px auto 12px; }
 .scok { display: flex; align-items: center; gap: 8px; font: 700 .74rem var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--ok); margin-bottom: 10px; }
 .scok svg { width: 18px; height: 18px; }
@@ -1208,7 +1244,7 @@ body.mob.kbd .mbot.on::after { display: none; }
 .fscan { width: 100%; justify-content: center; margin-bottom: 12px; }
 body.desk .scan .scframe { width: min(30vw, calc(56vh * 63 / 88), 340px); }
 body.desk .scres { left: 50%; right: auto; width: 560px; transform: translate(-50%, 105%); border-radius: 20px 20px 0 0; }
-body.desk .scan.res .scres { transform: translateX(-50%); }
+body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transform: translateX(-50%); }
 @media (prefers-reduced-motion: reduce) { .scan.run .scframe b { animation: none; top: 50%; } .scres { transition: none; } }
 </style>
 
@@ -1562,7 +1598,7 @@ body.desk .scan.res .scres { transform: translateX(-50%); }
   document.addEventListener("keydown", function (e) { if (!DESK && e.key === "Enter" && e.target && e.target.tagName === "INPUT" && !e.defaultPrevented) e.target.blur(); });
   document.addEventListener("focusout", function () { setTimeout(function () { var a = document.activeElement; if (!a || !/^(INPUT|TEXTAREA)$/.test(a.tagName)) document.body.classList.remove("kbd"); }, 60); });
   menuScrim.onclick = function () { menuOpen(false); };
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && scanIsOpen()) { e.stopImmediatePropagation(); closeScan(); return; } if (e.key === "Escape" && menuEl.classList.contains("open")) menuOpen(false); }, true);
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && scanIsOpen()) { e.stopImmediatePropagation(); if (SC.el.classList.contains("hist") || SC.fromHist) history.back(); else closeScan(); return; } if (e.key === "Escape" && menuEl.classList.contains("open")) menuOpen(false); }, true);
   document.getElementById("tab-cards").onclick = function () { st.tab = "cards"; st.setId = null; st.shown = PAGE; render(); };
 
   var CHIPS = [["ALL", "Tutti"], ["SOON", "In arrivo"], ["BT", "Booster"], ["EX", "Extra"], ["ST", "Starter"], ["LM", "Limited"], ["PB", "Premium"], ["AL", "Altri"]];
@@ -3590,8 +3626,12 @@ body.desk .scan.res .scres { transform: translateX(-50%); }
   }, { passive: true });
   window.addEventListener("popstate", function (e) {
     var s2 = e.state || {};
-    if (scanIsOpen() && s2.ov !== "scan") { scTeardown(); return; }
-    if (scanIsOpen()) return;
+    if (scanIsOpen()) {
+      if (s2.ov !== "scan" && s2.ov !== "schist" && s2.ov !== "schres") { scTeardown(); return; }
+      if (s2.ov === "scan" && (SC.el.classList.contains("hist") || SC.fromHist)) scAgain();
+      else if (s2.ov === "schist") schShow();
+      return;
+    }
     if (menuEl.classList.contains("open") && s2.ov !== "menu") { menuOpen(false, true); return; }
     if (st.open != null && s2.ov === "sheet" && SHSTACK.length > (s2.nest || 0)) { st.open = SHSTACK.pop(); drawSheet(); return; }
     if (st.open != null && s2.ov !== "sheet") { SHSTACK = []; st.open = null; drawSheet(); afterSheet(); return; }
@@ -4380,7 +4420,11 @@ body.desk .scan.res .scres { transform: translateX(-50%); }
     if (!AppP || !AppP.addListener) return;
     AppP.addListener("backButton", function () {
       var upd = document.querySelector(".upd-scrim"); if (upd) { upd.remove(); return; }
-      if (scanIsOpen()) { if (SC.el.classList.contains("res")) scAgain(); else closeScan(); return; }
+      if (scanIsOpen()) {
+        if (SC.el.classList.contains("hist") || SC.fromHist) history.back();
+        else if (SC.el.classList.contains("res")) scAgain(); else closeScan();
+        return;
+      }
       if (closeFilters()) return;
       if (menuEl.classList.contains("open")) { menuOpen(false); return; }
       if (st.open != null) return;
@@ -4406,8 +4450,14 @@ body.desk .scan.res .scres { transform: translateX(-50%); }
     torch: '<path d="M8 3h8l-1 5H9z"/><path d="M9 8l1 13h4l1-13"/><path d="M12 12v3"/>',
     pic: '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 16l-5-5-8.5 8.5"/>',
     ok: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9.5"/>',
-    q: '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8 1c0 1.7-2.4 2-2.4 3.6M12 17v.5"/>'
+    q: '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8 1c0 1.7-2.4 2-2.4 3.6M12 17v.5"/>',
+    hist: '<path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4.5V9h4.5"/><path d="M12 7.5V12l3 2"/>',
+    back: '<path d="M15 5l-7 7 7 7"/>'
   };
+  // cronologia delle scansioni (nel dispositivo): { t: quando, code, k: versione scelta, sure: dal numero, add: già aggiunta alla collezione }
+  var SCH = []; try { SCH = JSON.parse(localStorage.getItem("dg-scans") || "[]") || []; } catch (e) { SCH = []; }
+  SCH = SCH.filter(function (it) { return it && CODEIDX[it.code]; });
+  function schSave() { if (SCH.length > 300) SCH.length = 300; try { localStorage.setItem("dg-scans", JSON.stringify(SCH)); } catch (e) {} }
   function scIco(k) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + SCICO[k] + "</svg>"; }
   function scanIsOpen() { return !!(SC && SC.open); }
   function loadTess() {
@@ -4531,17 +4581,19 @@ body.desk .scan.res .scres { transform: translateX(-50%); }
     var fi = document.createElement("input"); fi.type = "file"; fi.accept = "image/*"; fi.hidden = true;
     fi.onchange = function () { var f = fi.files && fi.files[0]; fi.value = ""; if (f) scFromFile(f); };
     var pk = el("button", "scpic"); pk.type = "button"; pk.innerHTML = scIco("pic"); pk.appendChild(document.createTextNode("Usa una foto")); pk.onclick = function () { fi.click(); };
-    ft.appendChild(pk); ft.appendChild(fi); o.appendChild(ft);
+    var hb = el("button", "scpic schb"); hb.type = "button"; hb.onclick = function () { schOpen(); };
+    ft.appendChild(pk); ft.appendChild(hb); ft.appendChild(fi); o.appendChild(ft);
     var rs = el("div", "scres"); o.appendChild(rs);
+    var hs = el("div", "scres schist"); hs.setAttribute("aria-label", "Cronologia delle scansioni"); o.appendChild(hs);
     document.body.appendChild(o);
-    SC.el = o; SC.video = v; SC.frame = fr; SC.stat = sp; SC.torch = tr; SC.pick = pk; SC.res = rs; SC.foot = ft;
-    if (typeof sheetNoLeak === "function") sheetNoLeak(rs, rs);
+    SC.el = o; SC.video = v; SC.frame = fr; SC.stat = sp; SC.torch = tr; SC.pick = pk; SC.res = rs; SC.foot = ft; SC.hist = hs; SC.hbtn = hb;
+    if (typeof sheetNoLeak === "function") { sheetNoLeak(rs, rs); sheetNoLeak(hs, hs); }
   }
   function scStatus(t, warn) { if (!SC) return; SC.stat.textContent = t; SC.stat.className = warn ? "warn" : ""; SC.stat.parentNode.hidden = !t; }
   function openScan() {
     scBuild(); if (SC.open) return;
     SC.open = true; SC.tries = 0; SC.busy = false; SC.ready = false; SC.camFail = false; SC.after = null; SC.torchOn = false;
-    SC.el.classList.add("on"); SC.el.classList.remove("res", "found", "run"); SC.pick.classList.remove("big");
+    SC.el.classList.add("on"); SC.el.classList.remove("res", "found", "run", "hist"); SC.pick.classList.remove("big"); SC.fromHist = false; SC.cur = null; schBadge();
     document.documentElement.classList.add("lock");
     pushOverlay("scan");
     scStatus("Avvio la fotocamera…");
@@ -4575,12 +4627,13 @@ body.desk .scan.res .scres { transform: translateX(-50%); }
   function closeScan(after) {
     if (!scanIsOpen()) { if (after) after(); return; }
     SC.after = after || null;
-    if (history.state && history.state.ov === "scan") history.back(); else scTeardown();
+    var ov = history.state && history.state.ov, n = ov === "schres" ? 3 : ov === "schist" ? 2 : ov === "scan" ? 1 : 0;
+    if (n) history.go(-n); else scTeardown();
   }
   function scTeardown() {
     if (!scanIsOpen()) return;
     SC.open = false; clearTimeout(SC.t); scStopCam();
-    SC.el.classList.remove("on", "res", "found", "run");
+    SC.el.classList.remove("on", "res", "found", "run", "hist");
     if (st.open == null && !menuEl.classList.contains("open")) document.documentElement.classList.remove("lock");
     var f = SC.after; SC.after = null; if (f) setTimeout(f, 0);
   }
@@ -4611,13 +4664,13 @@ body.desk .scan.res .scres { transform: translateX(-50%); }
     return c;
   }
   function scLoop() {
-    if (!SC.open || !SC.ready || !SC.camOk || SC.busy || SC.el.classList.contains("res")) return;
+    if (!SC.open || !SC.ready || !SC.camOk || SC.busy || SC.el.classList.contains("res") || SC.el.classList.contains("hist")) return;
     SC.el.classList.add("run");
     scStatus(SC.tries >= 4 ? "Avvicina la carta, tienila ferma e con buona luce" : "Inquadra la carta dentro la cornice", SC.tries >= 4);
     var c = scGrab(); if (!c) { SC.t = setTimeout(scLoop, 300); return; }
     SC.busy = true;
     scRead(c, .5).then(function (r) {
-      SC.busy = false; if (!SC.open || SC.el.classList.contains("res")) return;
+      SC.busy = false; if (!SC.open || SC.el.classList.contains("res") || SC.el.classList.contains("hist")) return;
       if (r) { scShow(r, c); return; }
       SC.tries++; SC.t = setTimeout(scLoop, 250);
     }, function () { SC.busy = false; SC.tries++; if (SC.open) SC.t = setTimeout(scLoop, 600); });
@@ -4650,14 +4703,22 @@ body.desk .scan.res .scres { transform: translateX(-50%); }
   function scShow(r, c) {
     SC.el.classList.remove("run"); SC.el.classList.add("found", "res");
     if (navigator.vibrate) try { navigator.vibrate(30); } catch (e) {}
-    SC.r = r; SC.sig = scSig(c, c.width, c.height); SC.ci = 0; SC.sel = null;
+    SC.r = r; SC.sig = scSig(c, c.width, c.height); SC.ci = 0; SC.sel = null; SC.preK = null; SC.fromHist = false;
+    // la stessa carta letta di nuovo entro 20 secondi non crea una seconda voce
+    var top = SCH[0], now = Date.now();
+    if (top && top.code === r.codes[0] && now - top.t < 20000) SC.cur = top;
+    else { SC.cur = { t: now, code: r.codes[0], k: "", sure: r.sure ? 1 : 0 }; SCH.unshift(SC.cur); }
+    schSave(); schBadge();
     scDraw();
   }
   function scDraw() {
     var r = SC.r, code = r.codes[SC.ci], vers = scVers(code), box = SC.res;
     box.innerHTML = ""; box.appendChild(el("i", "grab"));
     var ok = el("div", "scok" + (r.sure ? "" : " maybe")); ok.innerHTML = scIco(r.sure ? "ok" : "q");
-    ok.appendChild(document.createTextNode(r.sure ? "Carta riconosciuta" : "Riconosciuta dal nome: controlla")); box.appendChild(ok);
+    ok.appendChild(el("span", "", SC.fromHist ? "Dalla cronologia" + (r.sure ? "" : " · riconosciuta dal nome") : r.sure ? "Carta riconosciuta" : "Riconosciuta dal nome: controlla"));
+    var hl = el("button", "schl"); hl.type = "button"; hl.innerHTML = scIco(SC.fromHist ? "back" : "hist"); hl.appendChild(document.createTextNode(SC.fromHist ? "Cronologia" : "Cronologia · " + SCH.length));
+    hl.onclick = function () { if (SC.fromHist) history.back(); else schOpen(); }; ok.appendChild(hl);
+    box.appendChild(ok);
     var hit = el("div", "schit"); box.appendChild(hit);
     var vh = el("div", "sch"), strip = el("div", "scvers");
     var cand = null;
@@ -4667,12 +4728,13 @@ body.desk .scan.res .scres { transform: translateX(-50%); }
       r.codes.forEach(function (cd, i) {
         var c0 = CODEIDX[cd][0], b = el("button"); b.type = "button"; b.setAttribute("aria-pressed", String(i === SC.ci));
         b.appendChild(picBox("thumb", "t", c0)); var t = el("div"); t.appendChild(el("b", "", c0.name)); t.appendChild(el("small", "", cd + " · " + ((SETBY[c0.set] || {}).name || ""))); b.appendChild(t);
-        b.onclick = function () { SC.ci = i; SC.sel = null; scDraw(); };
+        b.onclick = function () { SC.ci = i; SC.sel = null; SC.preK = null; scDraw(); };
         cand.appendChild(b);
       });
     }
     function drawHit(a) {
       SC.sel = a; hit.innerHTML = "";
+      if (SC.cur && (SC.cur.k !== a.k || SC.cur.code !== a.code)) { SC.cur.code = a.code; SC.cur.k = a.k; schSave(); }
       var th = picBox("thumb", "f", a); th.title = "Apri la scheda della carta"; th.onclick = function () { scOpenCard(a); }; hit.appendChild(th);
       var tx = el("div", "tx"), s = scSetOf(a), mk = scMark(a);
       tx.appendChild(el("div", "cd", a.code + (mk ? "  " + mk : "") + (a.rar ? " · " + a.rar : "")));
@@ -4680,7 +4742,7 @@ body.desk .scan.res .scres { transform: translateX(-50%); }
       if (s) tx.appendChild(el("div", "ex", s.name));
       var vl = el("div", "vl"); vl.appendChild(document.createTextNode("Versione: ")); vl.appendChild(el("b", "", a.suf ? (verLabel(a.ver) || "Alternative Art") + (mk ? " " + mk : "") : "Regular")); tx.appendChild(vl);
       var ow = el("div", "own"); ow.appendChild(el("span", "", "Copie possedute"));
-      ow.appendChild(qtyControl(a, function () { recomputeStats(); render(); drawHit(SC.sel); })); tx.appendChild(ow);
+      ow.appendChild(qtyControl(a, function () { if (SC.cur && !SC.cur.add) { SC.cur.add = 1; schSave(); } recomputeStats(); render(); drawHit(SC.sel); })); tx.appendChild(ow);
       hit.appendChild(tx); fitOne(nm);
       strip.querySelectorAll(".scv").forEach(function (b) { b.setAttribute("aria-pressed", String(b._a === a)); });
     }
@@ -4690,7 +4752,7 @@ body.desk .scan.res .scres { transform: translateX(-50%); }
     box.appendChild(vh); box.appendChild(strip);
     var acts = el("div", "scacts");
     acts.appendChild(btn("Scheda carta", "", function () { scOpenCard(SC.sel); }));
-    acts.appendChild(btn("Scansiona ancora", "pri", function () { scAgain(); }, SCICO.cam));
+    acts.appendChild(btn("Scansiona ancora", "pri", function () { if (SC.fromHist) history.go(-2); else scAgain(); }, SCICO.cam));
     box.appendChild(acts);
     function fill(rk, best) {
       strip.innerHTML = "";
@@ -4704,8 +4766,9 @@ body.desk .scan.res .scres { transform: translateX(-50%); }
         strip.appendChild(b);
       });
     }
-    SC.picked = false;
-    fill(vers.map(function (a) { return { a: a }; }), null); drawHit(vers[0]);
+    var pre = null; if (SC.preK) vers.forEach(function (a) { if (a.k === SC.preK) pre = a; });
+    SC.picked = !!pre;
+    fill(vers.map(function (a) { return { a: a }; }), null); drawHit(pre || vers[0]);
     scRank(vers, SC.sig).then(function (rk) {
       if (!SC.open || SC.r !== r || r.codes[SC.ci] !== code || vers.length < 2) return;
       var best = rk[0] && rk[0].d != null ? rk[0].a : null;
@@ -4714,9 +4777,83 @@ body.desk .scan.res .scres { transform: translateX(-50%); }
     });
   }
   function scAgain() {
-    SC.el.classList.remove("res", "found"); SC.tries = 0; SC.r = null;
+    SC.el.classList.remove("res", "found", "hist"); SC.tries = 0; SC.r = null; SC.fromHist = false; SC.cur = null; schBadge();
     if (SC.camOk) { scStatus("Inquadra la carta dentro la cornice"); SC.t = setTimeout(scLoop, 400); }
     else { scStatus("Scegli una foto della carta"); }
+  }
+  function schBadge() { if (!SC || !SC.hbtn) return; SC.hbtn.innerHTML = scIco("hist"); SC.hbtn.appendChild(document.createTextNode("Cronologia")); if (SCH.length) SC.hbtn.appendChild(el("b", "", String(SCH.length))); }
+  function schEntry(it) { var vs = scVers(it.code), f = null; vs.forEach(function (a) { if (a.k === it.k) f = a; }); return f || vs[0]; }
+  function schOpen() { if (!scanIsOpen()) return; pushOverlay("schist"); schShow(); }
+  function schShow() {
+    clearTimeout(SC.t); SC.el.classList.remove("res", "found", "run"); SC.el.classList.add("hist"); SC.fromHist = false; SC.cur = null;
+    schDraw(); SC.hist.scrollTop = 0;
+  }
+  function schDay(t) {
+    var d = new Date(t), n = new Date(), y = new Date(); y.setDate(n.getDate() - 1);
+    if (d.toDateString() === n.toDateString()) return "Oggi";
+    if (d.toDateString() === y.toDateString()) return "Ieri";
+    return d.toLocaleDateString("it-IT", { day: "numeric", month: "long", year: d.getFullYear() === n.getFullYear() ? undefined : "numeric" });
+  }
+  function schTime(t) { return new Date(t).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }); }
+  function schDraw() {
+    var box = SC.hist; box.innerHTML = ""; box.appendChild(el("i", "grab"));
+    var hd = el("div", "schh"), h2 = el("h2"); h2.innerHTML = scIco("hist"); h2.appendChild(document.createTextNode("Cronologia")); hd.appendChild(h2);
+    if (SCH.length) {
+      var clr = el("button", "schclr", "Svuota"); clr.type = "button";
+      clr.onclick = function () { if (!clr.classList.contains("sure")) { clr.classList.add("sure"); clr.textContent = "Tocca di nuovo per svuotare"; return; } SCH = []; schSave(); schBadge(); schDraw(); };
+      hd.appendChild(clr);
+    }
+    box.appendChild(hd);
+    var todo = SCH.filter(function (it) { return !it.add; });
+    if (!SCH.length) {
+      var em = el("div", "schempty"); em.innerHTML = scIco("cam");
+      em.appendChild(el("b", "", "Nessuna scansione")); em.appendChild(el("p", "", "Le carte che scansioni compaiono qui, così puoi rivederle e aggiungerle alla collezione quando vuoi. Restano salvate solo su questo dispositivo."));
+      box.appendChild(em);
+    } else {
+      var sm = el("p", "schsum", SCH.length + (SCH.length === 1 ? " scansione" : " scansioni") + (todo.length ? " · " + todo.length + " da aggiungere alla collezione" : " · tutte aggiunte alla collezione"));
+      box.appendChild(sm);
+      if (todo.length) {
+        var all = btn(todo.length === 1 ? "Aggiungi alla collezione (1 copia)" : "Aggiungi tutte alla collezione (" + todo.length + " copie)", "pri schall", function () {
+          todo.forEach(function (it) { var a = schEntry(it); qty[a.k] = owned(a) + 1; it.add = 1; });
+          save(); schSave(); recomputeStats(); render(); schDraw();
+          if (typeof toast === "function") toast(todo.length === 1 ? "1 carta aggiunta alla collezione" : todo.length + " carte aggiunte alla collezione");
+        }, '<path d="M12 5v14M5 12h14"/>');
+        box.appendChild(all);
+      }
+    }
+    var list = el("div", "schlist"), day = "";
+    SCH.forEach(function (it, i) {
+      var a = schEntry(it), dd = schDay(it.t);
+      if (dd !== day) { day = dd; list.appendChild(el("div", "sch", dd)); }
+      var row = el("div", "schrow" + (it.add ? " done" : "")); row.setAttribute("role", "button"); row.tabIndex = 0;
+      row.appendChild(picBox("thumb", "t", a));
+      var tx = el("div", "tx"), s = scSetOf(a), mk = scMark(a);
+      var nm = el("div", "nm fit"); nm.appendChild(nameFrag(a)); tx.appendChild(nm);
+      var cd = el("div", "cd"); cd.appendChild(document.createTextNode(a.code + " · " + (s ? s.code : "")));
+      if (mk) { cd.appendChild(document.createTextNode(" ")); cd.appendChild(el("i", "", mk)); }
+      tx.appendChild(cd);
+      var mt = el("div", "mt", schTime(it.t)); if (!it.sure) mt.appendChild(el("span", "maybe", "dal nome"));
+      mt.appendChild(el("span", it.add ? "ok" : "todo", it.add ? "Aggiunta" : "Da aggiungere")); tx.appendChild(mt);
+      row.appendChild(tx);
+      var side = el("div", "side");
+      side.appendChild(qtyControl(a, function () { if (!it.add) { it.add = 1; schSave(); } recomputeStats(); render(); schDraw(); }));
+      var rm = el("button", "schrm"); rm.type = "button"; rm.innerHTML = scIco("x"); rm.setAttribute("aria-label", "Togli dalla cronologia");
+      rm.onclick = function (e) { e.stopPropagation(); SCH.splice(SCH.indexOf(it), 1); schSave(); schBadge(); schDraw(); };
+      side.appendChild(rm); side.onclick = function (e) { e.stopPropagation(); }; row.appendChild(side);
+      var go2 = function () { schItem(it); };
+      row.onclick = go2; row.onkeydown = function (e) { if (e.target === row && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); go2(); } };
+      list.appendChild(row);
+    });
+    box.appendChild(list);
+    var back = btn("Torna a scansionare", "schback", function () { history.back(); }, SCICO.cam);
+    box.appendChild(back);
+    box.querySelectorAll(".fit").forEach(fitOne);
+  }
+  function schItem(it) {
+    pushOverlay("schres");
+    SC.el.classList.remove("hist"); SC.el.classList.add("res", "found");
+    SC.fromHist = true; SC.cur = it; SC.r = { codes: [it.code], sure: !!it.sure }; SC.sig = null; SC.ci = 0; SC.sel = null; SC.preK = it.k;
+    scDraw(); SC.res.scrollTop = 0;
   }
   function scOpenCard(a) { if (!a) return; closeScan(function () { st.open = a; st.shTab = "fx"; drawSheet(); }); }
   var statsReady = false;
