@@ -17,7 +17,8 @@ Abbinamento (prudente: nel dubbio nessun prezzo, mai un prezzo sbagliato), per o
 - altrimenti ordine di inserimento su Cardmarket (V1, V2...) = ordine dell'app (Regular, ★, ★★, SP), accettato solo se i
   prezzi salgono in quell'ordine; se il numero di versioni non coincide si abbina solo la Regular, se è la più economica;
 - le indicazioni certe di CardTrader correggono comunque l'ordine (es. Gankoomon EX13-061: ★ e ★★ invertite).
-Prezzo CardTrader = offerta più bassa in inglese, Near Mint, non gradata (tra le 25 più economiche che dà l'API).
+Prezzo CardTrader = offerta più bassa in inglese, Near Mint, non gradata, venditore non in vacanza (tra le 25 più economiche
+che dà l'API), con nazione del venditore e se spedisce con CardTrader Zero (can_sell_via_hub). Nessun nome di venditore salvato.
 """
 import argparse, json, os, re, time, urllib.request
 from collections import defaultdict, Counter
@@ -67,7 +68,9 @@ def ct_scarica(cartella):
             time.sleep(1.1)
             mk = ct_get(f"/marketplace/products?expansion_id={e['id']}")
             slim = {b: [{"price_cents": o.get("price", {}).get("cents"), "currency": o.get("price", {}).get("currency"),
-                         "qty": o.get("quantity"), "props": o.get("properties_hash"), "graded": o.get("graded")} for o in offs]
+                         "qty": o.get("quantity"), "props": o.get("properties_hash"), "graded": o.get("graded"),
+                         "vac": o.get("on_vacation"), "cc": (o.get("user") or {}).get("country_code"),
+                         "zero": (o.get("user") or {}).get("can_sell_via_hub")} for o in offs]
                     for b, offs in mk.items()}
             Path(cartella, f"market_{e['id']}.json").write_text(json.dumps(slim))
             time.sleep(1.1)
@@ -101,12 +104,14 @@ def ct_prezzo(ct, cmid):
     b = ct["cm2bp"].get(cmid)
     if not b:
         return None
-    offs = [o for o in ct["market"].get(str(b["id"]), []) if not o.get("graded") and o.get("currency") == "EUR"
+    offs = [o for o in ct["market"].get(str(b["id"]), []) if not o.get("graded") and not o.get("vac") and o.get("currency") == "EUR"
             and (o.get("props") or {}).get("digimon_language") == "en" and (o.get("props") or {}).get("condition") == "Near Mint"
             and not (o.get("props") or {}).get("altered") and not (o.get("props") or {}).get("signed") and o.get("price_cents")]
     if not offs:
         return [None, 0, b["id"]]
-    return [round(min(o["price_cents"] for o in offs) / 100, 2), len(offs), b["id"]]
+    best = min(offs, key=lambda o: (o["price_cents"], not o.get("zero")))
+    # [prezzo, n. offerte, blueprint, nazione del venditore più economico, venditore con CardTrader Zero (1/0)]
+    return [round(best["price_cents"] / 100, 2), len(offs), b["id"], best.get("cc") or "", 1 if best.get("zero") else 0]
 
 
 def val(g):

@@ -286,7 +286,7 @@ html.lock, html.lock body { overflow: hidden; overscroll-behavior: none; }
 .cmk { display: inline-block; flex: none; width: 16px; height: 16px; background: var(--cm-ink); -webkit-mask: url(/*CMMARK*/) center / contain no-repeat; mask: url(/*CMMARK*/) center / contain no-repeat; }
 .pline { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; align-items: center; gap: 6px; margin-top: 2px; padding: 5px 8px; border-radius: 8px; background: var(--surface-2); border: 1px solid transparent; font: 600 .78rem var(--font-body); line-height: 1.1; color: var(--ink); font-variant-numeric: tabular-nums; }
 .pline .pval { text-align: center; white-space: nowrap; }
-.pline .ptag { font: 700 .58rem var(--font-display); letter-spacing: .06em; color: var(--ink-2); border: 1px solid var(--line); border-radius: 4px; padding: 2px 4px; line-height: 1; }
+.pline .ptag { font: 700 .58rem var(--font-display); letter-spacing: .06em; color: var(--ink-2); border: 1px solid var(--line); border-radius: 4px; padding: 2px 0; line-height: 1; width: 3.4em; text-align: center; box-sizing: border-box; }
 .pline .ptag.off { visibility: hidden; }
 .pline.pna .pval { color: var(--ink-2); font-weight: 500; }
 .rside { display: flex; flex-direction: column; align-items: stretch; gap: 6px; min-width: 0; }
@@ -300,7 +300,7 @@ html.lock, html.lock body { overflow: hidden; overscroll-behavior: none; }
 .pbox .pname { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pbox .pval2 { font: 700 1.05rem var(--font-display); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .pbox .pval2.na { color: var(--ink-2); font-weight: 500; }
-.pbox .ptag { font: 700 .6rem var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); border: 1px solid var(--line); border-radius: 5px; padding: 3px 6px; line-height: 1; min-width: 4.6em; text-align: center; }
+.pbox .ptag { font: 700 .6rem var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); border: 1px solid var(--line); border-radius: 5px; padding: 3px 0; line-height: 1; width: 6.4em; text-align: center; box-sizing: border-box; }
 .pbox .ptag.off { visibility: hidden; }
 .pbox details > summary { list-style: none; cursor: pointer; }
 .pbox details > summary::-webkit-details-marker { display: none; }
@@ -311,10 +311,11 @@ html.lock, html.lock body { overflow: hidden; overscroll-behavior: none; }
 .pbox .pgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 0 12px; }
 .pbox .pc { display: flex; justify-content: space-between; gap: 8px; padding: 6px 8px; border-radius: 8px; background: var(--surface-2); font-size: .78rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .pbox .pc b { color: var(--ink); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.fx.pbox p.pnote { background: none; border: 0; padding: 6px 12px 10px; margin: 0; font-size: .72rem; color: var(--ink-2); }
+.fx.pbox p.pnote { background: none; border: 0; padding: 6px 12px 10px; margin: 0; font-size: .72rem; color: var(--ink-2); white-space: pre-line; }
+.fx.pbox p.pnote + p.pnote { padding-top: 0; }
 .pline.wide { grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; padding: 10px 12px; border-radius: 10px; font-size: 1rem; margin-top: 8px; }
 .pline.wide .cmk { width: 22px; height: 22px; }
-.pline.wide .ptag { font-size: .7rem; padding: 4px 8px; border-radius: 6px; letter-spacing: .08em; text-transform: uppercase; }
+.pline.wide .ptag { font-size: .7rem; padding: 4px 0; width: 6.4em; border-radius: 6px; letter-spacing: .08em; text-transform: uppercase; }
 .alt .pline { justify-self: center; width: 100%; }
 .ctk { display: inline-block; flex: none; width: 16px; height: 16px; }
 .ctk svg { display: block; width: 100%; height: 100%; }
@@ -324,7 +325,7 @@ html.lock, html.lock body { overflow: hidden; overscroll-behavior: none; }
 body.desk .alts .alt .pline { grid-template-columns: 13px minmax(0, 1fr) auto; gap: 4px; padding: 4px 5px; font-size: .74rem; }
 body.desk .alts .alt .pline .cmk, body.desk .alts .alt .pline .ctk { width: 13px; height: 13px; }
 body.desk .alts .alt .pline .pval { overflow: hidden; }
-body.desk .alts .alt .pline .ptag { font-size: .5rem; padding: 2px 3px; }
+body.desk .alts .alt .pline .ptag { font-size: .5rem; padding: 2px 0; width: 3.4em; }
 .fx h3 { font-family: var(--font-display); font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 4px; }
 .fx p { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; white-space: pre-line; overflow-wrap: anywhere; }
 .own { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-top: 4px; }
@@ -1675,8 +1676,15 @@ body.mob .hrow { grid-template-columns: minmax(0, 1fr); margin-top: 22px; }
       var r = el("div", "pc"); r.appendChild(el("span", "", x[0])); r.appendChild(el("b", "", eur(x[1]))); g.appendChild(r);
     });
     d.appendChild(g);
-    d.appendChild(el("p", "pnote", "Guida prezzi Cardmarket aggiornata il " + fmtDate(PRICES.d) + ": dati medi di tutte le vendite, che non distinguono lingua o condizione della carta."));
+    d.appendChild(el("p", "pnote", "Prezzi aggiornati al: " + fmtDate(PRICES.d) + ".\nSi intendono dati medi di tutte le vendite, che non distinguono lingua o condizioni della carta."));
     return d;
+  }
+  var REGN = null;
+  try { REGN = new Intl.DisplayNames(["it"], { type: "region" }); } catch (e) { REGN = null; }
+  function countryName(cc) {
+    if (!cc) return "—";
+    var n = cc; try { n = REGN ? REGN.of(cc.toUpperCase()) : cc; } catch (e) { n = cc; }
+    return n;
   }
   function ctRow(c) {
     var p = ctOf(c), has = p && p[0] != null;
@@ -1685,14 +1693,14 @@ body.mob .hrow { grid-template-columns: minmax(0, 1fr); margin-top: 22px; }
     var d = document.createElement("details"); d.className = "cmdet"; d.open = ctDetOpen;
     var sm = document.createElement("summary"); sm.setAttribute("aria-label", "Dettagli prezzo CardTrader"); sm.appendChild(row); d.appendChild(sm);
     d.addEventListener("toggle", function () { ctDetOpen = d.open; });
-    var g = el("div", "pgrid");
-    [["Lingua", "Inglese"], ["Condizione", "Near Mint"], ["Offerte", p ? String(p[1]) : "0"], ["Data", (CTP.d || "").split("-").reverse().join("/")]].forEach(function (x) {
-      var r = el("div", "pc"); r.appendChild(el("span", "", x[0])); r.appendChild(el("b", "", x[1])); g.appendChild(r);
+    var g = el("div", "pgrid"), info = [["Lingua", "Inglese"], ["Condizione", "Near Mint"]];
+    if (has && p.length > 3) info.push(["Venditore", countryName(p[3])], ["CardTrader Zero", p[4] ? "Sì" : "No"]);
+    info.forEach(function (x) {
+      var r = el("div", "pc"); r.appendChild(el("span", "", x[0])); var v = el("b", "", x[1]); v.title = x[1]; r.appendChild(v); g.appendChild(r);
     });
     d.appendChild(g);
-    d.appendChild(el("p", "pnote", has
-      ? "Prezzo più basso tra le offerte in vendita su CardTrader per carte in inglese in condizione Near Mint (non gradate, né firmate o alterate). Le offerte contate sono tra le 25 più economiche della carta."
-      : "Al momento su CardTrader non c'è nessuna offerta per questa carta in inglese in condizione Near Mint."));
+    if (!has) d.appendChild(el("p", "pnote", "Al momento su CardTrader non c'è nessuna offerta per questa carta in inglese in condizione Near Mint."));
+    d.appendChild(el("p", "pnote", "Prezzi aggiornati al: " + fmtDate(CTP.d) + "."));
     return d;
   }
 
