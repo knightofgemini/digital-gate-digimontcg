@@ -2650,7 +2650,20 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     b.appendChild(el("span", "rn", RARN[r] || r));
     d.appendChild(b); return d;
   }
+  var lastShC = null, lastShTab = null;
   function drawSheet() {
+    var keep = null;
+    if (!sheet.hidden && st.open != null && st.open === lastShC && st.shTab === lastShTab) {
+      keep = []; Array.prototype.forEach.call(sheet.querySelectorAll("*"), function (e, i) { if (e.scrollTop > 0) keep.push([i, e.scrollTop]); });
+    }
+    drawSheet0();
+    lastShC = st.open; lastShTab = st.shTab;
+    if (keep && keep.length) {
+      var put = function () { var all = sheet.querySelectorAll("*"); keep.forEach(function (k) { if (all[k[0]]) all[k[0]].scrollTop = k[1]; }); };
+      put(); requestAnimationFrame(put);
+    }
+  }
+  function drawSheet0() {
     var wasOpen = !sheet.hidden;
     sheet.innerHTML = "";
     if (st.open == null) { sheet.hidden = true; SHSTACK = []; collUnlocked = false; document.documentElement.classList.remove("lock"); return; }
@@ -2959,6 +2972,17 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     mbotFbtn.setAttribute("aria-expanded", String(!!st.mfs));
     document.body.classList.toggle("hasmbotc", !!act.length);
   }
+  // telefono: se la tastiera è aperta, appena si scorre con il dito fuori dal campo si chiude
+  (function () {
+    var tx = null, ty = null;
+    document.addEventListener("touchstart", function (e) { var t = e.touches[0]; tx = t.clientX; ty = t.clientY; }, { passive: true, capture: true });
+    document.addEventListener("touchmove", function (e) {
+      if (DESK || tx == null) return;
+      var a = document.activeElement; if (!a || !/^(INPUT|TEXTAREA)$/.test(a.tagName) || /checkbox|radio/.test(a.type)) return;
+      if (e.target === a) return;
+      var t = e.touches[0]; if (Math.abs(t.clientY - ty) > 12 || Math.abs(t.clientX - tx) > 12) { a.blur(); tx = null; }
+    }, { passive: true, capture: true });
+  })();
   // tastiera del telefono: la barra in basso resta subito sopra (anche dove la pagina non si accorcia)
   if (window.visualViewport) (function () {
     var vv = window.visualViewport;
@@ -3439,6 +3463,11 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     });
     document.body.appendChild(dkSheetEl);
   }
+  // porta in vista la prima carta del mazzo (sopra il foglio di ricerca)
+  function dkToFirst() {
+    requestAnimationFrame(function () { var t = document.querySelector(".dkgrp"); if (t) window.scrollTo({ top: t.getBoundingClientRect().top + window.pageYOffset - 64, behavior: "smooth" }); });
+  }
+  qi.addEventListener("focus", function () { if (!DESK && st.dkSheet && qi.parentNode === dkQSlot && !st.dkFocus) dkToFirst(); });
   function openDkSheet(size, focus) {
     var was = st.dkSheet; st.dkSheet = size; st.shown = PAGE; st.dkSel = null;
     if (!was) pushOverlay("dksheet");
@@ -3593,7 +3622,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
       out.appendChild(dkPiles(d));
       var ab = el("div", "dkbar"), ai = el("button", "dkbarb"); ai.type = "button";
       ai.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Cerca e aggiungi carte…</span>';
-      ai.onclick = function () { st.q = ""; qi.value = ""; st.ct = st.lv = st.cost = ""; syncSelects(); openDkSheet(1, true); };
+      ai.onclick = function () { st.q = ""; qi.value = ""; st.ct = st.lv = st.cost = ""; syncSelects(); openDkSheet(1, true); dkToFirst(); };
       ab.appendChild(ai); out.appendChild(ab);
       if (st.dkSheet) {
         dkSheetResults(d);
