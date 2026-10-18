@@ -243,6 +243,15 @@ html.lock, html.lock body { overflow: hidden; overscroll-behavior: none; }
 .ico.kwlink:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .ico.kwlink.open::after { content: " \25BE"; font-size: .85em; }
 .kwexp.g { border-left-color: #0a7a6a; }
+/* Link DP: in verticale sul lato destro delle Regole Link (come sulla carta) oppure dopo l'effetto */
+.fx p.lnkp { position: relative; padding-right: 58px; min-height: 92px; box-sizing: border-box; }
+.ldpv { position: absolute; top: 0; right: 0; bottom: 0; width: 46px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-left: 1px solid var(--line); background: var(--surface-2); border-radius: 0 9px 9px 0; }
+.ldpv b, .ldpv .l { writing-mode: vertical-rl; font-family: var(--font-display); line-height: 1; }
+.ldpv b { font-size: 1.15rem; font-weight: 700; letter-spacing: .02em; color: var(--ink); }
+.ldpv .l { font-size: .68rem; font-weight: 700; letter-spacing: .12em; color: var(--ink-2); }
+.ldpa { display: inline-flex; align-items: center; gap: 8px; margin-top: 4px; padding: 3px 10px 3px 4px; border-radius: 8px; background: var(--surface-2); }
+.ldpa .l { font: 700 .72rem var(--font-display); letter-spacing: .06em; text-transform: uppercase; color: #fff; background: linear-gradient(#14ad96, #0a7a6a); padding: .15em .55em; border-radius: 6px; }
+.ldpa b { font: 700 1rem var(--font-display); }
 .kwexp.g .kwexn { color: #0f9a85; }
 .kwexp { display: block; margin: 6px 0 8px; padding: 8px 11px 9px; border-radius: 10px; background: var(--surface-2); border-left: 3px solid #d8661f; font-family: var(--font-body); font-weight: 400; font-size: .9rem; line-height: 1.5; color: var(--ink); white-space: normal; cursor: pointer; animation: kwin .14s ease-out; transform-origin: 50% 0; }
 .kwexn { display: block; font: 700 .76rem var(--font-display); letter-spacing: .02em; color: var(--accent); margin-bottom: 2px; }
@@ -2971,6 +2980,21 @@ body.mob.kbd .mbot.on::after { display: none; }
     if (!text) return null;
     var d = el("div", "fx"); d.appendChild(el("h3", "", title)); d.appendChild(rich(el("p", ""), kwJoin(kwNoRem(text)))); return d;
   }
+  // Regole Link: i Link DP in verticale sul lato destro, come sulla carta (A), oppure dopo l'effetto Link (B, ?ldp=after)
+  var LDPMODE = /[?&]ldp=after\b/.test(location.search) ? "after" : "side";
+  function linkFx(ex) {
+    var f = fx("Regole Link", ex.link.join("\n")); if (!f || !ex.ldp) return f;
+    var p = f.querySelector("p");
+    if (LDPMODE === "after") {
+      var a = el("span", "ldpa"); a.appendChild(el("span", "l", "Link DP")); a.appendChild(el("b", "", ex.ldp));
+      p.appendChild(document.createTextNode("\n")); p.appendChild(a);
+    } else {
+      p.classList.add("lnkp");
+      var v = el("span", "ldpv"); v.setAttribute("aria-label", "Link DP " + ex.ldp);
+      v.appendChild(el("b", "", ex.ldp)); v.appendChild(el("span", "l", "DP")); p.appendChild(v);
+    }
+    return f;
+  }
   function stat(label, val) {
     if (!val) return null;
     var d = el("div", "stat"); d.appendChild(el("span", "", label)); d.appendChild(el("b", "", val)); return d;
@@ -3002,7 +3026,7 @@ body.mob.kbd .mbot.on::after { display: none; }
       line = line.replace(/\u00a0/g, " ");
       // Regole Link (Appmon): requisito e costo con il tag [Link], poi i Link DP, poi l'effetto Link (come sulla carta)
       if (/^LinkReq:/.test(line)) { r.link.push(line.replace(/^LinkReq:\s*/, "").trim()); r.lreq = true; return; }
-      if (/^LinkDP:/.test(line)) { r.link.push("Link DP: " + line.replace(/^LinkDP:\s*/, "").trim()); return; }
+      if (/^LinkDP:/.test(line)) { r.ldp = line.replace(/^LinkDP:\s*/, "").replace(/\s*DP\s*$/i, "").trim(); return; }
       if (/^Link:/.test(line) && r.lreq) { r.link.push(line.replace(/^Link:\s*/, "").trim()); return; }
       line = line.replace(/^Link:\s*/, "[Link] ");
       var body = line.replace(/^[^:\[]+:\s*(?=\[)/, ""), tg = body.match(/^\[([^\]]+)\]/);
@@ -3126,7 +3150,7 @@ body.mob.kbd .mbot.on::after { display: none; }
       return m ? "⟦Overflow " + m[1] + "⟧ " + ((c.x && c.x.o) || "(As this card moves from the battle area or under a card to another area, lose " + m[1].slice(1) + " memory.)") : l;
     });
     [fx("Effetto", c.eff), fx("Effetto ereditato", c.inh), fx("Effetto di sicurezza", c.sec), optFx(c), fx("Regole", ex.rule.join("\n")),
-     fx("Regole Link", ex.link.join("\n")), fx("Regole Assembly", ex.asm.join("\n")), fx("Regole DigiXros", ex.xros.join("\n")),
+     linkFx(ex), fx("Regole Assembly", ex.asm.join("\n")), fx("Regole DigiXros", ex.xros.join("\n")),
      fx("Regole Ace Overflow", ace.join("\n")), fx("Altre regole", ex.other.join("\n"))].forEach(function (f) { if (f) sh.appendChild(f); });
     var inDk = st.tab === "deck" && st.deckId && deckById(st.deckId) && deckable(c) ? deckById(st.deckId) : null;
     if (inDk) {
