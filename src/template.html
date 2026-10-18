@@ -2818,79 +2818,77 @@ body.mob.kbd .mbot.on::after { display: none; }
     });
     return target;
   }
-  // ---- Spiegazione delle keyword: toccando ＜Raid＞, ＜Security A. +1＞... si apre un popup con la regola in italiano,
-  // adattata ai valori scritti sulla carta (numeri, colori, tratti). Testi basati sui promemoria ufficiali (ottobre 2026).
+  // ---- Spiegazione delle keyword: toccando ＜Raid＞, ＜Security A. +1＞... si apre un popup con la regola in inglese
+  // (promemoria ufficiale), adattata ai valori scritti sulla carta (numeri, colori, tratti).
   function kwN(n, s, p) { n = Math.abs(+n); return n + " " + (n === 1 ? s : p); }
   function kwArg(inner, name) { var a = inner.slice(name.length).trim(); return a.replace(/\)\/\(/g, "/").replace(/^\((.*)\)$/, "$1").trim(); }
   function kwInfo(inner) {
     var k = String(inner).replace(/ /g, " ").trim(), m, a;
-    if ((m = k.match(/^Security A\.\s*([+-])\s*(\d+)\}?$/))) {
-      return m[1] === "+" ? "Quando attacca il giocatore avversario, questo Digimon controlla " + kwN(m[2], "carta", "carte") + " della sicurezza in più (normalmente se ne controlla 1, quindi qui " + (1 + +m[2]) + ")."
-        : "Quando attacca il giocatore avversario, questo Digimon controlla " + kwN(m[2], "carta", "carte") + " della sicurezza in meno. Se il numero di controlli scende a 0 o meno, non ne controlla nessuna.";
+    function cards(n) { return kwN(n, "card", "cards"); }
+    if ((m = k.match(/^Security A\.\s*([+-])\s*(\d+)\}?$/))) return "This Digimon checks " + m[2] + (m[1] === "+" ? " additional" : " fewer") + " security " + (+m[2] === 1 ? "card." : "cards.");
+    if (/^Security A\.\s*[+-]?$/.test(k)) return "Security Attack: the Digimon checks additional (+) or fewer (−) security cards when it attacks your opponent.";
+    if ((m = k.match(/^Draw (\d+)$/))) return "Draw " + cards(m[1]) + " from your deck.";
+    if ((m = k.match(/^De-Digivolve (\d+)$/))) return +m[1] === 1 ? "Trash the top card. You can't trash past level 3 cards." : "Trash the top card, up to " + m[1] + " times. You can't trash past level 3 cards.";
+    if (k === "De-Digivolve") return "Trash the top card, up to the specified number of times. You can't trash past level 3 cards.";
+    if ((m = k.match(/^Recovery \+(\d+)(\s*\(Deck\))?$/))) return "Place the top " + (+m[1] === 1 ? "card" : m[1] + " cards") + " of your deck on top of your security stack.";
+    if ((m = k.match(/^Digi-Burst (up to )?(\d+)$/))) return "You may trash " + (m[1] ? "up to " : "") + m[2] + " of this Digimon's digivolution cards to activate the effect below.";
+    if (k === "Digi-Burst") return "You may trash the specified number of this Digimon's digivolution cards to activate the effect below.";
+    if ((m = k.match(/^Material Save (\d+)$/))) return "When this Digimon would be deleted, you may place " + cards(m[1]) + " in this Digimon's DigiXros requirements from this Digimon's digivolution cards under 1 of your Tamers.";
+    if ((m = k.match(/^Fragment \((\d+)\)$/))) return "When this Digimon would be deleted, by trashing any " + m[1] + " of its digivolution cards, it isn't deleted.";
+    if ((m = k.match(/^Link \+(\d+)$/))) return "Add " + m[1] + " to this Digimon's maximum links.";
+    if ((m = k.match(/^Digisorption -(\d+)$/))) return "When one of your Digimon would digivolve into this card from your hand, you may suspend 1 of your Digimon to reduce the memory cost of the digivolution by " + m[1] + ".";
+    if (k === "Digisorption") return "When one of your Digimon would digivolve into this card from your hand, you may suspend 1 of your Digimon to reduce the memory cost of the digivolution by the specified amount.";
+    if ((m = k.match(/^(?:Overflow\s*)?-(\d+)$/))) return "As this card moves from the battle area or under a card to another area, lose " + m[1] + " memory.";
+    if (/^Decode\b/.test(k)) {
+      a = kwArg(k, "Decode");
+      var what = !a ? "specified Digimon card" : /^(\[[^\]]+\])(\/\[[^\]]+\])*$/.test(a) ? a.split("/").join(" or ") : "Digimon card (" + a + ")";
+      return "When this Digimon would leave the battle area other than in battle, you may play 1 " + what + " from its digivolution cards without paying the cost.";
     }
-    if (/^Security A\.\s*[+-]?$/.test(k)) return "Security Attack indica quante carte della sicurezza controlla un Digimon quando attacca il giocatore avversario: con + ne controlla di più, con − di meno (normalmente 1).";
-    if ((m = k.match(/^Draw (\d+)$/))) return "Pesca " + kwN(m[1], "carta", "carte") + " dal tuo mazzo.";
-    if ((m = k.match(/^De-Digivolve (\d+)$/))) return "Scarta la carta in cima a 1 Digimon avversario, " + (+m[1] === 1 ? "una volta" : "fino a " + m[1] + " volte") + ". Non si può andare oltre le carte di livello 3: quando in cima c'è una carta di livello 3 ci si ferma.";
-    if (k === "De-Digivolve") return "Scarta la carta in cima a un Digimon avversario, tante volte quante indica il numero. Non si può andare oltre le carte di livello 3: quando in cima c'è una carta di livello 3 ci si ferma.";
-    if ((m = k.match(/^Recovery \+(\d+)(\s*\(Deck\))?$/))) return "Metti " + (+m[1] === 1 ? "la prima carta" : "le prime " + m[1] + " carte") + " del tuo mazzo in cima alla tua sicurezza.";
-    if ((m = k.match(/^Digi-Burst (up to )?(\d+)$/))) return "Puoi scartare " + (m[1] ? "fino a " : "") + kwN(m[2], "carta", "carte") + " tra le carte digievoluzione di questo Digimon per attivare l'effetto scritto sotto.";
-    if (k === "Digi-Burst") return "Puoi scartare il numero indicato di carte digievoluzione di questo Digimon per attivare l'effetto scritto sotto.";
-    if ((m = k.match(/^Material Save (\d+)$/))) return "Quando questo Digimon sta per essere eliminato, puoi mettere sotto 1 dei tuoi Tamer " + kwN(m[1], "carta", "carte") + " tra le sue carte digievoluzione che fanno parte dei suoi requisiti DigiXros.";
-    if ((m = k.match(/^Fragment \((\d+)\)$/))) return "Quando questo Digimon sta per essere eliminato, puoi scartare " + kwN(m[1], "carta", "carte") + " qualsiasi tra le sue carte digievoluzione: così non viene eliminato.";
-    if ((m = k.match(/^Link \+(\d+)$/))) return "Aumenta di " + m[1] + " il numero massimo di carte Link che questo Digimon può avere. Normalmente un Digimon ne può avere 1, quindi questo fino a " + (1 + +m[1]) + ".";
-    if ((m = k.match(/^Digisorption -(\d+)$/))) return "Quando uno dei tuoi Digimon sta per digievolvere in questa carta dalla mano, puoi sospendere 1 dei tuoi Digimon per ridurre di " + m[1] + " il costo in memoria della digievoluzione.";
-    if (k === "Digisorption") return "Quando uno dei tuoi Digimon sta per digievolvere in questa carta dalla mano, puoi sospendere 1 dei tuoi Digimon per ridurre il costo in memoria della digievoluzione del valore indicato.";
-    if ((m = k.match(/^(?:Overflow\s*)?-(\d+)$/))) return "Quando questa carta lascia il campo, o da sotto un'altra carta passa in un'area diversa da queste, perdi " + m[1] + " memoria. Non succede quando entra in campo o viene messa sotto una carta.";
-    if (/^Decode\b/.test(k)) { a = kwArg(k, "Decode"); return "Quando questo Digimon sta per lasciare l'area di battaglia (non in battaglia), puoi giocare senza pagarne il costo 1 delle sue carte digievoluzione" + (a ? " che corrisponde a: " + a + "." : " indicata dall'effetto."); }
-    if (/^Decoy\b/.test(k)) {
-      a = kwArg(k, "Decoy");
-      var who = /trait$/.test(a) ? "Digimon con il tratto " + a.replace(/\s*trait$/, "").replace(/ or /g, " o ") : "Digimon " + a.split("/").join(" o ");
-      return "Quando un altro tuo " + who + " sta per essere eliminato da un effetto dell'avversario, puoi eliminare questo Digimon per salvarne 1.";
-    }
-    if (/^Partition\b/.test(k)) { a = kwArg(k, "Partition"); return "Se questo Digimon ha tra le carte digievoluzione ciascuna delle carte indicate (" + a + ") e sta per lasciare l'area di battaglia, non per un tuo effetto né in battaglia, puoi giocare 1 carta di ciascun tipo indicato senza pagarne i costi."; }
-    if (/^Overclock\b/.test(k)) { a = kwArg(k, "Overclock").replace(/\s*Trait$/i, ""); return "Alla fine del tuo turno, eliminando 1 tuo Token o 1 altro tuo Digimon" + (a ? " con il tratto " + a : " del tratto indicato") + ", questo Digimon attacca un giocatore senza sospendersi."; }
-    if (/^Use Req\./.test(k)) { a = kwArg(k, "Use Req."); return "Puoi usare questa carta ignorando i requisiti di colore se hai in gioco le carte indicate: " + a + ". Normalmente per usare una Option serve avere in gioco un Digimon o un Tamer del suo colore."; }
-    if (/^Detach\b/.test(k)) { a = kwArg(k, "Detach").replace(/\s*trait$/, ""); return "Quando questo Digimon sta per lasciare l'area di battaglia, non per un tuo effetto, puoi scartare 1 delle sue carte Link" + (a ? " con il tratto " + a : " indicate") + ": così resta in campo."; }
-    if (/^Succession\b/.test(k)) { a = kwArg(k, "Succession"); return "Questo Digimon ottiene tutti gli effetti, tranne ＜Succession＞, della carta indicata (" + a + ") che si trova più in alto tra le sue carte digievoluzione."; }
-    if (/^Blast DNA Digivolve\b/.test(k)) { a = kwArg(k, "Blast DNA Digivolve"); return "1 dei tuoi Digimon indicati e 1 carta indicata nella tua mano (" + a + ") possono fare la DNA Digivolve in questa carta. Si usa dalla mano nel momento del Counter, cioè quando un Digimon avversario attacca."; }
+    if (/^Decoy\b/.test(k)) { a = kwArg(k, "Decoy"); return "When your other " + a.split("/").join(" or ") + " Digimon would be deleted by an opponent's effect, you may delete this Digimon to prevent 1 of those Digimon's deletion."; }
+    if (/^Partition\b/.test(k)) { a = kwArg(k, "Partition"); return "When this Digimon with each of the specified digivolution cards (" + a + ") would leave the battle area other than by your own effects or by battle, you may play 1 each of the specified cards without paying the costs."; }
+    if (/^Overclock\b/.test(k)) { a = kwArg(k, "Overclock").replace(/\s*Trait$/i, ""); return "At the end of your turn, by deleting 1 of your Tokens or other " + (a ? a + " trait" : "specified") + " Digimon, this Digimon attacks a player without suspending."; }
+    if (/^Use Req\./.test(k)) { a = kwArg(k, "Use Req."); return "Specified cards (" + a + ") let you ignore color requirements."; }
+    if (/^Detach\b/.test(k)) { a = kwArg(k, "Detach"); return "When this Digimon would leave the battle area other than by your effects, by trashing 1 of its specified link cards" + (a ? " (" + a + ")" : "") + ", it doesn't leave."; }
+    if (/^Succession\b/.test(k)) { a = kwArg(k, "Succession"); return "This Digimon gains all effects other than ＜Succession＞ on its topmost specified digivolution card" + (a ? " (" + a + ")" : "") + "."; }
+    if (/^Blast DNA Digivolve\b/.test(k)) { a = kwArg(k, "Blast DNA Digivolve"); return "1 of your specified Digimon and 1 specified card in hand" + (a ? " (" + a + ")" : "") + " may DNA digivolve into this card."; }
     var FIX = {
-      "Blocker": "Nel momento del blocco, quando un Digimon avversario attacca, puoi sospendere questo Digimon per bloccare: diventa lui il bersaglio dell'attacco.",
-      "Piercing": "Quando questo Digimon attacca un Digimon avversario, lo elimina e sopravvive alla battaglia, controlla comunque le carte della sicurezza che controllerebbe normalmente.",
-      "Reboot": "Questo Digimon si riattiva (torna non sospeso) anche durante la fase di riattivazione dell'avversario.",
-      "Save": "Puoi mettere questa carta sotto 1 dei tuoi Tamer.",
-      "Delay": "Dal turno successivo a quello in cui l'hai messa in campo, puoi scartare questa carta per attivare l'effetto scritto sotto.",
-      "Jamming": "Questo Digimon non può essere eliminato nelle battaglie contro i Digimon della sicurezza.",
-      "Rush": "Questo Digimon può attaccare nel turno in cui entra in gioco.",
-      "Retaliation": "Quando questo Digimon viene eliminato perché ha perso una battaglia, elimina anche il Digimon contro cui stava combattendo.",
-      "Alliance": "Quando questo Digimon attacca, puoi sospendere 1 dei tuoi altri Digimon: per quell'attacco questo Digimon aggiunge ai suoi i DP del Digimon sospeso e ottiene ＜Security A. +1＞.",
-      "Raid": "Quando questo Digimon attacca, puoi spostare l'attacco su 1 Digimon avversario non sospeso con i DP più alti.",
-      "Barrier": "Quando questo Digimon sta per essere eliminato in battaglia, puoi scartare la carta in cima alla tua sicurezza: così non viene eliminato.",
-      "Blast Digivolve": "1 dei tuoi Digimon può digievolvere in questa carta senza pagarne il costo. Si usa dalla mano nel momento del Counter, cioè quando un Digimon avversario attacca.",
-      "Armor Purge": "Quando questo Digimon sta per essere eliminato, puoi scartare la sua carta in cima: così non viene eliminato.",
-      "Collision": "Durante l'attacco di questo Digimon, tutti i Digimon avversari ottengono ＜Blocker＞ e l'avversario deve bloccare, se può.",
-      "Fortitude": "Quando questo Digimon viene eliminato mentre ha carte digievoluzione, gioca questa carta senza pagarne il costo.",
-      "Evade": "Quando questo Digimon sta per essere eliminato, puoi sospenderlo: così non viene eliminato.",
-      "Blitz": "Se il tuo avversario ha 1 o più memoria, questo Digimon può attaccare.",
-      "Training": "Nella fase principale puoi sospendere questo Digimon per mettere la prima carta del tuo mazzo, coperta, come sua carta digievoluzione più in basso. Funziona anche nell'area di allevamento.",
-      "Arts Digivolve": "Dopo averla usata come Option, invece di scartarla, una delle tue carte in campo può digievolvere in questa carta senza pagarne il costo.",
-      "Vortex": "Alla fine del tuo turno questo Digimon può attaccare un Digimon avversario, anche nel turno in cui è stato giocato.",
-      "Scapegoat": "Quando questo Digimon sta per essere eliminato, non da un tuo effetto, puoi eliminare 1 dei tuoi altri Digimon: così questo non viene eliminato.",
-      "Execute": "Alla fine del tuo turno questo Digimon può attaccare, anche un Digimon avversario non sospeso. Alla fine di quell'attacco questo Digimon viene eliminato.",
-      "Iceclad": "Nelle battaglie di questo Digimon, tranne contro i Digimon della sicurezza, si confronta il numero di carte digievoluzione invece dei DP.",
-      "Progress": "Mentre questo Digimon attacca, gli effetti dell'avversario non hanno effetto su di lui.",
-      "Mind Link": "Metti questo Tamer come carta digievoluzione più in basso del Digimon indicato, se tra le sue carte digievoluzione non c'è già una carta Tamer.",
-      "Guard": "Quando un altro tuo Digimon sta per lasciare l'area di battaglia per un effetto dell'avversario, puoi eliminare questo Digimon: così l'altro resta in campo.",
-      "Ascension": "Quando questo Digimon viene eliminato, puoi mettere questa carta in cima alla tua sicurezza.",
-      "Engage": "Alla fine del tuo turno questo Digimon può attaccare.",
-      "Decode": "Quando questo Digimon sta per lasciare l'area di battaglia (non in battaglia), puoi giocare senza pagarne il costo 1 delle sue carte digievoluzione indicate.",
-      "Overclock": "Alla fine del tuo turno, eliminando 1 tuo Token o 1 altro tuo Digimon del tratto indicato, questo Digimon attacca un giocatore senza sospendersi."
+      "Blocker": "This Digimon can block in the blocker timing.",
+      "Piercing": "When this Digimon attacks and deletes an opponent's Digimon and survives the battle, it performs any security checks it normally would.",
+      "Reboot": "Unsuspend this Digimon during your opponent's unsuspend phase.",
+      "Save": "You may place this card under one of your Tamers.",
+      "Delay": "By trashing this card after the placing turn, activate the effect below.",
+      "Jamming": "This Digimon can't be deleted in battles against Security Digimon.",
+      "Rush": "This Digimon can attack the turn it comes into play.",
+      "Retaliation": "When this Digimon is deleted after losing a battle, delete the Digimon it was battling.",
+      "Alliance": "When this Digimon attacks, by suspending 1 of your other Digimon, add the suspended Digimon's DP to this Digimon and it gains ＜Security A. +1＞ for the attack.",
+      "Raid": "When this Digimon attacks, you may switch the target of attack to 1 of your opponent's unsuspended Digimon with the highest DP.",
+      "Barrier": "When this Digimon would be deleted in battle, by trashing the top card of your security stack, prevent that deletion.",
+      "Blast Digivolve": "Your Digimon may digivolve into this card without paying the cost.",
+      "Armor Purge": "When this Digimon would be deleted, you may trash the top card of this Digimon to prevent that deletion.",
+      "Collision": "During this Digimon's attack, all of your opponent's Digimon gain ＜Blocker＞, and must block if possible.",
+      "Fortitude": "When this Digimon with digivolution cards is deleted, play this card without paying the cost.",
+      "Evade": "When this Digimon would be deleted, you may suspend it to prevent that deletion.",
+      "Blitz": "If your opponent has 1 or more memory, this Digimon may attack.",
+      "Training": "In the main phase, by suspending this Digimon, place your deck's top card face down as this Digimon's bottom digivolution card. This effect can also activate in the breeding area.",
+      "Arts Digivolve": "Instead of trashing after use, your cards may digivolve into this card without paying the cost.",
+      "Vortex": "At the end of your turn, this Digimon may attack an opponent's Digimon. With this effect, it can attack the turn it was played.",
+      "Scapegoat": "When this Digimon would be deleted other than by your effects, by deleting 1 of your other Digimon, prevent that deletion.",
+      "Execute": "At the end of your turn, this Digimon may attack. At the end of that attack, delete this Digimon. Your opponent's unsuspended Digimon can also be attacked with this effect.",
+      "Iceclad": "Other than against Security Digimon, compare the number of digivolution cards instead of DP in this Digimon's battles.",
+      "Progress": "While attacking, your opponent's effects don't affect this Digimon.",
+      "Mind Link": "Place this Tamer as that Digimon's bottom digivolution card if there are no Tamer cards in its digivolution cards.",
+      "Guard": "When any of your other Digimon would leave the battle area by your opponent's effects, by deleting this Digimon, they don't leave.",
+      "Ascension": "When this Digimon is deleted, you may place this card as the top security card.",
+      "Engage": "At the end of your turn, this Digimon may attack.",
+      "Decode": "When this Digimon would leave the battle area other than in battle, you may play 1 specified Digimon card from its digivolution cards without paying the cost.",
+      "Overclock": "At the end of your turn, by deleting 1 of your Tokens or other specified Digimon, this Digimon attacks a player without suspending."
     };
     return FIX[k] || FIX[k.replace(/\s*\(.*$/, "")] || null;
   }
   var kwEl = null, kwBack = false;
   function kwWire(b, inner) {
     b.classList.add("kwlink"); b.setAttribute("role", "button"); b.tabIndex = 0; b.removeAttribute("title");
-    b.setAttribute("aria-label", inner + ": spiegazione della regola");
+    b.setAttribute("aria-label", inner + ": spiegazione della regola (in inglese)");
     b.onclick = function (e) { e.stopPropagation(); e.preventDefault(); openKw(b, inner); };
     b.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); openKw(b, inner); } };
   }
