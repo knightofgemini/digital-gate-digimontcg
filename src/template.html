@@ -940,6 +940,14 @@ body.mob .hrow { grid-template-columns: minmax(0, 1fr); margin-top: 22px; }
 .mhave { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
 .mhave b { font: 700 1.35rem var(--font-display); }
 .mhave span { font-size: .84rem; color: var(--ink-2); }
+/* telefono, vista a elenco (ottobre 2026): righe senza bordo, prezzi in una sola pastiglia sotto il codice */
+body.mob .row.card.p1 { grid-template-columns: 46px minmax(0, 1fr) auto; gap: 10px; padding: 8px 10px 8px 8px; border: 0; border-radius: 12px; background: color-mix(in srgb, var(--surface) 82%, var(--bg)); }
+body.mob .row.card.p1 .thumb { position: relative; margin-left: 0; }
+.thumb .tband { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; }
+.ppill { display: inline-flex; align-items: center; gap: 6px; height: 24px; margin-top: 5px; padding: 0 9px; border-radius: 99px; background: var(--surface-2); color: var(--ink); font: 600 .76rem var(--font-body); font-variant-numeric: tabular-nums; white-space: nowrap; max-width: 100%; box-sizing: border-box; }
+.ppill .cmk, .ppill .ctk { width: 13px; height: 13px; }
+.ppill .psep { display: block; width: 1px; height: 12px; background: var(--line); }
+.ppill .na { color: var(--ink-2); font-weight: 500; }
 /* telefono: ricerca in basso nelle sezioni Carte, Collezione, Prodotti e pagina prodotto + foglio "Filtri" */
 .mbot, .mfsheet, .mfscrim { display: none; }
 body.mob.hasmbot { padding-bottom: calc(138px + env(safe-area-inset-bottom, 0px)); }
@@ -1723,6 +1731,25 @@ body.mob .dksheet.on.full, body.mob.kbd .dksheet.on { height: calc(100% - 52px -
   }
   // righe prezzo di tutti i negozi, una sotto l'altra
   function priceLines(c, wide) { return [priceLine(c, wide), ctLine(c, wide)].filter(Boolean); }
+  // telefono, vista a elenco: miniatura con la barretta dei colori in fondo e i due negozi in un'unica pastiglia
+  function thumbBand(c) { var t = picBox("thumb", "t", c), b = el("i", "tband"); b.style.background = gradient(c.colors, "to right"); t.appendChild(b); return t; }
+  function pricePill(c) {
+    var cm = priceCovered(c), ct = ctCovered(c); if (!cm && !ct) return null;
+    var w = el("div", "ppill"), lab = [];
+    if (cm) {
+      var p = priceOf(c), v = p && p[0] != null ? p[0] : p && p[1] != null ? p[1] : null;
+      w.appendChild(cmMark()); w.appendChild(el("span", v == null ? "na" : "", v == null ? "N/D" : eurC(v) + " €"));
+      lab.push("Cardmarket " + (v == null ? "non disponibile" : (p[0] != null ? "trend " : "minimo ") + eurC(v) + " euro"));
+    }
+    if (cm && ct) w.appendChild(el("i", "psep"));
+    if (ct) {
+      var q = ctOf(c), u = q && q[0] != null ? q[0] : null;
+      w.appendChild(ctMark()); w.appendChild(el("span", u == null ? "na" : "", u == null ? "N/D" : eurC(u) + " €"));
+      lab.push("CardTrader " + (u == null ? "non disponibile" : "minimo " + eurC(u) + " euro"));
+    }
+    w.setAttribute("aria-label", "Prezzi: " + lab.join(", ")); w.setAttribute("role", "note");
+    return w;
+  }
   // Riquadro prezzi compatto della scheda carta: una riga per negozio; i dettagli Cardmarket si aprono a richiesta
   var cmDetOpen = false, ctDetOpen = false;
   function priceBox(c) {
@@ -2167,6 +2194,16 @@ body.mob .dksheet.on.full, body.mob.kbd .dksheet.on { height: calc(100% - 52px -
         t.onkeydown = function (e) { if (e.target === t && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); st.open = c; drawSheet(); } };
         ul.appendChild(t); return;
       }
+      // telefono: riga leggera senza bordo, colori in fondo alla miniatura e i due prezzi in una sola pastiglia
+      if (!DESK) {
+        var r = el("div", "row card p1"); r.tabIndex = 0; r.setAttribute("role", "button");
+        r.appendChild(thumbBand(c));
+        var mid = el("div", "name"); mid.appendChild(nameFrag(c));
+        listLines(c).forEach(function (x) { mid.appendChild(x); });
+        var pp = pricePill(c); if (pp) mid.appendChild(pp);
+        r.appendChild(mid);
+        r.appendChild(qtyControl(c, function () { recomputeStats(); render(); }));
+      } else {
       var r = el("div", "row card"); r.tabIndex = 0; r.setAttribute("role", "button");
       var sw = el("div", "swatch"); sw.style.background = gradient(c.colors); r.appendChild(sw);
       r.appendChild(picBox("thumb", "t", c));
@@ -2178,6 +2215,7 @@ body.mob .dksheet.on.full, body.mob.kbd .dksheet.on { height: calc(100% - 52px -
       rside.appendChild(qtyControl(c, function () { recomputeStats(); render(); }));
       priceLines(c).forEach(function (x) { rside.appendChild(x); });
       r.appendChild(rside);
+      }
       function open() { st.open = c; drawSheet(); }
       r.onclick = open;
       r.onkeydown = function (e) { if (e.target === r && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); open(); } };
@@ -3629,9 +3667,9 @@ body.mob .dksheet.on.full, body.mob.kbd .dksheet.on { height: calc(100% - 52px -
       NAVLIST.push(c);
       return t;
     }
-    var r = el("div", "row card"); r.tabIndex = 0; r.setAttribute("role", "button");
-    var sw = el("div", "swatch"); sw.style.background = gradient(c.colors); r.appendChild(sw);
-    r.appendChild(picBox("thumb", "t", c));
+    var r = el("div", "row card" + (DESK ? "" : " p1")); r.tabIndex = 0; r.setAttribute("role", "button");
+    if (DESK) { var sw = el("div", "swatch"); sw.style.background = gradient(c.colors); r.appendChild(sw); r.appendChild(picBox("thumb", "t", c)); }
+    else r.appendChild(thumbBand(c));
     var mid = el("div", "name"); mid.appendChild(nameFrag(c));
     listLines(c).forEach(function (x) { mid.appendChild(x); });
     r.appendChild(mid);
