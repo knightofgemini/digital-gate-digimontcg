@@ -310,7 +310,7 @@ html.lock, html.lock body { overflow: hidden; overscroll-behavior: none; }
 .pbox details[open] .pchev { transform: rotate(180deg); }
 .pbox .pgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 0 12px; }
 .pbox .pc { display: flex; justify-content: space-between; gap: 8px; padding: 6px 8px; border-radius: 8px; background: var(--surface-2); font-size: .78rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
-.pbox .pc b { color: var(--ink); font-weight: 600; white-space: nowrap; }
+.pbox .pc b { color: var(--ink); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fx.pbox p.pnote { background: none; border: 0; padding: 6px 12px 10px; margin: 0; font-size: .72rem; color: var(--ink-2); }
 .pline.wide { grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; padding: 10px 12px; border-radius: 10px; font-size: 1rem; margin-top: 8px; }
 .pline.wide .cmk { width: 22px; height: 22px; }
@@ -1646,7 +1646,7 @@ body.mob .hrow { grid-template-columns: minmax(0, 1fr); margin-top: 22px; }
   // righe prezzo di tutti i negozi, una sotto l'altra
   function priceLines(c, wide) { return [priceLine(c, wide), ctLine(c, wide)].filter(Boolean); }
   // Riquadro prezzi compatto della scheda carta: una riga per negozio; i dettagli Cardmarket si aprono a richiesta
-  var cmDetOpen = false;
+  var cmDetOpen = false, ctDetOpen = false;
   function priceBox(c) {
     if (!priceCovered(c) && !ctCovered(c)) return null;
     var b = el("div", "fx pbox"), box = el("div", "pmain");
@@ -1675,15 +1675,25 @@ body.mob .hrow { grid-template-columns: minmax(0, 1fr); margin-top: 22px; }
       var r = el("div", "pc"); r.appendChild(el("span", "", x[0])); r.appendChild(el("b", "", eur(x[1]))); g.appendChild(r);
     });
     d.appendChild(g);
-    d.appendChild(el("p", "pnote", "Guida prezzi del " + fmtDate(PRICES.d) + ": dati aggregati che non distinguono lingua o condizione."));
+    d.appendChild(el("p", "pnote", "Guida prezzi Cardmarket aggiornata il " + fmtDate(PRICES.d) + ": dati medi di tutte le vendite, che non distinguono lingua o condizione della carta."));
     return d;
   }
   function ctRow(c) {
     var p = ctOf(c), has = p && p[0] != null;
     var row = prRow(ctMark(), "CardTrader", has ? p[0] : null, "Minimo");
-    var sp = el("span", "pchev off"); sp.setAttribute("aria-hidden", "true"); row.appendChild(sp);
-    row.title = has ? "Offerta più bassa in inglese Near Mint (" + (p[1] === 1 ? "1 offerta" : p[1] + " offerte") + "), " + fmtDate(CTP.d) : "Nessuna offerta in inglese Near Mint al momento";
-    return row;
+    var chev = el("span", "pchev"); chev.setAttribute("aria-hidden", "true"); row.appendChild(chev);
+    var d = document.createElement("details"); d.className = "cmdet"; d.open = ctDetOpen;
+    var sm = document.createElement("summary"); sm.setAttribute("aria-label", "Dettagli prezzo CardTrader"); sm.appendChild(row); d.appendChild(sm);
+    d.addEventListener("toggle", function () { ctDetOpen = d.open; });
+    var g = el("div", "pgrid");
+    [["Lingua", "Inglese"], ["Condizione", "Near Mint"], ["Offerte", p ? String(p[1]) : "0"], ["Aggiornato", (CTP.d || "").split("-").reverse().join("/")]].forEach(function (x) {
+      var r = el("div", "pc"); r.appendChild(el("span", "", x[0])); r.appendChild(el("b", "", x[1])); g.appendChild(r);
+    });
+    d.appendChild(g);
+    d.appendChild(el("p", "pnote", has
+      ? "Prezzo più basso tra le offerte in vendita su CardTrader per carte in inglese in condizione Near Mint (non gradate, né firmate o alterate). Le offerte contate sono tra le 25 più economiche della carta."
+      : "Al momento su CardTrader non c'è nessuna offerta per questa carta in inglese in condizione Near Mint."));
+    return d;
   }
 
   // ---- Scheda prodotto: caratteristiche dal sito ufficiale Bandai (src/products.json, da tools/fetch_products.py)
