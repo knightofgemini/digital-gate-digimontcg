@@ -627,6 +627,10 @@ body.desk .sheet-head h2 { font-size: 1.75rem; }
 .sgrid { display: grid; grid-template-columns: minmax(280px, 370px) minmax(0, 1fr); gap: 30px; align-items: start; }
 .sgrid .sl { position: sticky; top: 78px; min-width: 0; }
 .sgrid .sr { min-width: 0; }
+.sgrid.swap { grid-template-columns: minmax(0, 1fr) minmax(280px, 370px); }
+.sgrid.swap .sl { order: 2; }
+.sgrid.swap .sr { order: 1; }
+.shbtns .swapb { margin-right: 6px; }
 body.desk .art { margin-top: 0; }
 body.desk .art .pic, body.desk .art .artband { width: 100%; }
 body.desk .altsec { margin-top: 16px; }
@@ -2742,10 +2746,16 @@ body.mob .hrow { grid-template-columns: minmax(0, 1fr); margin-top: 22px; }
         if (fn) b.onclick = fn; else if (target) b.onclick = function () { st.open = target; drawSheet(); var n2 = sheet.querySelector(".sheet"); if (n2) n2.scrollTop = 0; }; else b.disabled = true;
         return b;
       };
+      // sposta la colonna con carta, copie, prezzi e alternative art a destra o a sinistra (salvato in dg-cardside)
+      var cardR = false; try { cardR = localStorage.getItem("dg-cardside") === "r"; } catch (e) {}
+      var sw = navB(cardR ? "Carta a sinistra" : "Carta a destra",
+        cardR ? '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/><path d="M9 9l-3 3 3 3"/>' : '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/><path d="M15 9l3 3-3 3"/>',
+        null, function () { try { if (cardR) localStorage.removeItem("dg-cardside"); else localStorage.setItem("dg-cardside", "r"); } catch (e) {} var y = sh.scrollTop; drawSheet(); var n2 = sheet.querySelector(".sheet"); if (n2) n2.scrollTop = y; });
+      sw.classList.add("swapb"); bx.appendChild(sw);
       if (ni >= 0 && !SHSTACK.length) { bx.appendChild(navB("Carta precedente (←)", '<path d="M15 5l-7 7 7 7"/>', NAVLIST[ni - 1])); bx.appendChild(navB("Carta successiva (→)", '<path d="M9 5l7 7-7 7"/>', NAVLIST[ni + 1])); }
       bx.appendChild(navB("Chiudi (Esc)", '<path d="M6 6l12 12M18 6L6 18"/>', null, closeSheet));
       head.appendChild(bx);
-      var sg = el("div", "sgrid"), sL = el("div", "sl"), sR = el("div", "sr");
+      var sg = el("div", "sgrid" + (cardR ? " swap" : "")), sL = el("div", "sl"), sR = el("div", "sr");
       Array.prototype.slice.call(sh.children).forEach(function (k) {
         if (k === hint || k === head || k.classList.contains("sep")) return;
         (k.classList.contains("art") || k.classList.contains("altsec") || k.classList.contains("pbox") || k.classList.contains("own") ? sL : sR).appendChild(k);
