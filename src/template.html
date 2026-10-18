@@ -3508,7 +3508,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     });
     if (!any) {
       var e = el("div", "panel cempty"); e.appendChild(el("p", "", "Il mazzo è vuoto: cerca le carte e aggiungile con +, oppure importa una lista dal ⋯ in alto."));
-      e.appendChild(btn("Aggiungi carte", "pri", function () { openDkSheet(1, false); }, ICO_PLUS)); wrap.appendChild(e);
+      e.appendChild(btn("Aggiungi carte", "pri", function () { openDkSheet(1, true); }, ICO_PLUS)); wrap.appendChild(e);
     }
     return wrap;
   }
@@ -3593,7 +3593,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
       out.appendChild(dkPiles(d));
       var ab = el("div", "dkbar"), ai = el("button", "dkbarb"); ai.type = "button";
       ai.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Cerca e aggiungi carte…</span>';
-      ai.onclick = function () { st.q = ""; qi.value = ""; st.ct = st.lv = st.cost = ""; syncSelects(); openDkSheet(1, false); };
+      ai.onclick = function () { st.q = ""; qi.value = ""; st.ct = st.lv = st.cost = ""; syncSelects(); openDkSheet(1, true); };
       ab.appendChild(ai); out.appendChild(ab);
       if (st.dkSheet) {
         dkSheetResults(d);
