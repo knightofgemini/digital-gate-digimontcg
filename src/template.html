@@ -1172,7 +1172,7 @@ body.mob.kbd .mbot.on::after { display: none; }
 .scok svg { width: 18px; height: 18px; }
 .scok.maybe { color: var(--accent); }
 .schit { display: flex; gap: 14px; align-items: flex-start; }
-.schit .thumb { flex: none; width: 104px; border-radius: 7px; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,.28); cursor: pointer; }
+.scan .schit .thumb { flex: none; width: 104px; border-radius: 7px; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,.28); cursor: pointer; }
 .schit .thumb img { display: block; width: 100%; aspect-ratio: 63 / 88; object-fit: cover; }
 .schit .tx { flex: 1; min-width: 0; padding-top: 2px; }
 .schit .cd { font: 600 .82rem var(--font-display); color: var(--ink-2); }
@@ -1194,12 +1194,14 @@ body.mob.kbd .mbot.on::after { display: none; }
 .sccand { display: flex; flex-direction: column; gap: 6px; }
 .sccand button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; text-align: left; }
 .sccand button[aria-pressed="true"] { border-color: var(--accent); }
-.sccand .thumb { flex: none; width: 34px; border-radius: 4px; overflow: hidden; }
+.scan .sccand .thumb { flex: none; width: 34px; border-radius: 4px; overflow: hidden; }
 .sccand .thumb img { display: block; width: 100%; aspect-ratio: 63 / 88; object-fit: cover; }
 .sccand b { display: block; font: 600 .9rem var(--font-display); }
 .sccand small { color: var(--ink-2); font-size: .76rem; }
 .scacts { display: flex; gap: 10px; margin-top: 16px; }
 .scacts .btn { flex: 1; justify-content: center; min-height: 48px; font-size: .95rem; }
+.scan .thumb { width: auto; height: auto; margin: 0; display: block; background: var(--surface-2); }
+.scan .thumb.noimg { aspect-ratio: 63 / 88; }
 .scan .noimg img { visibility: hidden; }
 /* pulsante fotocamera nella barra di ricerca in basso e nel pannello filtri su PC */
 .mbf.mbs svg { width: 23px; height: 23px; }
@@ -4416,21 +4418,22 @@ body.desk .scan.res .scres { transform: translateX(-50%); }
       s.onload = function () { res(); }; s.onerror = function () { rej(new Error("rete")); };
       document.head.appendChild(s);
     }).then(function () {
-      return window.Tesseract.createWorker("eng", 1, { logger: function (m) { if (SC && SC.open && !SC.ready && m && m.progress != null && String(m.status || "").indexOf("recogn") < 0) scStatus("Preparo il riconoscimento (solo la prima volta)… " + Math.round(m.progress * 100) + "%"); } });
+      return window.Tesseract.createWorker("eng", 1, { logger: function (m) { if (SC && SC.open && !SC.ready && !SC.camFail && m && m.progress != null && String(m.status || "").indexOf("recogn") < 0) scStatus("Preparo il riconoscimento (solo la prima volta)… " + Math.round(m.progress * 100) + "%"); } });
     }).then(function (w) { return w.setParameters({ tessedit_pageseg_mode: "11" }).then(function () { return w; }); });
     tessP.catch(function () { tessP = null; });
     return tessP;
   }
   // --- dal testo letto ai codici delle carte: correzione delle lettere/cifre che l'OCR confonde
   function scD(s) { return s.replace(/[OQD]/g, "0").replace(/[IL|]/g, "1").replace(/S/g, "5").replace(/B/g, "8").replace(/Z/g, "2").replace(/G/g, "6"); }
-  function scL(s) { return s.replace(/8/g, "B").replace(/0/g, "O").replace(/5/g, "S").replace(/1/g, "I").replace(/2/g, "Z"); }
+  function scL(s) { return s.replace(/8/g, "B").replace(/0/g, "O").replace(/5/g, "S").replace(/1/g, "I").replace(/2/g, "Z").replace(/7/g, "T").replace(/4/g, "A"); }
   function scanCodes(txt) {
-    var T = String(txt || "").toUpperCase().replace(/[–—~_=]/g, "-"), re = /([A-Z0-9]{1,6})\s?-\s?([0-9OQDILSBZG|]{2,3})(?![0-9])/g, m, out = [], seen = {};
+    var T = String(txt || "").toUpperCase().replace(/[–—~_=]/g, "-"), re = /([A-Z0-9]{1,6})\s?-\s?([0-9OQDILSBZG|]{2,4})/g, m, out = [], seen = {};
     while ((m = re.exec(T))) {
-      var pre = m[1], num = scD(m[2]);
-      for (var a = 0; a < pre.length; a++) for (var k = 1; k <= 3 && a + k <= pre.length; k++) {
-        var cand = scL(pre.slice(a, a + k)) + scD(pre.slice(a + k)) + "-" + num;
-        if (CODEIDX[cand] && !seen[cand]) { seen[cand] = 1; out.push(cand); }
+      // il numero può avere un carattere in più letto dal simbolo vicino (es. 0860): si prova anche accorciato
+      var pre = m[1], n0 = scD(m[2]), nums = [n0, n0.slice(0, 3), n0.slice(0, 2)].filter(function (x, i, a) { return x.length >= 2 && a.indexOf(x) === i; });
+      for (var a = 0; a < pre.length; a++) for (var k = 1; k <= 3 && a + k <= pre.length; k++) for (var j = 0; j < nums.length; j++) {
+        var cand = scL(pre.slice(a, a + k)) + scD(pre.slice(a + k)) + "-" + nums[j];
+        if (CODEIDX[cand]) { if (!seen[cand]) { seen[cand] = 1; out.push(cand); } break; }
       }
     }
     return out;
@@ -4537,7 +4540,7 @@ body.desk .scan.res .scres { transform: translateX(-50%); }
   function scStatus(t, warn) { if (!SC) return; SC.stat.textContent = t; SC.stat.className = warn ? "warn" : ""; SC.stat.parentNode.hidden = !t; }
   function openScan() {
     scBuild(); if (SC.open) return;
-    SC.open = true; SC.tries = 0; SC.busy = false; SC.ready = false; SC.after = null; SC.torchOn = false;
+    SC.open = true; SC.tries = 0; SC.busy = false; SC.ready = false; SC.camFail = false; SC.after = null; SC.torchOn = false;
     SC.el.classList.add("on"); SC.el.classList.remove("res", "found", "run"); SC.pick.classList.remove("big");
     document.documentElement.classList.add("lock");
     pushOverlay("scan");
@@ -4555,12 +4558,12 @@ body.desk .scan.res .scres { transform: translateX(-50%); }
       SC.stream = s; SC.video.srcObject = s; var p = SC.video.play(); if (p && p.catch) p.catch(function () {});
       var tk = s.getVideoTracks()[0], caps = tk && tk.getCapabilities ? tk.getCapabilities() : {};
       SC.torch.classList.toggle("ghost", !caps.torch);
-      SC.camOk = true; scLoop();
+      SC.camOk = true; if (!SC.ready && SC.stat.textContent === "Avvio la fotocamera…") scStatus("Preparo il riconoscimento…"); scLoop();
     }, function (e) {
       scNoCam(e && e.name === "NotAllowedError" ? "Permesso per la fotocamera negato. Puoi consentirlo nelle impostazioni del telefono, oppure usare una foto." : "Non riesco ad aprire la fotocamera: puoi usare una foto della carta.");
     });
   }
-  function scNoCam(msg) { SC.camOk = false; scStatus(msg, true); SC.pick.classList.add("big"); SC.el.classList.remove("run"); }
+  function scNoCam(msg) { SC.camOk = false; SC.camFail = true; scStatus(msg, true); SC.pick.classList.add("big"); SC.el.classList.remove("run"); }
   function scStopCam() {
     if (SC && SC.stream) { SC.stream.getTracks().forEach(function (t) { t.stop(); }); SC.stream = null; }
     if (SC) { SC.video.srcObject = null; SC.camOk = false; }
