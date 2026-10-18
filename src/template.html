@@ -4816,7 +4816,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
       var clr = el("button", "schclr", "Svuota"); clr.type = "button";
       clr.onclick = function () {
         askConfirm({ title: "Svuotare la cronologia?",
-          text: (SCH.length === 1 ? "La scansione viene tolta" : "Le " + SCH.length + " scansioni vengono tolte") + ". Le carte già aggiunte restano nella collezione.", ok: "Svuota",
+          text: ["Verranno tolte tutte le scansioni dall'elenco: non potrai recuperarle.", "Le carte che hai già aggiunto restano nella tua collezione."], ok: "Svuota",
           onOk: function () { SCH = []; schSave(); schBadge(); schDraw(); } });
       };
       hd.appendChild(clr);
@@ -4896,27 +4896,14 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     no.focus({ preventScroll: true });
   }
   function deckN(d) { var n = 0; Object.keys(d.cards).forEach(function (k) { n += d.cards[k]; }); return n; }
-  // quante carte ci sono nel mazzo principale e quante Digi-Egg, in parole
-  function deckParts(d) {
-    var m = 0, g = 0;
-    Object.keys(d.cards).forEach(function (k) { var c = entryByKey(k); if (c && isEgg(c)) g += d.cards[k]; else m += d.cards[k]; });
-    var a = [];
-    if (m) a.push(m === 1 ? "1 carta del mazzo principale" : m + " carte del mazzo principale");
-    if (g) a.push(g === 1 ? "1 Digi-Egg" : g + " Digi-Egg");
-    return { n: m + g, txt: a.join(" e ") };
-  }
   function cfmEmptyDeck(d) {
-    var p = deckParts(d);
     askConfirm({ title: ["Svuotare il mazzo ", d.name, "?"],
-      text: p.n ? ["Verranno tolte tutte le carte: " + p.txt + ". Il mazzo resterà tra i tuoi mazzi, con lo stesso nome, pronto da ricomporre.",
-        "La tua collezione non cambia."] : ["Il mazzo è già vuoto."], ok: "Svuota",
+      text: ["Verranno tolte tutte le carte. Il mazzo resterà tra i tuoi mazzi, con lo stesso nome, pronto da ricomporre.", "La tua collezione non cambia."], ok: "Svuota",
       onOk: function () { d.cards = {}; d.upd = Date.now(); saveDecks(); render(); } });
   }
   function cfmDelDeck(d, after) {
-    var p = deckParts(d);
     askConfirm({ title: ["Eliminare il mazzo ", d.name, "?"],
-      text: [(p.n ? "Il mazzo e le sue carte (" + p.txt + ") verranno cancellati" : "Il mazzo verrà cancellato") + " definitivamente: non potrai recuperarlo.",
-        p.n ? "Per tenerne una copia usa prima Esporta. La tua collezione non cambia." : "La tua collezione non cambia."], ok: "Elimina",
+      text: ["Il mazzo e le sue carte verranno cancellati definitivamente: non potrai recuperarlo.", "Per tenerne una copia usa prima Esporta. La tua collezione non cambia."], ok: "Elimina",
       onOk: function () { decks = decks.filter(function (x) { return x !== d; }); saveDecks(); st.deckId = null; if (after) after(); render(); } });
   }
   var statsReady = false;
