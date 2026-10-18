@@ -2952,9 +2952,15 @@ body.mob.kbd .mbot.on::after { display: none; }
     if (i < 2) return text;
     return [ls.slice(0, i).map(function (s) { return s.trim(); }).join(" ")].concat(ls.slice(i)).join("\n");
   }
+  // la spiegazione tra parentesi dopo una keyword (es. ＜Alliance＞ (When this Digimon attacks…)) non si mostra:
+  // come per tutte le altre keyword, si legge toccando la keyword
+  function kwNoRem(text) {
+    return String(text).replace(/(＜[^＞\n]+＞)[ \t]*\((?:[^()\n]|\([^()\n]*\))*\)/g, function (all, kw) { return kwInfo(kw.slice(1, -1)) ? kw : all; })
+      .replace(/(⟦[^⟧\n]+⟧)[ \t]*\((?:[^()\n]|\([^()\n]*\))*\)/g, "$1");
+  }
   function fx(title, text) {
     if (!text) return null;
-    var d = el("div", "fx"); d.appendChild(el("h3", "", title)); d.appendChild(rich(el("p", ""), kwJoin(text))); return d;
+    var d = el("div", "fx"); d.appendChild(el("h3", "", title)); d.appendChild(rich(el("p", ""), kwJoin(kwNoRem(text)))); return d;
   }
   function stat(label, val) {
     if (!val) return null;
