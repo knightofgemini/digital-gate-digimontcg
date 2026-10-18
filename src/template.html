@@ -940,6 +940,37 @@ body.mob .hrow { grid-template-columns: minmax(0, 1fr); margin-top: 22px; }
 .mhave { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
 .mhave b { font: 700 1.35rem var(--font-display); }
 .mhave span { font-size: .84rem; color: var(--ink-2); }
+/* telefono: ricerca in basso nelle sezioni Carte, Collezione, Prodotti e pagina prodotto + foglio "Filtri" */
+.mbot, .mfsheet, .mfscrim { display: none; }
+body.mob.hasmbot { padding-bottom: calc(138px + env(safe-area-inset-bottom, 0px)); }
+body.mob.hasmbot.hasmbotc { padding-bottom: calc(180px + env(safe-area-inset-bottom, 0px)); }
+body.mob.hasmbot.kbd { padding-bottom: 80px; }
+body.mob .mbot.on { display: flex; flex-direction: column; gap: 8px; position: fixed; left: 0; right: 0; bottom: calc(66px + env(safe-area-inset-bottom, 0px)); z-index: 14; padding: 18px 14px 8px; background: linear-gradient(to bottom, transparent, var(--bg) 38%); pointer-events: none; }
+body.mob .mbot.on > * { pointer-events: auto; }
+body.mob.kbd .mbot.on { bottom: var(--kb, 0px); }
+body.mob.hasmbot .toast { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
+.mbchips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.mbchips:empty { display: none; }
+.mbchip { height: 34px; padding: 0 10px; border-radius: 99px; border: 1px solid var(--cyan); background: var(--cyan-soft); color: var(--ink); font: 500 .82rem var(--font-body); display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.mbchip i { display: block; width: 10px; height: 10px; border-radius: 50%; }
+.mbchip b { color: var(--cyan); font-weight: 700; }
+.mbclr { min-height: 34px; border: 0; background: none; color: var(--cyan); font: 700 .82rem var(--font-display); cursor: pointer; padding: 0 6px; }
+.mbrow { display: flex; gap: 8px; align-items: center; }
+.mbq { flex: 1; min-width: 0; }
+body.mob .mbq #q { width: 100%; height: 50px; border-radius: 14px; box-shadow: 0 8px 22px rgba(0,0,0,.22); }
+.mbf { position: relative; flex: none; width: 50px; height: 50px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); display: grid; place-items: center; box-shadow: 0 8px 22px rgba(0,0,0,.22); cursor: pointer; padding: 0; }
+.mbf.on { border-color: var(--cyan); background: var(--cyan-soft); }
+.mbf svg { width: 22px; height: 22px; }
+.mbf .mbn { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border-radius: 10px; background: var(--cyan); color: #06222a; font: 700 .7rem/20px var(--font-display); }
+body.mob .mfscrim.on { display: block; position: fixed; inset: 0; z-index: 18; background: var(--scrim); }
+body.mob .mfsheet.on { display: flex; flex-direction: column; position: fixed; left: 0; right: 0; bottom: 0; z-index: 19; max-height: 82vh; background: var(--bg); border-radius: 20px 20px 0 0; border-top: 1px solid var(--line); box-shadow: 0 -14px 36px rgba(0,0,0,.35); padding: 0 14px calc(14px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; }
+.mfsh { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex: none; }
+.mfsh h2 { margin: 0; font: 700 1.2rem var(--font-display); }
+.mfsh button { min-height: 40px; border: 0; background: none; color: var(--cyan); font: 700 .95rem var(--font-display); cursor: pointer; }
+.mfsb { overflow-y: auto; }
+body.mob .mfsb .mfbar { margin-top: 0; }
+.mfsgo { flex: none; margin-top: 14px; height: 52px; border-radius: 14px; border: 0; background: var(--accent); color: var(--accent-ink); font: 700 1rem var(--font-display); cursor: pointer; }
+body.mob.kbd .dksheet.on { bottom: var(--kb, 0px); }
 /* editor mazzo telefono (ottobre 2026): pile per livello a scorrimento verticale + foglio "Aggiungi carte" dal basso */
 .dksheet, .dkbar { display: none; }
 body.mob.dked { padding-bottom: calc(136px + env(safe-area-inset-bottom, 0px)); }
@@ -1875,6 +1906,7 @@ body.mob .dksheet.on.full, body.mob.kbd .dksheet.on { height: calc(100% - 52px -
       }
     }
     var list = (st.setId ? cardsOfSet(st.setId) : CARDS).filter(function (c) { return cardMatches(c, q); });
+    LASTN = list.length;
     if (q) {
       list = list.map(function (c, j) { return { c: c, j: j, r: relevance(c, q) }; })
         .sort(function (a, b) { return (a.r - b.r) || (a.j - b.j); })
@@ -2834,11 +2866,71 @@ body.mob .dksheet.on.full, body.mob.kbd .dksheet.on { height: calc(100% - 52px -
 
   // telefono: nella pagina di un prodotto la ricerca (con i menù dei filtri) scende sotto la scheda del prodotto
   var phead = document.getElementById("phead"), psearch = document.getElementById("psearch"), mfbarEl = document.getElementById("mfbar");
+  // ---- Telefono: ricerca in basso (Carte, Collezione, Prodotti, pagina prodotto) con foglio "Filtri" e filtri attivi come etichette
+  var mbotEl = null, mbotQ = null, mbotChips = null, mbotFbtn = null, mfsEl = null, mfsScrim = null, mfsBody = null, mfsGo = null, LASTN = -1;
+  var FICO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>';
+  function mbotBuild() {
+    if (mbotEl) return;
+    mbotEl = el("div", "mbot"); mbotChips = el("div", "mbchips");
+    var row = el("div", "mbrow"); mbotQ = el("div", "mbq"); row.appendChild(mbotQ);
+    mbotFbtn = el("button", "mbf"); mbotFbtn.type = "button"; mbotFbtn.onclick = function () { openMfs(); }; row.appendChild(mbotFbtn);
+    mbotEl.appendChild(mbotChips); mbotEl.appendChild(row); document.body.appendChild(mbotEl);
+    mfsScrim = el("div", "mfscrim"); mfsScrim.onclick = function () { closeMfs(); }; document.body.appendChild(mfsScrim);
+    mfsEl = el("section", "mfsheet"); mfsEl.setAttribute("aria-label", "Filtri");
+    var hb = el("button", "dkhandle"); hb.type = "button"; hb.setAttribute("aria-label", "Chiudi i filtri"); hb.appendChild(el("i")); hb.onclick = function () { closeMfs(); };
+    var hd = el("div", "mfsh"); hd.appendChild(el("h2", "", "Filtri"));
+    var az = el("button", "", "Azzera"); az.type = "button"; az.onclick = function () { clearFlt(); }; hd.appendChild(az);
+    mfsBody = el("div", "mfsb");
+    mfsGo = el("button", "mfsgo", "Mostra i risultati"); mfsGo.type = "button"; mfsGo.onclick = function () { closeMfs(); };
+    mfsEl.appendChild(hb); mfsEl.appendChild(hd); mfsEl.appendChild(mfsBody); mfsEl.appendChild(mfsGo);
+    var y0 = null;
+    [hb, hd].forEach(function (t) {
+      t.addEventListener("touchstart", function (e) { y0 = e.touches[0].clientY; }, { passive: true });
+      t.addEventListener("touchend", function (e) { if (y0 == null) return; var dy = e.changedTouches[0].clientY - y0; y0 = null; if (dy > 60) closeMfs(); });
+    });
+    document.body.appendChild(mfsEl);
+  }
+  function openMfs() { if (st.mfs) return; st.mfs = true; pushOverlay("mfsheet"); render(); }
+  function closeMfs() { closeFilters(); if (history.state && history.state.ov === "mfsheet") history.back(); else { st.mfs = false; render(); } }
+  function clearFlt() { st.qm = st.color = st.ct = st.lv = st.cost = ""; st.shown = PAGE; syncSelects(); render(); }
+  // filtri attivi: [tipo, etichetta]
+  function fltActive() {
+    var a = [];
+    if (st.qm) a.push(["qm", st.qm === "name" ? "Solo nel nome" : "Solo nel testo"]);
+    if (st.color) a.push(["color", st.color]);
+    if (st.ct) a.push(["ct", st.ct]);
+    if (st.lv) a.push(["lv", st.lv]);
+    if (st.cost) a.push(["cost", "Costo " + st.cost]);
+    return a;
+  }
+  function drawMbot(hasF) {
+    var act = hasF ? fltActive() : [];
+    mbotChips.innerHTML = "";
+    act.forEach(function (f) {
+      var b = el("button", "mbchip"); b.type = "button"; b.setAttribute("aria-label", "Togli il filtro " + f[1]);
+      if (f[0] === "color") { var i = el("i"); i.style.background = colorVar(st.color); b.appendChild(i); }
+      b.appendChild(el("span", "", f[1])); b.appendChild(el("b", "", "✕"));
+      b.onclick = function () { st[f[0]] = ""; if (f[0] === "ct") ddFix(); st.shown = PAGE; syncSelects(); render(); };
+      mbotChips.appendChild(b);
+    });
+    if (act.length) { var z = el("button", "mbclr", "Azzera"); z.type = "button"; z.onclick = clearFlt; mbotChips.appendChild(z); }
+    mbotFbtn.hidden = !hasF; mbotFbtn.classList.toggle("on", !!act.length);
+    mbotFbtn.innerHTML = FICO + (act.length ? '<span class="mbn">' + act.length + "</span>" : "");
+    mbotFbtn.setAttribute("aria-label", "Filtri" + (act.length ? ": " + act.length + (act.length === 1 ? " attivo" : " attivi") : ""));
+    mbotFbtn.setAttribute("aria-expanded", String(!!st.mfs));
+    document.body.classList.toggle("hasmbotc", !!act.length);
+  }
+  // tastiera del telefono: la barra in basso resta subito sopra (anche dove la pagina non si accorcia)
+  if (window.visualViewport) (function () {
+    var vv = window.visualViewport;
+    function kb() { var h = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)); document.documentElement.style.setProperty("--kb", h + "px"); }
+    vv.addEventListener("resize", kb); vv.addEventListener("scroll", kb);
+  })();
   function placeSearch(mode) {
-    if (mode === "deck") dkSheetBuild();
-    var tq = mode === "prod" ? psearch : mode === "deck" ? dkQSlot : null, tf = mode === "prod" ? psearch : mode === "deck" ? dkMfSlot : null;
+    if (mode === "deck") dkSheetBuild(); if (mode === "bottom") mbotBuild();
+    var tq = mode === "prod" ? psearch : mode === "deck" ? dkQSlot : mode === "bottom" ? mbotQ : null, tf = mode === "prod" ? psearch : mode === "deck" ? dkMfSlot : mode === "bottom" ? mfsBody : null;
     if (tq) { if (qi.parentNode !== tq) { tq.appendChild(qi); tf.appendChild(mfbarEl); } }
-    else if (qi.parentNode === psearch || (dkQSlot && qi.parentNode === dkQSlot)) { var w = document.querySelector(".bar .wrap"); w.insertBefore(qi, document.getElementById("qmodes")); w.insertBefore(mfbarEl, chips); }
+    else if (qi.parentNode === psearch || (dkQSlot && qi.parentNode === dkQSlot) || (mbotQ && qi.parentNode === mbotQ)) { var w = document.querySelector(".bar .wrap"); w.insertBefore(qi, document.getElementById("qmodes")); w.insertBefore(mfbarEl, chips); }
   }
   function render() {
     recomputeStatsIfNeeded();
@@ -2852,10 +2944,14 @@ body.mob .dksheet.on.full, body.mob.kbd .dksheet.on { height: calc(100% - 52px -
     var dkEd = !DESK && isDeck && !!st.deckId && dkView() === "deck";
     if (st.dkSheet && !dkEd) { st.dkSheet = 0; st.dkNew = null; if (history.state && history.state.ov === "dksheet") replaceNext = true; }
     var dkM = dkEd && !!st.dkSheet;
+    // telefono: nelle sezioni con ricerca il campo sta in basso, sopra la barra di navigazione
+    var botM = !DESK && !dkEd && !isUp && (st.tab === "cards" || (isSets && !isSoon));
+    if (st.mfs && !botM) { st.mfs = false; if (history.state && history.state.ov === "mfsheet") replaceNext = true; }
+    LASTN = -1;
     var dkNoSearch = !DESK && isDeck && st.deckId && !dkM;
     var noF = isSets || isHome || isUp || sideF || dkNoSearch;
     var prodM = !DESK && st.tab === "cards" && !!st.setId && !isUp;
-    placeSearch(prodM ? "prod" : dkM ? "deck" : ""); if (dkSheetEl) { dkSheetEl.classList.toggle("on", dkM); dkSheetEl.classList.toggle("full", st.dkSheet === 2); } document.body.classList.toggle("dked", dkEd); document.body.classList.toggle("dkopen", dkM); if (!prodM) { phead.innerHTML = ""; phead.removeAttribute("data-k"); } phead.hidden = psearch.hidden = !prodM;
+    placeSearch(dkM ? "deck" : botM ? "bottom" : prodM ? "prod" : ""); if (dkSheetEl) { dkSheetEl.classList.toggle("on", dkM); dkSheetEl.classList.toggle("full", st.dkSheet === 2); } document.body.classList.toggle("dked", dkEd); document.body.classList.toggle("dkopen", dkM); if (!prodM) { phead.innerHTML = ""; phead.removeAttribute("data-k"); } phead.hidden = !prodM; psearch.hidden = !prodM || botM;
     document.getElementById("filters").hidden = noF || !DESK;
     document.getElementById("qmodes").hidden = noF || !DESK;
     document.getElementById("mfbar").hidden = noF || DESK;
@@ -2864,7 +2960,7 @@ body.mob .dksheet.on.full, body.mob.kbd .dksheet.on { height: calc(100% - 52px -
     chips.hidden = !isSets || (!DESK && isSoon);
     qi.hidden = isSoon || isHome || isUp || dkNoSearch;
     document.getElementById("hint").textContent = "Carte in inglese, da una raccolta pubblica aggiornata fino a BT26, EX13 e ST24, più promo e RB01. Quantità e collezione restano salvate in questo browser.";
-    qi.placeholder = prodM ? "Cerca in questo prodotto, es. Agumon" : dkM ? "Cerca una carta, es. Agumon" : isDeck ? "Cerca una carta da aggiungere, es. Agumon o BT1-010" : isSets ? "Cerca per set, codice o Digimon, es. BT10 o Omnimon" :
+    qi.placeholder = prodM ? (DESK ? "Cerca in questo prodotto, es. Agumon" : "Cerca in " + (SETBY[st.setId] ? SETBY[st.setId].code : "questo prodotto") + ", es. Agumon") : botM && st.ownOnly ? "Cerca nella collezione…" : botM && st.tab === "cards" ? "Cerca per nome, codice o testo…" : botM ? "Cerca per set, codice o Digimon…" : dkM ? "Cerca una carta, es. Agumon" : isDeck ? "Cerca una carta da aggiungere, es. Agumon o BT1-010" : isSets ? "Cerca per set, codice o Digimon, es. BT10 o Omnimon" :
       st.qm === "name" ? "Cerca per nome, es. Omnimon" :
       st.qm === "text" ? "Cerca nel testo un nome, keyword o parola, es. Omnimon, Barrier o draw" :
       "Cerca per nome, codice o testo, es. Agumon";
@@ -2876,11 +2972,19 @@ body.mob .dksheet.on.full, body.mob.kbd .dksheet.on { height: calc(100% - 52px -
     document.getElementById("hint").hidden = isHome || isUp;
     barEl.classList.toggle("empty", DESK && qi.hidden && chips.hidden && document.getElementById("filters").hidden && document.getElementById("qmodes").hidden);
     if (DESK) { menuEl.setAttribute("aria-hidden", "false"); drawMenu(); }
-    barEl.classList.toggle("empty-m", !DESK && ((qi.hidden && chips.hidden) || prodM || dkM));
+    barEl.classList.toggle("empty-m", !DESK && ((qi.hidden && chips.hidden) || prodM || dkM || (botM && chips.hidden)));
+    if (mbotEl) {
+      var hasF = botM && !document.getElementById("mfbar").hidden;
+      if (st.mfs && !hasF) st.mfs = false;
+      mbotEl.classList.toggle("on", botM); mfsEl.classList.toggle("on", !!st.mfs); mfsScrim.classList.toggle("on", !!st.mfs);
+      drawMbot(hasF);
+    }
+    document.body.classList.toggle("hasmbot", botM);
     drawTabbar(); if (!DESK) drawMfbar();
     trackNav();
     if (isDeck) { document.getElementById("hint").hidden = true; if (st.deckId) renderDeck(); else renderDeckList(); }
     else if (isInfo) renderInfo(); else if (isHome) renderHome(); else if (isSoon) renderSoon(); else if (isSets) renderSets(); else if (isUp) renderUp(st.setId.slice(3)); else renderCards();
+    if (mfsGo) mfsGo.textContent = LASTN > 0 ? "Mostra " + LASTN + (LASTN === 1 ? " carta" : " carte") : LASTN === 0 ? "Nessuna carta: chiudi" : "Mostra i risultati";
     fitAll();
   }
   // ---- Computer (mouse): passando sull'immagine di una carta negli elenchi compare, dopo un attimo, la carta ingrandita accanto al puntatore
@@ -2936,6 +3040,7 @@ body.mob .dksheet.on.full, body.mob.kbd .dksheet.on { height: calc(100% - 52px -
     if (st.open != null && s2.ov === "sheet" && SHSTACK.length > (s2.nest || 0)) { st.open = SHSTACK.pop(); drawSheet(); return; }
     if (st.open != null && s2.ov !== "sheet") { SHSTACK = []; st.open = null; drawSheet(); afterSheet(); return; }
     if (st.dkSheet && s2.ov !== "dksheet") { st.dkSheet = 0; st.dkNew = null; render(); return; }
+    if (st.mfs && s2.ov !== "mfsheet") { closeFilters(); st.mfs = false; render(); return; }
     if (s2.ov) return;
     restoring = true;
     st.tab = s2.tab || "home"; st.deckId = s2.deckId || null; st.setId = s2.setId || null; st.type = s2.type || "ALL"; st.ownOnly = !!s2.ownOnly;
