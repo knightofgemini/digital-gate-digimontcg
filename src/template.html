@@ -2810,7 +2810,7 @@ body.mob.kbd .mbot.on::after { display: none; }
       if (!(i % 2)) { colText(target, part); return; }
       var inner = part.slice(1, -1).replace(/\u00a0/g, " "), cls = part.charAt(0) === "⟦" ? "ovf" : part.charAt(0) === "＜" ? (/^Arts Digivolve/.test(inner) ? "grn" : "kw") : iconClass(inner);
       var b = el("span", "ico " + cls, inner); b.title = part; target.appendChild(b);
-      if (!noKw && (cls === "kw" || cls === "ovf" || /^(Arts Digivolve|DigiXros\s*-\d+|Assembly\s*-\d+)/.test(inner)) && kwInfo(inner)) kwWire(b, inner);
+      if (!noKw && (cls === "kw" || cls === "ovf" || /^(Arts Digivolve|DigiXros\s*-\d+|Assembly\s*-\d+|Link$)/.test(inner)) && kwInfo(inner)) kwWire(b, inner);
     });
     return target;
   }
@@ -2881,6 +2881,7 @@ body.mob.kbd .mbot.on::after { display: none; }
       "Mind Link": "Place this Tamer under the chosen Digimon as its bottom digivolution card, so the Tamer's inherited effect works for that Digimon. You can't do it if that Digimon already has a Tamer card among its digivolution cards.",
       "Guard": "When 1 or more of your other Digimon would leave the battle area because of your opponent's effects, you may delete this Digimon instead. If you do, they don't leave.",
       "Ascension": "When this Digimon is deleted, you may place this card on top of your security stack, so it becomes your top security card.",
+      "Link": "During your main phase you can link this card, from your hand or battle area, to 1 of your Digimon that meets its link requirements by paying its link cost: it's plugged in sideways under that Digimon (it isn't a digivolution card). While linked, that Digimon adds this card's link DP to its own and gains the effect written after [Link]. Normally a Digimon can have only 1 link card: linking a new one trashes the old one (＜Link +N＞ raises the limit). Linking isn't playing the card.",
       "Engage": "At the end of your turn, this Digimon may attack. It's an extra chance to attack before your turn ends.",
       "Decode": "When this Digimon would leave the battle area other than in battle, you may play 1 of the specified Digimon cards from its digivolution cards without paying the cost. It doesn't work when the Digimon is deleted in a battle.",
       "Overclock": "At the end of your turn, you may delete 1 of your Tokens or 1 of your other Digimon of the specified trait. If you do, this Digimon attacks your opponent (the player) without suspending."
