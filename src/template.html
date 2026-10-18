@@ -2201,7 +2201,7 @@ body.mob.kbd .dkbar, body.mob.dkopen .dkbar { display: none; }
   function ddKinds() {
     var k = ["qm", "color", "ct"];
     if (st.ct === "Digimon" || st.ct === "Digimon/Option") k.push("lv");
-    k.push("cost", "rar", "attr", "sp", "exp");
+    k.push("cost", "attr", "sp", "rar", "exp");
     return k;
   }
   function costOf(c) { var a = []; if (c.play !== "" && c.play != null) a.push(String(c.play)); if (c.x && c.x.d && c.x.d.c != null && c.x.d.c !== "") a.push(String(c.x.d.c)); return a; }
@@ -3188,9 +3188,9 @@ body.mob.kbd .dkbar, body.mob.dkopen .dkbar { display: none; }
     if (st.ct) a.push(["ct", st.ct]);
     if (st.lv) a.push(["lv", st.lv]);
     if (st.cost) a.push(["cost", "Costo " + st.cost]);
-    if (st.rar) a.push(["rar", st.rar]);
     if (st.attr) a.push(["attr", st.attr]);
     if (st.sp) a.push(["sp", st.sp]);
+    if (st.rar) a.push(["rar", st.rar]);
     if (st.exp && SETBY[st.exp]) a.push(["exp", SETBY[st.exp].code]);
     return a;
   }
