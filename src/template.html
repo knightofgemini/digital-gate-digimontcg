@@ -241,7 +241,9 @@ html.lock, html.lock body { overflow: hidden; overscroll-behavior: none; }
 .fx .ico.kw { white-space: normal; max-width: calc(100% - .2em); box-sizing: border-box; }
 .ico.kwlink:hover { filter: brightness(1.12); }
 .ico.kwlink:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.ico.kw.kwlink.open::after { content: " \25BE"; font-size: .85em; }
+.ico.kwlink.open::after { content: " \25BE"; font-size: .85em; }
+.kwexp.g { border-left-color: #0a7a6a; }
+.kwexp.g .kwexn { color: #0f9a85; }
 .kwexp { display: block; margin: 6px 0 8px; padding: 8px 11px 9px; border-radius: 10px; background: var(--surface-2); border-left: 3px solid #d8661f; font-family: var(--font-body); font-weight: 400; font-size: .9rem; line-height: 1.5; color: var(--ink); white-space: normal; cursor: pointer; animation: kwin .14s ease-out; transform-origin: 50% 0; }
 .kwexn { display: block; font: 700 .76rem var(--font-display); letter-spacing: .02em; color: var(--accent); margin-bottom: 2px; }
 .kwexb { display: block; }
@@ -2808,7 +2810,7 @@ body.mob.kbd .mbot.on::after { display: none; }
       if (!(i % 2)) { colText(target, part); return; }
       var inner = part.slice(1, -1).replace(/\u00a0/g, " "), cls = part.charAt(0) === "⟦" ? "ovf" : part.charAt(0) === "＜" ? (/^Arts Digivolve/.test(inner) ? "grn" : "kw") : iconClass(inner);
       var b = el("span", "ico " + cls, inner); b.title = part; target.appendChild(b);
-      if (!noKw && (cls === "kw" || cls === "ovf" || /^Arts Digivolve/.test(inner)) && kwInfo(inner)) kwWire(b, inner);
+      if (!noKw && (cls === "kw" || cls === "ovf" || /^(Arts Digivolve|DigiXros\s*-\d+|Assembly\s*-\d+)/.test(inner)) && kwInfo(inner)) kwWire(b, inner);
     });
     return target;
   }
@@ -2836,6 +2838,8 @@ body.mob.kbd .mbot.on::after { display: none; }
     if ((m = k.match(/^Link \+(\d+)$/))) return "Link cards are plugged in sideways under a Digimon. Normally a Digimon can have only 1 link card: ＜Link +" + m[1] + "＞ adds " + m[1] + " to that limit, so this Digimon can have up to " + (1 + +m[1]) + " link cards.";
     if ((m = k.match(/^Digisorption -(\d+)$/))) return "When one of your Digimon would digivolve into this card from your hand, you may suspend 1 of your Digimon (it can be the one digivolving) to reduce the memory cost of that digivolution by " + m[1] + ".";
     if (k === "Digisorption") return "When one of your Digimon would digivolve into this card from your hand, you may suspend 1 of your Digimon to reduce the memory cost of that digivolution by the amount shown.";
+    if ((m = k.match(/^DigiXros\s*-(\d+)$/))) return "When you play this card, you may first place cards that meet its DigiXros requirements (listed after it) from your hand and/or battle area under it as its digivolution cards. Each card placed reduces the play cost by " + m[1] + ". You can place any number of the listed cards (each one once, unless a number is given), but at least 1 if you declare it; the first card listed goes on top. Cards taken from the battle area leave the field. The cost can't go below 0.";
+    if ((m = k.match(/^Assembly\s*-(\d+)$/))) return "When you play this card, you may first place the cards listed in its Assembly requirements from your trash under it as its digivolution cards. If you do, the play cost is reduced by " + m[1] + " in total (not per card). You must place all the listed cards, otherwise you can't use it; the first card listed goes on top. It also works when an effect plays this card. The cost can't go below 0.";
     if ((m = k.match(/^(?:Overflow\s*)?-(\d+)$/))) return "Digimon ACE rule: when this card leaves the battle area, or moves from under another card to any other area, you lose " + m[1] + " memory (the memory counter moves " + m[1] + " toward your opponent's side). Nothing happens when it enters the battle area or is placed under a card.";
     if (/^Decode\b/.test(k)) {
       a = kwArg(k, "Decode");
@@ -2897,7 +2901,7 @@ body.mob.kbd .mbot.on::after { display: none; }
       if (pn._nl) { if (nx && nx.classList && nx.classList.contains("kwexp")) nx._nl = true; else pn.parentNode.insertBefore(document.createTextNode("\n"), pn); }
       pn.remove(); b._exp = null; b.classList.remove("open"); b.setAttribute("aria-expanded", "false"); return;
     }
-    var pn = el("span", "kwexp"); pn.setAttribute("role", "note");
+    var pn = el("span", "kwexp" + (b.classList.contains("grn") ? " g" : "")); pn.setAttribute("role", "note");
     pn.appendChild(el("span", "kwexn", /^-\d+$/.test(inner) ? "Overflow " + inner : inner.length > 24 ? inner.replace(/\s*\(.*$/, "") : inner));
     pn.appendChild(rich(el("span", "kwexb"), kwInfo(inner), true));
     pn.onclick = function (e) { e.stopPropagation(); kwToggle(b, inner); };
@@ -2957,10 +2961,10 @@ body.mob.kbd .mbot.on::after { display: none; }
     if (run.length) out.push(run.join(" "));
     return out.join("\n");
   }
-  // la spiegazione tra parentesi dopo ＜Alliance＞ e ＜Arts Digivolve＞ non si mostra: come per le altre keyword,
-  // si legge toccando la keyword (Use Req. e Overflow invece la tengono, scelta dell'utente)
+  // la spiegazione tra parentesi dopo ＜Alliance＞ non si mostra: come per le altre keyword, si legge toccandola
+  // (Use Req., Arts Digivolve e Overflow invece la tengono, scelta dell'utente)
   function kwNoRem(text) {
-    return String(text).replace(/(＜(?:Alliance|Arts Digivolve)＞)[ \t]*\((?:[^()\n]|\([^()\n]*\))*\)/g, "$1");
+    return String(text).replace(/(＜Alliance＞)[ \t]*\((?:[^()\n]|\([^()\n]*\))*\)/g, "$1");
   }
   function fx(title, text) {
     if (!text) return null;
