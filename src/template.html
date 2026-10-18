@@ -940,15 +940,11 @@ body.mob .hrow { grid-template-columns: minmax(0, 1fr); margin-top: 22px; }
 .mhave { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
 .mhave b { font: 700 1.35rem var(--font-display); }
 .mhave span { font-size: .84rem; color: var(--ink-2); }
-/* tutte le barre di ricerca: lente arancione a sinistra; telefono: pulsanti della vista sotto la descrizione della ricerca */
+/* tutte le barre di ricerca: lente arancione a sinistra */
 #q.search { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e0531a' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='M20 20l-4.2-4.2'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: 13px 50%; background-size: 20px 20px; padding-left: 42px; }
 body.desk #q.search { padding-left: 44px; background-position: 14px 50%; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #q.search { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff7a3d' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='M20 20l-4.2-4.2'/%3E%3C/svg%3E"); } }
 :root[data-theme="dark"] #q.search { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff7a3d' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='M20 20l-4.2-4.2'/%3E%3C/svg%3E"); }
-body.mob .group-title.withv, body.mob .dkinfo2 { flex-direction: column; align-items: flex-start; gap: 8px; }
-.dktop { position: relative; flex: none; display: flex; align-items: center; justify-content: center; min-height: 40px; }
-.dktop .dkhandle { width: 100%; height: 40px; }
-.dktop .dkfine { position: absolute; right: -4px; top: 0; height: 40px; }
 /* telefono, vista a elenco (ottobre 2026): righe senza bordo, prezzi in una sola pastiglia sotto il codice */
 body.mob .row.card.p1 { grid-template-columns: 46px minmax(0, 1fr) auto; gap: 10px; padding-left: 10px; }
 body.mob .row.card.p1 .thumb { position: relative; margin-left: 0; }
@@ -3463,10 +3459,9 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
     hb.onclick = function () { st.dkSheet = st.dkSheet === 2 ? 1 : 2; render(); };
     var hd = el("div", "dkhd"); dkQSlot = el("div", "dkq"); hd.appendChild(dkQSlot);
     dkFbtn = el("button", "mbf"); dkFbtn.type = "button"; dkFbtn.onclick = function () { if (document.activeElement === qi) qi.blur(); openMfs(); }; hd.appendChild(dkFbtn);
-    var fine = el("button", "dkfine", "Fine"); fine.type = "button"; fine.onclick = function () { closeDkSheet(); };
-    var top = el("div", "dktop"); top.appendChild(hb); top.appendChild(fine);
+    var fine = el("button", "dkfine", "Fine"); fine.type = "button"; fine.onclick = function () { closeDkSheet(); }; hd.appendChild(fine);
     dkMfSlot = el("div", "mbchips dkchips"); dkBody = el("div", "dkbody");
-    dkSheetEl.appendChild(top); dkSheetEl.appendChild(hd); dkSheetEl.appendChild(dkMfSlot); dkSheetEl.appendChild(dkBody);
+    dkSheetEl.appendChild(hb); dkSheetEl.appendChild(hd); dkSheetEl.appendChild(dkMfSlot); dkSheetEl.appendChild(dkBody);
     // trascinando la maniglia: in su si allarga, in giù si riduce o si chiude
     var y0 = null;
     [hb, hd].forEach(function (t) {
