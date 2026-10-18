@@ -1134,6 +1134,80 @@ body.mob.hasmbotx .mbot.on { background: linear-gradient(to bottom, transparent,
 /* niente fessura tra la barra di ricerca in basso e la barra di navigazione (lì prima si intravedeva l'elenco) */
 body.mob .mbot.on::after, body.mob .dkbar::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 8px; background: var(--bg); pointer-events: none; }
 body.mob.kbd .mbot.on::after { display: none; }
+/* ---- Scansione delle carte con la fotocamera (#scan) */
+.scan { position: fixed; inset: 0; z-index: 900; background: #05080f; color: #f1f4f9; display: none; overflow: hidden; font-family: var(--font-body); touch-action: none; overscroll-behavior: contain; }
+.scan.on { display: block; }
+.scan video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #05080f; }
+.scan .scmask { position: absolute; inset: 0; pointer-events: none; }
+.scan .scframe { position: absolute; left: 50%; top: 44%; width: min(72vw, calc(56vh * 63 / 88), 360px); aspect-ratio: 63 / 88; transform: translate(-50%, -50%); border-radius: 18px; box-shadow: 0 0 0 200vmax rgba(5,8,15,.62); pointer-events: none; }
+.scframe i { position: absolute; width: 34px; height: 34px; border: 4px solid #ff7a3d; }
+.scframe i:nth-child(1) { left: -3px; top: -3px; border-right: 0; border-bottom: 0; border-radius: 18px 0 0 0; }
+.scframe i:nth-child(2) { right: -3px; top: -3px; border-left: 0; border-bottom: 0; border-radius: 0 18px 0 0; }
+.scframe i:nth-child(3) { left: -3px; bottom: -3px; border-right: 0; border-top: 0; border-radius: 0 0 0 18px; }
+.scframe i:nth-child(4) { right: -3px; bottom: -3px; border-left: 0; border-top: 0; border-radius: 0 0 18px 0; }
+.scframe b { position: absolute; left: 8%; right: 8%; height: 2px; top: 50%; border-radius: 2px; background: linear-gradient(90deg, transparent, #63d5ee, transparent); box-shadow: 0 0 14px #63d5ee; opacity: 0; }
+.scan.run .scframe b { opacity: .9; animation: scline 2.2s ease-in-out infinite; }
+@keyframes scline { 0% { top: 6%; } 50% { top: 94%; } 100% { top: 6%; } }
+.scan.found .scframe i { border-color: #4ade80; }
+.scan.found .scframe b { display: none; }
+.schead { position: absolute; left: 0; right: 0; top: 0; padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 10px; display: flex; align-items: center; gap: 10px; background: linear-gradient(rgba(5,8,15,.75), transparent); }
+.schead h2 { flex: 1; margin: 0; font: 700 1.1rem var(--font-display); letter-spacing: .02em; text-align: center; }
+.scbtn { flex: none; width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(255,255,255,.18); background: rgba(19,27,46,.72); color: #f1f4f9; display: grid; place-items: center; cursor: pointer; padding: 0; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.scbtn svg { width: 22px; height: 22px; }
+.scbtn.on { background: #ff7a3d; border-color: #ff7a3d; color: #1a0b03; }
+.scbtn.ghost { visibility: hidden; }
+.scstat { position: absolute; left: 16px; right: 16px; top: calc(44% + min(36vw, calc(28vh * 63 / 88), 180px) * 88 / 63 + 16px); display: flex; justify-content: center; pointer-events: none; }
+.scstat span { max-width: 100%; padding: 9px 16px; border-radius: 99px; background: rgba(19,27,46,.82); border: 1px solid rgba(255,255,255,.12); font: 500 .92rem/1.3 var(--font-body); text-align: center; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.scstat span.warn { border-color: rgba(255,122,61,.6); }
+.scfoot { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 22px calc(18px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; justify-content: space-between; gap: 12px; background: linear-gradient(transparent, rgba(5,8,15,.8)); }
+.scfoot .scpic { flex: none; height: 46px; padding: 0 16px 0 12px; border-radius: 23px; border: 1px solid rgba(255,255,255,.18); background: rgba(19,27,46,.72); color: #f1f4f9; display: flex; align-items: center; gap: 8px; font: 600 .9rem var(--font-display); cursor: pointer; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.scfoot .scpic svg { width: 20px; height: 20px; }
+.scfoot .scpic.big { margin: 0 auto; height: 52px; padding: 0 22px 0 18px; border-radius: 26px; background: #ff7a3d; border-color: #ff7a3d; color: #1a0b03; font-size: 1rem; }
+.scan.res .scfoot, .scan.res .scstat { display: none; }
+/* risultato: foglio dal basso sopra la fotocamera */
+.scres { position: absolute; left: 0; right: 0; bottom: 0; max-height: 76%; overflow-y: auto; background: var(--bg); color: var(--ink); border-radius: 20px 20px 0 0; box-shadow: 0 -14px 40px rgba(0,0,0,.5); padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; transform: translateY(105%); transition: transform .24s ease-out; touch-action: pan-y; }
+.scan.res .scres { transform: none; }
+.scres .grab { display: block; width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 2px auto 12px; }
+.scok { display: flex; align-items: center; gap: 8px; font: 700 .74rem var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--ok); margin-bottom: 10px; }
+.scok svg { width: 18px; height: 18px; }
+.scok.maybe { color: var(--accent); }
+.schit { display: flex; gap: 14px; align-items: flex-start; }
+.schit .thumb { flex: none; width: 104px; border-radius: 7px; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,.28); cursor: pointer; }
+.schit .thumb img { display: block; width: 100%; aspect-ratio: 63 / 88; object-fit: cover; }
+.schit .tx { flex: 1; min-width: 0; padding-top: 2px; }
+.schit .cd { font: 600 .82rem var(--font-display); color: var(--ink-2); }
+.schit .nm { font: 700 1.25rem/1.2 var(--font-display); margin: 2px 0 4px; white-space: nowrap; }
+.schit .ex { font-size: .84rem; color: var(--accent); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.schit .vl { margin-top: 6px; font-size: .8rem; color: var(--ink-2); }
+.schit .vl b { color: var(--ink); font-weight: 600; }
+.schit .own { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; font-size: .85rem; color: var(--ink-2); }
+.sch { font: 700 .74rem var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); margin: 16px 0 8px; display: flex; justify-content: space-between; gap: 8px; }
+.sch span { letter-spacing: 0; text-transform: none; font: 500 .78rem var(--font-body); }
+.scvers { display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 6px; scroll-snap-type: x proximity; touch-action: pan-x pan-y; }
+.scv { flex: none; width: 74px; border: 0; padding: 0; background: none; color: var(--ink); cursor: pointer; text-align: center; scroll-snap-align: start; }
+.scv .thumb { border-radius: 6px; overflow: hidden; outline: 2px solid transparent; outline-offset: 2px; }
+.scv .thumb img { display: block; width: 100%; aspect-ratio: 63 / 88; object-fit: cover; }
+.scv[aria-pressed="true"] .thumb { outline-color: var(--accent); }
+.scv span { display: block; margin-top: 5px; font: 600 .72rem var(--font-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scv span i { font-style: normal; color: var(--accent); }
+.scv em { display: block; font: 700 .62rem var(--font-display); letter-spacing: .04em; color: var(--ok); font-style: normal; text-transform: uppercase; min-height: .9em; }
+.sccand { display: flex; flex-direction: column; gap: 6px; }
+.sccand button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; text-align: left; }
+.sccand button[aria-pressed="true"] { border-color: var(--accent); }
+.sccand .thumb { flex: none; width: 34px; border-radius: 4px; overflow: hidden; }
+.sccand .thumb img { display: block; width: 100%; aspect-ratio: 63 / 88; object-fit: cover; }
+.sccand b { display: block; font: 600 .9rem var(--font-display); }
+.sccand small { color: var(--ink-2); font-size: .76rem; }
+.scacts { display: flex; gap: 10px; margin-top: 16px; }
+.scacts .btn { flex: 1; justify-content: center; min-height: 48px; font-size: .95rem; }
+.scan .noimg img { visibility: hidden; }
+/* pulsante fotocamera nella barra di ricerca in basso e nel pannello filtri su PC */
+.mbf.mbs svg { width: 23px; height: 23px; }
+.fscan { width: 100%; justify-content: center; margin-bottom: 12px; }
+body.desk .scan .scframe { width: min(30vw, calc(56vh * 63 / 88), 340px); }
+body.desk .scres { left: 50%; right: auto; width: 560px; transform: translate(-50%, 105%); border-radius: 20px 20px 0 0; }
+body.desk .scan.res .scres { transform: translateX(-50%); }
+@media (prefers-reduced-motion: reduce) { .scan.run .scframe b { animation: none; top: 50%; } .scres { transition: none; } }
 </style>
 
 <section id="dg-boot" class="dg-boot" aria-label="Animazione di avvio di Digital Gate">
@@ -1486,7 +1560,7 @@ body.mob.kbd .mbot.on::after { display: none; }
   document.addEventListener("keydown", function (e) { if (!DESK && e.key === "Enter" && e.target && e.target.tagName === "INPUT" && !e.defaultPrevented) e.target.blur(); });
   document.addEventListener("focusout", function () { setTimeout(function () { var a = document.activeElement; if (!a || !/^(INPUT|TEXTAREA)$/.test(a.tagName)) document.body.classList.remove("kbd"); }, 60); });
   menuScrim.onclick = function () { menuOpen(false); };
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && menuEl.classList.contains("open")) menuOpen(false); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && scanIsOpen()) { e.stopImmediatePropagation(); closeScan(); return; } if (e.key === "Escape" && menuEl.classList.contains("open")) menuOpen(false); }, true);
   document.getElementById("tab-cards").onclick = function () { st.tab = "cards"; st.setId = null; st.shown = PAGE; render(); };
 
   var CHIPS = [["ALL", "Tutti"], ["SOON", "In arrivo"], ["BT", "Booster"], ["EX", "Extra"], ["ST", "Starter"], ["LM", "Limited"], ["PB", "Premium"], ["AL", "Altri"]];
@@ -2201,6 +2275,7 @@ body.mob.kbd .mbot.on::after { display: none; }
     var rs = el("button", "", "Azzera"); rs.type = "button";
     rs.onclick = function () { resetFlt(); st.shown = PAGE; syncSelects(); render(); };
     fh.appendChild(rs); a.appendChild(fh);
+    a.appendChild(btn("Scansiona una carta", "fscan", function () { openScan(); }, SCICO.cam));
     function grp(label) { var g = el("div", "fgrp"); g.appendChild(el("span", "", label)); a.appendChild(g); return g; }
     function set(k, v) { st[k] = v; st.shown = PAGE; syncSelects(); render(); }
     var g1 = grp("Cerca in"), rad = el("div", "fradio"); rad.setAttribute("role", "radiogroup");
@@ -3316,12 +3391,13 @@ body.mob.kbd .mbot.on::after { display: none; }
   // telefono: nella pagina di un prodotto la ricerca (con i menù dei filtri) scende sotto la scheda del prodotto
   var phead = document.getElementById("phead"), psearch = document.getElementById("psearch"), mfbarEl = document.getElementById("mfbar");
   // ---- Telefono: ricerca in basso (Carte, Collezione, Prodotti, pagina prodotto) con foglio "Filtri" e filtri attivi come etichette
-  var mbotPx = null, mbotXbtn = null, mbotEl = null, mbotQ = null, mbotChips = null, mbotFbtn = null, mfsEl = null, mfsScrim = null, mfsBody = null, mfsGo = null, LASTN = -1;
+  var mbotSbtn = null, mbotPx = null, mbotXbtn = null, mbotEl = null, mbotQ = null, mbotChips = null, mbotFbtn = null, mfsEl = null, mfsScrim = null, mfsBody = null, mfsGo = null, LASTN = -1;
   var FICO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>';
   function mbotBuild() {
     if (mbotEl) return;
     mbotEl = el("div", "mbot"); mbotChips = el("div", "mbchips");
     var row = el("div", "mbrow"); mbotQ = el("div", "mbq"); row.appendChild(mbotQ);
+    mbotSbtn = el("button", "mbf mbs"); mbotSbtn.type = "button"; mbotSbtn.innerHTML = scIco("cam"); mbotSbtn.setAttribute("aria-label", "Scansiona una carta con la fotocamera"); mbotSbtn.onclick = function () { openScan(); }; row.appendChild(mbotSbtn);
     mbotFbtn = el("button", "mbf"); mbotFbtn.type = "button"; mbotFbtn.onclick = function () { openMfs(); }; row.appendChild(mbotFbtn);
     // Prodotti: pulsante che apre/chiude, sotto la ricerca, la riga dei tipi di prodotto
     mbotXbtn = el("button", "mbf mbx"); mbotXbtn.type = "button"; mbotXbtn.innerHTML = DDCHEV;
@@ -3361,7 +3437,7 @@ body.mob.kbd .mbot.on::after { display: none; }
     if (st.exp && SETBY[st.exp]) a.push(["exp", SETBY[st.exp].code]);
     return a;
   }
-  function drawMbot(hasF) { drawFlt(mbotChips, mbotFbtn, hasF); document.body.classList.toggle("hasmbotc", hasF && fltActive().length > 0); }
+  function drawMbot(hasF) { drawFlt(mbotChips, mbotFbtn, hasF); mbotSbtn.hidden = !hasF; document.body.classList.toggle("hasmbotc", hasF && fltActive().length > 0); }
   function drawFlt(chipsEl, fbtn, hasF) {
     var mbotChips = chipsEl, mbotFbtn = fbtn;
     var act = hasF ? fltActive() : [];
@@ -3512,6 +3588,8 @@ body.mob.kbd .mbot.on::after { display: none; }
   }, { passive: true });
   window.addEventListener("popstate", function (e) {
     var s2 = e.state || {};
+    if (scanIsOpen() && s2.ov !== "scan") { scTeardown(); return; }
+    if (scanIsOpen()) return;
     if (menuEl.classList.contains("open") && s2.ov !== "menu") { menuOpen(false, true); return; }
     if (st.open != null && s2.ov === "sheet" && SHSTACK.length > (s2.nest || 0)) { st.open = SHSTACK.pop(); drawSheet(); return; }
     if (st.open != null && s2.ov !== "sheet") { SHSTACK = []; st.open = null; drawSheet(); afterSheet(); return; }
@@ -4300,6 +4378,7 @@ body.mob.kbd .mbot.on::after { display: none; }
     if (!AppP || !AppP.addListener) return;
     AppP.addListener("backButton", function () {
       var upd = document.querySelector(".upd-scrim"); if (upd) { upd.remove(); return; }
+      if (scanIsOpen()) { if (SC.el.classList.contains("res")) scAgain(); else closeScan(); return; }
       if (closeFilters()) return;
       if (menuEl.classList.contains("open")) { menuOpen(false); return; }
       if (st.open != null) return;
@@ -4313,6 +4392,330 @@ body.mob.kbd .mbot.on::after { display: none; }
       if (AppP.minimizeApp) AppP.minimizeApp(); else if (AppP.exitApp) AppP.exitApp();
     });
   })();
+  // ---- Scansione delle carte con la fotocamera (sito e APK).
+  // Legge con l'OCR (Tesseract.js, scaricato la prima volta che serve) il numero stampato sulla carta (es. BT1-084);
+  // se non lo trova prova con il nome (+ parole dell'effetto). Poi ordina le versioni (Regular, ★, ★★, SP, ristampe)
+  // confrontando l'illustrazione inquadrata con le miniature dell'app. Nessuna foto viene inviata o salvata.
+  var TESS_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+  var tessP = null, SC = null;
+  var SCICO = {
+    cam: '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.6"/>',
+    x: '<path d="M6 6l12 12M18 6L6 18"/>',
+    torch: '<path d="M8 3h8l-1 5H9z"/><path d="M9 8l1 13h4l1-13"/><path d="M12 12v3"/>',
+    pic: '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 16l-5-5-8.5 8.5"/>',
+    ok: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9.5"/>',
+    q: '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8 1c0 1.7-2.4 2-2.4 3.6M12 17v.5"/>'
+  };
+  function scIco(k) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + SCICO[k] + "</svg>"; }
+  function scanIsOpen() { return !!(SC && SC.open); }
+  function loadTess() {
+    if (tessP) return tessP;
+    tessP = new Promise(function (res, rej) {
+      if (window.Tesseract) { res(); return; }
+      var s = document.createElement("script"); s.src = TESS_URL; s.async = true;
+      s.onload = function () { res(); }; s.onerror = function () { rej(new Error("rete")); };
+      document.head.appendChild(s);
+    }).then(function () {
+      return window.Tesseract.createWorker("eng", 1, { logger: function (m) { if (SC && SC.open && !SC.ready && m && m.progress != null && String(m.status || "").indexOf("recogn") < 0) scStatus("Preparo il riconoscimento (solo la prima volta)… " + Math.round(m.progress * 100) + "%"); } });
+    }).then(function (w) { return w.setParameters({ tessedit_pageseg_mode: "11" }).then(function () { return w; }); });
+    tessP.catch(function () { tessP = null; });
+    return tessP;
+  }
+  // --- dal testo letto ai codici delle carte: correzione delle lettere/cifre che l'OCR confonde
+  function scD(s) { return s.replace(/[OQD]/g, "0").replace(/[IL|]/g, "1").replace(/S/g, "5").replace(/B/g, "8").replace(/Z/g, "2").replace(/G/g, "6"); }
+  function scL(s) { return s.replace(/8/g, "B").replace(/0/g, "O").replace(/5/g, "S").replace(/1/g, "I").replace(/2/g, "Z"); }
+  function scanCodes(txt) {
+    var T = String(txt || "").toUpperCase().replace(/[–—~_=]/g, "-"), re = /([A-Z0-9]{1,6})\s?-\s?([0-9OQDILSBZG|]{2,3})(?![0-9])/g, m, out = [], seen = {};
+    while ((m = re.exec(T))) {
+      var pre = m[1], num = scD(m[2]);
+      for (var a = 0; a < pre.length; a++) for (var k = 1; k <= 3 && a + k <= pre.length; k++) {
+        var cand = scL(pre.slice(a, a + k)) + scD(pre.slice(a + k)) + "-" + num;
+        if (CODEIDX[cand] && !seen[cand]) { seen[cand] = 1; out.push(cand); }
+      }
+    }
+    return out;
+  }
+  // --- se il numero non si legge: nome (distanza di modifica) e, tra le carte con lo stesso nome, parole dell'effetto
+  var SCNAMES = null;
+  function scNames() {
+    if (!SCNAMES) { var m = {}; CARDS.forEach(function (c) { var f = fold(c.name); if (f.length >= 3) (m[f] = m[f] || []).push(c); }); SCNAMES = Object.keys(m).map(function (f) { return [f, m[f]]; }); }
+    return SCNAMES;
+  }
+  function lev(a, b) {
+    var p = [], i, j; for (j = 0; j <= b.length; j++) p[j] = j;
+    for (i = 1; i <= a.length; i++) { var d = p[0], c; p[0] = i; for (j = 1; j <= b.length; j++) { c = p[j]; p[j] = Math.min(p[j] + 1, p[j - 1] + 1, d + (a[i - 1] === b[j - 1] ? 0 : 1)); d = c; } }
+    return p[b.length];
+  }
+  function scanByName(txt) {
+    var lines = String(txt || "").split(/\n+/).map(fold).filter(function (l) { return l.length >= 4 && l.length <= 44; }), best = null;
+    lines.forEach(function (l) {
+      scNames().forEach(function (n) {
+        var f = n[0]; if (Math.abs(f.length - l.length) > Math.max(2, l.length * .25)) return;
+        var s = 1 - lev(l, f) / Math.max(l.length, f.length);
+        if (s >= .8 && (!best || s > best.s || (s === best.s && f.length > best.f.length))) best = { s: s, f: f, cards: n[1] };
+      });
+    });
+    if (!best) return [];
+    var words = {}; fold(txt).split(" ").forEach(function (w) { if (w.length >= 4) words[w] = 1; });
+    var codes = {}; best.cards.forEach(function (c) { codes[c.code] = c; });
+    return Object.keys(codes).map(function (k) {
+      var c = codes[k], ws = fold([c.eff, c.inh, c.sec].join(" ")).split(" ").filter(function (w) { return w.length >= 4; }), hit = 0, u = {};
+      ws.forEach(function (w) { if (!u[w]) { u[w] = 1; if (words[w]) hit++; } });
+      return { code: k, sc: hit / Math.max(4, Object.keys(u).length) };
+    }).sort(function (a, b) { return b.sc - a.sc; }).slice(0, 4).map(function (x) { return x.code; });
+  }
+  // --- versioni della carta (stessa logica della scheda "Versioni") e confronto con l'illustrazione inquadrata
+  function scVers(code) {
+    var base = CODEIDX[code][0], all = [base].concat(altsOf(base)), seen = {};
+    CODEIDX[code].slice(1).forEach(function (c) { all.push(c); });
+    return all.filter(function (a) { if (seen[a.k]) return false; seen[a.k] = 1; return true; });
+  }
+  function scSetOf(a) { return SETBY[a.suf ? (a.from || a.set) : a.set]; }
+  function scMark(a) { return a.suf && a.mark === "SP" ? "SP" : a.suf && a.mark === 2 ? "★★" : a.suf && a.mark === 1 ? "★" : ""; }
+  // impronta dell'illustrazione: 16×12 pixel, ogni canale normalizzato (così luce e bilanciamento del bianco pesano poco)
+  function scSig(src, w, h) {
+    try {
+      var c = document.createElement("canvas"); c.width = 16; c.height = 12;
+      var x = c.getContext("2d"); x.drawImage(src, w * .1, h * .1, w * .8, h * .42, 0, 0, 16, 12);
+      var d = x.getImageData(0, 0, 16, 12).data, v = [];
+      for (var ch = 0; ch < 3; ch++) {
+        var a = [], s = 0, q = 0, i; for (i = 0; i < d.length; i += 4) { a.push(d[i + ch]); s += d[i + ch]; }
+        var mu = s / a.length; a.forEach(function (t) { q += (t - mu) * (t - mu); }); var sd = Math.sqrt(q / a.length) || 1;
+        a.forEach(function (t) { v.push((t - mu) / sd); });
+      }
+      return v;
+    } catch (e) { return null; }
+  }
+  var SCSIG = {};
+  function scThumbSig(a) {
+    var key = a.img || a.code;
+    if (SCSIG[key]) return SCSIG[key];
+    SCSIG[key] = new Promise(function (res) {
+      var im = new Image(); im.crossOrigin = "anonymous"; im.referrerPolicy = "no-referrer";
+      im.onload = function () { res(scSig(im, im.naturalWidth, im.naturalHeight)); };
+      im.onerror = function () { res(null); };
+      im.src = IMG + "t/" + encodeURIComponent(key) + ".webp" + (ERRATA[key] ? "?e=1" : "");
+    });
+    return SCSIG[key];
+  }
+  function scRank(vers, sig) {
+    if (!sig || vers.length < 2) return Promise.resolve(vers.map(function (a) { return { a: a, d: null }; }));
+    return Promise.all(vers.map(scThumbSig)).then(function (sigs) {
+      return vers.map(function (a, i) {
+        var t = sigs[i]; if (!t) return { a: a, d: null };
+        var s = 0; for (var j = 0; j < t.length; j++) s += Math.abs(t[j] - sig[j]);
+        return { a: a, d: s / t.length };
+      }).map(function (r, i) { r.i = i; return r; }).sort(function (x, y) {
+        if (x.d == null && y.d == null) return x.i - y.i; if (x.d == null) return 1; if (y.d == null) return -1;
+        return Math.abs(x.d - y.d) < .02 ? x.i - y.i : x.d - y.d;
+      });
+    });
+  }
+  // --- interfaccia
+  function scBuild() {
+    if (SC) return;
+    SC = { open: false };
+    var o = el("section", "scan"); o.setAttribute("aria-label", "Scansiona una carta"); o.setAttribute("role", "dialog");
+    var v = document.createElement("video"); v.setAttribute("playsinline", ""); v.muted = true; v.autoplay = true; o.appendChild(v);
+    var fr = el("div", "scframe"); for (var i = 0; i < 4; i++) fr.appendChild(el("i")); fr.appendChild(el("b")); o.appendChild(fr);
+    var hd = el("div", "schead");
+    var cx = el("button", "scbtn"); cx.type = "button"; cx.innerHTML = scIco("x"); cx.setAttribute("aria-label", "Chiudi la scansione"); cx.onclick = function () { closeScan(); };
+    var tr = el("button", "scbtn ghost"); tr.type = "button"; tr.innerHTML = scIco("torch"); tr.setAttribute("aria-label", "Torcia"); tr.setAttribute("aria-pressed", "false");
+    tr.onclick = function () { scTorch(!SC.torchOn); };
+    hd.appendChild(cx); hd.appendChild(el("h2", "", "Scansiona una carta")); hd.appendChild(tr); o.appendChild(hd);
+    var stt = el("div", "scstat"), sp = el("span"); stt.appendChild(sp); o.appendChild(stt);
+    var ft = el("div", "scfoot");
+    var fi = document.createElement("input"); fi.type = "file"; fi.accept = "image/*"; fi.hidden = true;
+    fi.onchange = function () { var f = fi.files && fi.files[0]; fi.value = ""; if (f) scFromFile(f); };
+    var pk = el("button", "scpic"); pk.type = "button"; pk.innerHTML = scIco("pic"); pk.appendChild(document.createTextNode("Usa una foto")); pk.onclick = function () { fi.click(); };
+    ft.appendChild(pk); ft.appendChild(fi); o.appendChild(ft);
+    var rs = el("div", "scres"); o.appendChild(rs);
+    document.body.appendChild(o);
+    SC.el = o; SC.video = v; SC.frame = fr; SC.stat = sp; SC.torch = tr; SC.pick = pk; SC.res = rs; SC.foot = ft;
+    if (typeof sheetNoLeak === "function") sheetNoLeak(rs, rs);
+  }
+  function scStatus(t, warn) { if (!SC) return; SC.stat.textContent = t; SC.stat.className = warn ? "warn" : ""; SC.stat.parentNode.hidden = !t; }
+  function openScan() {
+    scBuild(); if (SC.open) return;
+    SC.open = true; SC.tries = 0; SC.busy = false; SC.ready = false; SC.after = null; SC.torchOn = false;
+    SC.el.classList.add("on"); SC.el.classList.remove("res", "found", "run"); SC.pick.classList.remove("big");
+    document.documentElement.classList.add("lock");
+    pushOverlay("scan");
+    scStatus("Avvio la fotocamera…");
+    scStartCam();
+    loadTess().then(function () { if (!SC.open) return; SC.ready = true; scLoop(); }, function () {
+      scStatus("Serve la connessione a Internet per preparare il riconoscimento la prima volta.", true);
+    });
+  }
+  function scStartCam() {
+    var md = navigator.mediaDevices;
+    if (!md || !md.getUserMedia) { scNoCam("Fotocamera non disponibile qui: puoi usare una foto della carta."); return; }
+    md.getUserMedia({ audio: false, video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } } }).then(function (s) {
+      if (!SC.open) { s.getTracks().forEach(function (t) { t.stop(); }); return; }
+      SC.stream = s; SC.video.srcObject = s; var p = SC.video.play(); if (p && p.catch) p.catch(function () {});
+      var tk = s.getVideoTracks()[0], caps = tk && tk.getCapabilities ? tk.getCapabilities() : {};
+      SC.torch.classList.toggle("ghost", !caps.torch);
+      SC.camOk = true; scLoop();
+    }, function (e) {
+      scNoCam(e && e.name === "NotAllowedError" ? "Permesso per la fotocamera negato. Puoi consentirlo nelle impostazioni del telefono, oppure usare una foto." : "Non riesco ad aprire la fotocamera: puoi usare una foto della carta.");
+    });
+  }
+  function scNoCam(msg) { SC.camOk = false; scStatus(msg, true); SC.pick.classList.add("big"); SC.el.classList.remove("run"); }
+  function scStopCam() {
+    if (SC && SC.stream) { SC.stream.getTracks().forEach(function (t) { t.stop(); }); SC.stream = null; }
+    if (SC) { SC.video.srcObject = null; SC.camOk = false; }
+  }
+  function scTorch(on) {
+    var tk = SC.stream && SC.stream.getVideoTracks()[0]; if (!tk || !tk.applyConstraints) return;
+    tk.applyConstraints({ advanced: [{ torch: on }] }).then(function () { SC.torchOn = on; SC.torch.classList.toggle("on", on); SC.torch.setAttribute("aria-pressed", String(on)); }, function () {});
+  }
+  function closeScan(after) {
+    if (!scanIsOpen()) { if (after) after(); return; }
+    SC.after = after || null;
+    if (history.state && history.state.ov === "scan") history.back(); else scTeardown();
+  }
+  function scTeardown() {
+    if (!scanIsOpen()) return;
+    SC.open = false; clearTimeout(SC.t); scStopCam();
+    SC.el.classList.remove("on", "res", "found", "run");
+    if (st.open == null && !menuEl.classList.contains("open")) document.documentElement.classList.remove("lock");
+    var f = SC.after; SC.after = null; if (f) setTimeout(f, 0);
+  }
+  // ritaglio della carta dalla cornice (il video è "cover": va riportato alle coordinate reali)
+  function scGrab() {
+    var v = SC.video, vw = v.videoWidth, vh = v.videoHeight; if (!vw || !vh) return null;
+    var r = v.getBoundingClientRect(), g = SC.frame.getBoundingClientRect();
+    var k = Math.max(r.width / vw, r.height / vh), ox = (r.width - vw * k) / 2, oy = (r.height - vh * k) / 2;
+    var m = .03, sx = (g.left - r.left - ox) / k, sy = (g.top - r.top - oy) / k, sw = g.width / k, sh = g.height / k;
+    sx -= sw * m; sy -= sh * m; sw *= 1 + 2 * m; sh *= 1 + 2 * m;
+    sx = Math.max(0, sx); sy = Math.max(0, sy); sw = Math.min(vw - sx, sw); sh = Math.min(vh - sy, sh);
+    var c = document.createElement("canvas"); c.width = 1000; c.height = Math.round(1000 * sh / sw);
+    c.getContext("2d").drawImage(v, sx, sy, sw, sh, 0, 0, c.width, c.height);
+    return c;
+  }
+  // parte bassa della carta (nome + numero, anche per Tamer e Option), in scala di grigi e con più contrasto
+  function scOcrCanvas(src, y0) {
+    var w = src.width, h = src.height, sy = Math.round(h * y0), c = document.createElement("canvas");
+    c.width = w; c.height = h - sy;
+    var x = c.getContext("2d"); x.drawImage(src, 0, sy, w, h - sy, 0, 0, w, h - sy);
+    try {
+      var id = x.getImageData(0, 0, c.width, c.height), d = id.data, lo = 255, hi = 0, i, g;
+      for (i = 0; i < d.length; i += 4) { g = d[i] * .3 + d[i + 1] * .59 + d[i + 2] * .11; d[i] = g; if (g < lo) lo = g; if (g > hi) hi = g; }
+      var sc = 255 / Math.max(40, hi - lo);
+      for (i = 0; i < d.length; i += 4) { g = (d[i] - lo) * sc; d[i] = d[i + 1] = d[i + 2] = g; }
+      x.putImageData(id, 0, 0);
+    } catch (e) {}
+    return c;
+  }
+  function scLoop() {
+    if (!SC.open || !SC.ready || !SC.camOk || SC.busy || SC.el.classList.contains("res")) return;
+    SC.el.classList.add("run");
+    scStatus(SC.tries >= 4 ? "Avvicina la carta, tienila ferma e con buona luce" : "Inquadra la carta dentro la cornice", SC.tries >= 4);
+    var c = scGrab(); if (!c) { SC.t = setTimeout(scLoop, 300); return; }
+    SC.busy = true;
+    scRead(c, .5).then(function (r) {
+      SC.busy = false; if (!SC.open || SC.el.classList.contains("res")) return;
+      if (r) { scShow(r, c); return; }
+      SC.tries++; SC.t = setTimeout(scLoop, 250);
+    }, function () { SC.busy = false; SC.tries++; if (SC.open) SC.t = setTimeout(scLoop, 600); });
+  }
+  function scRead(c, y0) {
+    return loadTess().then(function (w) { return w.recognize(scOcrCanvas(c, y0)); }).then(function (out) {
+      var txt = (out && out.data && out.data.text) || "", codes = scanCodes(txt);
+      if (codes.length) return { codes: codes, sure: true };
+      var byName = scanByName(txt);
+      if (byName.length) return { codes: byName, sure: false };
+      return null;
+    });
+  }
+  function scFromFile(f) {
+    var url = URL.createObjectURL(f), im = new Image();
+    im.onload = function () {
+      var k = Math.min(1, 1600 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement("canvas");
+      c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+      c.getContext("2d").drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      SC.el.classList.remove("run"); scStatus("Leggo la foto…");
+      loadTess().then(function () { SC.ready = true; return scRead(c, 0); }).then(function (r) {
+        if (!SC.open) return;
+        if (r) scShow(r, c);
+        else { scStatus("Non ho riconosciuto la carta in questa foto. Prova con una foto più vicina e nitida.", true); if (SC.camOk) SC.t = setTimeout(scLoop, 2500); }
+      }, function () { scStatus("Serve la connessione a Internet per preparare il riconoscimento la prima volta.", true); });
+    };
+    im.onerror = function () { URL.revokeObjectURL(url); scStatus("Non riesco ad aprire questa immagine.", true); };
+    im.src = url;
+  }
+  function scShow(r, c) {
+    SC.el.classList.remove("run"); SC.el.classList.add("found", "res");
+    if (navigator.vibrate) try { navigator.vibrate(30); } catch (e) {}
+    SC.r = r; SC.sig = scSig(c, c.width, c.height); SC.ci = 0; SC.sel = null;
+    scDraw();
+  }
+  function scDraw() {
+    var r = SC.r, code = r.codes[SC.ci], vers = scVers(code), box = SC.res;
+    box.innerHTML = ""; box.appendChild(el("i", "grab"));
+    var ok = el("div", "scok" + (r.sure ? "" : " maybe")); ok.innerHTML = scIco(r.sure ? "ok" : "q");
+    ok.appendChild(document.createTextNode(r.sure ? "Carta riconosciuta" : "Riconosciuta dal nome: controlla")); box.appendChild(ok);
+    var hit = el("div", "schit"); box.appendChild(hit);
+    var vh = el("div", "sch"), strip = el("div", "scvers");
+    var cand = null;
+    if (r.codes.length > 1) {
+      box.appendChild(el("div", "sch", "Forse era"));
+      cand = el("div", "sccand");
+      r.codes.forEach(function (cd, i) {
+        var c0 = CODEIDX[cd][0], b = el("button"); b.type = "button"; b.setAttribute("aria-pressed", String(i === SC.ci));
+        b.appendChild(picBox("thumb", "t", c0)); var t = el("div"); t.appendChild(el("b", "", c0.name)); t.appendChild(el("small", "", cd + " · " + ((SETBY[c0.set] || {}).name || ""))); b.appendChild(t);
+        b.onclick = function () { SC.ci = i; SC.sel = null; scDraw(); };
+        cand.appendChild(b);
+      });
+    }
+    function drawHit(a) {
+      SC.sel = a; hit.innerHTML = "";
+      var th = picBox("thumb", "f", a); th.title = "Apri la scheda della carta"; th.onclick = function () { scOpenCard(a); }; hit.appendChild(th);
+      var tx = el("div", "tx"), s = scSetOf(a), mk = scMark(a);
+      tx.appendChild(el("div", "cd", a.code + (mk ? "  " + mk : "") + (a.rar ? " · " + a.rar : "")));
+      var nm = el("div", "nm fit"); nm.appendChild(nameFrag(a)); tx.appendChild(nm);
+      if (s) tx.appendChild(el("div", "ex", s.name));
+      var vl = el("div", "vl"); vl.appendChild(document.createTextNode("Versione: ")); vl.appendChild(el("b", "", a.suf ? (verLabel(a.ver) || "Alternative Art") + (mk ? " " + mk : "") : "Regular")); tx.appendChild(vl);
+      var ow = el("div", "own"); ow.appendChild(el("span", "", "Copie possedute"));
+      ow.appendChild(qtyControl(a, function () { recomputeStats(); render(); drawHit(SC.sel); })); tx.appendChild(ow);
+      hit.appendChild(tx); fitOne(nm);
+      strip.querySelectorAll(".scv").forEach(function (b) { b.setAttribute("aria-pressed", String(b._a === a)); });
+    }
+    if (cand) box.appendChild(cand);
+    vh.appendChild(document.createTextNode("Versioni · " + vers.length));
+    var hint = el("span", "", vers.length > 1 ? "Tocca quella che hai in mano" : ""); vh.appendChild(hint);
+    box.appendChild(vh); box.appendChild(strip);
+    var acts = el("div", "scacts");
+    acts.appendChild(btn("Scheda carta", "", function () { scOpenCard(SC.sel); }));
+    acts.appendChild(btn("Scansiona ancora", "pri", function () { scAgain(); }, SCICO.cam));
+    box.appendChild(acts);
+    function fill(rk, best) {
+      strip.innerHTML = "";
+      rk.forEach(function (x) {
+        var a = x.a, b = el("button", "scv"), s = scSetOf(a), mk = scMark(a); b.type = "button"; b._a = a;
+        b.appendChild(picBox("thumb", "t", a));
+        var lb = el("span"); lb.appendChild(document.createTextNode((s ? s.code : "") + " ")); if (mk) lb.appendChild(el("i", "", mk)); b.appendChild(lb);
+        b.appendChild(el("em", "", a === best ? "Più simile" : ""));
+        b.setAttribute("aria-label", a.code + " " + (s ? s.code : "") + " " + (mk || "Regular") + (a === best ? ", la più simile" : ""));
+        b.onclick = function () { SC.picked = true; drawHit(a); };
+        strip.appendChild(b);
+      });
+    }
+    SC.picked = false;
+    fill(vers.map(function (a) { return { a: a }; }), null); drawHit(vers[0]);
+    scRank(vers, SC.sig).then(function (rk) {
+      if (!SC.open || SC.r !== r || r.codes[SC.ci] !== code || vers.length < 2) return;
+      var best = rk[0] && rk[0].d != null ? rk[0].a : null;
+      fill(rk, best); drawHit(SC.picked ? SC.sel : (best || SC.sel));
+      strip.scrollLeft = 0;
+    });
+  }
+  function scAgain() {
+    SC.el.classList.remove("res", "found"); SC.tries = 0; SC.r = null;
+    if (SC.camOk) { scStatus("Inquadra la carta dentro la cornice"); SC.t = setTimeout(scLoop, 400); }
+    else { scStatus("Scegli una foto della carta"); }
+  }
+  function scOpenCard(a) { if (!a) return; closeScan(function () { st.open = a; st.shTab = "fx"; drawSheet(); }); }
   var statsReady = false;
   function recomputeStatsIfNeeded() { if (!statsReady) { recomputeStats(); statsReady = true; } }
   render();

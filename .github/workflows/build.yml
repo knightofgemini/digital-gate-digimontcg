@@ -58,6 +58,17 @@ jobs:
         with: { distribution: temurin, java-version: 17 }
       - run: npm install
       - run: npx cap add android
+      - name: Permesso fotocamera (scansione delle carte)
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          p = pathlib.Path("android/app/src/main/AndroidManifest.xml"); t = p.read_text()
+          add = ""
+          if "android.permission.CAMERA" not in t: add += '    <uses-permission android:name="android.permission.CAMERA" />\n'
+          if "android.hardware.camera" not in t: add += '    <uses-feature android:name="android.hardware.camera" android:required="false" />\n'
+          t = t.replace("</manifest>", add + "</manifest>"); p.write_text(t)
+          print(t)
+          PY
       - run: npx capacitor-assets generate --android
       - name: Icona Digital Gate (adattiva, rotonda, a tema) e splash nativo solo blu notte (il marchio è nell'intro)
         run: |
