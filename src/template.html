@@ -164,6 +164,7 @@ body.apk .ptitle { font-size: 1.35rem; margin: 6px 0 10px; }
 .soon .plink { grid-column: 1 / -1; justify-self: start; }
 .row.upc:not([disabled]) { cursor: pointer; }
 .more { display: block; margin: 16px auto 0; padding: 10px 18px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 500 .9rem var(--font-body); cursor: pointer; }
+.more.auto { border: 0; background: none; color: var(--ink-2); font-size: .82rem; padding: 14px 18px 18px; cursor: default; }
 .empty { text-align: center; color: var(--ink-2); padding: 48px 0; }
 .hint { color: var(--ink-2); font-size: .8rem; margin-top: 24px; }
 html.lock, html.lock body { overflow: hidden; overscroll-behavior: none; }
@@ -1545,6 +1546,20 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
   // tutti i filtri (senza il testo cercato)
   var FLT = ["qm", "color", "ct", "lv", "cost", "attr", "sp", "rar", "exp"];
   function resetFlt() { FLT.forEach(function (k) { st[k] = ""; }); }
+  // caricamento continuo: il pulsante "Mostra altre" in fondo agli elenchi si preme da solo quando sta per entrare
+  // nello schermo (anche nel foglio di ricerca del mazzo), così scorrendo arrivano sempre nuove carte
+  var moreIO = window.IntersectionObserver ? new IntersectionObserver(function (es) {
+    es.forEach(function (e) {
+      var b = e.target; if (!e.isIntersecting || b._auto) return;
+      b._auto = 1; moreIO.unobserve(b);
+      setTimeout(function () { if (b.isConnected) b.click(); }, 0);
+    });
+  }, { rootMargin: "900px 0px 900px 0px" }) : null;
+  function loadMoreBtn(text) {
+    var b = el("button", "more" + (moreIO ? " auto" : ""), moreIO ? "Caricamento di altre carte…" : text);
+    if (moreIO) moreIO.observe(b);
+    return b;
+  }
   function anyFlt() { return FLT.some(function (k) { return k !== "qm" && st[k]; }); }
   function fctx(p) { return p === "cards" || p === "coll" || p === "deck" ? p : "other"; }
   function go(where) {
@@ -2298,7 +2313,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
       out.appendChild(ul);
     });
     if (list.length > lim) {
-      var m = el("button", "more", "Mostra altre " + Math.min(PAGE, list.length - st.shown)); m.type = "button";
+      var m = loadMoreBtn("Mostra altre " + Math.min(PAGE, list.length - st.shown)); m.type = "button";
       m.onclick = function () { st.shown += PAGE; render(); };
       out.appendChild(m);
     }
@@ -2530,7 +2545,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     if (!list.length) { res.appendChild(el("p", "empty", st.ownOnly ? "Nessuna delle tue carte corrisponde ai filtri." : "Nessuna carta corrisponde ai filtri.")); return; }
     var ul = el("div", st.view === "grid" ? "grid" : "list"); drawItems(ul, list.slice(0, st.shown)); res.appendChild(ul);
     if (list.length > st.shown) {
-      var m = el("button", "more", "Mostra altre " + Math.min(PAGE, list.length - st.shown)); m.type = "button";
+      var m = loadMoreBtn("Mostra altre " + Math.min(PAGE, list.length - st.shown)); m.type = "button";
       m.onclick = function () { st.shown += PAGE; render(); }; res.appendChild(m);
     }
   }
@@ -4013,7 +4028,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     gt2.firstChild.textContent = "Aggiungi carte · " + list.length + (list.length === 1 ? " trovata" : " trovate");
     if (!list.length) left.appendChild(el("p", "empty", "Nessuna carta corrisponde alla ricerca."));
     var ul2 = el("div", st.view === "grid" ? "grid" : "list"); list.slice(0, st.shown).forEach(function (c) { ul2.appendChild(deckRow(d, c)); }); left.appendChild(ul2);
-    if (list.length > st.shown) { var mo = el("button", "more", "Mostra altre (" + (list.length - st.shown) + ")"); mo.type = "button"; mo.onclick = function () { st.shown += PAGE; render(); }; left.appendChild(mo); }
+    if (list.length > st.shown) { var mo = loadMoreBtn("Mostra altre (" + (list.length - st.shown) + ")"); mo.type = "button"; mo.onclick = function () { st.shown += PAGE; render(); }; left.appendChild(mo); }
   }
   // ---- Editor del mazzo sul telefono: il mazzo in pile per livello (scorrimento verticale), curva che porta al livello,
   // "+ Aggiungi" per livello e barra "Cerca e aggiungi carte" che aprono il foglio di ricerca dal basso (st.dkSheet: 0 chiuso, 1 metà, 2 alto)
@@ -4168,7 +4183,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
       ul.appendChild(deckRow(d, c, function () { if (inDeck(d, c) > was) { st.dkNew = c.k; st.dkFocus = c.k; } render(); }));
     });
     dkBody.appendChild(ul);
-    if (list.length > st.shown) { var mo = el("button", "more", "Mostra altre (" + (list.length - st.shown) + ")"); mo.type = "button"; mo.onclick = function () { st.shown += PAGE; render(); }; dkBody.appendChild(mo); }
+    if (list.length > st.shown) { var mo = loadMoreBtn("Mostra altre (" + (list.length - st.shown) + ")"); mo.type = "button"; mo.onclick = function () { st.shown += PAGE; render(); }; dkBody.appendChild(mo); }
     st.view = sv; dkBody.scrollTop = keep;
   }
   function renderDeckMob(d) {
@@ -4380,7 +4395,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     if (q) list = list.map(function (c, j) { return { c: c, j: j, r: relevance(c, q) }; }).sort(function (a, b2) { return (a.r - b2.r) || (a.j - b2.j); }).map(function (o) { return o.c; });
     if (!list.length) out.appendChild(el("p", "empty", "Nessuna carta corrisponde alla ricerca."));
     var ul2 = el("div", st.view === "grid" ? "grid" : "list"); list.slice(0, st.shown).forEach(function (c) { ul2.appendChild(deckRow(d, c)); }); out.appendChild(ul2);
-    if (list.length > st.shown) { var mo = el("button", "more", "Mostra altre (" + (list.length - st.shown) + ")"); mo.type = "button"; mo.onclick = function () { st.shown += PAGE; render(); }; out.appendChild(mo); }
+    if (list.length > st.shown) { var mo = loadMoreBtn("Mostra altre (" + (list.length - st.shown) + ")"); mo.type = "button"; mo.onclick = function () { st.shown += PAGE; render(); }; out.appendChild(mo); }
     out.appendChild(banNote());
   }
 
