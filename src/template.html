@@ -604,6 +604,8 @@ body.desk .subhead { font-size: .8rem; margin: 26px 0 10px; }
 .fopt[aria-pressed="true"] { background: var(--cyan-soft); border-color: var(--cyan); color: var(--cyan); font-weight: 600; }
 .fsw { width: 30px; height: 30px; border-radius: 50%; border: 0; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); padding: 0; }
 .fsw[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--cyan); }
+.fside .fdd { width: 100%; height: 42px; cursor: pointer; }
+.fside .fdd small { display: none; }
 .fradio { display: flex; flex-direction: column; gap: 2px; }
 .fradio button { display: flex; align-items: center; gap: 9px; border: 0; background: none; color: var(--ink); font: 400 .86rem var(--font-body); padding: 5px 0; cursor: pointer; text-align: left; }
 .fradio button i { width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid var(--ink-2); flex: none; }
@@ -758,6 +760,10 @@ body.desk .sr .fx p { font-size: .95rem; line-height: 1.6; }
 
 /* ==== Mobile (telefono e APK, body.mob): crasi delle proposte Claude + ChatGPT (ottobre 2026) ==== */
 .mbrand, .morebtn, .tabbar, .mfbar { display: none; }
+body.desk .mfbar:not([hidden]) { display: flex; flex-wrap: wrap; gap: 8px; flex: 1 1 100%; }
+body.desk .mfbar .dd { flex: 1 1 0; min-width: 0; cursor: pointer; }
+body.desk .mfbar .dd[data-k="color"], body.desk .mfbar .dd[data-k="exp"], body.desk .mfbar .dd[data-k="attr"] { flex-grow: 1.25; }
+body.desk .dd:hover { border-color: var(--cyan); }
 body.mob { padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
 body.mob.kbd { padding-bottom: 0; }
 body.mob .bar { padding: 8px 12px 10px; padding-top: calc(8px + env(safe-area-inset-top, 0px)); }
@@ -835,7 +841,6 @@ body.mob .mfbar.n5 .dd:nth-child(n+4) { flex-basis: calc(50% - 3px); }
 .ddo i { width: 12px; height: 12px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
 .ddo[aria-selected="true"] { background: var(--cyan-soft); color: var(--cyan); font-weight: 700; }
 .ddo .ok { margin-left: auto; }
-.ddhint { padding: 4px 12px 6px; color: var(--ink-2); font: 600 .72rem var(--font-body); letter-spacing: .02em; }
 .ddck { margin-left: auto; width: 18px; height: 18px; flex: none; border-radius: 5px; border: 1.5px solid var(--line); box-sizing: border-box; display: grid; place-items: center; }
 .ddo[aria-selected="true"] .ddck { background: var(--cyan); border-color: var(--cyan); }
 .ddo[aria-selected="true"] .ddck::after { content: ""; width: 8px; height: 4px; border: solid #fff; border-width: 0 0 2px 2px; transform: translateY(-1px) rotate(-45deg); }
@@ -2346,11 +2351,26 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     });
     g2.appendChild(sw);
     var g3 = grp("Tipologia"), to = el("div", "fopts");
-    CARDTYPES.forEach(function (k) { var b = el("button", "fopt", k); b.type = "button"; b.setAttribute("aria-pressed", String(st.ct === k)); b.onclick = function () { set("ct", st.ct === k ? "" : k); }; to.appendChild(b); });
+    CARDTYPES.forEach(function (k) { var b = el("button", "fopt", k); b.type = "button"; b.setAttribute("aria-pressed", String(st.ct === k)); b.onclick = function () { setFlt("ct", st.ct === k ? "" : k); syncSelects(); render(); }; to.appendChild(b); });
     g3.appendChild(to);
-    var g4 = grp("Livello"), lo = el("div", "fopts");
-    [2, 3, 4, 5, 6, 7].forEach(function (n) { var v = "Lv." + n, b = el("button", "fopt", v); b.type = "button"; b.setAttribute("aria-pressed", String(st.lv === v)); b.onclick = function () { set("lv", st.lv === v ? "" : v); }; lo.appendChild(b); });
-    g4.appendChild(lo);
+    // gruppo di pulsanti: scelta singola (si tocca di nuovo per togliere) o multipla
+    function opts(label, kind, vals, fmt) {
+      if (!vals.length) return;
+      var g = grp(label), o = el("div", "fopts");
+      vals.forEach(function (v) {
+        var on = MULTI[kind] ? fltHas(kind, v) : st[kind] === v;
+        var b = el("button", "fopt", fmt ? fmt(v) : v); b.type = "button"; b.setAttribute("aria-pressed", String(on));
+        b.onclick = function () { if (MULTI[kind]) { fltToggle(kind, v); st.shown = PAGE; } else setFlt(kind, on ? "" : v); syncSelects(); render(); };
+        o.appendChild(b);
+      });
+      g.appendChild(o);
+    }
+    opts("Livello", "lv", ["Lv.2", "Lv.3", "Lv.4", "Lv.5", "Lv.6", "Lv.7"]);
+    opts("Costo", "cost", ddValues("cost"));
+    opts("Attributo", "attr", ddValues("attr"));
+    // Tipo (trait) ed Espansione: molte voci, stessa tendina del telefono
+    ["sp", "exp"].forEach(function (k) { var g = grp(DDN[k]); var b = ddButton(k); b.classList.add("fdd"); g.appendChild(b); });
+    opts("Rarità", "rar", ddValues("rar"));
     return a;
   }
   // ---- Telefono: menù a tendina indipendenti sotto la ricerca (Cerca in, Colore, Tipo e, secondo il tipo, Livello e/o Costo)
@@ -2427,7 +2447,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
   }
   // carte da cui cercare: quelle dell'espansione scelta (anche alternative art e ristampe uscite lì) o tutto il catalogo
   function srcCards() { return st.exp && SETBY[st.exp] ? cardsOfSet(st.exp) : CARDS; }
-  var ddOpen = null, ddPop = null, ddKeep = false;
+  var ddOpen = null, ddPop = null, ddKeep = false, ddHold = 0;
   function closeFilters() {
     if (!ddPop) return false;
     ddPop.remove(); ddPop = null; var was = ddOpen; ddOpen = null;
@@ -2438,8 +2458,12 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     var bar = document.getElementById("mfbar"); bar.innerHTML = "";
     var kinds = ddKinds(); bar.className = "mfbar n" + kinds.length;
     var keep = ddKeep && ddPop && kinds.indexOf(ddOpen) >= 0; ddKeep = false; if (!keep) closeFilters();
-    kinds.forEach(function (kind) {
-      var b = el("button", "dd" + (st[kind] ? " on" : "")); b.type = "button"; b.setAttribute("data-k", kind);
+    kinds.forEach(function (kind) { bar.appendChild(ddButton(kind, keep)); });
+  }
+  // pulsante di una tendina dei filtri (barra dei filtri e colonna dei filtri su PC)
+  function ddButton(kind, keep) {
+    {
+      var b = el("button", "dd" + (ddVal(kind) ? " on" : "")); b.type = "button"; b.setAttribute("data-k", kind);
       b.setAttribute("aria-haspopup", "listbox"); b.setAttribute("aria-expanded", "false");
       b.setAttribute("aria-label", DDN[kind] + ": " + ddShown(kind));
       var t = el("span", "ddt"); t.appendChild(el("small", "", DDN[kind]));
@@ -2447,9 +2471,9 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
       v.appendChild(document.createTextNode(ddShown(kind))); t.appendChild(v); b.appendChild(t);
       var ch = el("span", "ddc"); ch.innerHTML = DDCHEV; b.appendChild(ch);
       b.onclick = function (e) { e.stopPropagation(); if (ddOpen === kind) { closeFilters(); return; } openDD(kind, b); };
-      if (keep && ddOpen === kind) b.setAttribute("aria-expanded", "true");
-      bar.appendChild(b);
-    });
+      if ((keep || ddPop) && ddOpen === kind) b.setAttribute("aria-expanded", "true");
+      return b;
+    }
   }
   function openDD(kind, btnEl) {
     closeFilters();
@@ -2460,7 +2484,6 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     if (multi) { pop.classList.add("multi"); pop.setAttribute("aria-multiselectable", "true"); }
     // Tipo: elenco che scorre e, in fondo (vicino al pulsante e sopra la tastiera), il campo per cercare
     var box = pop; if (kind === "sp") { pop.classList.add("hasfind"); box = el("div", "ddlist"); pop.appendChild(box); }
-    if (multi) box.appendChild(el("div", "ddhint", "Puoi sceglierne più di uno"));
     ddOptions(kind).forEach(function (o, i) {
       if (o[0] === null) { box.appendChild(el("div", "ddg", o[1])); return; }
       var on = multi ? (o[0] === "" ? !cur : fltHas(kind, o[0])) : cur === o[0];
@@ -2476,7 +2499,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
         if (o[0] === "") st[kind] = ""; else fltToggle(kind, o[0]);
         st.shown = PAGE;
         items.forEach(function (x) { var v0 = x.getAttribute("data-v"); x.setAttribute("aria-selected", String(v0 === "" ? !st[kind] : fltHas(kind, v0))); });
-        syncSelects(); ddKeep = true; render(); ddKeep = false;
+        ddHold = Date.now() + 600; syncSelects(); ddKeep = true; render(); ddKeep = false;
       };
       it.setAttribute("data-v", o[0]);
       it.setAttribute("data-f", fold(o[1])); items.push(it);
@@ -2508,7 +2531,8 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
   }
   document.addEventListener("pointerdown", function (e) { if (ddPop && !ddPop.contains(e.target) && !(e.target.closest && e.target.closest(".dd"))) closeFilters(); }, true);
   function ddTyping() { return ddPop && ddPop.contains(document.activeElement) && document.activeElement.tagName === "INPUT"; }
-  window.addEventListener("scroll", function () { if (ddPop && !ddTyping()) closeFilters(); }, { passive: true });
+  // (lo scorrimento causato dal ridisegno dopo una spunta non chiude la tendina)
+  window.addEventListener("scroll", function () { if (ddPop && !ddTyping() && Date.now() > ddHold) closeFilters(); }, { passive: true });
   window.addEventListener("resize", function () { if (ddPop && !ddTyping()) closeFilters(); else if (ddPop && ddPop._place) ddPop._place(); });
   if (window.visualViewport) window.visualViewport.addEventListener("resize", function () { if (ddPop && ddPop._place && ddTyping()) ddPop._place(); });
   function collSummary() {
@@ -2556,7 +2580,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     }
     var lay = el("div", "slay"); lay.appendChild(filterSide());
     var res = el("section"); res.setAttribute("aria-label", "Risultati"); lay.appendChild(res); out.appendChild(lay);
-    var list = CARDS.filter(function (c) { return cardMatches(c, q); });
+    var list = srcCards().filter(function (c) { return cardMatches(c, q); });
     if (q) list = list.map(function (c, j) { return { c: c, j: j, r: relevance(c, q) }; }).sort(function (a, b) { return (a.r - b.r) || (a.j - b.j); }).map(function (o) { return o.c; });
     var gt = el("div", "group-title withv");
     gt.appendChild(el("span", "", list.length + (list.length === 1 ? " carta" : " carte") + (st.q ? " per “" + st.q + "”" : "")));
@@ -3570,9 +3594,9 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     var noF = isSets || isHome || isUp || sideF || dkNoSearch;
     var prodM = !DESK && st.tab === "cards" && !!st.setId && !isUp;
     placeSearch(dkM ? "deck" : botM ? "bottom" : prodM ? "prod" : ""); if (dkSheetEl) { dkSheetEl.classList.toggle("on", dkM); dkSheetEl.classList.toggle("full", st.dkSheet === 2); } document.body.classList.toggle("dked", dkEd); document.body.classList.toggle("dkopen", dkM); if (!prodM) { phead.innerHTML = ""; phead.removeAttribute("data-k"); } phead.hidden = !prodM; psearch.hidden = !prodM || botM;
-    document.getElementById("filters").hidden = noF || !DESK;
-    document.getElementById("qmodes").hidden = noF || !DESK;
-    document.getElementById("mfbar").hidden = noF || DESK;
+    document.getElementById("filters").hidden = true;
+    document.getElementById("qmodes").hidden = true;
+    document.getElementById("mfbar").hidden = noF;
     document.getElementById("qm-name").setAttribute("aria-pressed", String(st.qm === "name"));
     document.getElementById("qm-text").setAttribute("aria-pressed", String(st.qm === "text"));
     chips.hidden = !isSets || !DESK;
@@ -3604,7 +3628,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
       if (dkFbtn) drawFlt(dkMfSlot, dkFbtn, hasFd);
     }
     document.body.classList.toggle("hasmbot", botM);
-    drawTabbar(); if (!DESK) drawMfbar();
+    drawTabbar(); if (!document.getElementById("mfbar").hidden) drawMfbar();
     trackNav();
     if (isDeck) { document.getElementById("hint").hidden = true; if (st.deckId) renderDeck(); else renderDeckList(); }
     else if (isInfo) renderInfo(); else if (isHome) renderHome(); else if (isSoon) renderSoon(); else if (isSets) renderSets(); else if (isUp) renderUp(st.setId.slice(3)); else renderCards();
@@ -4035,11 +4059,11 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     acts.appendChild(del); hd.appendChild(acts); out.appendChild(hd); out.appendChild(slot);
     var lay = el("div", "dklay"), left = el("section"); left.setAttribute("aria-label", "Aggiungi carte");
     lay.appendChild(left); lay.appendChild(deckPanels(d, deckStats(d))); out.appendChild(lay);
-    var q = normQ(st.q), filt = q || st.color || st.ct || st.lv;
+    var q = normQ(st.q), filt = q || anyFlt();
     var gt2 = el("div", "group-title withv"); gt2.appendChild(el("span", "", "Aggiungi carte")); gt2.appendChild(viewToggle()); left.appendChild(gt2);
     if (!filt) {
       var e = el("div", "panel cempty"); e.appendChild(el("div", "eyebrow", "Cerca una carta"));
-      e.appendChild(el("p", "", "Scrivi un nome, un codice o una parola dell'effetto nella barra in alto, oppure scegli colore, tipo e livello. Il + aggiunge la carta al mazzo."));
+      e.appendChild(el("p", "", "Scrivi un nome, un codice o una parola dell'effetto nella barra in alto, oppure usa i filtri. Il + aggiunge la carta al mazzo."));
       left.appendChild(e); left.appendChild(banNote()); return;
     }
     var list = srcCards().filter(function (c) { return deckable(c) && cardMatches(c, q); });
@@ -4407,7 +4431,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
       var ul = el("div", st.view === "grid" ? "grid" : "list"); g[1].forEach(function (c) { ul.appendChild(deckRow(d, c)); }); out.appendChild(ul);
     });
     if (!any) out.appendChild(el("p", "empty dempty", "Il mazzo è vuoto: cerca le carte con la barra in alto e aggiungile con +."));
-    var q = normQ(st.q), filt = q || st.color || st.ct || st.lv;
+    var q = normQ(st.q), filt = q || anyFlt();
     var gt2 = el("div", "group-title withv"); gt2.appendChild(el("span", "", "Aggiungi carte")); if (!any) gt2.appendChild(viewToggle()); out.appendChild(gt2);
     if (!filt) { out.appendChild(el("p", "hint dnote", "Usa la ricerca e i filtri in alto per trovare le carte da aggiungere.")); out.appendChild(banNote()); return; }
     var list = srcCards().filter(function (c) { return deckable(c) && cardMatches(c, q); });
