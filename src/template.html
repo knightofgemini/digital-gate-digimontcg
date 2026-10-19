@@ -835,6 +835,12 @@ body.mob .mfbar.n5 .dd:nth-child(n+4) { flex-basis: calc(50% - 3px); }
 .ddo i { width: 12px; height: 12px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
 .ddo[aria-selected="true"] { background: var(--cyan-soft); color: var(--cyan); font-weight: 700; }
 .ddo .ok { margin-left: auto; }
+.ddhint { padding: 4px 12px 6px; color: var(--ink-2); font: 600 .72rem var(--font-body); letter-spacing: .02em; }
+.ddck { margin-left: auto; width: 18px; height: 18px; flex: none; border-radius: 5px; border: 1.5px solid var(--line); box-sizing: border-box; display: grid; place-items: center; }
+.ddo[aria-selected="true"] .ddck { background: var(--cyan); border-color: var(--cyan); }
+.ddo[aria-selected="true"] .ddck::after { content: ""; width: 8px; height: 4px; border: solid #fff; border-width: 0 0 2px 2px; transform: translateY(-1px) rotate(-45deg); }
+.ddpop.multi .ddo.all[aria-selected="false"] .ok { visibility: hidden; }
+.ddt b i + i { margin-left: -4px; }
 .ddo.all i { width: 15px; height: 15px; }
 .ddpop.nums .ddo[aria-selected="true"] { border-color: var(--cyan); }
 /* scheda carta a tutto schermo */
@@ -1545,6 +1551,16 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
   // tutti i filtri (senza il testo cercato)
   var FLT = ["qm", "color", "ct", "lv", "cost", "attr", "sp", "rar", "exp"];
   function resetFlt() { FLT.forEach(function (k) { st[k] = ""; }); }
+  // filtri a scelta multipla (Colore, Attributo, Tipo): valori separati da "|"; la carta va bene se ha almeno uno dei valori scelti
+  var MULTI = { color: 1, attr: 1, sp: 1 };
+  function fl(k) { return st[k] ? String(st[k]).split("|") : []; }
+  function fltHas(k, v) { return fl(k).indexOf(v) >= 0; }
+  function fltOrder(k) { return k === "color" ? Object.keys(COLORS) : ddValues(k); }
+  function fltToggle(k, v) {
+    var a = fl(k), i = a.indexOf(v); if (i >= 0) a.splice(i, 1); else a.push(v);
+    var ord = fltOrder(k); a.sort(function (x, y) { return ord.indexOf(x) - ord.indexOf(y); });
+    st[k] = a.join("|");
+  }
   function anyFlt() { return FLT.some(function (k) { return k !== "qm" && st[k]; }); }
   function fctx(p) { return p === "cards" || p === "coll" || p === "deck" ? p : "other"; }
   function go(where) {
@@ -1869,12 +1885,12 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
 
   function cardMatches(c, q) {
     if (st.ownOnly && !owned(c)) return false;
-    if (st.color && c.colors.indexOf(st.color) < 0) return false;
+    if (st.color && !fl("color").some(function (x) { return c.colors.indexOf(x) >= 0; })) return false;
     if (st.ct && c.ct.indexOf(st.ct) < 0) return false;
     if (st.lv && c.lv !== st.lv) return false;
     if (st.cost && costOf(c).indexOf(st.cost) < 0) return false;
-    if (st.attr && c.attr !== st.attr) return false;
-    if (st.sp && traitsOf(c).indexOf(st.sp) < 0) return false;
+    if (st.attr && fl("attr").indexOf(c.attr) < 0) return false;
+    if (st.sp && !fl("sp").some(function (x) { return traitsOf(c).indexOf(x) >= 0; })) return false;
     if (st.rar && (c.rar || "").trim() !== st.rar) return false;
     if (q) {
       var hay = st.qm === "name" ? c.nb : st.qm === "text" ? c.tb : c.nb + c.tb;
@@ -2325,8 +2341,8 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     var g2 = grp("Colore"), sw = el("div", "fopts");
     Object.keys(COLORS).forEach(function (k) {
       var b = el("button", "fsw"); b.type = "button"; b.style.background = colorVar(k); b.title = COLORS[k];
-      b.setAttribute("aria-label", COLORS[k]); b.setAttribute("aria-pressed", String(st.color === k));
-      b.onclick = function () { set("color", st.color === k ? "" : k); }; sw.appendChild(b);
+      b.setAttribute("aria-label", COLORS[k]); b.setAttribute("aria-pressed", String(fltHas("color", k)));
+      b.onclick = function () { fltToggle("color", k); st.shown = PAGE; syncSelects(); render(); }; sw.appendChild(b);
     });
     g2.appendChild(sw);
     var g3 = grp("Tipologia"), to = el("div", "fopts");
@@ -2386,6 +2402,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
   function ddShown(kind) {
     var v = ddVal(kind); if (!v) return kind === "qm" ? "Tutto" : kind === "exp" || kind === "ct" ? "Tutte" : "Tutti";
     if (kind === "exp") return SETBY[v] ? SETBY[v].code : v;
+    if (MULTI[kind]) { var n = fl(kind).length; if (n > 1) return n + (kind === "color" ? " colori" : kind === "attr" ? " attributi" : " tipi"); }
     return kind === "qm" ? (v === "name" ? "Nome" : "Testo") : v;
   }
   // scelta di un filtro (anche dalle etichette): nella pagina di un prodotto cambiare espansione apre l'altro prodotto,
@@ -2398,16 +2415,19 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     }
     st[kind] = v; if (kind === "ct") ddFix(); st.shown = PAGE;
   }
+  // toglie un solo valore di un filtro a scelta multipla (etichetta con ✕)
+  function unsetFlt(kind, v) { if (MULTI[kind]) { fltToggle(kind, v); st.shown = PAGE; } else setFlt(kind, ""); }
   // quando cambia il tipo, livello e costo restano solo se ancora sensati
   function ddFix() {
     var k = ddKinds();
     if (k.indexOf("lv") < 0) st.lv = ""; else if (st.lv && ddValues("lv").indexOf(st.lv) < 0) st.lv = "";
     if (k.indexOf("cost") < 0) st.cost = ""; else if (st.cost && ddValues("cost").indexOf(st.cost) < 0) st.cost = "";
-    ["attr", "sp", "rar"].forEach(function (x) { if (st[x] && ddValues(x).indexOf(st[x]) < 0) st[x] = ""; });
+    ["attr", "sp"].forEach(function (x) { if (st[x]) { var ok = ddValues(x); st[x] = fl(x).filter(function (v) { return ok.indexOf(v) >= 0; }).join("|"); } });
+    if (st.rar && ddValues("rar").indexOf(st.rar) < 0) st.rar = "";
   }
   // carte da cui cercare: quelle dell'espansione scelta (anche alternative art e ristampe uscite lì) o tutto il catalogo
   function srcCards() { return st.exp && SETBY[st.exp] ? cardsOfSet(st.exp) : CARDS; }
-  var ddOpen = null, ddPop = null;
+  var ddOpen = null, ddPop = null, ddKeep = false;
   function closeFilters() {
     if (!ddPop) return false;
     ddPop.remove(); ddPop = null; var was = ddOpen; ddOpen = null;
@@ -2415,17 +2435,19 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     return true;
   }
   function drawMfbar() {
-    var bar = document.getElementById("mfbar"); bar.innerHTML = ""; closeFilters();
+    var bar = document.getElementById("mfbar"); bar.innerHTML = "";
     var kinds = ddKinds(); bar.className = "mfbar n" + kinds.length;
+    var keep = ddKeep && ddPop && kinds.indexOf(ddOpen) >= 0; ddKeep = false; if (!keep) closeFilters();
     kinds.forEach(function (kind) {
       var b = el("button", "dd" + (st[kind] ? " on" : "")); b.type = "button"; b.setAttribute("data-k", kind);
       b.setAttribute("aria-haspopup", "listbox"); b.setAttribute("aria-expanded", "false");
       b.setAttribute("aria-label", DDN[kind] + ": " + ddShown(kind));
       var t = el("span", "ddt"); t.appendChild(el("small", "", DDN[kind]));
-      var v = el("b"); if (kind === "color" && st.color) { var i = el("i"); i.style.background = colorVar(st.color); v.appendChild(i); }
+      var v = el("b"); if (kind === "color" && st.color) fl("color").forEach(function (cx) { var i = el("i"); i.style.background = colorVar(cx); v.appendChild(i); });
       v.appendChild(document.createTextNode(ddShown(kind))); t.appendChild(v); b.appendChild(t);
       var ch = el("span", "ddc"); ch.innerHTML = DDCHEV; b.appendChild(ch);
       b.onclick = function (e) { e.stopPropagation(); if (ddOpen === kind) { closeFilters(); return; } openDD(kind, b); };
+      if (keep && ddOpen === kind) b.setAttribute("aria-expanded", "true");
       bar.appendChild(b);
     });
   }
@@ -2434,17 +2456,29 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     ddOpen = kind; btnEl.setAttribute("aria-expanded", "true");
     var grid = kind === "lv" || kind === "cost" || kind === "rar" || kind === "exp";
     var pop = el("div", "ddpop" + (grid ? " nums" : "") + (kind === "exp" ? " exps" : "")); pop.setAttribute("role", "listbox"); pop.setAttribute("aria-label", DDN[kind]);
-    var cur = ddVal(kind), items = [];
+    var cur = ddVal(kind), items = [], multi = !!MULTI[kind];
+    if (multi) { pop.classList.add("multi"); pop.setAttribute("aria-multiselectable", "true"); }
     // Tipo: elenco che scorre e, in fondo (vicino al pulsante e sopra la tastiera), il campo per cercare
     var box = pop; if (kind === "sp") { pop.classList.add("hasfind"); box = el("div", "ddlist"); pop.appendChild(box); }
+    if (multi) box.appendChild(el("div", "ddhint", "Puoi sceglierne più di uno"));
     ddOptions(kind).forEach(function (o, i) {
       if (o[0] === null) { box.appendChild(el("div", "ddg", o[1])); return; }
-      var on = cur === o[0];
+      var on = multi ? (o[0] === "" ? !cur : fltHas(kind, o[0])) : cur === o[0];
       var it = el("button", "ddo" + (i === 0 ? " all" : "")); it.type = "button"; it.setAttribute("role", "option"); it.setAttribute("aria-selected", String(on));
       if (o[2]) { var d = el("i"); d.style.background = o[2]; it.appendChild(d); }
       it.appendChild(el("span", "", o[1]));
-      if (on && !grid) { var ok = el("span", "ok", "✓"); ok.setAttribute("aria-hidden", "true"); it.appendChild(ok); }
-      it.onclick = function (e) { e.stopPropagation(); setFlt(kind, o[0]); syncSelects(); closeFilters(); render(); };
+      if (multi && o[0] !== "") { var bx = el("span", "ddck"); bx.setAttribute("aria-hidden", "true"); it.appendChild(bx); }
+      else if ((on || multi) && !grid) { var ok = el("span", "ok", "✓"); ok.setAttribute("aria-hidden", "true"); it.appendChild(ok); }
+      it.onclick = function (e) {
+        e.stopPropagation();
+        if (!multi) { setFlt(kind, o[0]); syncSelects(); closeFilters(); render(); return; }
+        // scelta multipla: la tendina resta aperta, si spunta/toglie la voce ("Tutti" toglie tutte le scelte)
+        if (o[0] === "") st[kind] = ""; else fltToggle(kind, o[0]);
+        st.shown = PAGE;
+        items.forEach(function (x) { var v0 = x.getAttribute("data-v"); x.setAttribute("aria-selected", String(v0 === "" ? !st[kind] : fltHas(kind, v0))); });
+        syncSelects(); ddKeep = true; render(); ddKeep = false;
+      };
+      it.setAttribute("data-v", o[0]);
       it.setAttribute("data-f", fold(o[1])); items.push(it);
       box.appendChild(it);
     });
@@ -3465,12 +3499,12 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
   function fltActive() {
     var a = [];
     if (st.qm) a.push(["qm", st.qm === "name" ? "Solo nel nome" : "Solo nel testo"]);
-    if (st.color) a.push(["color", st.color]);
+    fl("color").forEach(function (v) { a.push(["color", v]); });
     if (st.ct) a.push(["ct", st.ct]);
     if (st.lv) a.push(["lv", st.lv]);
     if (st.cost) a.push(["cost", "Costo " + st.cost]);
-    if (st.attr) a.push(["attr", st.attr]);
-    if (st.sp) a.push(["sp", st.sp]);
+    fl("attr").forEach(function (v) { a.push(["attr", v]); });
+    fl("sp").forEach(function (v) { a.push(["sp", v]); });
     if (st.rar) a.push(["rar", st.rar]);
     if (st.exp && SETBY[st.exp]) a.push(["exp", SETBY[st.exp].code]);
     return a;
@@ -3482,9 +3516,9 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     mbotChips.innerHTML = "";
     act.forEach(function (f) {
       var b = el("button", "mbchip"); b.type = "button"; b.setAttribute("aria-label", "Togli il filtro " + f[1]);
-      if (f[0] === "color") { var i = el("i"); i.style.background = colorVar(st.color); b.appendChild(i); }
+      if (f[0] === "color") { var i = el("i"); i.style.background = colorVar(f[1]); b.appendChild(i); }
       b.appendChild(el("span", "", f[1])); b.appendChild(el("b", "", "✕"));
-      b.onclick = function () { setFlt(f[0], ""); syncSelects(); render(); };
+      b.onclick = function () { unsetFlt(f[0], f[1]); syncSelects(); render(); };
       mbotChips.appendChild(b);
     });
     if (act.length) { var z = el("button", "mbclr", "Azzera"); z.type = "button"; z.onclick = clearFlt; mbotChips.appendChild(z); }
