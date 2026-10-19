@@ -1059,7 +1059,7 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
 /* ottobre 2026 (modifiche 18/10): niente evidenziazione al tocco, filtri a griglia, ordine prodotti, +/− con pressione lunga */
 html, body, button, a, [role="button"], input, label, summary { -webkit-tap-highlight-color: transparent; }
 .qbtn, .qn { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
-.qbtn.full { background: var(--cyan); border-color: var(--cyan); color: #06222a; }
+.qbtn.full { opacity: .35; }
 .qn[role="button"] { cursor: text; border-radius: 6px; }
 .qin { width: 42px; height: 30px; box-sizing: border-box; padding: 0 2px; border: 1.5px solid var(--cyan); border-radius: 8px; background: var(--bg); color: var(--ink); text-align: center; font: 700 1rem var(--font-display); font-variant-numeric: tabular-nums; outline: none; }
 .qpop { position: fixed; z-index: 300; pointer-events: none; transform: translate(-50%, -100%) translateY(-6px) scale(.9); opacity: 0; padding: 5px 10px; border-radius: 9px; background: var(--ink); color: var(--bg); font: 700 .95rem var(--font-display); font-variant-numeric: tabular-nums; box-shadow: 0 6px 18px rgba(0,0,0,.3); transition: opacity .12s, transform .12s; white-space: nowrap; }
@@ -3751,7 +3751,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     var m = el("button", "qbtn", "−"); m.type = "button"; m.setAttribute("aria-label", "Togli dal mazzo");
     var n = el("span", "qn", String(inDeck(d, c)));
     var err = addError(d, c), full = err && codeTotal(d, c.code) >= maxCopies(c);
-    // + arancione finché si può aggiungere, blu quando la carta ha raggiunto le copie massime (4x), spento per gli altri limiti
+    // + arancione finché si può aggiungere, spento (come "MAX" delle limitate) quando la carta ha raggiunto le copie massime e per gli altri limiti
     var p = el("button", "qbtn" + (!err ? " on" : full ? " full" : " off"), "+"); p.type = "button"; p.setAttribute("aria-label", "Aggiungi al mazzo (tieni premuto per aggiungerne 4)");
     if (!maxCopies(c)) {
       n.textContent = inDeck(d, c) ? "Bandita (" + inDeck(d, c) + ")" : "Bandita"; n.className = "qn qban";
