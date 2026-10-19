@@ -1534,7 +1534,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
       b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + IC[m[0]] + "</svg>";
       b.appendChild(el("span", "lbl", m[1])); if (DESK) b.title = m[1];
       if (m[0] === "soon" && (DATA.upcoming || []).length) b.appendChild(el("span", "nb", String(DATA.upcoming.length)));
-      if (m[0] === "deck" && decks.length) b.appendChild(el("span", "nb", String(decks.length)));
+      if (m[0] === "deck" && decksTodo()) b.appendChild(el("span", "nb", String(decksTodo())));
       if (curPage() === m[0]) b.setAttribute("aria-current", "page");
       b.onclick = function () { var ov = history.state && history.state.ov === "menu"; menuOpen(false, true); if (ov) replaceNext = true; go(m[0]); if (replaceNext) { replaceNext = false; var rs = snap(); rs.d = ovDepth(); history.replaceState(rs, ""); } };
       nav.appendChild(b);
@@ -1582,7 +1582,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
       var b = el("button"); b.type = "button";
       b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + t[2] + "</svg>";
       b.appendChild(el("span", "", t[1]));
-      if (t[0] === "deck" && decks.length) { var nb = el("span", "tnb", String(decks.length)); nb.setAttribute("aria-hidden", "true"); b.appendChild(nb); b.setAttribute("aria-label", t[1] + ", " + decks.length + (decks.length === 1 ? " mazzo" : " mazzi")); }
+      if (t[0] === "deck" && decksTodo()) { var nt = decksTodo(), nb = el("span", "tnb", String(nt)); nb.setAttribute("aria-hidden", "true"); b.appendChild(nb); b.setAttribute("aria-label", t[1] + ", " + nt + (nt === 1 ? " mazzo da completare" : " mazzi da completare")); }
       if (cur === t[0]) b.setAttribute("aria-current", "page");
       b.onclick = function () {
         if (cur === t[0] && !(st.setId || st.deckId)) { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
@@ -3713,6 +3713,9 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
   function saveDecks() { try { localStorage.setItem("dgm-decks", JSON.stringify(decks)); } catch (e) {} }
   function deckById(id) { for (var i = 0; i < decks.length; i++) if (decks[i].id === id) return decks[i]; return null; }
   function inDeck(d, c) { return (d && d.cards[c.k]) || 0; }
+  // badge del Deckbuilding: solo i mazzi ancora da completare (principale diverso da 50 o regole non rispettate);
+  // il mazzo Digi-Egg da 0 a 5 carte va sempre bene, quindi 4 uova su 5 non contano
+  function decksTodo() { var n = 0; decks.forEach(function (d) { if (deckStats(d).problems.length) n++; }); return n; }
   function deckStats(d) {
     var r = { main: 0, egg: 0, problems: [] }, per = {};
     Object.keys(d.cards).forEach(function (k) { var e = entryByKey(k); if (e) per[e.code] = (per[e.code] || 0) + d.cards[k]; });
