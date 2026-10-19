@@ -851,7 +851,6 @@ body.mob .mfbar.n5 .dd:nth-child(n+4) { flex-basis: calc(50% - 3px); }
 .ddo i { width: 12px; height: 12px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
 .ddo[aria-selected="true"] { background: var(--cyan-soft); color: var(--cyan); font-weight: 700; }
 .ddo .ok { margin-left: auto; }
-.ddhint { padding: 4px 12px 6px; color: var(--ink-2); font: 600 .72rem var(--font-body); letter-spacing: .02em; }
 .ddck { margin-left: auto; width: 18px; height: 18px; flex: none; border-radius: 5px; border: 1.5px solid var(--line); box-sizing: border-box; display: grid; place-items: center; }
 .ddo[aria-selected="true"] .ddck { background: var(--cyan); border-color: var(--cyan); }
 .ddo[aria-selected="true"] .ddck::after { content: ""; width: 8px; height: 4px; border: solid #fff; border-width: 0 0 2px 2px; transform: translateY(-1px) rotate(-45deg); }
@@ -2456,7 +2455,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
   }
   // carte da cui cercare: quelle dell'espansione scelta (anche alternative art e ristampe uscite lì) o tutto il catalogo
   function srcCards() { return st.exp && SETBY[st.exp] ? cardsOfSet(st.exp) : CARDS; }
-  var ddOpen = null, ddPop = null, ddKeep = false;
+  var ddOpen = null, ddPop = null, ddKeep = false, ddHold = 0;
   function closeFilters() {
     if (!ddPop) return false;
     ddPop.remove(); ddPop = null; var was = ddOpen; ddOpen = null;
@@ -2489,7 +2488,6 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     if (multi) { pop.classList.add("multi"); pop.setAttribute("aria-multiselectable", "true"); }
     // Tipo: elenco che scorre e, in fondo (vicino al pulsante e sopra la tastiera), il campo per cercare
     var box = pop; if (kind === "sp") { pop.classList.add("hasfind"); box = el("div", "ddlist"); pop.appendChild(box); }
-    if (multi) box.appendChild(el("div", "ddhint", "Puoi sceglierne più di uno"));
     ddOptions(kind).forEach(function (o, i) {
       if (o[0] === null) { box.appendChild(el("div", "ddg", o[1])); return; }
       var on = multi ? (o[0] === "" ? !cur : fltHas(kind, o[0])) : cur === o[0];
@@ -2505,7 +2503,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
         if (o[0] === "") st[kind] = ""; else fltToggle(kind, o[0]);
         st.shown = PAGE;
         items.forEach(function (x) { var v0 = x.getAttribute("data-v"); x.setAttribute("aria-selected", String(v0 === "" ? !st[kind] : fltHas(kind, v0))); });
-        syncSelects(); ddKeep = true; render(); ddKeep = false;
+        ddHold = Date.now() + 600; syncSelects(); ddKeep = true; render(); ddKeep = false;
       };
       it.setAttribute("data-v", o[0]);
       it.setAttribute("data-f", fold(o[1])); items.push(it);
@@ -2537,7 +2535,8 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
   }
   document.addEventListener("pointerdown", function (e) { if (ddPop && !ddPop.contains(e.target) && !(e.target.closest && e.target.closest(".dd"))) closeFilters(); }, true);
   function ddTyping() { return ddPop && ddPop.contains(document.activeElement) && document.activeElement.tagName === "INPUT"; }
-  window.addEventListener("scroll", function () { if (ddPop && !ddTyping()) closeFilters(); }, { passive: true });
+  // (lo scorrimento causato dal ridisegno dopo una spunta non chiude la tendina)
+  window.addEventListener("scroll", function () { if (ddPop && !ddTyping() && Date.now() > ddHold) closeFilters(); }, { passive: true });
   window.addEventListener("resize", function () { if (ddPop && !ddTyping()) closeFilters(); else if (ddPop && ddPop._place) ddPop._place(); });
   if (window.visualViewport) window.visualViewport.addEventListener("resize", function () { if (ddPop && ddPop._place && ddTyping()) ddPop._place(); });
   function collSummary() {
