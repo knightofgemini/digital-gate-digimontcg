@@ -227,6 +227,21 @@ html.lock, html.lock body { overflow: hidden; overscroll-behavior: none; }
 .upd h3 { margin: 0 0 8px; font-family: var(--font-display); font-size: 1.1rem; }
 .upd p { margin: 0 0 6px; color: var(--ink-2); font-size: .9rem; }
 .upd .dacts { justify-content: flex-end; margin-bottom: 0; }
+/* richiesta di conferma (svuota/elimina mazzo, svuota cronologia delle scansioni): finestra sottile al centro, senza icone */
+.cfmscrim { position: fixed; inset: 0; z-index: 960; background: rgba(6,10,20,.5); display: flex; align-items: center; justify-content: center; padding: 24px; animation: cfmfade .15s ease-out; }
+.cfmbox { width: 100%; max-width: 320px; box-sizing: border-box; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 16px; padding: 16px 16px 14px; box-shadow: 0 16px 44px rgba(0,0,0,.35); animation: cfmpop .15s ease-out; }
+.cfmbox h3 { margin: 0 0 4px; font: 700 1.02rem/1.3 var(--font-display); color: var(--accent); }
+.cfmbox .cfmw { color: var(--accent); font-weight: 700; }
+.cfmbox h3 q { quotes: "“" "”"; }
+.cfmbox p { margin: 0; color: var(--ink-2); font-size: .86rem; line-height: 1.45; }
+.cfmacts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.cfmacts button { min-height: 38px; padding: 0 14px; border-radius: 10px; font: 600 .9rem var(--font-display); cursor: pointer; }
+.cfmacts .no { border: 1px solid var(--line); background: transparent; color: var(--ink); }
+.cfmacts .go { border: 0; background: #d4373a; color: #fff; }
+.cfmacts button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@keyframes cfmfade { from { opacity: 0; } }
+@keyframes cfmpop { from { transform: scale(.97); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .cfmscrim, .cfmbox { animation: none; } }
 .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: .88rem; max-width: calc(100vw - 32px); box-shadow: 0 6px 24px rgba(0,0,0,.3); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 200; }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
 .tagrows { margin-bottom: 12px; display: grid; gap: 6px; }
@@ -1177,7 +1192,6 @@ body.mob.kbd .mbot.on::after { display: none; }
 .schh h2 { margin: 0; display: flex; align-items: center; gap: 8px; font: 700 1.2rem var(--font-display); }
 .schh h2 svg { width: 22px; height: 22px; color: var(--accent); }
 .schclr { min-height: 36px; border: 0; background: none; color: var(--ink-2); font: 600 .85rem var(--font-display); cursor: pointer; }
-.schclr.sure { color: var(--c-red); }
 .schsum { margin: 4px 0 12px; font-size: .85rem; color: var(--ink-2); }
 .schall { width: 100%; justify-content: center; min-height: 46px; margin-bottom: 4px; }
 .schlist .sch:first-child { margin-top: 8px; }
@@ -3995,9 +4009,9 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, fallback); else fallback();
     }));
     acts.appendChild(btn("Importa", "", function () { slot.innerHTML = ""; slot.appendChild(importPanel(function (cards) { d.cards = cards; d.upd = Date.now(); saveDecks(); render(); }, "Sostituisci il contenuto")); }));
-    acts.appendChild(btn("Svuota", "", function () { if (confirm("Togliere tutte le carte da \"" + d.name + "\"?")) { d.cards = {}; d.upd = Date.now(); saveDecks(); render(); } }));
+    acts.appendChild(btn("Svuota", "", function () { cfmEmptyDeck(d); }));
     acts.appendChild(btn("Modifica copertina", "", function () { coverPanel(d, slot, function () {}); }, ICO_IMG));
-    var del = btn("Elimina mazzo", "", function () { if (confirm("Eliminare il mazzo \"" + d.name + "\"?")) { decks = decks.filter(function (x) { return x !== d; }); saveDecks(); st.deckId = null; render(); } }); del.style.color = "var(--c-red)";
+    var del = btn("Elimina mazzo", "", function () { cfmDelDeck(d); }); del.style.color = "var(--c-red)";
     acts.appendChild(del); hd.appendChild(acts); out.appendChild(hd); out.appendChild(slot);
     var lay = el("div", "dklay"), left = el("section"); left.setAttribute("aria-label", "Aggiungi carte");
     lay.appendChild(left); lay.appendChild(deckPanels(d, deckStats(d))); out.appendChild(lay);
@@ -4191,9 +4205,9 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, fallback); else fallback();
     }));
     acts.appendChild(btn("Importa", "", function () { slot.innerHTML = ""; slot.appendChild(importPanel(function (cards) { d.cards = cards; d.upd = Date.now(); saveDecks(); st.dkActs = false; render(); }, "Sostituisci il contenuto")); var t = slot.querySelector("textarea"); if (t) t.focus(); }));
-    acts.appendChild(btn("Svuota", "", function () { if (confirm("Togliere tutte le carte da \"" + d.name + "\"?")) { d.cards = {}; d.upd = Date.now(); saveDecks(); render(); } }));
+    acts.appendChild(btn("Svuota", "", function () { cfmEmptyDeck(d); }));
     // Elimina mazzo: cestino sulla stessa riga degli altri pulsanti
-    var del = btn("", "dtrash", function () { if (confirm("Eliminare il mazzo \"" + d.name + "\"?")) { decks = decks.filter(function (x) { return x !== d; }); saveDecks(); st.deckId = null; st.dkActs = false; render(); } }, ICO_TRASH);
+    var del = btn("", "dtrash", function () { cfmDelDeck(d, function () { st.dkActs = false; }); }, ICO_TRASH);
     del.setAttribute("aria-label", "Elimina mazzo"); del.title = "Elimina mazzo";
     acts.appendChild(del);
     var cvb = btn("Modifica copertina mazzo", "dcovb", function () { coverPanel(d, slot, function () { render(); }); }, ICO_IMG);
@@ -4359,9 +4373,9 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     var im = el("button", "dbtn", "Importa"); im.type = "button";
     im.onclick = function () { slot.innerHTML = ""; slot.appendChild(importPanel(function (cards) { d.cards = cards; d.upd = Date.now(); saveDecks(); render(); }, "Sostituisci il contenuto")); };
     var cl = el("button", "dbtn", "Svuota"); cl.type = "button";
-    cl.onclick = function () { if (confirm("Togliere tutte le carte da \"" + d.name + "\"?")) { d.cards = {}; d.upd = Date.now(); saveDecks(); render(); } };
+    cl.onclick = function () { cfmEmptyDeck(d); };
     var del = el("button", "dbtn warn", "Elimina mazzo"); del.type = "button";
-    del.onclick = function () { if (confirm("Eliminare il mazzo \"" + d.name + "\"?")) { decks = decks.filter(function (x) { return x !== d; }); saveDecks(); st.deckId = null; render(); } };
+    del.onclick = function () { cfmDelDeck(d); };
     [ex, im, cl, del].forEach(function (x) { acts.appendChild(x); }); out.appendChild(acts); out.appendChild(slot);
     var any = false;
     deckGroups(d).forEach(function (g) {
@@ -4800,7 +4814,11 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     var hd = el("div", "schh"), h2 = el("h2"); h2.innerHTML = scIco("hist"); h2.appendChild(document.createTextNode("Cronologia")); hd.appendChild(h2);
     if (SCH.length) {
       var clr = el("button", "schclr", "Svuota"); clr.type = "button";
-      clr.onclick = function () { if (!clr.classList.contains("sure")) { clr.classList.add("sure"); clr.textContent = "Tocca di nuovo per svuotare"; return; } SCH = []; schSave(); schBadge(); schDraw(); };
+      clr.onclick = function () {
+        askConfirm({ title: "Svuotare la cronologia delle scansioni?",
+          text: "La cronologia di tutte le scansioni effettuate verrà cancellata definitivamente.", ok: "Svuota",
+          onOk: function () { SCH = []; schSave(); schBadge(); schDraw(); } });
+      };
       hd.appendChild(clr);
     }
     box.appendChild(hd);
@@ -4856,6 +4874,40 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     scDraw(); SC.res.scrollTop = 0;
   }
   function scOpenCard(a) { if (!a) return; closeScan(function () { st.open = a; st.shTab = "fx"; drawSheet(); }); }
+  // ---- Richiesta di conferma nello stile dell'app (sostituisce la finestra di sistema del browser/APK)
+  // o = { title, text, ok, onOk }
+  function askConfirm(o) {
+    var prev = document.querySelector(".cfmscrim"); if (prev) prev.remove();
+    var sc = el("div", "upd-scrim cfmscrim"), box = el("div", "cfmbox"), keep = document.activeElement;
+    box.setAttribute("role", "alertdialog"); box.setAttribute("aria-modal", "true");
+    var h = el("h3"); h.id = "cfm-t"; (Array.isArray(o.title) ? o.title : [o.title]).forEach(function (x, i) { h.appendChild(i % 2 ? el("q", "", x) : document.createTextNode(x)); });
+    box.appendChild(h); box.setAttribute("aria-labelledby", "cfm-t");
+    var pp = el("div", "cfmtx"); pp.id = "cfm-d";
+    // testo con "Attenzione:" in arancione davanti
+    var pw = el("p"); pw.appendChild(el("b", "cfmw", "Attenzione:")); pw.appendChild(document.createTextNode(" " + o.text)); pp.appendChild(pw);
+    box.appendChild(pp); box.setAttribute("aria-describedby", "cfm-d");
+    var row = el("div", "cfmacts"), ok = el("button", "go"), no = el("button", "no", "Annulla");
+    ok.textContent = o.ok;
+    no.type = ok.type = "button";
+    function close() { sc.remove(); document.removeEventListener("keydown", kd, true); if (keep && keep.focus) try { keep.focus(); } catch (e) {} }
+    function kd(e) { if (e.key === "Escape") { e.stopImmediatePropagation(); e.preventDefault(); close(); } }
+    no.onclick = close; ok.onclick = function () { close(); o.onOk(); };
+    sc.onclick = function (e) { if (e.target === sc) close(); };
+    row.appendChild(no); row.appendChild(ok); box.appendChild(row); sc.appendChild(box); document.body.appendChild(sc);
+    document.addEventListener("keydown", kd, true);
+    no.focus({ preventScroll: true });
+  }
+  function deckN(d) { var n = 0; Object.keys(d.cards).forEach(function (k) { n += d.cards[k]; }); return n; }
+  function cfmEmptyDeck(d) {
+    askConfirm({ title: ["Svuotare il mazzo ", d.name, "?"],
+      text: "Tutte le carte inserite verranno rimosse dalla lista.", ok: "Svuota",
+      onOk: function () { d.cards = {}; d.upd = Date.now(); saveDecks(); render(); } });
+  }
+  function cfmDelDeck(d, after) {
+    askConfirm({ title: ["Eliminare il mazzo ", d.name, "?"],
+      text: "Il mazzo verrà cancellato definitivamente.", ok: "Elimina",
+      onOk: function () { decks = decks.filter(function (x) { return x !== d; }); saveDecks(); st.deckId = null; if (after) after(); render(); } });
+  }
   var statsReady = false;
   function recomputeStatsIfNeeded() { if (!statsReady) { recomputeStats(); statsReady = true; } }
   render();
