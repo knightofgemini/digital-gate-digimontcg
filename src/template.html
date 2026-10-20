@@ -125,6 +125,11 @@ main { padding: 8px 16px 48px; }
 .sub2 { margin-top: 0; }
 .sub1 { margin-top: 0; }
 .sub1 .rar { white-space: nowrap; }
+.caps { display: flex; gap: 4px; flex-wrap: nowrap; min-width: 0; }
+.cap { flex: none; display: inline-flex; align-items: center; gap: 2px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--surface-2); color: var(--ink); font: 600 .72rem/1 var(--font-body); white-space: nowrap; }
+.cap.cn { color: var(--ink-2); font-weight: 500; }
+.cap.cr { color: var(--rc); background: color-mix(in srgb, var(--rc) 16%, transparent); font-weight: 700; }
+.cap.cr .spb { font-size: .75em; transform: none; }
 .rar { display: inline-flex; align-items: baseline; gap: 4px; }
 .st1 { font-size: .8em; }
 .st2 { display: inline-flex; align-items: center; font-size: .74em; }
@@ -2132,8 +2137,8 @@ body.mob #out .grid { margin-left: 0; margin-right: 0; }
   function listLines(c, one) {
     var a = el("div", "sub", [c.ct, c.lv].filter(Boolean).join(" · "));
     var b = el("div", "sub sub2");
-    if (one) {
-      b.className = "sub sub1 fit";
+    if (one) return [capLine(c)];
+    if (0) {
       b.appendChild(document.createTextNode((/^Digimon/.test(c.ct) && c.lv ? c.lv : c.ct === "Digi-Egg" ? "Digi-Egg" : [c.ct, c.lv].filter(Boolean).join(" · ")) + " · "));
     }
     b.appendChild(document.createTextNode(c.code));
@@ -2148,6 +2153,24 @@ body.mob #out .grid { margin-left: 0; margin-right: 0; }
       b.appendChild(rr);
     }
     return one ? [b] : [a, b];
+  }
+  // vista a griglia (prova capsule): [tipo/livello] [numero] [rarità colorata]
+  var RARK = { C: "common", U: "uncommon", R: "rare", SR: "super rare", SEC: "secret rare", UR: "ultimate rare", P: "promo" };
+  function capLine(c) {
+    var w = el("div", "caps");
+    w.appendChild(el("span", "cap ct", /^Digimon/.test(c.ct) && c.lv ? c.lv : c.ct === "Digi-Egg" ? "Digi-Egg" : [c.ct, c.lv].filter(Boolean).join(" · ")));
+    w.appendChild(el("span", "cap cn", c.code));
+    var r = (c.rar || "").trim();
+    if (r || (c.suf && c.mark)) {
+      var rr = el("span", "cap cr");
+      var col = RARCOL[RARK[r]] || "var(--ink-2)"; rr.style.setProperty("--rc", col);
+      if (c.suf && c.mark === "SP") rr.appendChild(el("span", "spb", "SP"));
+      else if (c.suf && c.mark === 2) rr.appendChild(document.createTextNode("★★"));
+      else if (c.suf && c.mark === 1) rr.appendChild(document.createTextNode("★"));
+      if (r) rr.appendChild(document.createTextNode(r));
+      w.appendChild(rr);
+    }
+    return w;
   }
   function metaLine(c) {
     var bits = [];
