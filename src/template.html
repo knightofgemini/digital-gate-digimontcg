@@ -1302,12 +1302,16 @@ body.mob .row.card.p1 .qn { min-width: 24px; font-size: 1.05rem; }
 .segh svg { width: 100%; height: 100%; fill: currentColor; }
 .segh.big { width: 20px; height: 20px; margin-right: 8px; vertical-align: -3px; }
 .cseg button { display: flex; align-items: center; justify-content: center; }
-.flchips { display: flex; gap: 8px; overflow-x: auto; margin: 0 -14px 12px; padding: 2px 14px; scrollbar-width: none; }
-.flchips::-webkit-scrollbar { display: none; }
-body.desk .flchips { flex-wrap: wrap; overflow: visible; margin: 0 0 14px; padding: 0; }
-.flchip { flex: none; min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 500 .85rem var(--font-body); cursor: pointer; white-space: nowrap; }
-.flchip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); font-weight: 600; }
-.flchip.add { border-style: dashed; color: var(--ink-2); background: none; }
+.flrow { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.dd.fldd { flex: none; width: 100%; box-sizing: border-box; }
+body.desk .dd.fldd { max-width: 360px; }
+body.desk .flrow .flnew { max-width: 360px; }
+.ddsep { height: 1px; margin: 4px 6px; background: var(--line); flex: none; }
+.ddo.fladd { color: var(--accent); font-weight: 600; }
+.flrow .flnew { width: 100%; box-sizing: border-box; }
+.flrow .flnew input { flex: 1 1 0; width: 0; min-width: 0; }
+.flrow .flnew button { flex: none; }
+.flnew button.no { background: none; color: var(--ink-2); border: 1px solid var(--line); }
 .flnew { flex: none; display: flex; gap: 6px; align-items: center; }
 .flnew input { width: 160px; min-height: 36px; box-sizing: border-box; padding: 0 12px; border-radius: 999px; border: 1px solid var(--accent); background: var(--surface); color: var(--ink); font: 500 .9rem var(--font-body); outline: 0; }
 .flnew button { min-height: 36px; padding: 0 14px; border-radius: 999px; border: 0; background: var(--accent); color: var(--accent-ink); font: 600 .85rem var(--font-body); cursor: pointer; }
@@ -2782,22 +2786,46 @@ body.desk .fgrip { display: none; }
       ea.appendChild(btn("Cerca carte", "pri", function () { go("cards"); })); ea.appendChild(btn("Esplora i prodotti", "", function () { go("sets"); }));
       e0.appendChild(ea); box.appendChild(e0); LASTN = 0; return;
     }
-    // liste personali (solo in Preferite)
+    // liste personali (solo in Preferite): menù a tendina come quelli dei filtri
     if (!wish) {
-      var cr = el("div", "flchips"); cr.setAttribute("aria-label", "Liste");
-      var mk = function (id, name, n) {
-        var b = el("button", "flchip", name + " · " + n); b.type = "button"; b.setAttribute("aria-pressed", String((st.flist || "") === id));
-        b.onclick = function () { st.flist = id; st.shown = PAGE; st.fdel = 0; render(); }; cr.appendChild(b);
+      var cr = el("div", "flrow");
+      var cntL = function (L) { var n = 0; Object.keys(L.k).forEach(function (k) { if (FAV.f[k]) n++; }); return n; };
+      var curL = st.flist ? listById(st.flist) : null;
+      var db = el("button", "dd fldd" + (curL ? " on" : "")); db.type = "button"; db.setAttribute("data-k", "flist");
+      db.setAttribute("aria-haspopup", "listbox"); db.setAttribute("aria-expanded", "false");
+      var dt = el("span", "ddt"); dt.appendChild(el("small", "", "Lista"));
+      var dv = curL ? curL.n + " · " + cntL(curL) : "Tutte le preferite · " + favCount(); dt.appendChild(el("b", "", dv)); db.appendChild(dt);
+      db.setAttribute("aria-label", "Lista: " + dv);
+      var dc = el("span", "ddc"); dc.innerHTML = DDCHEV; db.appendChild(dc);
+      db.onclick = function (e) {
+        e.stopPropagation(); if (ddOpen === "flist") { closeFilters(); return; }
+        closeFilters(); ddOpen = "flist"; db.setAttribute("aria-expanded", "true");
+        var pop = el("div", "ddpop"); pop.setAttribute("role", "listbox"); pop.setAttribute("aria-label", "Lista");
+        var opt = function (id, label, cls, fn) {
+          var on = id !== null && (st.flist || "") === id, it = el("button", "ddo" + (cls ? " " + cls : "")); it.type = "button";
+          if (id !== null) { it.setAttribute("role", "option"); it.setAttribute("aria-selected", String(on)); }
+          it.appendChild(el("span", "", label)); if (on) { var ok = el("span", "ok", "✓"); ok.setAttribute("aria-hidden", "true"); it.appendChild(ok); }
+          it.onclick = function (ev) { ev.stopPropagation(); closeFilters(); fn(); }; pop.appendChild(it);
+        };
+        opt("", "Tutte le preferite · " + favCount(), "", function () { st.flist = ""; st.shown = PAGE; st.fdel = 0; render(); });
+        FAV.l.forEach(function (L) { opt(L.id, L.n + " · " + cntL(L), "", function () { st.flist = L.id; st.shown = PAGE; st.fdel = 0; render(); }); });
+        pop.appendChild(el("div", "ddsep"));
+        opt(null, "+ Nuova lista", "fladd", function () { st.fnew = true; render(); });
+        document.body.appendChild(pop); ddPop = pop;
+        var r = db.getBoundingClientRect(), vh = window.innerHeight, below = vh - r.bottom - 12;
+        pop.style.left = r.left + "px"; pop.style.width = r.width + "px"; pop.style.top = (r.bottom + 6) + "px";
+        pop.style.maxHeight = Math.min(Math.round(vh / 2), Math.max(160, below)) + "px";
+        var sl = pop.querySelector('[aria-selected="true"]'); if (sl) sl.focus({ preventScroll: true });
       };
-      mk("", "Tutte", favCount());
-      FAV.l.forEach(function (L) { var n = 0; Object.keys(L.k).forEach(function (k) { if (FAV.f[k]) n++; }); mk(L.id, L.n, n); });
+      cr.appendChild(db);
       if (st.fnew) {
-        var f = el("form", "flnew"), inp = el("input"); inp.type = "text"; inp.placeholder = "Nome della lista"; inp.maxLength = 40; inp.setAttribute("aria-label", "Nome della nuova lista");
+        var f = el("form", "flnew"), inp = el("input"); inp.type = "text"; inp.placeholder = "Nome della nuova lista"; inp.maxLength = 40; inp.setAttribute("aria-label", "Nome della nuova lista");
         var ok = el("button", "", "Crea"); ok.type = "submit";
+        var no = el("button", "no", "Annulla"); no.type = "button"; no.onclick = function () { st.fnew = false; render(); };
         f.onsubmit = function (ev) { ev.preventDefault(); var n = (inp.value || "").trim(); if (!n) { st.fnew = false; render(); return; } var L = { id: "l" + Date.now().toString(36), n: n, k: {} }; FAV.l.push(L); favSave(); st.fnew = false; st.flist = L.id; render(); };
         inp.onkeydown = function (ev) { ev.stopPropagation(); if (ev.key === "Escape") { st.fnew = false; render(); } };
-        f.appendChild(inp); f.appendChild(ok); cr.appendChild(f); setTimeout(function () { inp.focus(); }, 0);
-      } else { var nb = el("button", "flchip add", "+ Nuova lista"); nb.type = "button"; nb.onclick = function () { st.fnew = true; render(); }; cr.appendChild(nb); }
+        f.appendChild(inp); f.appendChild(ok); f.appendChild(no); cr.appendChild(f); setTimeout(function () { inp.focus(); }, 0);
+      }
       box.appendChild(cr);
     }
     var L0 = st.flist ? listById(st.flist) : null;
