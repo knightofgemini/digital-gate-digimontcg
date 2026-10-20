@@ -1290,7 +1290,7 @@ body.mob .row.card.p1 > .qty { align-self: center; }
 body.mob .row.card.p1 .qbtn { width: 46px; height: 46px; border-radius: 12px; font-size: 1.15rem; }
 body.mob .row.card.p1 .qn { min-width: 24px; font-size: 1.05rem; }
 @media (max-width: 370px) { body.mob .row.card.p1 .qbtn { width: 40px; height: 40px; } body.mob .row.card.p1 .qn { min-width: 18px; } }
-.fline > .favb.plain { margin-left: -4px; margin-right: -4px; }
+.fline > .favb.plain { width: 30px; margin-left: -2px; margin-right: -6px; }
 .favb.big { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); flex: none; }
 .favb.big svg { width: 20px; height: 20px; }
 .favb.big.on { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
@@ -2990,8 +2990,8 @@ body.desk .fgrip { display: none; }
         r.appendChild(mid);
         r.appendChild(qtyControl(c, function () { recomputeStats(); render(); }));
         var fln = el("div", "fline"), pp = pricePill(c); if (pp) fln.appendChild(pp);
-        fln.appendChild(favBtn(c, "plain"));
         var fbm = favBadges(c); if (fbm) Array.prototype.slice.call(fbm.children).forEach(function (x) { fln.appendChild(x); });
+        fln.appendChild(favBtn(c, "plain"));
         r.appendChild(fln);
       } else {
       var r = el("div", "row card"); r.tabIndex = 0; r.setAttribute("role", "button");
