@@ -123,6 +123,8 @@ main { padding: 8px 16px 48px; }
 .tile .sub { margin-top: 0; }
 .tile .qty { margin-top: auto; justify-content: center; padding-top: 2px; }
 .sub2 { margin-top: 0; }
+.sub1 { margin-top: 0; }
+.sub1 .rar { white-space: nowrap; }
 .rar { display: inline-flex; align-items: baseline; gap: 4px; }
 .st1 { font-size: .8em; }
 .st2 { display: inline-flex; align-items: center; font-size: .74em; }
@@ -900,6 +902,9 @@ body.mob .mpane .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 body.mob .tile .qbtn, body.mob .row.card .qbtn, body.mob .row.deckrow .qbtn { width: 40px; height: 40px; border-radius: 11px; }
 /* griglie, prodotti, uscite, collezione */
 body.mob .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+/* griglia delle carte: quasi fino al bordo del telefono (6 px), spazi interni più stretti */
+body.mob #out .grid { margin-left: -16px; margin-right: -16px; gap: 6px; }
+body.mob #out .grid .tile { padding: 6px; gap: 5px; border-radius: 11px; }
 body.mob .tile .tname { font-size: .92rem; }
 body.mob .tile .qty { display: flex; justify-content: space-between; border: 1px solid var(--line); border-radius: 12px; padding: 2px; }
 body.mob .tile .qbtn { border: 0; }
@@ -2111,9 +2116,15 @@ body.desk .fgrip { display: none; }
   }
 
   // Righe brevi per gli elenchi: 1) tipo · livello  2) numero · rarità (con ★, ★★ o SP come stampati sulla carta)
-  function listLines(c) {
+  // one = vista a griglia: tutto su una riga (per i Digimon, anche Digimon/Option, basta il livello; le Digi-Egg sono sempre Lv.2)
+  function listLines(c, one) {
     var a = el("div", "sub", [c.ct, c.lv].filter(Boolean).join(" · "));
-    var b = el("div", "sub sub2"); b.appendChild(document.createTextNode(c.code));
+    var b = el("div", "sub sub2");
+    if (one) {
+      b.className = "sub sub1 fit";
+      b.appendChild(document.createTextNode((/^Digimon/.test(c.ct) && c.lv ? c.lv : c.ct === "Digi-Egg" ? "Digi-Egg" : [c.ct, c.lv].filter(Boolean).join(" · ")) + " · "));
+    }
+    b.appendChild(document.createTextNode(c.code));
     var r = (c.rar || "").trim();
     if (r || (c.suf && c.mark)) {
       b.appendChild(document.createTextNode(" · "));
@@ -2124,7 +2135,7 @@ body.desk .fgrip { display: none; }
       if (r) rr.appendChild(el("span", "rr", r));
       b.appendChild(rr);
     }
-    return [a, b];
+    return one ? [b] : [a, b];
   }
   function metaLine(c) {
     var bits = [];
@@ -2959,7 +2970,7 @@ body.desk .fgrip { display: none; }
         t.appendChild(picBox("pic", "f", c)); t.appendChild(favBtn(c));
         var cl = el("div", "cline"); cl.style.background = gradient(c.colors, "to right"); t.appendChild(cl);
         var tn = el("div", "tname"); tn.appendChild(nameFrag(c)); t.appendChild(tn);
-        listLines(c).forEach(function (x) { t.appendChild(x); });
+        listLines(c, true).forEach(function (x) { t.appendChild(x); });
         t.appendChild(qtyControl(c, function () { recomputeStats(); render(); }));
         var fbg = favBadges(c); if (fbg) t.appendChild(fbg);
         priceLines(c).forEach(function (x) { t.appendChild(x); });
@@ -4717,7 +4728,7 @@ body.desk .fgrip { display: none; }
       t.appendChild(picBox("pic", "f", c));
       var cl = el("div", "cline"); cl.style.background = gradient(c.colors, "to right"); t.appendChild(cl);
       var tn = el("div", "tname"); tn.appendChild(nameFrag(c)); t.appendChild(tn);
-      listLines(c).forEach(function (x) { t.appendChild(x); });
+      listLines(c, true).forEach(function (x) { t.appendChild(x); });
       t.appendChild(deckQty(d, c, cb));
       if (bb) { var tb = el("div", "dbl"); tb.appendChild(bb); t.appendChild(tb); }
       t.onclick = function () { st.open = c; drawSheet(); };
