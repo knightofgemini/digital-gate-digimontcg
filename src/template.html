@@ -1272,7 +1272,18 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
 .favb svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; }
 .favb.on { color: var(--accent); }
 .favb.on svg { fill: currentColor; stroke: none; }
-.tile > .favb { position: absolute; top: 12px; right: 12px; z-index: 2; }
+.favb.plain { width: 34px; height: 34px; border-radius: 8px; background: none; color: var(--ink-2); flex: none; }
+.favb.plain svg { width: 21px; height: 21px; stroke-width: 2.1; }
+.favb.plain.on { color: var(--accent); }
+.thd { position: relative; display: flex; flex-direction: column; gap: 6px; padding-right: 30px; min-width: 0; }
+.thd > .favb.plain { position: absolute; top: 4px; right: -6px; }
+body.mob .row.card.p1 { grid-template-rows: auto auto; row-gap: 2px; }
+body.mob .row.card.p1 > .tbw { grid-row: 1 / span 2; align-self: center; }
+body.mob .row.card.p1 > .name, body.mob .row.card.p1 > .qty { grid-row: 1; }
+body.mob .row.card.p1 > .qty { align-self: center; }
+.fline { grid-column: 2 / 4; grid-row: 2; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; min-width: 0; }
+.fline .ppill { margin-top: 0; }
+.fline > .favb.plain { margin-left: -4px; margin-right: -4px; }
 .favb.big { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); flex: none; }
 .favb.big svg { width: 20px; height: 20px; }
 .favb.big.on { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
@@ -2951,10 +2962,11 @@ body.desk .fgrip { display: none; }
     items.forEach(function (c) {
       if (st.view === "grid") {
         var t = el("div", "tile"); t.tabIndex = 0; t.setAttribute("role", "button");
-        t.appendChild(picBox("pic", "f", c)); t.appendChild(favBtn(c));
+        t.appendChild(picBox("pic", "f", c));
         var cl = el("div", "cline"); cl.style.background = gradient(c.colors, "to right"); t.appendChild(cl);
-        var tn = el("div", "tname"); tn.appendChild(nameFrag(c)); t.appendChild(tn);
-        listLines(c).forEach(function (x) { t.appendChild(x); });
+        var thd = el("div", "thd"), tn = el("div", "tname"); tn.appendChild(nameFrag(c)); thd.appendChild(tn);
+        listLines(c).forEach(function (x) { thd.appendChild(x); });
+        thd.appendChild(favBtn(c, "plain")); t.appendChild(thd);
         t.appendChild(qtyControl(c, function () { recomputeStats(); render(); }));
         var fbg = favBadges(c); if (fbg) t.appendChild(fbg);
         priceLines(c).forEach(function (x) { t.appendChild(x); });
@@ -2968,10 +2980,12 @@ body.desk .fgrip { display: none; }
         r.appendChild(thumbBand(c));
         var mid = el("div", "name"); mid.appendChild(nameFrag(c));
         listLines(c).forEach(function (x) { mid.appendChild(x); });
-        var pp = pricePill(c); if (pp) mid.appendChild(pp);
-        var fbm = favBadges(c); if (fbm) mid.appendChild(fbm);
         r.appendChild(mid);
         r.appendChild(qtyControl(c, function () { recomputeStats(); render(); }));
+        var fln = el("div", "fline"), pp = pricePill(c); if (pp) fln.appendChild(pp);
+        fln.appendChild(favBtn(c, "plain"));
+        var fbm = favBadges(c); if (fbm) Array.prototype.slice.call(fbm.children).forEach(function (x) { fln.appendChild(x); });
+        r.appendChild(fln);
       } else {
       var r = el("div", "row card"); r.tabIndex = 0; r.setAttribute("role", "button");
       var sw = el("div", "swatch"); sw.style.background = gradient(c.colors); r.appendChild(sw);
