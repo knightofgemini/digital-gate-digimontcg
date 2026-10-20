@@ -900,6 +900,9 @@ body.mob .mpane .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 body.mob .tile .qbtn, body.mob .row.card .qbtn, body.mob .row.deckrow .qbtn { width: 40px; height: 40px; border-radius: 11px; }
 /* griglie, prodotti, uscite, collezione */
 body.mob .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+/* griglia delle carte: spazi interni più stretti */
+body.mob #out .grid { gap: 6px; }
+body.mob #out .grid .tile { padding: 6px; gap: 5px; border-radius: 11px; }
 body.mob .tile .tname { font-size: .92rem; }
 body.mob .tile .qty { display: flex; justify-content: space-between; border: 1px solid var(--line); border-radius: 12px; padding: 2px; }
 body.mob .tile .qbtn { border: 0; }
@@ -1364,6 +1367,17 @@ body.desk .fgrip { display: none; }
 .fscur .cmk, .fscur .ctk { width: 13px; height: 13px; }
 .fscur b { margin-left: auto; color: var(--ink); }
 .fsdone { min-height: 50px; border: 0; border-radius: 14px; background: var(--accent); color: var(--accent-ink); font: 700 1rem var(--font-body); cursor: pointer; }
+/* ---- Telefono: margini laterali a 14 px in tutta l'app (20 ottobre 2026). Il body aveva il margine di 8 px del browser in più. */
+body.mob { margin: 0; --mg: 14px; }
+@media (max-width: 370px) { body.mob { --mg: 10px; } }
+body.mob .bar { padding-left: var(--mg); padding-right: var(--mg); }
+body.mob main { padding-left: var(--mg); padding-right: var(--mg); }
+body.mob .mbot.on, body.mob .dkbar { padding-left: var(--mg); padding-right: var(--mg); }
+body.mob .mbpx { margin: 0 calc(-1 * var(--mg)); padding-left: var(--mg); padding-right: var(--mg); }
+body.mob .flchips { margin-left: calc(-1 * var(--mg)); margin-right: calc(-1 * var(--mg)); padding-left: var(--mg); padding-right: var(--mg); }
+body.mob .sheet { padding-left: var(--mg); padding-right: var(--mg); }
+body.mob .sheet-head { margin: 0 calc(-1 * var(--mg)); padding-left: var(--mg); }
+body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-1 * var(--mg)); padding-left: var(--mg); padding-right: var(--mg); }
 </style>
 
 <section id="dg-boot" class="dg-boot" aria-label="Animazione di avvio di Digital Gate">
