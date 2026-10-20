@@ -1283,6 +1283,9 @@ body.mob .row.card.p1 > .name, body.mob .row.card.p1 > .qty { grid-row: 1; }
 body.mob .row.card.p1 > .qty { align-self: center; }
 .fline { grid-column: 2 / 4; grid-row: 2; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; min-width: 0; }
 .fline .ppill { margin-top: 0; }
+body.mob .row.card.p1 .qbtn { width: 46px; height: 46px; border-radius: 12px; font-size: 1.15rem; }
+body.mob .row.card.p1 .qn { min-width: 24px; font-size: 1.05rem; }
+@media (max-width: 370px) { body.mob .row.card.p1 .qbtn { width: 40px; height: 40px; } body.mob .row.card.p1 .qn { min-width: 18px; } }
 .fline > .favb.plain { margin-left: -4px; margin-right: -4px; }
 .favb.big { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); flex: none; }
 .favb.big svg { width: 20px; height: 20px; }
@@ -2835,7 +2838,6 @@ body.desk .fgrip { display: none; }
   function favBadges(c) {
     if (!st.ownOnly || !st.cview || st.cview === "all") return null;
     var w = el("div", "fbadges");
-    if (!owned(c) && st.cview === "fav") w.appendChild(el("span", "fmiss", "Manca"));
     if (FAV.a[c.k] != null) {
       var hit = alertHit(c), a = el("span", "falert" + (hit ? " hit" : ""));
       a.innerHTML = hit ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg>';
