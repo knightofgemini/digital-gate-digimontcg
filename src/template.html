@@ -1281,7 +1281,11 @@ body.mob .row.card.p1 { grid-template-rows: auto auto; row-gap: 2px; }
 body.mob .row.card.p1 > .tbw { grid-row: 1 / span 2; align-self: center; }
 body.mob .row.card.p1 > .name, body.mob .row.card.p1 > .qty { grid-row: 1; }
 body.mob .row.card.p1 > .qty { align-self: center; }
-.fline { grid-column: 2 / 4; grid-row: 2; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; min-width: 0; }
+.fline { grid-column: 2 / 4; grid-row: 2; display: flex; align-items: center; flex-wrap: nowrap; gap: 4px; min-width: 0; }
+.fline .ppill { flex: none; }
+.fline .falert { flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 2px 6px; gap: 3px; }
+@media (max-width: 389px) { .fline .falert .fw { display: none; } }
+.fline .falert svg { flex: none; }
 .fline .ppill { margin-top: 0; }
 body.mob .row.card.p1 .qbtn { width: 46px; height: 46px; border-radius: 12px; font-size: 1.15rem; }
 body.mob .row.card.p1 .qn { min-width: 24px; font-size: 1.05rem; }
@@ -2841,7 +2845,8 @@ body.desk .fgrip { display: none; }
     if (FAV.a[c.k] != null) {
       var hit = alertHit(c), a = el("span", "falert" + (hit ? " hit" : ""));
       a.innerHTML = hit ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg>';
-      a.appendChild(document.createTextNode((hit ? "Sotto " : "Avviso ") + eurC(FAV.a[c.k]) + " €"));
+      a.appendChild(el("span", "fw", hit ? "Sotto " : "Avviso ")); a.appendChild(document.createTextNode(eurC(FAV.a[c.k]) + " €"));
+      a.setAttribute("aria-label", (hit ? "Prezzo sotto " : "Avviso di prezzo a ") + eurC(FAV.a[c.k]) + " euro");
       a.title = hit ? "Il prezzo più basso è sceso sotto la tua soglia" : "Avviso di prezzo impostato";
       w.appendChild(a);
     }
