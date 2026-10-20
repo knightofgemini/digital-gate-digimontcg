@@ -1266,6 +1266,106 @@ body.desk .scan .scframe { width: min(30vw, calc(56vh * 63 / 88), 340px); }
 body.desk .scres { left: 50%; right: auto; width: 560px; transform: translate(-50%, 105%); border-radius: 20px 20px 0 0; }
 body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transform: translateX(-50%); }
 @media (prefers-reduced-motion: reduce) { .scan.run .scframe b { animation: none; top: 50%; } .scres { transition: none; } }
+/* ---- Preferiti (ottobre 2026) ---- */
+.tile { position: relative; }
+.favb { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 999px; background: rgba(11,17,32,.72); color: #fff; cursor: pointer; }
+.favb svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; }
+.favb.on { color: var(--accent); }
+.favb.on svg { fill: currentColor; stroke: none; }
+.tile > .favb { position: absolute; top: 12px; right: 12px; z-index: 2; }
+.favb.big { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); flex: none; }
+.favb.big svg { width: 20px; height: 20px; }
+.favb.big.on { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+.favl { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); display: grid; place-items: center; padding: 0; cursor: pointer; flex: none; }
+.favl svg { width: 20px; height: 20px; }
+.shbtns .favb.big, .shbtns .favl { width: 40px; height: 40px; }
+.mhbtns { display: flex; gap: 6px; flex: none; }
+.fdot { display: inline-block; width: 13px; height: 13px; margin-right: 5px; vertical-align: -1px; color: var(--accent); }
+.fdot svg { width: 100%; height: 100%; fill: currentColor; }
+.segh { display: inline-block; width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px; color: var(--accent); }
+.segh svg { width: 100%; height: 100%; fill: currentColor; }
+.segh.big { width: 20px; height: 20px; margin-right: 8px; vertical-align: -3px; }
+.cseg button { display: flex; align-items: center; justify-content: center; }
+.flchips { display: flex; gap: 8px; overflow-x: auto; margin: 0 -14px 12px; padding: 2px 14px; scrollbar-width: none; }
+.flchips::-webkit-scrollbar { display: none; }
+body.desk .flchips { flex-wrap: wrap; overflow: visible; margin: 0 0 14px; padding: 0; }
+.flchip { flex: none; min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 500 .85rem var(--font-body); cursor: pointer; white-space: nowrap; }
+.flchip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); font-weight: 600; }
+.flchip.add { border-style: dashed; color: var(--ink-2); background: none; }
+.flnew { flex: none; display: flex; gap: 6px; align-items: center; }
+.flnew input { width: 160px; min-height: 36px; box-sizing: border-box; padding: 0 12px; border-radius: 999px; border: 1px solid var(--accent); background: var(--surface); color: var(--ink); font: 500 .9rem var(--font-body); outline: 0; }
+.flnew button { min-height: 36px; padding: 0 14px; border-radius: 999px; border: 0; background: var(--accent); color: var(--accent-ink); font: 600 .85rem var(--font-body); cursor: pointer; }
+.flnew.in { padding: 8px 14px; }
+.flnew.in input { flex: 1; width: auto; }
+.fstats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 12px 6px; margin-bottom: 12px; text-align: center; }
+.fstats > .fstat + .fstat { border-left: 1px solid var(--line); }
+.fstat .v { font: 700 1.2rem/1.2 var(--font-display); font-variant-numeric: tabular-nums; }
+.fstat .v small { font: 600 .95rem var(--font-display); color: var(--ink-2); }
+.fstat .n { font-size: .72rem; color: var(--ink-2); }
+.fstat .l { font-size: .75rem; color: var(--ink-2); margin-top: 2px; }
+.fstat.acc .v { color: var(--accent); }
+.fstats.wish { display: flex; flex-direction: column; gap: 10px; padding: 14px; text-align: left; }
+.fsh { font-size: .85rem; color: var(--ink-2); }
+.fsrow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.fsrow .fstat { display: grid; grid-template-columns: auto 1fr; grid-template-areas: "m l" "v v" "n n"; align-items: center; gap: 2px 6px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); }
+.fsrow .fstat .cmk, .fsrow .fstat .ctk { grid-area: m; width: 14px; height: 14px; }
+.fsrow .fstat .l { grid-area: l; margin: 0; font-size: .8rem; color: var(--ink); }
+.fsrow .fstat .v { grid-area: v; font-size: 1.25rem; }
+.fsrow .fstat .n { grid-area: n; }
+.fsbest { display: flex; justify-content: space-between; align-items: baseline; font-size: .85rem; color: var(--ink-2); }
+.fsbest b { font: 700 1.05rem var(--font-display); color: var(--accent); }
+.fsnote { font-size: .75rem; color: var(--ink-2); }
+body.desk .fstats { max-width: 720px; }
+.flact { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: -4px 0 8px; font-size: .78rem; color: var(--ink-2); }
+.linkb { border: 0; background: none; padding: 6px 0; color: var(--ink-2); font: 500 .8rem var(--font-body); text-decoration: underline; cursor: pointer; }
+.linkb.warn { color: var(--accent); font-weight: 600; }
+.fsort .fsel { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.fsort select { border: 0; background: none; color: var(--ink); font: 600 .85rem var(--font-body); padding: 4px 2px; max-width: 170px; cursor: pointer; }
+.fsort select option { color: #0f1a2e; }
+.fbadges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.tile .fbadges { justify-content: center; margin-top: 0; }
+.fmiss { padding: 1px 8px; border-radius: 999px; border: 1px solid var(--accent); color: var(--accent); font: 600 .72rem var(--font-body); }
+.falert { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); font: 600 .72rem var(--font-body); }
+.falert svg { width: 12px; height: 12px; }
+.falert.hit { background: var(--cyan-soft); color: var(--cyan); }
+.ftoast { position: fixed; left: 50%; bottom: calc(150px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 16px); z-index: 80; display: flex; align-items: center; gap: 14px; max-width: calc(100vw - 32px); box-sizing: border-box; padding: 10px 10px 10px 16px; border-radius: 14px; background: var(--ink); color: var(--bg); font: 500 .9rem var(--font-body); box-shadow: 0 10px 28px rgba(0,0,0,.3); opacity: 0; pointer-events: none; transition: opacity .18s, transform .18s; }
+.ftoast.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.ftoast span { white-space: nowrap; }
+.ftoast button { border: 0; border-radius: 10px; padding: 8px 12px; background: var(--accent); color: var(--accent-ink); font: 600 .85rem var(--font-body); cursor: pointer; white-space: nowrap; }
+body.desk .ftoast { bottom: 28px; }
+.fsheetw { position: fixed; inset: 0; z-index: 90; }
+.fscrim { position: absolute; inset: 0; background: rgba(4,8,18,.6); }
+.fsheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 88vh; overflow-y: auto; box-sizing: border-box; background: var(--surface); border-top: 1px solid var(--line); border-radius: 22px 22px 0 0; padding: 8px 16px calc(18px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 12px; box-shadow: 0 -12px 32px rgba(0,0,0,.35); }
+body.desk .fsheet { left: 50%; right: auto; bottom: auto; top: 50%; transform: translate(-50%, -50%); width: 440px; border-radius: 18px; border: 1px solid var(--line); padding: 18px 20px; }
+body.desk .fgrip { display: none; }
+.fgrip { align-self: center; width: 40px; height: 5px; border-radius: 3px; background: var(--line); }
+.fshead h3 { margin: 0; font: 700 1.2rem var(--font-display); }
+.fshead span { display: block; margin-top: 2px; font-size: .8rem; color: var(--ink-2); }
+.fslists { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.fsrow2 { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 14px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.fsic { flex: none; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--surface-2); color: var(--cyan); }
+.fsic svg { width: 17px; height: 17px; }
+.fsic.fav { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+.fsic.fav svg { fill: currentColor; }
+.fstx { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.fstx b { font-weight: 600; font-size: .95rem; }
+.fstx small { font-size: .78rem; color: var(--ink-2); }
+.fsrow2 input { width: 22px; height: 22px; margin: 0; accent-color: var(--accent); flex: none; }
+.fsadd { min-height: 48px; border: 0; background: none; color: var(--accent); font: 600 .9rem var(--font-body); text-align: left; padding: 0 14px; cursor: pointer; }
+.fsalert { display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.fsat { display: flex; align-items: center; gap: 12px; }
+.fswitch { flex: none; position: relative; width: 50px; height: 30px; border: 0; border-radius: 999px; background: var(--surface-2); padding: 0; cursor: pointer; box-shadow: inset 0 0 0 1px var(--line); }
+.fswitch i { position: absolute; left: 3px; top: 3px; width: 24px; height: 24px; border-radius: 999px; background: var(--ink-2); transition: left .15s; }
+.fswitch.on { background: var(--accent); box-shadow: none; }
+.fswitch.on i { left: 23px; background: var(--accent-ink); }
+.fsap { display: flex; align-items: center; gap: 12px; }
+.fseur { flex: none; width: 128px; height: 44px; box-sizing: border-box; display: flex; align-items: center; gap: 4px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink-2); }
+.fseur input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--ink); font: 600 1rem var(--font-body); }
+.fscur { flex: 1; display: flex; flex-direction: column; gap: 4px; font-size: .8rem; color: var(--ink-2); }
+.fscur div { display: flex; align-items: center; gap: 6px; }
+.fscur .cmk, .fscur .ctk { width: 13px; height: 13px; }
+.fscur b { margin-left: auto; color: var(--ink); }
+.fsdone { min-height: 50px; border: 0; border-radius: 14px; background: var(--accent); color: var(--accent-ink); font: 700 1rem var(--font-body); cursor: pointer; }
 </style>
 
 <section id="dg-boot" class="dg-boot" aria-label="Animazione di avvio di Digital Gate">
@@ -1400,6 +1500,10 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
   var qty = {};
   try { qty = JSON.parse(localStorage.getItem("dgm-qty") || "{}") || {}; } catch (e) { qty = {}; }
   function save() { try { localStorage.setItem("dgm-qty", JSON.stringify(qty)); } catch (e) {} }
+  var FAV = { f: {}, l: [], a: {} };
+  try { var fv0 = JSON.parse(localStorage.getItem("dg-fav") || "null"); if (fv0 && typeof fv0 === "object") { FAV.f = fv0.f || {}; FAV.l = fv0.l || []; FAV.a = fv0.a || {}; } } catch (e) {}
+  function favSave() { try { localStorage.setItem("dg-fav", JSON.stringify(FAV)); } catch (e) {} }
+  function isFav(c) { return !!FAV.f[c.k]; }
   var seen = {};
   CARDS.forEach(function (c, i) {
     c.i = i;
@@ -1912,7 +2016,10 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
   }
 
   function cardMatches(c, q) {
-    if (st.ownOnly && !owned(c)) return false;
+    if (st.ownOnly) {
+      if (st.cview === "fav" || st.cview === "wish") { if (!favIn(c)) return false; if (st.cview === "wish" && owned(c)) return false; }
+      else if (!owned(c)) return false;
+    }
     if (st.color && !fl("color").some(function (x) { return c.colors.indexOf(x) >= 0; })) return false;
     if (st.ct && c.ct.indexOf(st.ct) < 0) return false;
     if (st.lv && c.lv !== st.lv) return false;
@@ -2282,6 +2389,8 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     else {
       pageTitle(st.ownOnly ? "La mia collezione" : "Ricerca carte");
       if (st.ownOnly) {
+        collSeg(out);
+        if (st.cview === "fav" || st.cview === "wish") { renderFavView(out, q); return; }
         if (!Object.keys(qty).length) {
           var e0 = el("div", "panel cempty"); e0.appendChild(el("div", "eyebrow", "La tua collezione"));
           e0.appendChild(el("h3", "", "La prima carta inizia da qui"));
@@ -2568,8 +2677,239 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     });
     out.appendChild(g);
   }
+  // ---- Preferiti (ottobre 2026): cuore su ogni versione di una carta, liste personali e avviso di prezzo.
+  // Salvati nel dispositivo in dg-fav: { f: {chiave: quando}, l: [{id, n: nome, k: {chiave: quando}}], a: {chiave: soglia €} }
+  var HEART = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.5 8 3.6 4.5 7.1 4.5c2.1 0 3.6 1.1 4.9 2.8 1.3-1.7 2.8-2.8 4.9-2.8 3.5 0 5.6 3.5 4.4 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"/></svg>';
+  var ICO_LISTS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h7"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" stroke-width="3"/></svg>';
+  function favCount() { return Object.keys(FAV.f).length; }
+  function listById(id) { for (var i = 0; i < FAV.l.length; i++) if (FAV.l[i].id === id) return FAV.l[i]; return null; }
+  function favIn(c) { var L = st.flist && listById(st.flist); return L ? !!L.k[c.k] : isFav(c); }
+  function favSet(c, on) {
+    if (on) { if (!FAV.f[c.k]) FAV.f[c.k] = Date.now(); }
+    else { delete FAV.f[c.k]; FAV.l.forEach(function (L) { delete L.k[c.k]; }); delete FAV.a[c.k]; }
+    favSave();
+  }
+  // tutte le versioni (anche alternative art e ristampe) a partire dalla chiave salvata
+  var KEYIDX = null;
+  function keyEntry(k) {
+    if (!KEYIDX) {
+      KEYIDX = {}; CARDS.forEach(function (c) { KEYIDX[c.k] = c; });
+      if (CARDS.length) altsOf(CARDS[0]);
+      Object.keys(ALTS || {}).forEach(function (b) { Object.keys(ALTS[b]).forEach(function (x) { var e = ALTS[b][x]; if (!KEYIDX[e.k]) KEYIDX[e.k] = e; }); });
+    }
+    return KEYIDX[k] || null;
+  }
+  function favSource() {
+    return Object.keys(FAV.f).map(keyEntry).filter(function (c) { return c && (!st.exp || hostSet(c) === st.exp || c.set === st.exp); });
+  }
+  function cmVal(c) { if (!priceCovered(c)) return null; var p = priceOf(c); return p ? (p[0] != null ? p[0] : p[1] != null ? p[1] : null) : null; }
+  function ctVal(c) { if (!ctCovered(c)) return null; var p = ctOf(c); return p && p[0] != null ? p[0] : null; }
+  function bestVal(c) { var a = cmVal(c), b = ctVal(c); return a == null ? b : b == null ? a : Math.min(a, b); }
+  function alertHit(c) { var t = FAV.a[c.k], v = bestVal(c); return t != null && v != null && v <= t; }
+  function eurT(v) { return v >= 1000 ? Math.round(v).toLocaleString("it-IT") + " €" : eurN(v) + " €"; }
+  // cuore sopra le immagini (griglia) e nella scheda carta
+  function favBtn(c, cls, after) {
+    var on = isFav(c), b = el("button", "favb" + (cls ? " " + cls : "") + (on ? " on" : "")); b.type = "button"; b.innerHTML = HEART;
+    b.setAttribute("aria-pressed", String(on)); b.setAttribute("aria-label", on ? "Togli dalle preferite" : "Aggiungi alle preferite");
+    b.title = on ? "Togli dalle preferite" : "Aggiungi alle preferite";
+    b.onclick = function (e) { e.stopPropagation(); favSet(c, !isFav(c)); favToast(c); if (after) after(); else render(); };
+    b.onkeydown = function (e) { e.stopPropagation(); };
+    return b;
+  }
+  // avviso breve in basso dopo aver toccato il cuore, con "Liste" per scegliere dove salvarla
+  var ftoastEl = null, ftoastT = 0;
+  function favToast(c) {
+    if (!ftoastEl) { ftoastEl = el("div", "ftoast"); ftoastEl.setAttribute("role", "status"); document.body.appendChild(ftoastEl); }
+    ftoastEl.innerHTML = ""; var on = isFav(c);
+    ftoastEl.appendChild(el("span", "", on ? "Aggiunta alle preferite" : "Tolta dalle preferite"));
+    if (on) { var b = el("button", "", "Liste e avviso"); b.type = "button"; b.onclick = function () { ftoastEl.classList.remove("on"); openFavSheet(c); }; ftoastEl.appendChild(b); }
+    ftoastEl.classList.add("on"); clearTimeout(ftoastT); ftoastT = setTimeout(function () { ftoastEl.classList.remove("on"); }, 2600);
+  }
+  // segmento della collezione: Tutte / Preferite / Wishlist (preferite che mancano)
+  function collSeg(box) {
+    var miss = 0; Object.keys(FAV.f).forEach(function (k) { var c = keyEntry(k); if (c && !owned(c)) miss++; });
+    var sg = el("div", "mseg three cseg"); sg.setAttribute("role", "tablist"); sg.setAttribute("aria-label", "Vista della collezione");
+    [["all", "Tutte"], ["fav", "Preferite"], ["wish", "Wishlist" + (miss ? " · " + miss : "")]].forEach(function (x) {
+      var b = el("button"); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String((st.cview || "all") === x[0]));
+      if (x[0] === "fav") { var h = el("span", "segh"); h.innerHTML = HEART; b.appendChild(h); }
+      b.appendChild(document.createTextNode(x[1]));
+      b.onclick = function () { if ((st.cview || "all") === x[0]) return; st.cview = x[0]; st.shown = PAGE; if (x[0] !== "fav") st.flist = ""; window.scrollTo(0, 0); render(); };
+      sg.appendChild(b);
+    });
+    box.appendChild(sg);
+  }
+  var FSORTS = [["recent", "Aggiunte di recente"], ["price", "Prezzo più alto"], ["cheap", "Prezzo più basso"], ["name", "Nome"], ["num", "Numero"]];
+  function favSort(list) {
+    var s = st.fsort || (st.cview === "wish" ? "price" : "recent");
+    var by = {
+      recent: function (a, b) { return (FAV.f[b.k] || 0) - (FAV.f[a.k] || 0); },
+      price: function (a, b) { return (bestVal(b) || -1) - (bestVal(a) || -1); },
+      cheap: function (a, b) { return (bestVal(a) == null ? 1e9 : bestVal(a)) - (bestVal(b) == null ? 1e9 : bestVal(b)); },
+      name: function (a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; },
+      num: function (a, b) { return a.code < b.code ? -1 : a.code > b.code ? 1 : 0; }
+    }[s];
+    return list.slice().sort(function (a, b) { return by(a, b) || (a.k < b.k ? -1 : 1); });
+  }
+  function favStat(l, v, s, cls, note) {
+    var p = el("div", "fstat" + (cls ? " " + cls : "")), vv = el("div", "v", v);
+    if (s) { vv.appendChild(document.createTextNode(" ")); vv.appendChild(el("small", "", s)); }
+    p.appendChild(vv); p.appendChild(el("div", "l", l)); if (note) p.appendChild(el("div", "n", note)); return p;
+  }
+  // Preferite e Wishlist dentro "La mia collezione" (telefono e PC): liste, riepilogo, ordine, carte
+  function renderFavView(box, q) {
+    var wish = st.cview === "wish", all = favSource();
+    if (st.flist && !listById(st.flist)) st.flist = "";
+    if (!favCount()) {
+      var e0 = el("div", "panel cempty"); e0.appendChild(el("div", "eyebrow", "Preferite"));
+      var hh = el("h3"); var hi = el("span", "segh big"); hi.innerHTML = HEART; hh.appendChild(hi); hh.appendChild(document.createTextNode("Ancora nessuna preferita")); e0.appendChild(hh);
+      e0.appendChild(el("p", "", "Tocca il cuore su una carta (nella ricerca, in un prodotto o nella sua scheda) per ritrovarla qui. Quelle che non hai ancora finiscono nella Wishlist, con quanto costa completarle."));
+      var ea = el("div", "dacts"); ea.style.justifyContent = "center";
+      ea.appendChild(btn("Cerca carte", "pri", function () { go("cards"); })); ea.appendChild(btn("Esplora i prodotti", "", function () { go("sets"); }));
+      e0.appendChild(ea); box.appendChild(e0); LASTN = 0; return;
+    }
+    // liste personali (solo in Preferite)
+    if (!wish) {
+      var cr = el("div", "flchips"); cr.setAttribute("aria-label", "Liste");
+      var mk = function (id, name, n) {
+        var b = el("button", "flchip", name + " · " + n); b.type = "button"; b.setAttribute("aria-pressed", String((st.flist || "") === id));
+        b.onclick = function () { st.flist = id; st.shown = PAGE; st.fdel = 0; render(); }; cr.appendChild(b);
+      };
+      mk("", "Tutte", favCount());
+      FAV.l.forEach(function (L) { var n = 0; Object.keys(L.k).forEach(function (k) { if (FAV.f[k]) n++; }); mk(L.id, L.n, n); });
+      if (st.fnew) {
+        var f = el("form", "flnew"), inp = el("input"); inp.type = "text"; inp.placeholder = "Nome della lista"; inp.maxLength = 40; inp.setAttribute("aria-label", "Nome della nuova lista");
+        var ok = el("button", "", "Crea"); ok.type = "submit";
+        f.onsubmit = function (ev) { ev.preventDefault(); var n = (inp.value || "").trim(); if (!n) { st.fnew = false; render(); return; } var L = { id: "l" + Date.now().toString(36), n: n, k: {} }; FAV.l.push(L); favSave(); st.fnew = false; st.flist = L.id; render(); };
+        inp.onkeydown = function (ev) { ev.stopPropagation(); if (ev.key === "Escape") { st.fnew = false; render(); } };
+        f.appendChild(inp); f.appendChild(ok); cr.appendChild(f); setTimeout(function () { inp.focus(); }, 0);
+      } else { var nb = el("button", "flchip add", "+ Nuova lista"); nb.type = "button"; nb.onclick = function () { st.fnew = true; render(); }; cr.appendChild(nb); }
+      box.appendChild(cr);
+    }
+    var L0 = st.flist ? listById(st.flist) : null;
+    var scope = all.filter(function (c) { return L0 ? !!L0.k[c.k] : true; });
+    if (wish) scope = scope.filter(function (c) { return !owned(c); });
+    // riepilogo
+    var fs = el("div", "panel fstats");
+    if (!wish) {
+      var have = 0, val = 0, miss = 0; scope.forEach(function (c) { var v = cmVal(c); if (owned(c)) have++; if (v != null) { val += v; if (!owned(c)) miss += v; } });
+      fs.appendChild(favStat("possedute", String(have), "/ " + scope.length));
+      fs.appendChild(favStat("valore (Cardmarket)", eurT(val)));
+      fs.appendChild(favStat("per completarle", eurT(miss), "", "acc"));
+    } else {
+      var tc = 0, tt = 0, tb = 0, nop = 0, ncm = 0, nct = 0; scope.forEach(function (c) { var a = cmVal(c), b2 = ctVal(c), m = bestVal(c); if (a != null) tc += a; else ncm++; if (b2 != null) tt += b2; else nct++; if (m != null) tb += m; else nop++; });
+      var nN = function (n) { return n ? (n === 1 ? "1 carta senza prezzo" : n + " carte senza prezzo") : ""; };
+      fs.classList.add("wish");
+      var hd = el("div", "fsh", "Per completare le preferite" + (scope.length ? " (" + scope.length + (scope.length === 1 ? " carta)" : " carte)") : "")); fs.appendChild(hd);
+      var r2 = el("div", "fsrow");
+      var s1 = favStat("Cardmarket", eurT(tc), "", "", nN(ncm)); s1.insertBefore(cmMark(), s1.firstChild); r2.appendChild(s1);
+      var s2 = favStat("CardTrader", eurT(tt), "", "", nN(nct)); s2.insertBefore(ctMark(), s2.firstChild); r2.appendChild(s2);
+      fs.appendChild(r2);
+      var bl = el("div", "fsbest"); bl.appendChild(el("span", "", "Al prezzo più basso tra i due")); bl.appendChild(el("b", "", eurT(tb))); fs.appendChild(bl);
+      if (nop) fs.appendChild(el("div", "fsnote", nN(nop) + " in entrambi i negozi, non conteggiate"));
+    }
+    box.appendChild(fs);
+    if (L0) {
+      var la = el("div", "flact");
+      var del = el("button", "linkb" + (st.fdel ? " warn" : ""), st.fdel ? "Tocca ancora per eliminare “" + L0.n + "”" : "Elimina la lista “" + L0.n + "”"); del.type = "button";
+      del.onclick = function () { if (!st.fdel) { st.fdel = 1; render(); return; } FAV.l = FAV.l.filter(function (x) { return x !== L0; }); favSave(); st.flist = ""; st.fdel = 0; render(); };
+      la.appendChild(del); la.appendChild(el("span", "", "Le carte restano nelle preferite")); box.appendChild(la);
+    }
+    var list = scope.filter(function (c) { return cardMatches(c, q); });
+    LASTN = list.length;
+    list = q ? list.map(function (c, j) { return { c: c, j: j, r: relevance(c, q) }; }).sort(function (a, b) { return (a.r - b.r) || (a.j - b.j); }).map(function (o) { return o.c; }) : favSort(list);
+    var gt = el("div", "group-title withv fsort");
+    var sl = el("label", "fsel"); sl.appendChild(document.createTextNode(list.length + (list.length === 1 ? " carta" : " carte") + " · "));
+    var sel = el("select"); sel.setAttribute("aria-label", "Ordina");
+    var cur = st.fsort || (wish ? "price" : "recent");
+    FSORTS.forEach(function (o) { var op = el("option", "", o[1]); op.value = o[0]; if (o[0] === cur) op.selected = true; sel.appendChild(op); });
+    sel.onchange = function () { st.fsort = sel.value; render(); };
+    sl.appendChild(sel); gt.appendChild(sl); gt.appendChild(viewToggle()); box.appendChild(gt);
+    if (!list.length) { box.appendChild(el("p", "empty", wish ? (scope.length ? "Nessuna carta della wishlist corrisponde ai filtri." : "Hai già tutte le tue preferite. Complimenti!") : L0 && !scope.length ? "Questa lista è vuota: apri una carta, tocca il cuore e scegli “Liste e avviso”." : "Nessuna preferita corrisponde ai filtri.")); return; }
+    var ul = el("div", st.view === "grid" ? "grid" : "list"); drawItems(ul, list.slice(0, st.shown)); box.appendChild(ul);
+    if (list.length > st.shown) { var m = loadMoreBtn("Mostra altre " + Math.min(PAGE, list.length - st.shown)); m.type = "button"; m.onclick = function () { st.shown += PAGE; render(); }; box.appendChild(m); }
+  }
+  // etichette sotto le carte nelle viste Preferite/Wishlist: "Manca" e avviso di prezzo raggiunto
+  function favBadges(c) {
+    if (!st.ownOnly || !st.cview || st.cview === "all") return null;
+    var w = el("div", "fbadges");
+    if (!owned(c) && st.cview === "fav") w.appendChild(el("span", "fmiss", "Manca"));
+    if (FAV.a[c.k] != null) {
+      var hit = alertHit(c), a = el("span", "falert" + (hit ? " hit" : ""));
+      a.innerHTML = hit ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg>';
+      a.appendChild(document.createTextNode((hit ? "Sotto " : "Avviso ") + eurC(FAV.a[c.k]) + " €"));
+      a.title = hit ? "Il prezzo più basso è sceso sotto la tua soglia" : "Avviso di prezzo impostato";
+      w.appendChild(a);
+    }
+    return w.children.length ? w : null;
+  }
+  // foglio "Salva in…": preferite, liste personali e avviso di prezzo per una versione della carta
+  var favSheetEl = null, favSheetC = null;
+  function openFavSheet(c) {
+    favSheetC = c;
+    if (!favSheetEl) { favSheetEl = el("div", "fsheetw"); document.body.appendChild(favSheetEl); pushOverlay("favsheet"); }
+    drawFavSheet();
+  }
+  function closeFavSheet(fromPop) {
+    if (!favSheetEl) return;
+    favSheetEl.remove(); favSheetEl = null; favSheetC = null;
+    if (!fromPop && history.state && history.state.ov === "favsheet") history.back();
+    render(); if (st.open != null) drawSheet();
+  }
+  function drawFavSheet() {
+    var c = favSheetC, w = favSheetEl; w.innerHTML = "";
+    var scrim = el("div", "fscrim"); scrim.onclick = function () { closeFavSheet(); }; w.appendChild(scrim);
+    var sh = el("section", "fsheet"); sh.setAttribute("role", "dialog"); sh.setAttribute("aria-modal", "true"); sh.setAttribute("aria-label", "Salva in");
+    sh.appendChild(el("div", "fgrip"));
+    var hd = el("div", "fshead"); hd.appendChild(el("h3", "", "Salva in…"));
+    var vk = SETBY[hostSet(c)]; hd.appendChild(el("span", "", c.name + " · " + c.code + (c.suf ? " · " + (verLabel(c.ver) || "Alternative Art") : "") + (vk ? " · " + vk.code : ""))); sh.appendChild(hd);
+    var box = el("div", "fslists");
+    function row(name, sub, on, fav, onT) {
+      var r = el("label", "fsrow2"), ic = el("span", "fsic" + (fav ? " fav" : ""));
+      ic.innerHTML = fav ? HEART : ICO_LISTS; r.appendChild(ic);
+      var tx = el("span", "fstx"); tx.appendChild(el("b", "", name)); tx.appendChild(el("small", "", sub)); r.appendChild(tx);
+      var cb = el("input"); cb.type = "checkbox"; cb.checked = on; cb.onchange = function () { onT(cb.checked); drawFavSheet(); }; r.appendChild(cb);
+      box.appendChild(r);
+    }
+    row("Preferite", favCount() + (favCount() === 1 ? " carta" : " carte"), isFav(c), true, function (v) { favSet(c, v); });
+    FAV.l.forEach(function (L) {
+      var n = Object.keys(L.k).length;
+      row(L.n, n + (n === 1 ? " carta" : " carte"), !!L.k[c.k], false, function (v) { if (v) { L.k[c.k] = Date.now(); favSet(c, true); } else delete L.k[c.k]; favSave(); });
+    });
+    if (st.fsNew) {
+      var f = el("form", "flnew in"), inp = el("input"); inp.type = "text"; inp.placeholder = "Nome della lista"; inp.maxLength = 40; inp.setAttribute("aria-label", "Nome della nuova lista");
+      var ok = el("button", "", "Crea"); ok.type = "submit";
+      f.onsubmit = function (ev) { ev.preventDefault(); var n = (inp.value || "").trim(); st.fsNew = false; if (n) { var L = { id: "l" + Date.now().toString(36), n: n, k: {} }; L.k[c.k] = Date.now(); FAV.l.push(L); favSet(c, true); } drawFavSheet(); };
+      inp.onkeydown = function (ev) { ev.stopPropagation(); if (ev.key === "Escape") { st.fsNew = false; drawFavSheet(); } };
+      f.appendChild(inp); f.appendChild(ok); box.appendChild(f); setTimeout(function () { inp.focus(); }, 0);
+    } else { var nb = el("button", "fsadd", "+ Nuova lista"); nb.type = "button"; nb.onclick = function () { st.fsNew = true; drawFavSheet(); }; box.appendChild(nb); }
+    sh.appendChild(box);
+    // avviso di prezzo: segnala nella Wishlist quando il prezzo più basso scende sotto la soglia
+    var ab = el("div", "fsalert"), on = FAV.a[c.k] != null;
+    var top = el("div", "fsat"); var tt = el("span", "fstx"); tt.appendChild(el("b", "", "Avviso di prezzo")); tt.appendChild(el("small", "", "Segnalato nella Wishlist quando il prezzo più basso scende sotto la soglia")); top.appendChild(tt);
+    var sw = el("button", "fswitch" + (on ? " on" : "")); sw.type = "button"; sw.setAttribute("role", "switch"); sw.setAttribute("aria-checked", String(on)); sw.setAttribute("aria-label", "Avviso di prezzo"); sw.appendChild(el("i"));
+    sw.onclick = function () { if (FAV.a[c.k] != null) delete FAV.a[c.k]; else { var b0 = bestVal(c); FAV.a[c.k] = b0 != null ? Math.max(0.01, Math.floor(b0 * 0.9 * 100) / 100) : 1; favSet(c, true); } favSave(); drawFavSheet(); };
+    top.appendChild(sw); ab.appendChild(top);
+    var pr = el("div", "fsap");
+    if (on) {
+      var lb = el("label", "fseur"); lb.appendChild(el("span", "", "€")); var ei = el("input"); ei.type = "text"; ei.inputMode = "decimal"; ei.setAttribute("aria-label", "Soglia di prezzo in euro");
+      ei.value = eurN(FAV.a[c.k]); ei.onkeydown = function (ev) { ev.stopPropagation(); if (ev.key === "Enter") ei.blur(); };
+      ei.onchange = function () { var v = parseFloat(String(ei.value).replace(/\./g, "").replace(",", ".")); if (v > 0) { FAV.a[c.k] = Math.round(v * 100) / 100; favSave(); } drawFavSheet(); };
+      lb.appendChild(ei); pr.appendChild(lb);
+    }
+    var cur = el("div", "fscur");
+    [[cmMark(), "Cardmarket", cmVal(c)], [ctMark(), "CardTrader", ctVal(c)]].forEach(function (x) { var r = el("div"); r.appendChild(x[0]); r.appendChild(el("span", "", x[1])); r.appendChild(el("b", "", x[2] == null ? "N/D" : eurN(x[2]) + " €")); cur.appendChild(r); });
+    pr.appendChild(cur); ab.appendChild(pr); sh.appendChild(ab);
+    var done = el("button", "fsdone", "Fine"); done.type = "button"; done.onclick = function () { closeFavSheet(); }; sh.appendChild(done);
+    w.appendChild(sh);
+  }
   function renderCardsDesk(q) {
     pageTitle(st.ownOnly ? "La mia collezione" : "Ricerca carte", st.ownOnly ? "Le copie che hai segnato, prodotto per prodotto. Restano salvate su questo dispositivo." : "Trova una carta, confronta le illustrazioni e aggiungila alla collezione.");
+    if (st.ownOnly) collSeg(out);
+    if (st.ownOnly && (st.cview === "fav" || st.cview === "wish")) {
+      var flay = el("div", "slay"); flay.appendChild(filterSide());
+      var fres = el("section"); fres.setAttribute("aria-label", "Preferite"); flay.appendChild(fres); out.appendChild(flay);
+      renderFavView(fres, q); return;
+    }
     if (st.ownOnly) {
       var anyOwned = Object.keys(qty).length > 0;
       if (!anyOwned) {
@@ -2614,16 +2954,18 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     });
     return vb;
   }
+  function favDot() { var d = el("span", "fdot"); d.innerHTML = HEART; d.setAttribute("role", "img"); d.setAttribute("aria-label", "Preferita"); return d; }
   function drawItems(ul, items) {
     NAVLIST = NAVLIST.concat(items);
     items.forEach(function (c) {
       if (st.view === "grid") {
         var t = el("div", "tile"); t.tabIndex = 0; t.setAttribute("role", "button");
-        t.appendChild(picBox("pic", "f", c));
+        t.appendChild(picBox("pic", "f", c)); t.appendChild(favBtn(c));
         var cl = el("div", "cline"); cl.style.background = gradient(c.colors, "to right"); t.appendChild(cl);
         var tn = el("div", "tname"); tn.appendChild(nameFrag(c)); t.appendChild(tn);
         listLines(c).forEach(function (x) { t.appendChild(x); });
         t.appendChild(qtyControl(c, function () { recomputeStats(); render(); }));
+        var fbg = favBadges(c); if (fbg) t.appendChild(fbg);
         priceLines(c).forEach(function (x) { t.appendChild(x); });
         t.onclick = function () { st.open = c; drawSheet(); };
         t.onkeydown = function (e) { if (e.target === t && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); st.open = c; drawSheet(); } };
@@ -2633,17 +2975,19 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
       if (!DESK) {
         var r = el("div", "row card p1"); r.tabIndex = 0; r.setAttribute("role", "button");
         r.appendChild(thumbBand(c));
-        var mid = el("div", "name"); mid.appendChild(nameFrag(c));
+        var mid = el("div", "name"); if (isFav(c)) mid.appendChild(favDot()); mid.appendChild(nameFrag(c));
         listLines(c).forEach(function (x) { mid.appendChild(x); });
         var pp = pricePill(c); if (pp) mid.appendChild(pp);
+        var fbm = favBadges(c); if (fbm) mid.appendChild(fbm);
         r.appendChild(mid);
         r.appendChild(qtyControl(c, function () { recomputeStats(); render(); }));
       } else {
       var r = el("div", "row card"); r.tabIndex = 0; r.setAttribute("role", "button");
       var sw = el("div", "swatch"); sw.style.background = gradient(c.colors); r.appendChild(sw);
       r.appendChild(picBox("thumb", "t", c));
-      var mid = el("div", "name"); mid.appendChild(nameFrag(c));
+      var mid = el("div", "name"); if (isFav(c)) mid.appendChild(favDot()); mid.appendChild(nameFrag(c));
       listLines(c).forEach(function (x) { mid.appendChild(x); });
+      var fbd = favBadges(c); if (fbd) mid.appendChild(fbd);
       r.appendChild(mid);
       // a destra: copie e, sotto, il prezzo (stessa larghezza dei pulsanti)
       var rside = el("div", "rside");
@@ -3370,7 +3714,8 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
       // telefono: scheda a tutto schermo con due viste. "Effetto": carta, copie subito sotto, poi dati ed effetti.
       // "Versioni": tutte le versioni (alternative art e ristampe) in grande, una sotto l'altra, ognuna con le sue copie.
       var SVGN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
-      var xb = el("button", "mclose"); xb.type = "button"; xb.setAttribute("aria-label", "Chiudi la scheda"); xb.innerHTML = SVGN + '<path d="M6 6l12 12M18 6L6 18"/></svg>'; xb.onclick = closeSheet; head.appendChild(xb);
+      var xb = el("button", "mclose"); xb.type = "button"; xb.setAttribute("aria-label", "Chiudi la scheda"); xb.innerHTML = SVGN + '<path d="M6 6l12 12M18 6L6 18"/></svg>'; xb.onclick = closeSheet;
+      var mhb = el("div", "mhbtns"); mhb.appendChild(favBtn(c, "big", function () { render(); drawSheet(); })); mhb.appendChild(favListsBtn(c)); mhb.appendChild(xb); head.appendChild(mhb);
       var kids = Array.prototype.slice.call(sh.children).filter(function (k) { return k !== hint && k !== head && !k.classList.contains("sep"); });
       kids.forEach(function (k) { sh.removeChild(k); });
       var p1 = el("div", "mpane"), p2 = el("div", "mpane vers");
@@ -3449,7 +3794,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
       var sw = navB(cardR ? "Carta a sinistra" : "Carta a destra",
         cardR ? '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/><path d="M9 9l-3 3 3 3"/>' : '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/><path d="M15 9l3 3-3 3"/>',
         null, function () { try { if (cardR) localStorage.removeItem("dg-cardside"); else localStorage.setItem("dg-cardside", "r"); } catch (e) {} var y = sh.scrollTop; drawSheet(); var n2 = sheet.querySelector(".sheet"); if (n2) n2.scrollTop = y; });
-      sw.classList.add("swapb"); bx.appendChild(sw);
+      sw.classList.add("swapb"); bx.appendChild(favBtn(c, "big", function () { render(); drawSheet(); })); bx.appendChild(favListsBtn(c)); bx.appendChild(sw);
       if (ni >= 0 && !SHSTACK.length) { bx.appendChild(navB("Carta precedente (←)", '<path d="M15 5l-7 7 7 7"/>', NAVLIST[ni - 1])); bx.appendChild(navB("Carta successiva (→)", '<path d="M9 5l7 7-7 7"/>', NAVLIST[ni + 1])); }
       bx.appendChild(navB("Chiudi (Esc)", '<path d="M6 6l12 12M18 6L6 18"/>', null, closeSheet));
       head.appendChild(bx);
@@ -3463,6 +3808,10 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     scrim.appendChild(sh); sheet.appendChild(scrim);
     fitAll();
     sh.tabIndex = -1; sh.focus({ preventScroll: true });
+  }
+  function favListsBtn(c) {
+    var b = el("button", "favl"); b.type = "button"; b.innerHTML = ICO_LISTS; b.setAttribute("aria-label", "Liste e avviso di prezzo"); b.title = "Liste e avviso di prezzo";
+    b.onclick = function () { openFavSheet(c); }; return b;
   }
   var SHSTACK = [], collUnlocked = false;
   var LOCK = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
@@ -3480,6 +3829,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
   }
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && ddPop) { var k0 = ddOpen; closeFilters(); var b0 = document.querySelector('.dd[data-k="' + k0 + '"]'); if (b0) b0.focus(); return; }
+    if (e.key === "Escape" && favSheetEl) { closeFavSheet(); return; }
     if (e.key === "Escape" && st.open != null) closeSheet();
     // desktop: frecce della tastiera per la carta precedente/successiva
     if (DESK && st.open != null && !SHSTACK.length && (e.key === "ArrowLeft" || e.key === "ArrowRight") && !/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || "")) {
@@ -3606,7 +3956,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
     chips.hidden = !isSets || !DESK;
     qi.hidden = isSoon || isHome || isUp || dkNoSearch;
     document.getElementById("hint").textContent = "Carte in inglese, da una raccolta pubblica aggiornata fino a BT26, EX13 e ST24, più promo e RB01. Quantità e collezione restano salvate in questo browser.";
-    qi.placeholder = prodM ? (DESK ? "Cerca in questo prodotto, es. Agumon" : "Cerca in " + (SETBY[st.setId] ? SETBY[st.setId].code : "questo prodotto") + ", es. Agumon") : botM && st.ownOnly ? "Cerca nella collezione…" : botM && st.tab === "cards" ? "Cerca per nome, codice o testo…" : botM ? "Cerca per set, codice o Digimon…" : dkM ? "Cerca una carta, es. Agumon" : isDeck ? "Cerca una carta da aggiungere, es. Agumon o BT1-010" : isSets ? "Cerca per set, codice o Digimon, es. BT10 o Omnimon" :
+    qi.placeholder = prodM ? (DESK ? "Cerca in questo prodotto, es. Agumon" : "Cerca in " + (SETBY[st.setId] ? SETBY[st.setId].code : "questo prodotto") + ", es. Agumon") : botM && st.ownOnly ? (st.cview === "fav" ? "Cerca nelle preferite…" : st.cview === "wish" ? "Cerca nella wishlist…" : "Cerca nella collezione…") : botM && st.tab === "cards" ? "Cerca per nome, codice o testo…" : botM ? "Cerca per set, codice o Digimon…" : dkM ? "Cerca una carta, es. Agumon" : isDeck ? "Cerca una carta da aggiungere, es. Agumon o BT1-010" : isSets ? "Cerca per set, codice o Digimon, es. BT10 o Omnimon" :
       st.qm === "name" ? "Cerca per nome, es. Omnimon" :
       st.qm === "text" ? "Cerca nel testo un nome, keyword o parola, es. Omnimon, Barrier o draw" :
       "Cerca per nome, codice o testo, es. Agumon";
@@ -3688,6 +4038,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
   }, { passive: true });
   window.addEventListener("popstate", function (e) {
     var s2 = e.state || {};
+    if (favSheetEl && s2.ov !== "favsheet") { closeFavSheet(true); return; }
     if (scanIsOpen()) {
       if (s2.ov !== "scan" && s2.ov !== "schist" && s2.ov !== "schres") { scTeardown(); return; }
       if (s2.ov === "scan" && (SC.el.classList.contains("hist") || SC.fromHist)) scAgain();
