@@ -1283,6 +1283,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
 .favl svg { width: 20px; height: 20px; }
 .shbtns .favb.big, .shbtns .favl { width: 40px; height: 40px; }
 .mhbtns { display: flex; gap: 6px; flex: none; }
+.shsegrow .favb.big, .shsegrow .favl { width: 48px; height: 48px; }
 .segh { display: inline-block; width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px; color: var(--accent); }
 .segh svg { width: 100%; height: 100%; fill: currentColor; }
 .segh.big { width: 20px; height: 20px; margin-right: 8px; vertical-align: -3px; }
@@ -3725,7 +3726,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       // "Versioni": tutte le versioni (alternative art e ristampe) in grande, una sotto l'altra, ognuna con le sue copie.
       var SVGN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
       var xb = el("button", "mclose"); xb.type = "button"; xb.setAttribute("aria-label", "Chiudi la scheda"); xb.innerHTML = SVGN + '<path d="M6 6l12 12M18 6L6 18"/></svg>'; xb.onclick = closeSheet;
-      var mhb = el("div", "mhbtns"); mhb.appendChild(favBtn(c, "big", function () { render(); drawSheet(); })); mhb.appendChild(favListsBtn(c)); mhb.appendChild(xb); head.appendChild(mhb);
+      var mhb = el("div", "mhbtns"); mhb.appendChild(xb); head.appendChild(mhb);
       var kids = Array.prototype.slice.call(sh.children).filter(function (k) { return k !== hint && k !== head && !k.classList.contains("sep"); });
       kids.forEach(function (k) { sh.removeChild(k); });
       var p1 = el("div", "mpane"), p2 = el("div", "mpane vers");
@@ -3788,7 +3789,10 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
         b.onclick = function () { st.shTab = x[0]; drawSheet(); var n2 = sheet.querySelector(".sheet"); if (n2) n2.scrollTop = 0; };
         seg.appendChild(b);
       });
-      sh.appendChild(seg); p1.hidden = tab !== "fx"; p2.hidden = tab !== "ver"; sh.appendChild(p1); sh.appendChild(p2);
+      // cuore e liste sulla stessa riga delle schede Effetto / Versioni
+      var segRow = el("div", "msegrow shsegrow"); segRow.appendChild(seg);
+      segRow.appendChild(favBtn(c, "big", function () { render(); drawSheet(); })); segRow.appendChild(favListsBtn(c));
+      sh.appendChild(segRow); p1.hidden = tab !== "fx"; p2.hidden = tab !== "ver"; sh.appendChild(p1); sh.appendChild(p2);
     }
     if (DESK) {
       // desktop: finestra a due colonne (immagine e versioni a sinistra, dati e testo a destra) con frecce e chiusura
