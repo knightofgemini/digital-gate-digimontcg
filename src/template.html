@@ -1280,8 +1280,6 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
 .favl svg { width: 20px; height: 20px; }
 .shbtns .favb.big, .shbtns .favl { width: 40px; height: 40px; }
 .mhbtns { display: flex; gap: 6px; flex: none; }
-.fdot { display: inline-block; width: 13px; height: 13px; margin-right: 5px; vertical-align: -1px; color: var(--accent); }
-.fdot svg { width: 100%; height: 100%; fill: currentColor; }
 .segh { display: inline-block; width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px; color: var(--accent); }
 .segh svg { width: 100%; height: 100%; fill: currentColor; }
 .segh.big { width: 20px; height: 20px; margin-right: 8px; vertical-align: -3px; }
@@ -2731,7 +2729,6 @@ body.desk .fgrip { display: none; }
     var sg = el("div", "mseg three cseg"); sg.setAttribute("role", "tablist"); sg.setAttribute("aria-label", "Vista della collezione");
     [["all", "Tutte"], ["fav", "Preferite"], ["wish", "Wishlist" + (miss ? " · " + miss : "")]].forEach(function (x) {
       var b = el("button"); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String((st.cview || "all") === x[0]));
-      if (x[0] === "fav") { var h = el("span", "segh"); h.innerHTML = HEART; b.appendChild(h); }
       b.appendChild(document.createTextNode(x[1]));
       b.onclick = function () { if ((st.cview || "all") === x[0]) return; st.cview = x[0]; st.shown = PAGE; if (x[0] !== "fav") st.flist = ""; window.scrollTo(0, 0); render(); };
       sg.appendChild(b);
@@ -2790,12 +2787,7 @@ body.desk .fgrip { display: none; }
     if (wish) scope = scope.filter(function (c) { return !owned(c); });
     // riepilogo
     var fs = el("div", "panel fstats");
-    if (!wish) {
-      var have = 0, val = 0, miss = 0; scope.forEach(function (c) { var v = cmVal(c); if (owned(c)) have++; if (v != null) { val += v; if (!owned(c)) miss += v; } });
-      fs.appendChild(favStat("possedute", String(have), "/ " + scope.length));
-      fs.appendChild(favStat("valore (Cardmarket)", eurT(val)));
-      fs.appendChild(favStat("per completarle", eurT(miss), "", "acc"));
-    } else {
+    if (wish) {
       var tc = 0, tt = 0, tb = 0, nop = 0, ncm = 0, nct = 0; scope.forEach(function (c) { var a = cmVal(c), b2 = ctVal(c), m = bestVal(c); if (a != null) tc += a; else ncm++; if (b2 != null) tt += b2; else nct++; if (m != null) tb += m; else nop++; });
       var nN = function (n) { return n ? (n === 1 ? "1 carta senza prezzo" : n + " carte senza prezzo") : ""; };
       fs.classList.add("wish");
@@ -2806,8 +2798,8 @@ body.desk .fgrip { display: none; }
       fs.appendChild(r2);
       var bl = el("div", "fsbest"); bl.appendChild(el("span", "", "Al prezzo più basso tra i due")); bl.appendChild(el("b", "", eurT(tb))); fs.appendChild(bl);
       if (nop) fs.appendChild(el("div", "fsnote", nN(nop) + " in entrambi i negozi, non conteggiate"));
+      box.appendChild(fs);
     }
-    box.appendChild(fs);
     if (L0) {
       var la = el("div", "flact");
       var del = el("button", "linkb" + (st.fdel ? " warn" : ""), st.fdel ? "Tocca ancora per eliminare “" + L0.n + "”" : "Elimina la lista “" + L0.n + "”"); del.type = "button";
@@ -2954,7 +2946,6 @@ body.desk .fgrip { display: none; }
     });
     return vb;
   }
-  function favDot() { var d = el("span", "fdot"); d.innerHTML = HEART; d.setAttribute("role", "img"); d.setAttribute("aria-label", "Preferita"); return d; }
   function drawItems(ul, items) {
     NAVLIST = NAVLIST.concat(items);
     items.forEach(function (c) {
@@ -2975,7 +2966,7 @@ body.desk .fgrip { display: none; }
       if (!DESK) {
         var r = el("div", "row card p1"); r.tabIndex = 0; r.setAttribute("role", "button");
         r.appendChild(thumbBand(c));
-        var mid = el("div", "name"); if (isFav(c)) mid.appendChild(favDot()); mid.appendChild(nameFrag(c));
+        var mid = el("div", "name"); mid.appendChild(nameFrag(c));
         listLines(c).forEach(function (x) { mid.appendChild(x); });
         var pp = pricePill(c); if (pp) mid.appendChild(pp);
         var fbm = favBadges(c); if (fbm) mid.appendChild(fbm);
@@ -2985,7 +2976,7 @@ body.desk .fgrip { display: none; }
       var r = el("div", "row card"); r.tabIndex = 0; r.setAttribute("role", "button");
       var sw = el("div", "swatch"); sw.style.background = gradient(c.colors); r.appendChild(sw);
       r.appendChild(picBox("thumb", "t", c));
-      var mid = el("div", "name"); if (isFav(c)) mid.appendChild(favDot()); mid.appendChild(nameFrag(c));
+      var mid = el("div", "name"); mid.appendChild(nameFrag(c));
       listLines(c).forEach(function (x) { mid.appendChild(x); });
       var fbd = favBadges(c); if (fbd) mid.appendChild(fbd);
       r.appendChild(mid);
