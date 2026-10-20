@@ -1557,12 +1557,16 @@ body.desk .fgrip { display: none; }
   function goSets() {
     var r = st.setId && st.back ? st.back : null;
     if (r && r.home) { st.tab = "home"; st.setId = null; st.back = null; render(); window.scrollTo(0, 0); return; }
+    if (r && r.coll) {
+      st.tab = "cards"; st.ownOnly = true; st.setId = null; st.back = null; st.shown = PAGE; st.q = r.q || ""; qi.value = st.q; st.qm = r.qm || ""; render();
+      var yc = r.y || 0; requestAnimationFrame(function () { window.scrollTo(0, yc); requestAnimationFrame(function () { window.scrollTo(0, yc); }); }); return;
+    }
     st.tab = "sets"; st.setId = null; st.shown = PAGE;
     if (r) { st.q = r.q; qi.value = r.q; st.type = r.type; st.qm = r.qm || ""; }
     render();
     if (r) { var y = r.y; requestAnimationFrame(function () { window.scrollTo(0, y); requestAnimationFrame(function () { window.scrollTo(0, y); }); }); }
   }
-  document.getElementById("tab-sets").onclick = goSets;
+  document.getElementById("tab-sets").onclick = function () { if (st.back && st.back.coll) st.back = null; goSets(); };
   document.getElementById("tab-home").onclick = function () { st.tab = "home"; st.setId = null; window.scrollTo(0, 0); render(); };
   if (window.Capacitor || /^capacitor:/.test(location.protocol)) document.body.classList.add("apk");
   // ---- Desktop (PC con mouse e finestra da almeno 1000 px): barra laterale fissa e pagine a tutta larghezza. Telefono e APK restano come prima.
@@ -1657,7 +1661,7 @@ body.desk .fgrip { display: none; }
       b.appendChild(el("span", "lbl", m[1])); if (DESK) b.title = m[1];
       if (m[0] === "soon" && (DATA.upcoming || []).length) b.appendChild(el("span", "nb", String(DATA.upcoming.length)));
       if (m[0] === "deck" && decksTodo()) b.appendChild(el("span", "nb", String(decksTodo())));
-      if (curPage() === m[0]) b.setAttribute("aria-current", "page");
+      if ((curPage() === "sets" && st.setId && st.back && st.back.coll ? "coll" : curPage()) === m[0]) b.setAttribute("aria-current", "page");
       b.onclick = function () { var ov = history.state && history.state.ov === "menu"; menuOpen(false, true); if (ov) replaceNext = true; go(m[0]); if (replaceNext) { replaceNext = false; var rs = snap(); rs.d = ovDepth(); history.replaceState(rs, ""); } };
       nav.appendChild(b);
     });
@@ -1723,6 +1727,7 @@ body.desk .fgrip { display: none; }
   function drawTabbar() {
     if (DESK) { tabbar.innerHTML = ""; return; }
     var cur = curPage(); if (cur === "soon") cur = "sets";
+    if (cur === "sets" && st.setId && st.back && st.back.coll) cur = "coll"; // prodotto aperto dalla collezione
     tabbar.innerHTML = "";
     TABS.forEach(function (t) {
       var b = el("button"); b.type = "button";
@@ -2351,12 +2356,12 @@ body.desk .fgrip { display: none; }
     if (st.setId) {
       var s = SETBY[st.setId];
       // telefono: intestazione del prodotto fuori dall'elenco, con sotto la ricerca e i menù dei filtri
-      var H = DESK ? out : phead, sst0 = SETSTAT[s.id] || {}, pkey = s.id + "|" + sst0.h;
+      var H = DESK ? out : phead, sst0 = SETSTAT[s.id] || {}, fromColl = !!(st.back && st.back.coll), pkey = s.id + "|" + sst0.h + "|" + (fromColl ? "c" : "p");
       if (!DESK && phead.getAttribute("data-k") === pkey && phead.firstChild) H = null;
       else if (!DESK) { phead.innerHTML = ""; phead.setAttribute("data-k", pkey); }
     }
     if (st.setId && H) {
-      var b = el("button", "back", st.back && st.back.home ? "← Home" : "← Tutti i set"); b.type = "button";
+      var b = el("button", "back", st.back && st.back.home ? "← Home" : fromColl ? "← La mia collezione" : "← Tutti i set"); b.type = "button";
       b.onclick = goSets;
       H.appendChild(b);
       var h = el("div", "sethead");
@@ -2370,7 +2375,7 @@ body.desk .fgrip { display: none; }
         if (hasDate && !pb) ht.appendChild(el("div", "sub", "Uscita: " + monthLabel(s.date)));
         h.appendChild(ht);
         var sst = SETSTAT[s.id];
-        if (sst && sst.n) {
+        if (fromColl && sst && sst.n) {
           var o2 = el("div", "own2"); o2.appendChild(el("div", "eyebrow", "La tua collezione"));
           var ob = el("div", "ob"); ob.appendChild(document.createTextNode(sst.h + " ")); ob.appendChild(el("small", "", "/ " + sst.n)); o2.appendChild(ob);
           o2.appendChild(pbar(sst.h, sst.n)); o2.appendChild(el("div", "os", "Carte e illustrazioni possedute in questo prodotto"));
@@ -2381,7 +2386,7 @@ body.desk .fgrip { display: none; }
         if (hasDate && !pb) { var dm = s.date.split("-"); var mn = MONTHS[+dm[1] - 1]; h.appendChild(el("div", "sub", "Uscita: " + mn.charAt(0).toUpperCase() + mn.slice(1) + " " + dm[0])); }
       }
       H.appendChild(h);
-      if (pb && !DESK) { var det = el("details", "pdet"); det.appendChild(el("summary", "", "Dettagli del prodotto e rarità")); det.appendChild(pb); H.appendChild(det); }
+      if (pb && !DESK) { var det = el("details", "pdet"); if (!fromColl) det.open = true; det.appendChild(el("summary", "", "Dettagli del prodotto e rarità")); det.appendChild(pb); H.appendChild(det); }
       else if (pb) H.appendChild(pb);
     } else if (st.setId) {} else if (DESK) { renderCardsDesk(q); return; }
     else {
@@ -2670,7 +2675,7 @@ body.desk .fgrip { display: none; }
       var c = el("div", "cl"); c.appendChild(el("div", "name fit", s.name)); c.appendChild(el("div", "sub", s.code + (s.date && s.date.charAt(0) !== "0" ? " · " + monthLabel(s.date) : ""))); b.appendChild(c);
       var pc = Math.floor(t.h / t.n * 100); b.appendChild(el("span", "cp" + (t.h === t.n ? " done" : ""), pc + "%"));
       b.appendChild(progLine(t.h, t.n));
-      b.onclick = function () { st.back = { y: 0, q: "", type: "ALL", qm: "" }; st.ownOnly = false; st.tab = "cards"; st.setId = s.id; st.shown = PAGE; qi.value = ""; st.q = ""; window.scrollTo(0, 0); render(); };
+      b.onclick = function () { st.back = { y: window.pageYOffset || document.documentElement.scrollTop || 0, q: st.q, type: "ALL", qm: st.qm, coll: true }; st.ownOnly = false; st.tab = "cards"; st.setId = s.id; st.shown = PAGE; qi.value = ""; st.q = ""; window.scrollTo(0, 0); render(); };
       g.appendChild(b);
     });
     out.appendChild(g);
