@@ -904,8 +904,7 @@ body.mob .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 body.mob #out .grid { gap: 6px; }
 body.mob #out .grid .tile { padding: 6px; gap: 5px; border-radius: 11px; }
 body.mob .tile .tname { font-size: .92rem; }
-body.mob .tile .qty { display: flex; justify-content: space-between; border: 1px solid var(--line); border-radius: 12px; padding: 2px; }
-body.mob .tile .qbtn { border: 0; }
+body.mob .tile .qty { display: flex; justify-content: space-between; }
 body.mob .pgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 body.mob .ptile .n { white-space: normal; overflow: visible; line-height: 1.25; font-size: .92rem; }
 body.mob .ptile .pb { padding: 9px 10px 11px; }
@@ -1219,6 +1218,10 @@ body.mob.kbd .mbot.on::after { display: none; }
 .schrow .mt .maybe { background: var(--surface-2); color: var(--ink-2); }
 .schrow .side { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .schrow .qty .qbtn { width: 34px; height: 34px; }
+/* telefono: + e − con la stessa forma ovunque (quadrato arrotondato, − con il bordo, + arancione) */
+body.mob .qbtn { border-radius: 11px; }
+body.mob .dksel .qbtn, body.mob .scan .own .qbtn { width: 40px; height: 40px; }
+body.mob .schrow .qty .qbtn { border-radius: 10px; }
 .schrm { width: 28px; height: 28px; border-radius: 50%; border: 0; background: none; color: var(--ink-2); display: grid; place-items: center; cursor: pointer; padding: 0; }
 .schrm svg { width: 16px; height: 16px; }
 .schempty { text-align: center; padding: 22px 12px 10px; color: var(--ink-2); }
