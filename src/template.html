@@ -1172,7 +1172,8 @@ body.mob.kbd .mbot.on::after { display: none; }
 /* ---- Scansione delle carte con la fotocamera (#scan) */
 .scan { position: fixed; inset: 0; z-index: 900; background: #05080f; color: #f1f4f9; display: none; overflow: hidden; font-family: var(--font-body); touch-action: none; overscroll-behavior: contain; }
 .scan.on { display: block; }
-.scan video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #05080f; }
+.scan video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #05080f; opacity: 0; transition: opacity .2s ease-out; }
+.scan video.live { opacity: 1; }
 .scan .scmask { position: absolute; inset: 0; pointer-events: none; }
 .scan .scframe { position: absolute; left: 50%; top: 44%; width: min(72vw, calc(56vh * 63 / 88), 360px); aspect-ratio: 63 / 88; transform: translate(-50%, -50%); border-radius: 18px; box-shadow: 0 0 0 200vmax rgba(5,8,15,.62); pointer-events: none; }
 .scframe i { position: absolute; width: 34px; height: 34px; border: 4px solid #ff7a3d; }
@@ -1200,7 +1201,7 @@ body.mob.kbd .mbot.on::after { display: none; }
 .scfoot .scpic.big { margin: 0 auto; height: 52px; padding: 0 22px 0 18px; border-radius: 26px; background: #ff7a3d; border-color: #ff7a3d; color: #1a0b03; font-size: 1rem; }
 .scan.res .scfoot, .scan.res .scstat, .scan.hist .scfoot, .scan.hist .scstat { display: none; }
 /* risultato: foglio dal basso sopra la fotocamera */
-.scres { position: absolute; left: 0; right: 0; bottom: 0; max-height: 76%; overflow-y: auto; background: var(--bg); color: var(--ink); border-radius: 20px 20px 0 0; box-shadow: 0 -14px 40px rgba(0,0,0,.5); padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; transform: translateY(105%); transition: transform .24s ease-out; touch-action: pan-y; }
+.scres { position: absolute; left: 0; right: 0; bottom: 0; max-height: 76%; overflow-y: auto; background: var(--bg); color: var(--ink); border-radius: 20px 20px 0 0; box-shadow: 0 -14px 40px rgba(0,0,0,.5); padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; transform: translateY(105%); transition: transform .36s cubic-bezier(.32,.72,0,1); touch-action: pan-y; }
 .scan.res .scres:not(.schist), .scan.hist .schist { transform: none; }
 .scan.hist .scframe { opacity: .35; }
 .schist { max-height: 86%; min-height: 50%; }
@@ -1230,6 +1231,9 @@ body.mob.kbd .mbot.on::after { display: none; }
 .schrow .mt .maybe { background: var(--surface-2); color: var(--ink-2); }
 .schrow .side { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .schrow .qty .qbtn { width: 34px; height: 34px; }
+/* telefono: il menu "Altro" sale e scende con la stessa curva degli altri fogli */
+body.mob .menu { transition: transform .36s cubic-bezier(.32,.72,0,1); }
+body.mob .menu-scrim { transition: opacity .3s ease-out; }
 /* telefono: + e − con la stessa forma ovunque (quadrato arrotondato, − con il bordo, + arancione) */
 body.mob .qbtn { border-radius: 11px; }
 body.mob .dksel .qbtn, body.mob .scan .own .qbtn { width: 40px; height: 40px; }
@@ -2902,11 +2906,14 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   var favSheetEl = null, favSheetC = null;
   function openFavSheet(c) {
     favSheetC = c;
+    var isNew = !favSheetEl;
     if (!favSheetEl) { favSheetEl = el("div", "fsheetw"); document.body.appendChild(favSheetEl); pushOverlay("favsheet"); }
     drawFavSheet();
+    if (isNew) sheetIn(favSheetEl.querySelector(".fsheet"), favSheetEl.querySelector(".fscrim"));
   }
   function closeFavSheet(fromPop) {
     if (!favSheetEl) return;
+    var fsh = favSheetEl.querySelector(".fsheet"); if (fsh) sheetGhost(favSheetEl, fsh, favSheetEl.querySelector(".fscrim"));
     favSheetEl.remove(); favSheetEl = null; favSheetC = null;
     if (!fromPop && history.state && history.state.ov === "favsheet") history.back();
     render(); if (st.open != null) drawSheet();
@@ -2915,8 +2922,9 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     var c = favSheetC, w = favSheetEl; w.innerHTML = "";
     var scrim = el("div", "fscrim"); scrim.onclick = function () { closeFavSheet(); }; w.appendChild(scrim);
     var sh = el("section", "fsheet"); sh.setAttribute("role", "dialog"); sh.setAttribute("aria-modal", "true"); sh.setAttribute("aria-label", "Salva in");
-    sh.appendChild(el("div", "fgrip"));
-    var hd = el("div", "fshead"); hd.appendChild(el("h3", "", "Salva in…"));
+    var grip = el("div", "fgrip"); sh.appendChild(grip);
+    var hd = el("div", "fshead");
+    dragDown(sh, { grips: [grip, hd], scrim: function () { return scrim; }, close: function () { closeFavSheet(); } }); hd.appendChild(el("h3", "", "Salva in…"));
     var vk = SETBY[hostSet(c)]; hd.appendChild(el("span", "", c.name + " · " + c.code + (c.suf ? " · " + (verLabel(c.ver) || "Alternative Art") : "") + (vk ? " · " + vk.code : ""))); sh.appendChild(hd);
     var box = el("div", "fslists");
     function row(name, sub, on, fav, onT) {
@@ -3636,6 +3644,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   }
   function drawSheet0() {
     var wasOpen = !sheet.hidden;
+    if (wasOpen && st.open == null) { var gsc = sheet.querySelector(".scrim"), gsh = gsc && gsc.querySelector(".sheet"); if (gsh) sheetGhost(gsc, gsh, gsc); }
     sheet.innerHTML = "";
     if (st.open == null) { sheet.hidden = true; SHSTACK = []; collUnlocked = false; document.documentElement.classList.remove("lock"); return; }
     if (!wasOpen) { pushOverlay("sheet"); st.shTab = "fx"; }
@@ -3864,6 +3873,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       sg.appendChild(sL); sg.appendChild(sR); sh.appendChild(sg);
     }
     scrim.appendChild(sh); sheet.appendChild(scrim);
+    if (!wasOpen) sheetIn(sh, scrim);
     fitAll();
     sh.tabIndex = -1; sh.focus({ preventScroll: true });
   }
@@ -3920,11 +3930,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     mfsBody = el("div", "mfsb");
     mfsGo = el("button", "mfsgo", "Mostra i risultati"); mfsGo.type = "button"; mfsGo.onclick = function () { closeMfs(); };
     mfsEl.appendChild(hb); mfsEl.appendChild(hd); mfsEl.appendChild(mfsBody); mfsEl.appendChild(mfsGo);
-    var y0 = null;
-    [hb, hd].forEach(function (t) {
-      t.addEventListener("touchstart", function (e) { y0 = e.touches[0].clientY; }, { passive: true });
-      t.addEventListener("touchend", function (e) { if (y0 == null) return; var dy = e.changedTouches[0].clientY - y0; y0 = null; if (dy > 60) closeMfs(); });
-    });
+    dragDown(mfsEl, { grips: [hb, hd], when: function () { return !!st.mfs; }, scrim: function () { return mfsScrim; }, close: function () { closeMfs(); } });
     document.body.appendChild(mfsEl);
     if (typeof sheetNoLeak === "function") { sheetNoLeak(mfsEl, mfsBody); sheetNoLeak(mfsScrim, null); }
   }
@@ -4005,7 +4011,8 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     var dkNoSearch = !DESK && isDeck && st.deckId && !dkM;
     var noF = isSets || isHome || isUp || sideF || dkNoSearch;
     var prodM = !DESK && st.tab === "cards" && !!st.setId && !isUp;
-    placeSearch(dkM ? "deck" : botM ? "bottom" : prodM ? "prod" : ""); if (dkSheetEl) { dkSheetEl.classList.toggle("on", dkM); dkSheetEl.classList.toggle("full", st.dkSheet === 2); } document.body.classList.toggle("dked", dkEd); document.body.classList.toggle("dkopen", dkM); if (!prodM) { phead.innerHTML = ""; phead.removeAttribute("data-k"); } phead.hidden = !prodM; psearch.hidden = !prodM || botM;
+    var dkWas = !!(dkSheetEl && dkSheetEl.classList.contains("on")); if (dkWas && !dkM) sheetGhost(dkSheetEl, dkSheetEl, null);
+    placeSearch(dkM ? "deck" : botM ? "bottom" : prodM ? "prod" : ""); if (dkSheetEl) { dkSheetEl.classList.toggle("on", dkM); dkSheetEl.classList.toggle("full", st.dkSheet === 2); if (!dkWas && dkM) sheetIn(dkSheetEl, null); } document.body.classList.toggle("dked", dkEd); document.body.classList.toggle("dkopen", dkM); if (!prodM) { phead.innerHTML = ""; phead.removeAttribute("data-k"); } phead.hidden = !prodM; psearch.hidden = !prodM || botM;
     document.getElementById("filters").hidden = noF || !DESK;
     document.getElementById("qmodes").hidden = noF || !DESK;
     document.getElementById("mfbar").hidden = noF || DESK;
@@ -4030,7 +4037,10 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     if (mbotEl) {
       var mfOn = !document.getElementById("mfbar").hidden, hasF = botM && mfOn, hasFd = dkM && mfOn;
       if (st.mfs && !hasF && !hasFd) st.mfs = false;
+      var mfsWas = mfsEl.classList.contains("on");
+      if (mfsWas && !st.mfs) sheetGhost(mfsEl, mfsEl, mfsScrim);
       mbotEl.classList.toggle("on", botM); mfsEl.classList.toggle("on", !!st.mfs); mfsScrim.classList.toggle("on", !!st.mfs);
+      if (!mfsWas && st.mfs) sheetIn(mfsEl, mfsScrim);
       drawMbot(hasF);
       var px = botM && isSets && !isSoon;
       mbotXbtn.hidden = !px; mbotPx.hidden = !(px && st.pchips);
@@ -4139,25 +4149,150 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       cb(dx, dy, dt, x0, y0);
     }, { passive: true });
   }
+  // ---- Fogli dal basso (telefono): salgono aprendosi, scendono chiudendosi e, trascinati, seguono il dito.
+  // Rilasciando: se il foglio è sceso abbastanza (o il dito andava veloce verso il basso) si chiude continuando la corsa,
+  // altrimenti torna su. La chiusura (anche da pulsante, tocco fuori o indietro) scorre una copia del foglio verso il basso.
+  var SH_EASE = "cubic-bezier(.32,.72,0,1)";
+  function shRM() { try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } }
+  function shY(n) { var m = /translateY\((-?[\d.]+)px\)/.exec(n.style.transform || ""); return m ? +m[1] : 0; }
+  function rgbaK(c, k) {
+    var m = /rgba?\(([^)]+)\)/.exec(c || ""); if (!m) return null;
+    var p = m[1].split(/[\s,\/]+/).filter(Boolean).map(parseFloat); var a = p.length > 3 ? p[3] : 1;
+    return "rgba(" + p[0] + "," + p[1] + "," + p[2] + "," + (a * k).toFixed(3) + ")";
+  }
+  function sheetIn(sh, scrim) {
+    if (DESK || shRM() || !sh || !sh.animate) return;
+    sh.animate([{ transform: "translateY(100%)" }, { transform: "translateY(0)" }], { duration: 360, easing: SH_EASE });
+    if (scrim) { var bg = getComputedStyle(scrim).backgroundColor; scrim.animate([{ backgroundColor: rgbaK(bg, 0) || "transparent" }, { backgroundColor: bg }], { duration: 300, easing: "ease-out" }); }
+  }
+  // wrap: ciò che si copia (il foglio stesso o il contenitore con velo e foglio); sh: il foglio; scrim: il velo scuro
+  function sheetGhost(wrap, sh, scrim) {
+    var y0 = shY(sh), v = sh._fv || 0; sh._fv = 0;
+    var reset = function () { sh.style.transform = ""; sh.style.transition = ""; if (scrim) { scrim.style.backgroundColor = ""; scrim.style.opacity = ""; } };
+    if (DESK || shRM() || !wrap || !wrap.isConnected || !wrap.animate) { reset(); return; }
+    var r = sh.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+    if (!r.height || r.top >= window.innerHeight - 2) { reset(); return; }
+    var all = wrap.querySelectorAll("*"), scr = [];
+    if (wrap.scrollTop > 0) scr.push([-1, wrap.scrollTop]);
+    Array.prototype.forEach.call(all, function (n, i) { if (n.scrollTop > 0) scr.push([i, n.scrollTop]); });
+    var si = sh === wrap ? -1 : Array.prototype.indexOf.call(all, sh);
+    var ci = scrim && wrap.contains(scrim) ? (scrim === wrap ? -1 : Array.prototype.indexOf.call(all, scrim)) : null;
+    var sbg = scrim ? getComputedStyle(scrim).backgroundColor : null, sop = scrim ? getComputedStyle(scrim).opacity : null;
+    var g = wrap.cloneNode(true); g.removeAttribute("id"); g.setAttribute("aria-hidden", "true");
+    Array.prototype.forEach.call(g.querySelectorAll("[id]"), function (n) { n.removeAttribute("id"); });
+    var zs = getComputedStyle(wrap).zIndex;
+    g.style.position = "fixed"; g.style.left = wr.left + "px"; g.style.top = (wr.top - (sh === wrap ? y0 : 0)) + "px";
+    g.style.width = wr.width + "px"; g.style.height = wr.height + "px"; g.style.right = "auto"; g.style.bottom = "auto"; g.style.margin = "0";
+    g.style.maxHeight = "none"; g.style.zIndex = zs === "auto" ? "50" : zs; g.style.pointerEvents = "none"; g.style.transition = "none";
+    var gs = null;
+    if (scrim && ci == null) { gs = scrim.cloneNode(false); gs.removeAttribute("id"); gs.style.cssText += ";position:fixed;inset:0;pointer-events:none;transition:none;z-index:" + (getComputedStyle(scrim).zIndex === "auto" ? "49" : getComputedStyle(scrim).zIndex); document.body.appendChild(gs); }
+    document.body.appendChild(g);
+    var gall = g.querySelectorAll("*");
+    scr.forEach(function (x) { var n = x[0] < 0 ? g : gall[x[0]]; if (n) n.scrollTop = x[1]; });
+    var gsh = si < 0 ? g : gall[si], gscr = gs || (ci == null ? null : ci < 0 ? g : gall[ci]);
+    reset();
+    var h = r.height, rest = Math.max(0, h + 24 - y0);
+    var dur = v > 0.3 ? Math.max(150, Math.min(320, rest / v)) : 300;
+    var done = function () { g.remove(); if (gs) gs.remove(); };
+    gsh.style.transform = "translateY(" + y0 + "px)";
+    var an = gsh.animate([{ transform: "translateY(" + y0 + "px)" }, { transform: "translateY(" + (h + 24) + "px)" }], { duration: dur, easing: v > 0.3 ? "cubic-bezier(.2,.7,.35,1)" : SH_EASE, fill: "forwards" });
+    if (gscr) {
+      if (gs || gscr !== gsh && !gscr.contains(gsh)) gscr.animate([{ opacity: sop }, { opacity: 0 }], { duration: dur, easing: "ease-out", fill: "forwards" });
+      else gscr.animate([{ backgroundColor: sbg }, { backgroundColor: rgbaK(sbg, 0) || "transparent" }], { duration: dur, easing: "ease-out", fill: "forwards" });
+    }
+    an.onfinish = done; setTimeout(done, dur + 250);
+  }
+  // o: grips (zone da cui si trascina sempre), gripsOnly, scrim(), close(), css (fogli con transizione CSS che restano nella pagina),
+  //    shrink() (es. ricerca del mazzo alta: scendendo si riduce invece di chiudersi), onUp() (trascinata verso l'alto)
+  function dragDown(sh, o) {
+    var y0 = 0, x0 = 0, ok = false, on = false, h = 0, smp = [], scrim = null, sbg = null, rk = false;
+    function canStart(t) {
+      if (o.grips && o.grips.some(function (g) { return g && g.contains(t); })) return true;
+      if (o.gripsOnly) return false;
+      for (var n = t; n && n !== sh.parentNode; n = n.parentNode) {
+        if (n.nodeType === 1 && n.scrollTop > 0 && n.scrollHeight > n.clientHeight + 1) return false;
+        if (n === sh) break;
+      }
+      return true;
+    }
+    function dim(dy) {
+      if (!scrim) return; var k = 1 - Math.min(1, dy / Math.max(1, h)) * 0.9;
+      if (rk) scrim.style.backgroundColor = rgbaK(sbg, k); else scrim.style.opacity = String(k);
+    }
+    function back(dy) {
+      var bg = scrim ? (rk ? scrim.style.backgroundColor : scrim.style.opacity) : null;
+      sh.style.transform = ""; if (scrim) { scrim.style.backgroundColor = ""; scrim.style.opacity = ""; }
+      if (!dy || !sh.animate || shRM()) { sh.style.transition = ""; return; }
+      var a = sh.animate([{ transform: "translateY(" + dy + "px)" }, { transform: "translateY(0)" }], { duration: 320, easing: SH_EASE });
+      if (scrim && bg) scrim.animate(rk ? [{ backgroundColor: bg }, { backgroundColor: sbg }] : [{ opacity: bg }, { opacity: 1 }], { duration: 320, easing: "ease-out" });
+      a.onfinish = function () { sh.style.transition = ""; };
+    }
+    sh.addEventListener("touchstart", function (e) {
+      ok = on = false; if (DESK || e.touches.length !== 1 || (o.when && !o.when())) return;
+      var t = e.target; if (t.closest && (t.closest(".ddpop") || t.closest(".qpop"))) return;
+      if (!canStart(t)) return;
+      ok = true; y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; smp = [[y0, e.timeStamp]];
+    }, { passive: true });
+    sh.addEventListener("touchmove", function (e) {
+      if (!ok) return;
+      var y = e.touches[0].clientY, dy = y - y0, dx = e.touches[0].clientX - x0;
+      if (!on) {
+        if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) { ok = false; return; }
+        if (dy < 8) { if (dy < -8 && !o.onUp) ok = false; return; }
+        on = true; y0 = y; dy = 0; h = sh.getBoundingClientRect().height;
+        if (sh.getAnimations) sh.getAnimations().forEach(function (a) { a.cancel(); });
+        sh.style.transition = "none";
+        scrim = o.scrim ? o.scrim() : null; sbg = scrim ? getComputedStyle(scrim).backgroundColor : null;
+        rk = !!(scrim && scrim.contains(sh) && rgbaK(sbg, 1));
+        if (scrim && !rk) { if (scrim.contains(sh)) scrim = null; else scrim.style.transition = "none"; }
+      }
+      if (e.cancelable) e.preventDefault();
+      var d = Math.max(0, dy); sh.style.transform = "translateY(" + d + "px)"; dim(d);
+      smp.push([y, e.timeStamp]); if (smp.length > 6) smp.shift();
+    }, { passive: false });
+    function end(e, cancel) {
+      if (!ok) return; ok = false;
+      var y = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : y0;
+      if (!on) { if (!cancel && o.onUp && y - y0 < -40) o.onUp(); return; }
+      on = false; var dy = Math.max(0, y - y0);
+      var p = smp.filter(function (s) { return e.timeStamp - s[1] < 110; })[0] || smp[0];
+      var v = (y - p[0]) / Math.max(1, e.timeStamp - p[1]);
+      if (scrim && !rk) scrim.style.transition = "";
+      if (!cancel && (dy > h * 0.25 || (v > 0.45 && dy > 12))) {
+        if (o.shrink && o.shrink()) { back(dy); return; }
+        sh._fv = Math.max(0, v);
+        if (o.css) {
+          var rest = Math.max(0, h + 24 - dy), dur = v > 0.3 ? Math.max(150, Math.min(320, rest / v)) : 300;
+          sh.style.transition = "transform " + Math.round(dur) + "ms " + (v > 0.3 ? "cubic-bezier(.2,.7,.35,1)" : SH_EASE);
+          sh.style.transform = "translateY(" + (h + 24) + "px)";
+          var sc2 = scrim;
+          if (sc2) { sc2.style.transition = (rk ? "background-color " : "opacity ") + Math.round(dur) + "ms ease-out"; if (rk) sc2.style.backgroundColor = rgbaK(sbg, 0); else sc2.style.opacity = "0"; }
+          o.close();
+          setTimeout(function () {
+            sh.style.transition = "none"; sh.style.transform = ""; void sh.offsetHeight; sh.style.transition = "";
+            if (sc2) { sc2.style.transition = "none"; sc2.style.opacity = ""; sc2.style.backgroundColor = ""; void sc2.offsetHeight; sc2.style.transition = ""; }
+          }, dur + 60);
+        } else o.close();
+      } else back(dy);
+    }
+    sh.addEventListener("touchend", function (e) { end(e, false); }, { passive: true });
+    sh.addEventListener("touchcancel", function (e) { end(e, true); }, { passive: true });
+  }
   // menu: scorri da destra verso sinistra dal bordo destro per aprirlo, verso destra per chiuderlo
   swipe(document, function (dx, dy, dt, x0) {
     if (st.open != null || !DESK) return;
     if (!menuEl.classList.contains("open") && x0 > window.innerWidth - 28 && dx < -60 && Math.abs(dy) < 60) menuOpen(true);
   });
-  swipe(menuEl, function (dx, dy) { if (DESK ? (dx > 60 && Math.abs(dy) < 60) : (dy > 70 && Math.abs(dx) < 60)) menuOpen(false); });
+  swipe(menuEl, function (dx, dy) { if (DESK && dx > 60 && Math.abs(dy) < 60) menuOpen(false); });
+  dragDown(menuEl, { css: true, when: function () { return menuEl.classList.contains("open"); }, scrim: function () { return menuScrim; }, close: function () { menuOpen(false); } });
   // scheda carta: giù per chiudere, sinistra/destra per la carta successiva/precedente
   function sheetGestures(sh, c) {
-    var startTop = 0;
+    dragDown(sh, { scrim: function () { return sh.parentNode; }, close: function () { closeSheet(); } });
     swipe(sh, function (dx, dy, dt) {
-      sh.classList.remove("dragging"); sh.style.transform = "";
-      if (dy > 110 && startTop <= 0 && Math.abs(dx) < 80) { closeSheet(); return; }
       if (Math.abs(dx) > 70 && Math.abs(dy) < 50) {
         var i = NAVLIST.indexOf(c), n = dx < 0 ? NAVLIST[i + 1] : NAVLIST[i - 1];
         if (i >= 0 && n) { st.open = n; drawSheet(); var nsh = sheet.querySelector(".sheet"); if (nsh) { nsh.animate([{ transform: "translateX(" + (dx < 0 ? 40 : -40) + "px)", opacity: .4 }, { transform: "none", opacity: 1 }], { duration: 180, easing: "ease-out" }); } }
       }
-    }, {
-      start: function () { startTop = sh.scrollTop; },
-      move: function (dx, dy) { if (startTop <= 0 && dy > 0 && Math.abs(dy) > Math.abs(dx)) { sh.classList.add("dragging"); sh.style.transform = "translateY(" + Math.min(dy, 300) + "px)"; } }
     });
   }
 
@@ -4505,15 +4640,10 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     dkMfSlot = el("div", "mbchips dkchips"); dkBody = el("div", "dkbody");
     dkSheetEl.appendChild(hb); dkSheetEl.appendChild(hd); dkSheetEl.appendChild(dkMfSlot); dkSheetEl.appendChild(dkBody);
     // trascinando la maniglia: in su si allarga, in giù si riduce o si chiude
-    var y0 = null;
-    [hb, hd].forEach(function (t) {
-      t.addEventListener("touchstart", function (e) { y0 = e.touches[0].clientY; }, { passive: true });
-      t.addEventListener("touchend", function (e) {
-        if (y0 == null) return; var dy = e.changedTouches[0].clientY - y0; y0 = null;
-        if (dy < -40 && st.dkSheet === 1) { st.dkSheet = 2; render(); }
-        else if (dy > 60) { if (document.activeElement === qi) qi.blur(); if (st.dkSheet === 2) { st.dkSheet = 1; render(); } else closeDkSheet(); }
-      });
-    });
+    dragDown(dkSheetEl, { grips: [hb, hd], gripsOnly: true, when: function () { return !!st.dkSheet; },
+      onUp: function () { if (st.dkSheet === 1) { st.dkSheet = 2; render(); } },
+      shrink: function () { if (document.activeElement === qi) qi.blur(); if (st.dkSheet === 2) { st.dkSheet = 1; render(); return true; } return false; },
+      close: function () { closeDkSheet(); } });
     document.body.appendChild(dkSheetEl);
     sheetNoLeak(dkSheetEl, dkBody);
   }
@@ -5043,7 +5173,10 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     if (SC) return;
     SC = { open: false };
     var o = el("section", "scan"); o.setAttribute("aria-label", "Scansiona una carta"); o.setAttribute("role", "dialog");
-    var v = document.createElement("video"); v.setAttribute("playsinline", ""); v.muted = true; v.autoplay = true; o.appendChild(v);
+    var v = document.createElement("video"); v.setAttribute("playsinline", ""); v.muted = true; v.autoplay = true;
+    // senza "poster" Android mostra per un attimo l'icona grigia di un video: immagine trasparente e video visibile solo quando parte
+    v.poster = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+    v.addEventListener("playing", function () { v.classList.add("live"); }); o.appendChild(v);
     var fr = el("div", "scframe"); for (var i = 0; i < 4; i++) fr.appendChild(el("i")); fr.appendChild(el("b")); o.appendChild(fr);
     var hd = el("div", "schead");
     var cx = el("button", "scbtn"); cx.type = "button"; cx.innerHTML = scIco("x"); cx.setAttribute("aria-label", "Chiudi la scansione"); cx.onclick = function () { closeScan(); };
@@ -5060,6 +5193,9 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     var rs = el("div", "scres"); o.appendChild(rs);
     var hs = el("div", "scres schist"); hs.setAttribute("aria-label", "Cronologia delle scansioni"); o.appendChild(hs);
     document.body.appendChild(o);
+    var scDragClose = function () { if (SC.el.classList.contains("hist") || SC.fromHist) history.back(); else if (SC.el.classList.contains("res")) scAgain(); };
+    dragDown(rs, { css: true, when: function () { return SC.el.classList.contains("res"); }, close: scDragClose });
+    dragDown(hs, { css: true, when: function () { return SC.el.classList.contains("hist"); }, close: scDragClose });
     SC.el = o; SC.video = v; SC.frame = fr; SC.stat = sp; SC.torch = tr; SC.pick = pk; SC.res = rs; SC.foot = ft; SC.hist = hs; SC.hbtn = hb;
     if (typeof sheetNoLeak === "function") { sheetNoLeak(rs, rs); sheetNoLeak(hs, hs); }
   }
@@ -5091,6 +5227,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   }
   function scNoCam(msg) { SC.camOk = false; SC.camFail = true; scStatus(msg, true); SC.pick.classList.add("big"); SC.el.classList.remove("run"); }
   function scStopCam() {
+    if (SC && SC.video) SC.video.classList.remove("live");
     if (SC && SC.stream) { SC.stream.getTracks().forEach(function (t) { t.stop(); }); SC.stream = null; }
     if (SC) { SC.video.srcObject = null; SC.camOk = false; }
   }
