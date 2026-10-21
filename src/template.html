@@ -1070,8 +1070,9 @@ body.mob.kbd .dkbar, body.mob.dkopen .dkbar { display: none; }
 body.mob .dstat .mcurve { grid-column: 1 / -1; }
 body.mob .dksheet.on { display: flex; flex-direction: column; position: fixed; left: 0; right: 0; bottom: 0; z-index: 17; height: 62vh; background: var(--bg); border-radius: 20px 20px 0 0; border-top: 1px solid var(--line); box-shadow: 0 -14px 36px rgba(0,0,0,.35); padding: 0 14px; box-sizing: border-box; }
 body.mob .dksheet.on.full { height: calc(100% - 52px - env(safe-area-inset-top, 0px)); }
-/* ricerca del mazzo: cambi di altezza (metà/alto, tastiera) e rientri dopo il trascinamento animati */
-body.mob .dksheet.on { transition: height .36s cubic-bezier(.32,.72,0,1), transform .36s cubic-bezier(.32,.72,0,1), bottom .26s cubic-bezier(.32,.72,0,1); }
+/* ricerca del mazzo: cambi metà/alto e rientri dopo il trascinamento animati solo in quei momenti (classe .anim per poco tempo);
+   i cambi dovuti alla tastiera restano immediati, altrimenti il telefono sposta la pagina per mostrare il campo e il mazzo non torna alla prima carta */
+body.mob .dksheet.on.anim { transition: height .36s cubic-bezier(.32,.72,0,1), transform .36s cubic-bezier(.32,.72,0,1); }
 body.mob.kbd .dksheet.on.full { height: calc(100vh - var(--kb, 0px) - 52px - env(safe-area-inset-top, 0px)); }
 body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0px) - 52px)); }
 .dkhandle { flex: none; height: 26px; border: 0; background: none; display: grid; place-items: center; cursor: pointer; padding: 0; }
@@ -4699,7 +4700,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     if (dkSheetEl) return;
     dkSheetEl = el("section", "dksheet"); dkSheetEl.setAttribute("aria-label", "Aggiungi carte al mazzo");
     var hb = el("button", "dkhandle"); hb.type = "button"; hb.setAttribute("aria-label", "Ingrandisci o riduci la ricerca"); hb.appendChild(el("i"));
-    hb.onclick = function () { st.dkSheet = st.dkSheet === 2 ? 1 : 2; render(); };
+    hb.onclick = function () { dkAnim(); st.dkSheet = st.dkSheet === 2 ? 1 : 2; render(); };
     var hd = el("div", "dkhd"); dkQSlot = el("div", "dkq"); hd.appendChild(dkQSlot);
     dkFbtn = el("button", "mbf"); dkFbtn.type = "button"; dkFbtn.onclick = function () { if (document.activeElement === qi) qi.blur(); openMfs(); }; hd.appendChild(dkFbtn);
     var fine = el("button", "dkfine", "Fine"); fine.type = "button"; fine.onclick = function () { closeDkSheet(); }; hd.appendChild(fine);
@@ -4713,6 +4714,8 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   // ricerca del mazzo: trascinando maniglia o intestazione (o l'elenco già in cima, verso il basso) il foglio cambia altezza
   // seguendo il dito tra metà e alto; sotto la metà scende. Rilasciando va alla posizione più vicina tenendo conto della
   // velocità del dito (alto, metà o chiuso); i passaggi di altezza sono animati dal CSS (transizione su height/transform).
+  var dkAnimT = 0;
+  function dkAnim() { if (!dkSheetEl) return; dkSheetEl.classList.add("anim"); clearTimeout(dkAnimT); dkAnimT = setTimeout(function () { dkSheetEl.classList.remove("anim"); }, 450); }
   function dkDrag(sh, grips, list) {
     var y0 = 0, x0 = 0, ok = false, on = false, fromList = false, h0 = 0, hHalf = 0, hFull = 0, smp = [];
     function measure(full) { var c = sh.classList.contains("full"); sh.classList.toggle("full", full); var h = sh.getBoundingClientRect().height; sh.classList.toggle("full", c); return h; }
@@ -4751,6 +4754,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       if (proj < hHalf * 0.7 && H < hHalf) target = 0;
       else if (proj < (hHalf + hFull) / 2) target = 1; else target = 2;
       if (target === 0) { if (document.activeElement === qi) qi.blur(); sh._fv = Math.max(0, v); closeDkSheet(); return; }
+      dkAnim();
       if (target !== st.dkSheet) { if (target === 1 && document.activeElement === qi) qi.blur(); st.dkSheet = target; render(); }
       // stesso passaggio di stile: il CSS anima dall'altezza/posizione lasciata dal dito a quella della nuova posizione
       sh.style.transition = ""; sh.style.height = ""; sh.style.transform = "";
@@ -4782,8 +4786,11 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     }, { passive: false });
   }
   // porta in vista la prima carta del mazzo (sopra il foglio di ricerca)
+  // (ripetuto quando la tastiera ha finito di aprirsi, nel caso il telefono abbia spostato la pagina per mostrare il campo)
   function dkToFirst() {
-    requestAnimationFrame(function () { var t = document.querySelector(".dkgrp"); if (t) window.scrollTo({ top: t.getBoundingClientRect().top + window.pageYOffset - 64, behavior: "smooth" }); });
+    var go = function (sm) { var t = document.querySelector(".dkgrp"); if (t && st.dkSheet) { var y = t.getBoundingClientRect().top + window.pageYOffset - 64; if (Math.abs(window.pageYOffset - y) > 2) window.scrollTo({ top: y, behavior: sm ? "smooth" : "auto" }); } };
+    requestAnimationFrame(function () { go(true); });
+    clearTimeout(dkToFirst.t); dkToFirst.t = setTimeout(function () { go(true); }, 450);
   }
   qi.addEventListener("focus", function () { if (!DESK && st.dkSheet && qi.parentNode === dkQSlot && !st.dkFocus) dkToFirst(); });
   function openDkSheet(size, focus) {
