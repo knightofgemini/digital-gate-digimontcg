@@ -329,9 +329,10 @@ html.lock, html.lock body { overflow: hidden; overscroll-behavior: none; }
 .pbox .pmain { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
 .pbox .pmain > * + * { border-top: 1px solid var(--line); }
 .pbox .prow { display: grid; grid-template-columns: minmax(0, 1fr) auto 18px; align-items: center; gap: 8px; padding: 10px 12px; }
-.pbox .pprice { display: inline-flex; align-items: center; gap: 8px; padding: 4px 6px; margin: -4px -6px; border-radius: 8px; }
-.pbox .pprice.shoplink:hover { background: var(--surface-2); }
-.pbox .pprice.shoplink:active { transform: scale(.97); }
+.pbox .pprice { display: inline-flex; align-items: center; gap: 8px; }
+.pbox .pval2.shoplink { padding: 4px 6px; margin: -4px -6px; border-radius: 8px; }
+.pbox .pval2.shoplink:hover { background: var(--surface-2); }
+.pbox .pval2.shoplink:active { transform: scale(.97); }
 .pbox .pshop { display: flex; align-items: center; gap: 8px; min-width: 0; font: 600 .92rem var(--font-body); }
 .pbox .pshop .cmk, .pbox .pshop .ctk { width: 20px; height: 20px; }
 .pbox .pname { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -2275,9 +2276,11 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   function prRow(mark, name, val, tag, url, label) {
     var r = el("div", "prow"), sh = el("span", "pshop"), pr = el("span", "pprice");
     sh.appendChild(mark); sh.appendChild(el("span", "pname", name)); r.appendChild(sh);
-    pr.appendChild(el("b", "pval2" + (val == null ? " na" : ""), val == null ? "N/D" : eurN(val) + " €"));
+    // solo il valore apre il negozio; etichetta, nome e freccia aprono/chiudono i dettagli
+    var vb = el("b", "pval2" + (val == null ? " na" : ""), val == null ? "N/D" : eurN(val) + " €");
+    pr.appendChild(url && val != null ? shopLink(vb, url, label) : vb);
     pr.appendChild(el("span", "ptag" + (val == null || !tag ? " off" : ""), val == null ? "" : tag));
-    r.appendChild(url ? shopLink(pr, url, label) : pr);
+    r.appendChild(pr);
     return r;
   }
   function cmRow(c) {
