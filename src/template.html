@@ -1070,6 +1070,9 @@ body.mob.kbd .dkbar, body.mob.dkopen .dkbar { display: none; }
 body.mob .dstat .mcurve { grid-column: 1 / -1; }
 body.mob .dksheet.on { display: flex; flex-direction: column; position: fixed; left: 0; right: 0; bottom: 0; z-index: 17; height: 62vh; background: var(--bg); border-radius: 20px 20px 0 0; border-top: 1px solid var(--line); box-shadow: 0 -14px 36px rgba(0,0,0,.35); padding: 0 14px; box-sizing: border-box; }
 body.mob .dksheet.on.full { height: calc(100% - 52px - env(safe-area-inset-top, 0px)); }
+/* ricerca del mazzo: cambi di altezza (metà/alto, tastiera) e rientri dopo il trascinamento animati */
+body.mob .dksheet.on { transition: height .36s cubic-bezier(.32,.72,0,1), transform .36s cubic-bezier(.32,.72,0,1), bottom .26s cubic-bezier(.32,.72,0,1); }
+body.mob.kbd .dksheet.on.full { height: calc(100vh - var(--kb, 0px) - 52px - env(safe-area-inset-top, 0px)); }
 body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0px) - 52px)); }
 .dkhandle { flex: none; height: 26px; border: 0; background: none; display: grid; place-items: center; cursor: pointer; padding: 0; }
 .dkhandle i { display: block; width: 40px; height: 5px; border-radius: 3px; background: var(--line); }
@@ -4168,7 +4171,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   // wrap: ciò che si copia (il foglio stesso o il contenitore con velo e foglio); sh: il foglio; scrim: il velo scuro
   function sheetGhost(wrap, sh, scrim) {
     var y0 = shY(sh), v = sh._fv || 0; sh._fv = 0;
-    var reset = function () { sh.style.transform = ""; sh.style.transition = ""; if (scrim) { scrim.style.backgroundColor = ""; scrim.style.opacity = ""; } };
+    var reset = function () { sh.style.transform = ""; sh.style.transition = ""; sh.style.height = ""; if (scrim) { scrim.style.backgroundColor = ""; scrim.style.opacity = ""; } };
     if (DESK || shRM() || !wrap || !wrap.isConnected || !wrap.animate) { reset(); return; }
     var r = sh.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
     if (!r.height || r.top >= window.innerHeight - 2) { reset(); return; }
@@ -4640,12 +4643,57 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     dkMfSlot = el("div", "mbchips dkchips"); dkBody = el("div", "dkbody");
     dkSheetEl.appendChild(hb); dkSheetEl.appendChild(hd); dkSheetEl.appendChild(dkMfSlot); dkSheetEl.appendChild(dkBody);
     // trascinando la maniglia: in su si allarga, in giù si riduce o si chiude
-    dragDown(dkSheetEl, { grips: [hb, hd], gripsOnly: true, when: function () { return !!st.dkSheet; },
-      onUp: function () { if (st.dkSheet === 1) { st.dkSheet = 2; render(); } },
-      shrink: function () { if (document.activeElement === qi) qi.blur(); if (st.dkSheet === 2) { st.dkSheet = 1; render(); return true; } return false; },
-      close: function () { closeDkSheet(); } });
+    dkDrag(dkSheetEl, [hb, hd, dkMfSlot], dkBody);
     document.body.appendChild(dkSheetEl);
     sheetNoLeak(dkSheetEl, dkBody);
+  }
+  // ricerca del mazzo: trascinando maniglia o intestazione (o l'elenco già in cima, verso il basso) il foglio cambia altezza
+  // seguendo il dito tra metà e alto; sotto la metà scende. Rilasciando va alla posizione più vicina tenendo conto della
+  // velocità del dito (alto, metà o chiuso); i passaggi di altezza sono animati dal CSS (transizione su height/transform).
+  function dkDrag(sh, grips, list) {
+    var y0 = 0, x0 = 0, ok = false, on = false, fromList = false, h0 = 0, hHalf = 0, hFull = 0, smp = [];
+    function measure(full) { var c = sh.classList.contains("full"); sh.classList.toggle("full", full); var h = sh.getBoundingClientRect().height; sh.classList.toggle("full", c); return h; }
+    sh.addEventListener("touchstart", function (e) {
+      ok = on = false; if (DESK || !st.dkSheet || e.touches.length !== 1) return;
+      var t = e.target; fromList = !!(list && list.contains(t));
+      if (!fromList && !grips.some(function (g) { return g && g.contains(t); })) return;
+      if (fromList && list.scrollTop > 0) return;
+      ok = true; y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; smp = [[y0, e.timeStamp]];
+    }, { passive: true });
+    sh.addEventListener("touchmove", function (e) {
+      if (!ok) return;
+      var y = e.touches[0].clientY, dy = y - y0, dx = e.touches[0].clientX - x0;
+      if (!on) {
+        if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) { ok = false; return; }
+        if (Math.abs(dy) < 8) return;
+        if (fromList && dy < 0) { ok = false; return; }
+        on = true; y0 = y; dy = 0;
+        if (sh.getAnimations) sh.getAnimations().forEach(function (a) { a.cancel(); });
+        h0 = sh.getBoundingClientRect().height; sh.style.transition = "none"; sh.style.height = h0 + "px";
+        hHalf = measure(false); hFull = measure(true);
+      }
+      if (e.cancelable) e.preventDefault();
+      var H = h0 - dy;
+      if (H > hFull) H = hFull + (H - hFull) * 0.2;
+      if (H >= hHalf) { sh.style.height = H + "px"; sh.style.transform = ""; }
+      else { sh.style.height = hHalf + "px"; sh.style.transform = "translateY(" + (hHalf - H) + "px)"; }
+      smp.push([y, e.timeStamp]); if (smp.length > 6) smp.shift();
+    }, { passive: false });
+    function end(e, cancel) {
+      if (!ok) return; ok = false; if (!on) return; on = false;
+      var y = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : y0;
+      var p = smp.filter(function (q) { return e.timeStamp - q[1] < 110; })[0] || smp[0];
+      var v = cancel ? 0 : (y - p[0]) / Math.max(1, e.timeStamp - p[1]);
+      var H = h0 - (y - y0), proj = H - v * 160, target;
+      if (proj < hHalf * 0.7 && H < hHalf) target = 0;
+      else if (proj < (hHalf + hFull) / 2) target = 1; else target = 2;
+      if (target === 0) { if (document.activeElement === qi) qi.blur(); sh._fv = Math.max(0, v); closeDkSheet(); return; }
+      if (target !== st.dkSheet) { if (target === 1 && document.activeElement === qi) qi.blur(); st.dkSheet = target; render(); }
+      // stesso passaggio di stile: il CSS anima dall'altezza/posizione lasciata dal dito a quella della nuova posizione
+      sh.style.transition = ""; sh.style.height = ""; sh.style.transform = "";
+    }
+    sh.addEventListener("touchend", function (e) { end(e, false); }, { passive: true });
+    sh.addEventListener("touchcancel", function (e) { end(e, true); }, { passive: true });
   }
   // inquadra la pila toccata con, sotto, la sua barra −/+ (nella parte di schermo non coperta dal foglio o dalla barra in basso)
   function dkFrame() {
