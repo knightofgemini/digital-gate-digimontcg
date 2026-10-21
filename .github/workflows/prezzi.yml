@@ -14,7 +14,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Scarica i prezzi e abbina le carte
-        run: python3 tools/cardmarket_prices.py --scarica --ct-scarica --sets ALL --dir /tmp/cm --ct-dir /tmp/ct --out /tmp/prices.json --report /tmp/report.txt
+        run: |
+          for n in 1 2 3; do
+            python3 tools/cardmarket_prices.py --scarica --ct-scarica --sets ALL --dir /tmp/cm --ct-dir /tmp/ct --out /tmp/prices.json --report /tmp/report.txt && exit 0
+            echo "Tentativo $n non riuscito, riprovo tra 5 minuti"; sleep 300
+          done
+          exit 1
         env:
           CARDTRADER_TOKEN: ${{ secrets.CARDTRADER_TOKEN }}
       - name: Pubblica sul ramo prezzi

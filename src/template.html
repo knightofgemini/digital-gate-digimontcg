@@ -994,6 +994,12 @@ body.mob .row.card.p1 .thumb { position: relative; margin-left: 0; }
 .ppill .cmk, .ppill .ctk { width: 13px; height: 13px; }
 .ppill .psep { display: block; width: 1px; height: 12px; background: var(--line); }
 .ppill .na { color: var(--ink-2); font-weight: 500; }
+.ppill .pseg { display: inline-flex; align-items: center; gap: 6px; }
+.shoplink { cursor: pointer; }
+.pline.shoplink:hover, .ppill .pseg.shoplink:hover { filter: brightness(.96); }
+.pline.shoplink:active, .ppill .pseg.shoplink:active { transform: scale(.97); }
+.shoplink:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+.fx.pbox .pgo { display: block; margin: 0 12px 10px; padding: 2px 0; text-align: left; }
 /* telefono: ricerca in basso nelle sezioni Carte, Collezione, Prodotti e pagina prodotto + foglio "Filtri" */
 .mbot, .mfsheet, .mfscrim { display: none; }
 body.mob.hasmbot { padding-bottom: calc(138px + env(safe-area-inset-bottom, 0px)); }
@@ -2189,6 +2195,18 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   // nelle righe compatte da 100 € in su niente decimali (il valore esatto è nella scheda)
   function eurC(v) { return v >= 100 ? Math.round(v).toLocaleString("it-IT") : eurN(v); }
   function cmMark() { var m = el("span", "cmk"); m.setAttribute("role", "img"); m.setAttribute("aria-label", "Cardmarket"); m.title = "Cardmarket"; return m; }
+  // Pagine della carta sui negozi (si aprono nel browser esterno; nell'APK con openExternal)
+  // Cardmarket: indirizzo per numero di prodotto (sistema di rimando pubblico di Cardmarket); CardTrader: pagina della carta (blueprint)
+  function cmUrl(c) { var p = priceCovered(c) && priceOf(c); return p && p[5] ? "https://www.cardmarket.com/it/Digimon/Products?idProduct=" + p[5] : null; }
+  function ctUrl(c) { var p = ctCovered(c) && ctOf(c); return p && p[2] ? "https://www.cardtrader.com/it/cards/" + p[2] : null; }
+  function shopLink(node, url, label) {
+    if (!url) return node;
+    node.classList.add("shoplink"); node.setAttribute("role", "link"); node.tabIndex = 0; node.setAttribute("aria-label", label); node.title = label;
+    node.onclick = function (e) { e.stopPropagation(); e.preventDefault(); openExternal(url); };
+    node.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); openExternal(url); } };
+    node.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
+    return node;
+  }
   // riga compatta: logo Cardmarket · valore con € · etichetta (TR = Trend, MIN = offerta più bassa se il trend manca)
   // wide = riga a tutta larghezza: etichetta per esteso ("Trend", "Minimo")
   function priceLine(c, wide) {
@@ -2200,7 +2218,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     else { d.classList.add("pna"); v.textContent = "N/D"; d.title = "Prezzo non disponibile"; }
     if (wide && tg) tg = tg === "TR" ? "Trend" : "Minimo";
     var t = el("span", "ptag" + (tg ? "" : " off"), tg); if (tg) t.setAttribute("aria-label", /^(TR|Trend)$/.test(tg) ? "Trend" : "Minimo"); d.appendChild(t);
-    return d;
+    return shopLink(d, cmUrl(c), "Apri la carta su Cardmarket");
   }
   // ---- CardTrader (PRICES.ct da tools/cardmarket_prices.py): per versione [prezzo più basso EN Near Mint, n. offerte, blueprint]
   function ctCovered(c) { return !!CTCOV[hostSet(c)]; }
@@ -2215,7 +2233,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     if (has) { v.textContent = eurC(p[0]) + " €"; d.title = "CardTrader: offerta più bassa in inglese, Near Mint"; }
     else { d.classList.add("pna"); v.textContent = "N/D"; d.title = "CardTrader: nessuna offerta in inglese Near Mint"; }
     var t = el("span", "ptag" + (has ? "" : " off"), has ? (wide ? "Minimo" : "MIN") : ""); d.appendChild(t);
-    return d;
+    return shopLink(d, ctUrl(c), "Apri la carta su CardTrader");
   }
   // righe prezzo di tutti i negozi, una sotto l'altra
   function priceLines(c, wide) { return [priceLine(c, wide), ctLine(c, wide)].filter(Boolean); }
@@ -2227,16 +2245,18 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     var w = el("div", "ppill"), lab = [];
     if (cm) {
       var p = priceOf(c), v = p && p[0] != null ? p[0] : p && p[1] != null ? p[1] : null;
-      w.appendChild(cmMark()); w.appendChild(el("span", v == null ? "na" : "", v == null ? "N/D" : eurC(v) + " €"));
+      var s1 = el("span", "pseg"); s1.appendChild(cmMark()); s1.appendChild(el("span", v == null ? "na" : "", v == null ? "N/D" : eurC(v) + " €"));
+      w.appendChild(shopLink(s1, cmUrl(c), "Apri la carta su Cardmarket"));
       lab.push("Cardmarket " + (v == null ? "non disponibile" : (p[0] != null ? "trend " : "minimo ") + eurC(v) + " euro"));
     }
     if (cm && ct) w.appendChild(el("i", "psep"));
     if (ct) {
       var q = ctOf(c), u = q && q[0] != null ? q[0] : null;
-      w.appendChild(ctMark()); w.appendChild(el("span", u == null ? "na" : "", u == null ? "N/D" : eurC(u) + " €"));
+      var s2 = el("span", "pseg"); s2.appendChild(ctMark()); s2.appendChild(el("span", u == null ? "na" : "", u == null ? "N/D" : eurC(u) + " €"));
+      w.appendChild(shopLink(s2, ctUrl(c), "Apri la carta su CardTrader"));
       lab.push("CardTrader " + (u == null ? "non disponibile" : "minimo " + eurC(u) + " euro"));
     }
-    w.setAttribute("aria-label", "Prezzi: " + lab.join(", ")); w.setAttribute("role", "note");
+    w.setAttribute("aria-label", "Prezzi: " + lab.join(", "));
     return w;
   }
   // Riquadro prezzi compatto della scheda carta: una riga per negozio; i dettagli Cardmarket si aprono a richiesta
@@ -2270,6 +2290,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     });
     d.appendChild(g);
     d.appendChild(el("p", "pnote", "Prezzi aggiornati al: " + fmtDate(PRICES.d) + ".\nSi intendono dati medi di tutte le vendite, che non distinguono lingua o condizioni della carta."));
+    var u1 = cmUrl(c); if (u1) d.appendChild(shopLink(el("button", "plink pgo", "Apri la carta su Cardmarket ↗"), u1, "Apri la carta su Cardmarket"));
     return d;
   }
   var REGN = null;
@@ -2294,6 +2315,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     d.appendChild(g);
     if (!has) d.appendChild(el("p", "pnote", "Al momento su CardTrader non c'è nessuna offerta per questa carta in inglese in condizione Near Mint."));
     d.appendChild(el("p", "pnote", "Prezzi aggiornati al: " + fmtDate(CTP.d) + "."));
+    var u2 = ctUrl(c); if (u2) d.appendChild(shopLink(el("button", "plink pgo", "Apri la carta su CardTrader ↗"), u2, "Apri la carta su CardTrader"));
     return d;
   }
 

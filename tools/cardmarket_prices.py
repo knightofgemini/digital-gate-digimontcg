@@ -38,9 +38,17 @@ def scarica(cartella):
     os.makedirs(cartella, exist_ok=True)
     for nome, url in [("singles.json", f"{BASE}/productList/products_singles_{GAME}.json"),
                       ("price_guide.json", f"{BASE}/priceGuide/price_guide_{GAME}.json")]:
-        req = urllib.request.Request(url, headers={"User-Agent": "DigitalGate/1.0"})
-        with urllib.request.urlopen(req, timeout=120) as r:
-            Path(cartella, nome).write_bytes(r.read())
+        for n in range(4):  # nuovi tentativi: a volte il download notturno si interrompe
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "DigitalGate/1.0"})
+                with urllib.request.urlopen(req, timeout=120) as r:
+                    Path(cartella, nome).write_bytes(r.read())
+                break
+            except Exception as e:
+                if n == 3:
+                    raise
+                print("Cardmarket: nuovo tentativo dopo", type(e).__name__)
+                time.sleep(30 * (n + 1))
 
 
 def ct_get(path, tentativi=3):
@@ -60,7 +68,11 @@ def ct_get(path, tentativi=3):
 def ct_scarica(cartella):
     """Tutte le espansioni Digimon: carte e offerte (solo i campi utili, niente venditori). Circa 2 chiamate al secondo."""
     os.makedirs(cartella, exist_ok=True)
-    exps = [e for e in ct_get("/expansions") if e.get("game_id") == CT_GAME]
+    try:
+        exps = [e for e in ct_get("/expansions") if e.get("game_id") == CT_GAME]
+    except Exception as ex:  # senza CardTrader si pubblicano comunque i prezzi Cardmarket
+        print("CardTrader non raggiungibile:", type(ex).__name__)
+        return
     Path(cartella, "expansions_digimon.json").write_text(json.dumps(exps))
     for e in exps:
         try:
