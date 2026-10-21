@@ -2575,8 +2575,8 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   }
   function costOf(c) { var a = []; if (c.play !== "" && c.play != null) a.push(String(c.play)); if (c.x && c.x.d && c.x.d.c != null && c.x.d.c !== "") a.push(String(c.x.d.c)); return a; }
   function traitsOf(c) { if (!c.trs) c.trs = (c.sp || "").split("/").map(function (t) { return t.trim(); }).filter(Boolean); return c.trs; }
-  // dalla più comune alla più rara (Promo in fondo); poi le alternative art per segno: ★, ★★, SP (con le icone delle carte)
-  var RARORD = ["C", "U", "R", "SR", "SEC", "UR", "P"];
+  // dalla più comune alla più rara, poi le alternative art per segno (★, ★★, SP, con le icone delle carte) e in fondo Promo
+  var RARORD = ["C", "U", "R", "SR", "UR", "SEC", "P"];
   var MARKV = { "★": 1, "★★": 2, "SP": "SP" }, MARKS = ["★", "★★", "SP"];
   function rarIcon(v) {
     if (v === "SP") return el("span", "spb", "SP");
@@ -2606,7 +2606,8 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       var ri = function (x) { var i = RARORD.indexOf(x); return i < 0 ? 50 : i; };
       ks.sort(function (x, y) { return ri(x) - ri(y) || (x < y ? -1 : 1); });
       var mk = {}; allVers().forEach(function (c) { if (c.suf && c.mark && (!st.ct || c.ct.indexOf(st.ct) >= 0)) mk[c.mark] = 1; });
-      return ks.concat(MARKS.filter(function (m) { return mk[MARKV[m]]; }));
+      var hasP = ks.indexOf("P") >= 0; ks = ks.filter(function (x) { return x !== "P"; });
+      return ks.concat(MARKS.filter(function (m) { return mk[MARKV[m]]; }), hasP ? ["P"] : []);
     }
     if (kind === "attr") { var AO = ["Vaccine", "Virus", "Data", "Free", "Variable", "Unknown"]; return ks.sort(function (x, y) { var a = AO.indexOf(x), b = AO.indexOf(y); return ((a < 0 ? 99 : a) - (b < 0 ? 99 : b)) || (x < y ? -1 : 1); }); }
     if (kind === "sp") return ks.sort(function (x, y) { return x.toLowerCase() < y.toLowerCase() ? -1 : 1; });
