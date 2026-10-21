@@ -1234,6 +1234,11 @@ body.mob.kbd .mbot.on::after { display: none; }
 .schrow .mt .maybe { background: var(--surface-2); color: var(--ink-2); }
 .schrow .side { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .schrow .qty .qbtn { width: 34px; height: 34px; }
+/* ★, ★★ e SP nei filtri della rarità (stesse icone delle carte) */
+.rarlab { display: inline-flex; align-items: center; font-size: 1.15em; line-height: 1; color: inherit; }
+.rarlab .spb { font-size: .62em; }
+.mbchip .rarlab { font-size: 1.05em; }
+.ddpop.nums .ddo.mk1 { grid-column-start: 1; }
 /* telefono: il menu "Altro" sale e scende con la stessa curva degli altri fogli */
 body.mob .menu { transition: transform .36s cubic-bezier(.32,.72,0,1); }
 body.mob .menu-scrim { transition: opacity .3s ease-out; }
@@ -2066,7 +2071,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     if (st.cost && costOf(c).indexOf(st.cost) < 0) return false;
     if (st.attr && fl("attr").indexOf(c.attr) < 0) return false;
     if (st.sp && !fl("sp").some(function (x) { return traitsOf(c).indexOf(x) >= 0; })) return false;
-    if (st.rar && (c.rar || "").trim() !== st.rar) return false;
+    if (st.rar) { if (MARKV[st.rar] != null) { if (!c.suf || c.mark !== MARKV[st.rar]) return false; } else if ((c.rar || "").trim() !== st.rar) return false; }
     if (q) {
       var hay = st.qm === "name" ? c.nb : st.qm === "text" ? c.tb : c.nb + c.tb;
       var parts = q.split(" ");
@@ -2570,7 +2575,22 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   }
   function costOf(c) { var a = []; if (c.play !== "" && c.play != null) a.push(String(c.play)); if (c.x && c.x.d && c.x.d.c != null && c.x.d.c !== "") a.push(String(c.x.d.c)); return a; }
   function traitsOf(c) { if (!c.trs) c.trs = (c.sp || "").split("/").map(function (t) { return t.trim(); }).filter(Boolean); return c.trs; }
+  // dalla più comune alla più rara (Promo in fondo); poi le alternative art per segno: ★, ★★, SP (con le icone delle carte)
   var RARORD = ["C", "U", "R", "SR", "SEC", "UR", "P"];
+  var MARKV = { "★": 1, "★★": 2, "SP": "SP" }, MARKS = ["★", "★★", "SP"];
+  function rarIcon(v) {
+    if (v === "SP") return el("span", "spb", "SP");
+    if (v === "★★") { var s2 = el("span", "st2"); s2.appendChild(el("i", "", "★")); s2.appendChild(el("i", "", "★")); return s2; }
+    if (v === "★") return el("span", "st1", "★");
+    return document.createTextNode(v);
+  }
+  function rarLabel(v) { var w = el("span", "rarlab"); w.appendChild(rarIcon(v)); w.setAttribute("aria-label", v === "★" ? "Una stella" : v === "★★" ? "Due stelle" : v); return w; }
+  // tutte le versioni (carte base + alternative art di tutti i prodotti): servono per filtrare per ★, ★★ e SP
+  var ALLV = null;
+  function allVers() {
+    if (!ALLV) { ALLV = []; var seen = {}; CARDS.forEach(function (c) { ALLV.push(c); if (seen[c.code]) return; seen[c.code] = 1; altsOf(c).forEach(function (a) { ALLV.push(a); }); }); }
+    return ALLV;
+  }
   function ddValues(kind) {
     var seen = {};
     CARDS.forEach(function (c) {
@@ -2582,7 +2602,12 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       else costOf(c).forEach(function (v) { seen[v] = 1; });
     });
     var ks = Object.keys(seen);
-    if (kind === "rar") return ks.sort(function (x, y) { return (RARORD.indexOf(x) + 99) % 100 - (RARORD.indexOf(y) + 99) % 100; });
+    if (kind === "rar") {
+      var ri = function (x) { var i = RARORD.indexOf(x); return i < 0 ? 50 : i; };
+      ks.sort(function (x, y) { return ri(x) - ri(y) || (x < y ? -1 : 1); });
+      var mk = {}; allVers().forEach(function (c) { if (c.suf && c.mark && (!st.ct || c.ct.indexOf(st.ct) >= 0)) mk[c.mark] = 1; });
+      return ks.concat(MARKS.filter(function (m) { return mk[MARKV[m]]; }));
+    }
     if (kind === "attr") { var AO = ["Vaccine", "Virus", "Data", "Free", "Variable", "Unknown"]; return ks.sort(function (x, y) { var a = AO.indexOf(x), b = AO.indexOf(y); return ((a < 0 ? 99 : a) - (b < 0 ? 99 : b)) || (x < y ? -1 : 1); }); }
     if (kind === "sp") return ks.sort(function (x, y) { return x.toLowerCase() < y.toLowerCase() ? -1 : 1; });
     return ks.sort(function (x, y) { return parseInt(x.replace(/\D/g, ""), 10) - parseInt(y.replace(/\D/g, ""), 10); });
@@ -2632,7 +2657,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     if (st.rar && ddValues("rar").indexOf(st.rar) < 0) st.rar = "";
   }
   // carte da cui cercare: quelle dell'espansione scelta (anche alternative art e ristampe uscite lì) o tutto il catalogo
-  function srcCards() { return st.exp && SETBY[st.exp] ? cardsOfSet(st.exp) : CARDS; }
+  function srcCards() { return st.exp && SETBY[st.exp] ? cardsOfSet(st.exp) : MARKV[st.rar] != null ? allVers() : CARDS; }
   var ddOpen = null, ddPop = null, ddKeep = false, ddHold = 0;
   function closeFilters() {
     if (!ddPop) return false;
@@ -2650,7 +2675,8 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       b.setAttribute("aria-label", DDN[kind] + ": " + ddShown(kind));
       var t = el("span", "ddt"); t.appendChild(el("small", "", DDN[kind]));
       var v = el("b"); if (kind === "color" && st.color) fl("color").forEach(function (cx) { var i = el("i"); i.style.background = colorVar(cx); v.appendChild(i); });
-      v.appendChild(document.createTextNode(ddShown(kind))); t.appendChild(v); b.appendChild(t);
+      if (kind === "rar" && MARKV[st.rar] != null) v.appendChild(rarLabel(st.rar)); else v.appendChild(document.createTextNode(ddShown(kind)));
+      t.appendChild(v); b.appendChild(t);
       var ch = el("span", "ddc"); ch.innerHTML = DDCHEV; b.appendChild(ch);
       b.onclick = function (e) { e.stopPropagation(); if (ddOpen === kind) { closeFilters(); return; } openDD(kind, b); };
       if (keep && ddOpen === kind) b.setAttribute("aria-expanded", "true");
@@ -2671,7 +2697,8 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       var on = multi ? (o[0] === "" ? !cur : fltHas(kind, o[0])) : cur === o[0];
       var it = el("button", "ddo" + (i === 0 ? " all" : "")); it.type = "button"; it.setAttribute("role", "option"); it.setAttribute("aria-selected", String(on));
       if (o[2]) { var d = el("i"); d.style.background = o[2]; it.appendChild(d); }
-      it.appendChild(el("span", "", o[1]));
+      if (kind === "rar" && o[0] === MARKS.filter(function (m) { return ddValues("rar").indexOf(m) >= 0; })[0]) it.classList.add("mk1");
+      if (kind === "rar" && MARKV[o[0]] != null) it.appendChild(rarLabel(o[0])); else it.appendChild(el("span", "", o[1]));
       if (multi && o[0] !== "") { var bx = el("span", "ddck"); bx.setAttribute("aria-hidden", "true"); it.appendChild(bx); }
       else if ((on || multi) && !grid) { var ok = el("span", "ok", "✓"); ok.setAttribute("aria-hidden", "true"); it.appendChild(ok); }
       it.onclick = function (e) {
@@ -2693,14 +2720,14 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       fi.onclick = function (e) { e.stopPropagation(); };
       pop.appendChild(fi);
     }
-    document.body.appendChild(pop); ddPop = pop;
+    document.body.appendChild(pop); ddPop = pop; ddDrag(pop, kind === "sp" ? box : pop);
     var r = btnEl.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight;
     var w = Math.min(vw - 16, Math.max(r.width, kind === "qm" || kind === "sp" || kind === "exp" ? 280 : 210));
     var left = Math.max(8, Math.min(r.left, vw - w - 8));
     pop.style.width = w + "px"; pop.style.left = left + "px";
     // al massimo metà schermo; sopra il pulsante resta ancorata dal basso (e sale sopra la tastiera se si scrive)
     var cap = Math.round(vh / 2), below = vh - r.bottom - 12, above = r.top - 12, ph = pop.scrollHeight;
-    if (ph > below && above > below) {
+    if ((kind === "qm" && above >= Math.min(ph, 140)) || (ph > below && above > below)) {
       var base = vh - (r.top - 6);
       pop._place = function () {
         var vv = window.visualViewport, ih = window.innerHeight, kb = vv ? Math.max(0, ih - vv.height - vv.offsetTop) : 0;
@@ -2710,6 +2737,41 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       pop._place();
     } else { pop.style.top = (r.bottom + 6) + "px"; pop.style.maxHeight = Math.min(cap, Math.max(160, below)) + "px"; }
     var sel = pop.querySelector('[aria-selected="true"]') || pop.querySelector(".ddo"); if (sel) { sel.focus({ preventScroll: true }); if (kind === "sp" || kind === "exp") sel.scrollIntoView({ block: "center" }); }
+  }
+  // tendina dei filtri: tirando giù l'elenco (quando è già in cima) la tendina segue il dito, sfuma e si chiude
+  function ddDrag(pop, list) {
+    var y0 = 0, x0 = 0, ok = false, on = false, smp = [];
+    pop.addEventListener("touchstart", function (e) {
+      ok = on = false; if (e.touches.length !== 1 || e.target.tagName === "INPUT" || list.scrollTop > 0) return;
+      ok = true; y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; smp = [[y0, e.timeStamp]];
+    }, { passive: true });
+    pop.addEventListener("touchmove", function (e) {
+      if (!ok) return;
+      var y = e.touches[0].clientY, dy = y - y0, dx = e.touches[0].clientX - x0;
+      if (!on) {
+        if (dy < -6 || (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy))) { ok = false; return; }
+        if (dy < 8) return;
+        on = true; y0 = y; dy = 0; pop.style.transition = "none";
+      }
+      if (e.cancelable) e.preventDefault();
+      pop.style.transform = "translateY(" + Math.max(0, dy) + "px)"; pop.style.opacity = String(Math.max(0.15, 1 - Math.max(0, dy) / 220));
+      smp.push([y, e.timeStamp]); if (smp.length > 6) smp.shift();
+    }, { passive: false });
+    function end(e) {
+      if (!ok) return; ok = false; if (!on) return; on = false;
+      var y = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : y0, dy = Math.max(0, y - y0);
+      var p = smp.filter(function (q) { return e.timeStamp - q[1] < 110; })[0] || smp[0], v = (y - p[0]) / Math.max(1, e.timeStamp - p[1]);
+      if (dy > 70 || (v > 0.45 && dy > 16)) {
+        var go = function () { if (ddPop === pop) closeFilters(); else pop.remove(); };
+        if (pop.animate && !shRM()) { var a = pop.animate([{ transform: "translateY(" + dy + "px)", opacity: pop.style.opacity }, { transform: "translateY(" + (dy + 60) + "px)", opacity: 0 }], { duration: 170, easing: "ease-out", fill: "forwards" }); a.onfinish = go; }
+        else go();
+      } else {
+        var o0 = pop.style.opacity; pop.style.transform = ""; pop.style.opacity = ""; pop.style.transition = "";
+        if (pop.animate && dy) pop.animate([{ transform: "translateY(" + dy + "px)", opacity: o0 }, { transform: "none", opacity: 1 }], { duration: 260, easing: SH_EASE });
+      }
+    }
+    pop.addEventListener("touchend", end, { passive: true });
+    pop.addEventListener("touchcancel", end, { passive: true });
   }
   document.addEventListener("pointerdown", function (e) { if (ddPop && !ddPop.contains(e.target) && !(e.target.closest && e.target.closest(".dd"))) closeFilters(); }, true);
   function ddTyping() { return ddPop && ddPop.contains(document.activeElement) && document.activeElement.tagName === "INPUT"; }
@@ -2991,7 +3053,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     }
     var lay = el("div", "slay"); lay.appendChild(filterSide());
     var res = el("section"); res.setAttribute("aria-label", "Risultati"); lay.appendChild(res); out.appendChild(lay);
-    var list = CARDS.filter(function (c) { return cardMatches(c, q); });
+    var list = (MARKV[st.rar] != null ? allVers() : CARDS).filter(function (c) { return cardMatches(c, q); });
     if (q) list = list.map(function (c, j) { return { c: c, j: j, r: relevance(c, q) }; }).sort(function (a, b) { return (a.r - b.r) || (a.j - b.j); }).map(function (o) { return o.c; });
     var gt = el("div", "group-title withv");
     gt.appendChild(el("span", "", list.length + (list.length === 1 ? " carta" : " carte") + (st.q ? " per “" + st.q + "”" : "")));
@@ -3962,7 +4024,8 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     act.forEach(function (f) {
       var b = el("button", "mbchip"); b.type = "button"; b.setAttribute("aria-label", "Togli il filtro " + f[1]);
       if (f[0] === "color") { var i = el("i"); i.style.background = colorVar(f[1]); b.appendChild(i); }
-      b.appendChild(el("span", "", f[1])); b.appendChild(el("b", "", "✕"));
+      if (f[0] === "rar" && MARKV[f[1]] != null) b.appendChild(rarLabel(f[1])); else b.appendChild(el("span", "", f[1]));
+      b.appendChild(el("b", "", "✕"));
       b.onclick = function () { unsetFlt(f[0], f[1]); syncSelects(); render(); };
       mbotChips.appendChild(b);
     });
