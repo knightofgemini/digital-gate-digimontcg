@@ -2211,14 +2211,14 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     node.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
     return node;
   }
-  // riga compatta: logo Cardmarket · valore con € · etichetta (TR = Trend, MIN = offerta più bassa se il trend manca)
+  // riga compatta: logo Cardmarket · valore con € · etichetta (MIN = offerta più bassa; TR = Trend solo se manca il minimo)
   // wide = riga a tutta larghezza: etichetta per esteso ("Trend", "Minimo")
   function priceLine(c, wide) {
     if (!priceCovered(c)) return null;
     var p = priceOf(c), d = el("div", "pline" + (wide ? " wide" : "")), v = el("span", "pval"), tg = "";
     d.appendChild(cmMark()); d.appendChild(v);
-    if (p && p[0] != null) { v.textContent = eurC(p[0]) + " €"; tg = "TR"; d.title = "Trend Cardmarket"; }
-    else if (p && p[1] != null) { v.textContent = eurC(p[1]) + " €"; tg = "MIN"; d.title = "Offerta più bassa su Cardmarket (trend non ancora disponibile)"; }
+    if (p && p[1] != null) { v.textContent = eurC(p[1]) + " €"; tg = "MIN"; d.title = "Offerta più bassa su Cardmarket"; }
+    else if (p && p[0] != null) { v.textContent = eurC(p[0]) + " €"; tg = "TR"; d.title = "Trend Cardmarket (offerta più bassa non disponibile)"; }
     else { d.classList.add("pna"); v.textContent = "N/D"; d.title = "Prezzo non disponibile"; }
     if (wide && tg) tg = tg === "TR" ? "Trend" : "Minimo";
     var t = el("span", "ptag" + (tg ? "" : " off"), tg); if (tg) t.setAttribute("aria-label", /^(TR|Trend)$/.test(tg) ? "Trend" : "Minimo"); d.appendChild(t);
@@ -2248,10 +2248,10 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     var cm = priceCovered(c), ct = ctCovered(c); if (!cm && !ct) return null;
     var w = el("div", "ppill"), lab = [];
     if (cm) {
-      var p = priceOf(c), v = p && p[0] != null ? p[0] : p && p[1] != null ? p[1] : null;
+      var p = priceOf(c), v = p && p[1] != null ? p[1] : p && p[0] != null ? p[0] : null;
       var s1 = el("span", "pseg"); s1.appendChild(cmMark()); s1.appendChild(el("span", v == null ? "na" : "", v == null ? "N/D" : eurC(v) + " €"));
       w.appendChild(shopLink(s1, cmUrl(c), "Apri la carta su Cardmarket"));
-      lab.push("Cardmarket " + (v == null ? "non disponibile" : (p[0] != null ? "trend " : "minimo ") + eurC(v) + " euro"));
+      lab.push("Cardmarket " + (v == null ? "non disponibile" : (p[1] != null ? "minimo " : "trend ") + eurC(v) + " euro"));
     }
     if (cm && ct) w.appendChild(el("i", "psep"));
     if (ct) {
@@ -2284,15 +2284,15 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     return r;
   }
   function cmRow(c) {
-    var p = priceOf(c), useLow = p && p[0] == null && p[1] != null;
-    var row = prRow(cmMark(), "Cardmarket", p ? (useLow ? p[1] : p[0]) : null, useLow ? "Minimo" : "Trend", cmUrl(c), "Apri la carta su Cardmarket");
+    var p = priceOf(c), useTr = p && p[1] == null && p[0] != null;
+    var row = prRow(cmMark(), "Cardmarket", p ? (useTr ? p[0] : p[1]) : null, useTr ? "Trend" : "Minimo", cmUrl(c), "Apri la carta su Cardmarket");
     var chev = el("span", "pchev"); chev.setAttribute("aria-hidden", "true"); row.appendChild(chev);
     if (!p) { chev.classList.add("off"); row.title = "Questa versione non è stata abbinata con certezza al prodotto giusto su Cardmarket"; return row; }
     var d = document.createElement("details"); d.className = "cmdet"; d.open = cmDetOpen;
     var sm = document.createElement("summary"); sm.setAttribute("aria-label", "Dettagli prezzo Cardmarket"); sm.appendChild(row); d.appendChild(sm);
     d.addEventListener("toggle", function () { cmDetOpen = d.open; });
     var g = el("div", "pgrid");
-    [["Più basso", p[1]], ["Media 1 g", p[2]], ["Media 7 g", p[3]], ["Media 30 g", p[4]]].forEach(function (x) {
+    [["Trend", p[0]], ["Media 1 g", p[2]], ["Media 7 g", p[3]], ["Media 30 g", p[4]]].forEach(function (x) {
       var r = el("div", "pc"); r.appendChild(el("span", "", x[0])); r.appendChild(el("b", "", eur(x[1]))); g.appendChild(r);
     });
     d.appendChild(g);
@@ -2750,7 +2750,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   function favSource() {
     return Object.keys(FAV.f).map(keyEntry).filter(function (c) { return c && (!st.exp || hostSet(c) === st.exp || c.set === st.exp); });
   }
-  function cmVal(c) { if (!priceCovered(c)) return null; var p = priceOf(c); return p ? (p[0] != null ? p[0] : p[1] != null ? p[1] : null) : null; }
+  function cmVal(c) { if (!priceCovered(c)) return null; var p = priceOf(c); return p ? (p[1] != null ? p[1] : p[0] != null ? p[0] : null) : null; }
   function ctVal(c) { if (!ctCovered(c)) return null; var p = ctOf(c); return p && p[0] != null ? p[0] : null; }
   function bestVal(c) { var a = cmVal(c), b = ctVal(c); return a == null ? b : b == null ? a : Math.min(a, b); }
   function alertHit(c) { var t = FAV.a[c.k], v = bestVal(c); return t != null && v != null && v <= t; }
