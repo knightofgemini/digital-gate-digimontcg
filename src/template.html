@@ -1353,7 +1353,6 @@ body.desk .fstats { max-width: 720px; }
 .fsort select option { color: #0f1a2e; }
 .fbadges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .tile .fbadges { justify-content: center; margin-top: 0; }
-.fmiss { padding: 1px 8px; border-radius: 999px; border: 1px solid var(--accent); color: var(--accent); font: 600 .72rem var(--font-body); }
 .falert { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); font: 600 .72rem var(--font-body); }
 .falert svg { width: 12px; height: 12px; }
 .falert.hit { background: var(--cyan-soft); color: var(--cyan); }
@@ -2955,11 +2954,10 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     var ul = el("div", st.view === "grid" ? "grid" : "list"); drawItems(ul, list.slice(0, st.shown)); box.appendChild(ul);
     if (list.length > st.shown) { var m = loadMoreBtn("Mostra altre " + Math.min(PAGE, list.length - st.shown)); m.type = "button"; m.onclick = function () { st.shown += PAGE; render(); }; box.appendChild(m); }
   }
-  // etichette sotto le carte nelle viste Preferite/Wishlist: "Manca" e avviso di prezzo raggiunto
+  // etichette sotto le carte nelle viste Preferite/Wishlist: avviso di prezzo (impostato o raggiunto); niente "Manca" (tolto su richiesta)
   function favBadges(c) {
     if (!st.ownOnly || !st.cview || st.cview === "all") return null;
     var w = el("div", "fbadges");
-    if (!owned(c) && st.cview === "fav") w.appendChild(el("span", "fmiss", "Manca"));
     if (FAV.a[c.k] != null) {
       var hit = alertHit(c), a = el("span", "falert" + (hit ? " hit" : ""));
       a.innerHTML = hit ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg>';
