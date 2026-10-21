@@ -330,6 +330,8 @@ html.lock, html.lock body { overflow: hidden; overscroll-behavior: none; }
 .pbox .pmain > * + * { border-top: 1px solid var(--line); }
 .pbox .prow { display: grid; grid-template-columns: minmax(0, 1fr) auto 18px; align-items: center; gap: 8px; padding: 10px 12px; }
 .pbox .pprice { display: inline-flex; align-items: center; gap: 8px; }
+.pbox.pmini .prow { grid-template-columns: minmax(0, 1fr) auto; }
+.vcard .pbox.pmini { margin: 8px 0 0; }
 .pbox .pval2.shoplink { padding: 4px 6px; margin: -4px -6px; border-radius: 8px; }
 .pbox .pval2.shoplink:hover { background: var(--surface-2); }
 .pbox .pval2.shoplink:active { transform: scale(.97); }
@@ -2283,6 +2285,18 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     r.appendChild(pr);
     return r;
   }
+  // stesso riquadro della scheda carta ma senza dettagli apribili (scheda Versioni del telefono)
+  function priceMini(c) {
+    if (!priceCovered(c) && !ctCovered(c)) return null;
+    var b = el("div", "fx pbox pmini"), box = el("div", "pmain");
+    if (priceCovered(c)) {
+      var p = priceOf(c), useTr = p && p[1] == null && p[0] != null;
+      box.appendChild(prRow(cmMark(), "Cardmarket", p ? (useTr ? p[0] : p[1]) : null, useTr ? "Trend" : "Minimo", cmUrl(c), "Apri la carta su Cardmarket"));
+    }
+    if (ctCovered(c)) { var q = ctOf(c), has = q && q[0] != null; box.appendChild(prRow(ctMark(), "CardTrader", has ? q[0] : null, "Minimo", ctUrl(c), "Apri la carta su CardTrader")); }
+    b.appendChild(box);
+    return b;
+  }
   function cmRow(c) {
     var p = priceOf(c), useTr = p && p[1] == null && p[0] != null;
     var row = prRow(cmMark(), "Cardmarket", p ? (useTr ? p[0] : p[1]) : null, useTr ? "Trend" : "Minimo", cmUrl(c), "Apri la carta su Cardmarket");
@@ -3807,7 +3821,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
           bt.onclick = function (e) { e.stopPropagation(); collUnlocked = true; drawSheet(); };
         });
         r2.appendChild(q2); vq.appendChild(r2);
-        priceLines(a, true).forEach(function (x) { vq.appendChild(x); });
+        var vpb = priceMini(a); if (vpb) vq.appendChild(vpb);
         v.appendChild(vq);
         p2.appendChild(v);
       });
