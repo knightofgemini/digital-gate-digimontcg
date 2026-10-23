@@ -1607,15 +1607,18 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   // dalla seconda compaiono subito, anche senza internet. Ogni 30 giorni una copia vista viene ricontrollata in sottofondo.
   // Il caricamento parte quando l'immagine è entro ~2400 px dallo schermo (si scaricano in anticipo quelle che stanno per arrivare).
   // In memoria restano le ultime 300 (indirizzi "blob:"), così i ridisegni dell'elenco non le fanno lampeggiare.
-  var IMGC = null, IMGMEM = new Map(), IMGFLY = {}, IMGMAX = 300, IMGAGE = 30 * 864e5;
+  // Miniatura come anteprima (23 ottobre 2026): per le carte grandi (img/f) si mostra prima la miniatura (img/t, pochi KB, scaricata
+  // con precedenza alta) e appena la grande è pronta (già decodificata) prende il suo posto; attributo "data-lq" = indirizzo della miniatura.
+  var IMGC = null, IMGMEM = new Map(), IMGFLY = {}, IMGMAX = 500, IMGAGE = 30 * 864e5;
   try { if (window.caches && window.fetch && window.URL && URL.createObjectURL && /^https?:/.test(location.protocol)) IMGC = caches.open("dg-img-v3").catch(function () { IMGC = null; return null; }); ["dg-img-v1", "dg-img-v2"].forEach(function (n) { caches.delete(n).catch(function () {}); }); } catch (e) { IMGC = null; }
   try { if (IMGC && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {}); } catch (e) {}
   function imgMem(url, u) {
     if (u) { IMGMEM.set(url, u); if (IMGMEM.size > IMGMAX) { var k = IMGMEM.keys().next().value; var o = IMGMEM.get(k); IMGMEM.delete(k); setTimeout(function () { try { URL.revokeObjectURL(o); } catch (e) {} }, 4000); } return u; }
     var m = IMGMEM.get(url); if (m) { IMGMEM.delete(url); IMGMEM.set(url, m); } return m;
   }
-  function imgFetch(c, url) {
-    return fetch(url, { mode: "cors", credentials: "omit", referrerPolicy: "no-referrer" }).then(function (r) {
+  function imgFetch(c, url, hi) {
+    var o = { mode: "cors", credentials: "omit", referrerPolicy: "no-referrer" }; if (hi) o.priority = "high";
+    return fetch(url, o).then(function (r) {
       if (!r.ok) throw new Error("http " + r.status);
       return r.blob().then(function (b) {
         if (c) c.put(url, new Response(b, { headers: { "Content-Type": b.type || "image/webp", "X-Saved": String(Date.now()) } })).catch(function () {});
@@ -1623,13 +1626,13 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       });
     });
   }
-  function getImg(url) {
+  function getImg(url, hi) {
     var m = imgMem(url); if (m) return Promise.resolve(m);
     if (IMGFLY[url]) return IMGFLY[url];
     var p = IMGFLY[url] = IMGC.then(function (c) {
       if (!c) throw new Error("no cache");
       return c.match(url).then(function (r) {
-        if (!r) return imgFetch(c, url);
+        if (!r) return imgFetch(c, url, hi);
         var t = +(r.headers.get("X-Saved") || 0);
         if (Date.now() - t > IMGAGE) imgFetch(c, url).catch(function () {});
         return r.blob();
@@ -1638,11 +1641,25 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     return p;
   }
   // subito (per immagini già in vista o fuori dagli elenchi); se qualcosa va storto si usa l'indirizzo normale
+  // immagine definitiva: se sotto c'è la miniatura, la grande la sostituisce solo quando è già decodificata (niente riquadro vuoto)
+  function imgFull(im, url, u) {
+    if (im.getAttribute("data-src") !== url) return;
+    im.setAttribute("data-ok", "1");
+    if (!im.classList.contains("lq")) { im.src = u; return; }
+    var p = new Image(), go = function () { if (im.getAttribute("data-src") === url) { im.src = u; im.classList.remove("lq"); } };
+    p.src = u; if (p.decode) p.decode().then(go, go); else go();
+  }
+  function imgLq(im, url, u) {
+    if (im.getAttribute("data-src") === url && !im.getAttribute("data-ok")) { im.src = u; im.classList.add("lq"); }
+  }
   function imgNow(im, url) {
+    if (im.getAttribute("data-src") !== url) { im.removeAttribute("data-ok"); im.classList.remove("lq"); }
     im.setAttribute("data-src", url);
     if (!IMGC) { im.src = url; return; }
-    var m = imgMem(url); if (m) { im.src = m; return; }
-    getImg(url).then(function (u) { if (im.getAttribute("data-src") === url) im.src = u; }, function () { if (im.getAttribute("data-src") === url) im.src = url; });
+    var m = imgMem(url); if (m) { imgFull(im, url, m); return; }
+    var lq = im.getAttribute("data-lq");
+    if (lq && lq !== url && !im.getAttribute("data-ok")) { var ml = imgMem(lq); if (ml) imgLq(im, url, ml); else getImg(lq, true).then(function (u) { imgLq(im, url, u); }, function () {}); }
+    getImg(url).then(function (u) { imgFull(im, url, u); }, function () { if (im.getAttribute("data-src") === url) { im.classList.remove("lq"); im.src = url; } });
   }
   var imgIO = null;
   try { if (window.IntersectionObserver) imgIO = new IntersectionObserver(function (es) {
@@ -1656,16 +1673,19 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   // negli elenchi: già in memoria → subito; altrimenti appena si avvicina allo schermo
   function setImg(im, url) {
     var m = IMGC && imgMem(url);
-    if (m) { im.setAttribute("data-src", url); im.src = m; return; }
+    if (m) { im.setAttribute("data-src", url); im.setAttribute("data-ok", "1"); im.src = m; return; }
     if (!IMGC || !imgIO) { im.loading = "lazy"; im.setAttribute("data-src", url); im.src = url; return; }
-    im.removeAttribute("loading"); im.setAttribute("data-src", url); imgIO.observe(im);
+    im.removeAttribute("loading"); im.setAttribute("data-src", url);
+    var lq = im.getAttribute("data-lq"), ml = lq && imgMem(lq); if (ml) imgLq(im, url, ml);   // miniatura già in memoria: subito
+    imgIO.observe(im);
   }
   function picBox(cls, kind, c) {
     var b = el("div", cls), im = document.createElement("img");
     im.alt = ""; im.loading = "lazy"; im.decoding = "async"; im.referrerPolicy = "no-referrer";
     im.onerror = function () { b.classList.add("noimg"); };
-    var key = c.img || c.code;
-    setImg(im, IMG + kind + "/" + encodeURIComponent(key) + ".webp" + (ERRATA[key] && kind !== "pre" ? "?e=1" : ""));
+    var key = c.img || c.code, ek = encodeURIComponent(key) + ".webp" + (ERRATA[key] && kind !== "pre" ? "?e=1" : "");
+    if (kind === "f") im.setAttribute("data-lq", IMG + "t/" + ek);
+    setImg(im, IMG + kind + "/" + ek);
     b.appendChild(im); return b;
   }
 
@@ -4488,7 +4508,9 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       if (box === cur) return;
       var im = box.querySelector("img");
       if (!im || !im.getAttribute("src") || box.classList.contains("noimg")) { hide(); return; }
-      hide(); cur = box; last = e; imgNow(pim, (im.getAttribute("data-src") || im.src).replace(/\/t\/([^\/]+)$/, "/f/$1"));
+      hide(); cur = box; last = e;
+      var fu = (im.getAttribute("data-src") || im.src).replace(/\/t\/([^\/]+)$/, "/f/$1");
+      pim.setAttribute("data-lq", fu.replace(/\/f\/([^\/]+)$/, "/t/$1")); imgNow(pim, fu);   // miniatura subito, poi la grande
       timer = setTimeout(function () { timer = null; if (cur === box) { place(last); pop.classList.add("on"); } }, 350);
     });
     document.addEventListener("mousemove", function (e) { if (cur) { last = e; if (!timer) place(e); } });
