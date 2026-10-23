@@ -894,8 +894,8 @@ body.mob .mpane .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .car { --cw: min(290px, calc(100% - 84px)); position: relative; margin: 0 0 12px; border-radius: 22px; overflow: hidden; padding: 18px 0; display: flex; justify-content: center; }
 .car .cpic { position: relative; z-index: 2; width: var(--cw); aspect-ratio: 5 / 7; border-radius: 12px; overflow: hidden; background: var(--surface-2); box-shadow: 0 14px 30px rgba(0,0,0,.32); }
 .car .cpic img, .car .cnb img, .cver .cth img { width: 100%; height: 100%; object-fit: contain; display: block; }
-.car .cstk { position: absolute; z-index: 1; top: 8px; bottom: 30px; left: 50%; width: calc(var(--cw) - 36px); transform: translateX(-50%); border-radius: 12px; background: rgba(0,0,0,.26); }
-.car .cnb { position: absolute; top: 50%; width: calc(var(--cw) * .8); aspect-ratio: 5 / 7; transform: translateY(-50%); padding: 0; border: 0; border-radius: 10px; overflow: hidden; background: rgba(0,0,0,.22); opacity: .6; cursor: pointer; }
+.car .cstk { position: absolute; z-index: 1; top: 8px; bottom: 30px; left: 50%; width: calc(var(--cw) - 36px); transform: translateX(-50%); border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+.car .cnb { position: absolute; top: 50%; width: calc(var(--cw) * .8); aspect-ratio: 5 / 7; transform: translateY(-50%); padding: 0; border: 0; border-radius: 10px; overflow: hidden; background: var(--surface-2); opacity: .5; cursor: pointer; }
 .car .cnb.prev { right: calc(50% + var(--cw) / 2 + 12px); }
 .car .cnb.next { left: calc(50% + var(--cw) / 2 + 12px); }
 .cvers { display: flex; gap: 8px; overflow-x: auto; margin: 0 calc(-1 * var(--mg, 14px)) 14px; padding: 2px var(--mg, 14px); scrollbar-width: none; }
@@ -914,7 +914,7 @@ body.mob .sheet-head.chead { display: grid; grid-template-columns: auto minmax(0
 .chm { display: flex; flex-direction: column; align-items: center; text-align: center; line-height: 1.2; min-width: 0; }
 .chm b { font-size: .95rem; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chm small { font-size: .78rem; color: var(--ink-2); }
-.cpane .car { margin-top: 12px; }
+.cpane .car { margin: 4px calc(-1 * var(--mg, 14px)) 10px; border-radius: 0; }
 .cname { text-align: center; margin: 2px 0 12px; }
 .cname h2 { margin: 0; font: 700 1.6rem/1.15 var(--font-display); white-space: nowrap; overflow: hidden; }
 .csub { margin-top: 4px; font-size: .9rem; color: var(--ink-2); }
@@ -930,7 +930,7 @@ body.mob .sheet-head.chead { display: grid; grid-template-columns: auto minmax(0
 .cdc .ccol i { flex: none; width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.18); }
 .ctags { margin: 0 0 10px; }
 .ctags .tags { justify-content: center; }
-.cpw { margin: 0 0 12px; }
+.cpw { margin: 4px 0 12px; }
 .cprices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .cpb { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; cursor: pointer; }
 .cpb.open { border-color: var(--ink-2); }
@@ -4084,7 +4084,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     var hb = el("div", "mhbtns"); hb.appendChild(favBtn(c, "big", function () { render(); drawSheet(); })); hb.appendChild(favListsBtn(c)); head.appendChild(hb);
     var p = el("div", "mpane cpane");
     // carosello
-    var car = el("div", "car"); car.style.background = gradient(c.colors, "to right");
+    var car = el("div", "car");
     [["prev", "Carta precedente", mi >= 0 ? NAVLIST[mi - 1] : null], ["next", "Carta successiva", mi >= 0 ? NAVLIST[mi + 1] : null]].forEach(function (x) {
       var t = x[2]; if (!t || SHSTACK.length) return;
       var b = el("button", "cnb " + x[0]); b.type = "button"; b.setAttribute("aria-label", x[1] + ": " + t.name + " (" + t.code + ")");
@@ -4153,8 +4153,9 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     if (idr) { var tw = el("div", "tagrows ctags"); tw.appendChild(idr); p.appendChild(tw); }
     o.kids.forEach(function (k) { if (k.classList.contains("banline")) p.appendChild(k); });
     // prezzi affiancati: il valore apre il negozio, il resto del riquadro apre/chiude i dettagli sotto
+    var pw = null;
     if (priceCovered(c) || ctCovered(c)) {
-      var pw = el("div", "fx pbox cpw"), pg = el("div", "cprices"), det = el("div", "cpdet");
+      pw = el("div", "fx pbox cpw"); pw.appendChild(el("h3", "", "Prezzi")); var pg = el("div", "cprices"), det = el("div", "cpdet");
       var cv = priceCovered(c) ? cmVal(c) : null, tv = ctCovered(c) ? ctVal(c) : null;
       var low = cv != null && tv != null && cv !== tv ? (cv < tv ? "cm" : "ct") : "";
       function pbx(kind, mark, name, val, tag, url, row, open, setOpen) {
@@ -4181,7 +4182,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
         pbx("cm", cmMark(), "Cardmarket", cv, useTr ? "Trend" : "Minimo", cmUrl(c), cmRow(c), cmDetOpen, function (v) { cmDetOpen = v; });
       }
       if (ctCovered(c)) pbx("ct", ctMark(), "CardTrader", tv, "Minimo", ctUrl(c), ctRow(c), ctDetOpen, function (v) { ctDetOpen = v; });
-      pw.appendChild(pg); if (det.children.length) pw.appendChild(det); p.appendChild(pw);
+      pw.appendChild(pg); if (det.children.length) pw.appendChild(det);
     }
     // digievoluzioni (senza i riquadri Costo/DP/Rarità, già nella riga dei dati)
     var ev = Array.prototype.slice.call(o.stats.children).filter(function (k) { return k.classList.contains("wide"); });
@@ -4192,6 +4193,8 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       if (/\b(own|pbox|altsec|banline)\b/.test(k.className)) return;
       p.appendChild(k);
     });
+    // prezzi dopo le regole (scelta dell'utente), prima della pre errata
+    if (pw) p.appendChild(pw);
     if (o.preSec) p.appendChild(o.preSec);
     sh.appendChild(p);
     // barra fissa in basso: copie possedute (e nel mazzo, se aperta dall'editor)
