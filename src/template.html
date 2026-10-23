@@ -953,8 +953,12 @@ body.mob .sheet-head.chead { display: grid; grid-template-columns: auto minmax(0
 .cpdh .cmk, .cpdh .ctk { width: 18px; height: 18px; }
 .cevo { grid-template-columns: minmax(0, 1fr); }
 .cfoot { flex: none; position: sticky; bottom: 0; z-index: 4; margin: auto calc(-1 * var(--mg, 14px)) 0; padding: 10px var(--mg, 14px) calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--bg); border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
-.cfoot .own { margin: 0; min-height: 52px; padding: 6px 6px 6px 14px; border-radius: 12px; }
-.cfoot .own > span { font-weight: 600; }
+.cfoot { background: var(--surface); }
+.cfoot .own { margin: 0; padding: 0 0 0 2px; background: none; border: 0; border-radius: 0; }
+.cfoot .cfl { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.cfoot .cfl b { font-weight: 600; }
+.cfoot .cfv { display: flex; align-items: center; gap: 4px; font-size: .8rem; color: var(--ink-2); white-space: nowrap; }
+.cfoot .qty { background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 4px; }
 body.mob .cfoot .qbtn { width: 42px; height: 42px; border-radius: 11px; }
 .vcard { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); padding: 12px; display: flex; flex-direction: column; gap: 12px; }
 .vcard.cur { border: 2px solid var(--accent); }
@@ -4074,6 +4078,16 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   // In alto chiusura, nome del prodotto con "Carta N di M", cuore e liste; carosello con la carta grande sul colore della carta
   // e le vicine ai lati; versioni come pulsanti; nome, codice e rarità centrati; una riga di dati; prezzi affiancati;
   // poi tratti, digievoluzioni ed effetti come nel resto dell'app; copie possedute in una barra fissa in basso.
+  // nome della versione: Regular, oppure "Alt-Art" seguito da ★, ★★ o SP (scelta dell'utente); codice del prodotto se è di un altro
+  function carVerName(a, lb) {
+    var fs = SETBY[hostSet(a)];
+    if (fs && fs.code !== "EX13") lb.appendChild(document.createTextNode(fs.code + " "));
+    var mk = a.mark === 1 ? "★" : a.mark === 2 ? "★★" : a.mark === "SP" ? "SP" : "";
+    if (!a.suf) lb.appendChild(document.createTextNode("Regular"));
+    else if (mk || /alternative art/i.test(a.ver || "")) { lb.appendChild(document.createTextNode("Alt-Art")); if (mk) lb.appendChild(rarLabel(mk)); }
+    else lb.appendChild(document.createTextNode(verLabel(a.ver) || "Alt-Art"));
+    return lb;
+  }
   function carSheet(o) {
     var c = o.c, sh = o.sh, head = o.head, inDk = o.inDk, mi = o.mi, vers = carVers(c), hs = SETBY[hostSet(c)];
     var reopen = function (target) { st.open = target; drawSheet(); var n2 = sheet.querySelector(".sheet"); if (n2) n2.scrollTop = 0; };
@@ -4103,13 +4117,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
         var on = a.k === c.k, b = el("button", "cver" + (on ? " on" : "")); b.type = "button";
         b.setAttribute("role", "radio"); b.setAttribute("aria-checked", String(on));
         b.appendChild(picBox("cth", "t", a));
-        var tx = el("span", "cvt"), lb = el("b"), fs = SETBY[hostSet(a)];
-        if (fs && fs.code !== "EX13") lb.appendChild(document.createTextNode(fs.code + " "));
-        var mk = a.mark === 1 ? "★" : a.mark === 2 ? "★★" : a.mark === "SP" ? "SP" : "";
-        // Regular, oppure "Alt-Art" seguito da ★, ★★ o SP (scelta dell'utente)
-        if (!a.suf) lb.appendChild(document.createTextNode("Regular"));
-        else if (mk || /alternative art/i.test(a.ver || "")) { lb.appendChild(document.createTextNode("Alt-Art")); if (mk) lb.appendChild(rarLabel(mk)); }
-        else lb.appendChild(document.createTextNode(verLabel(a.ver) || "Alt-Art"));
+        var tx = el("span", "cvt"), lb = carVerName(a, el("b"));
         tx.appendChild(lb);
         var bv = bestVal(a); tx.appendChild(el("small", "", bv == null ? "N/D" : eurT(bv)));
         b.appendChild(tx);
@@ -4202,8 +4210,14 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     if (o.preSec) p.appendChild(o.preSec);
     sh.appendChild(p);
     // barra fissa in basso: copie possedute (e nel mazzo, se aperta dall'editor)
+    // come nella proposta: barra sempre visibile, con scritto a quale versione si aggiungono le copie
     var bar = el("div", "cfoot");
-    o.kids.forEach(function (k) { if (k.classList.contains("own")) bar.appendChild(k); });
+    o.kids.forEach(function (k) {
+      if (!k.classList.contains("own")) return;
+      var l = k.firstChild;
+      if (l && l.tagName === "SPAN") { var w = el("span", "cfl"); w.appendChild(el("b", "", l.textContent)); w.appendChild(carVerName(c, el("small", "cfv"))); k.replaceChild(w, l); }
+      bar.appendChild(k);
+    });
     sh.appendChild(bar);
     st.shTab = "fx";
   }
