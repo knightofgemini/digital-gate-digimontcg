@@ -12,6 +12,10 @@ codes = [c[0] for c in D["cards"]]
 codes += sorted({D["cards"][x[0]][0] + x[1] for st in D["sets"] for x in st.get("v", []) if isinstance(x, list) and x[1]})
 SRC = ["https://world.digimoncard.com/images/cardlist/card/{}.png", "https://en.digimoncard.com/images/cardlist/card/{}.png",
        "https://web-garage.takaotaku.de/{}.webp"]
+# spoiler di un prodotto in arrivo (es. BT27): finché il sito ufficiale non pubblica la carta, TakaOtaku ha solo l'anteprima
+# "-Sample" (951x1295, con la scritta SAMPLE). Si usa come ultimo ripiego e l'immagine resta segnata "spoiler" in sample.json:
+# a ogni build si riprovano le fonti normali e appena una risponde l'immagine viene sostituita.
+SRC_SPOILER = "https://web-garage.takaotaku.de/{}-Sample.webp"
 # per le versioni alternative la numerazione _Pn è quella di TakaOtaku: prima la sua fonte
 SRC_ALT = [SRC[2], SRC[0], SRC[1]]
 # en.digimoncard.com a volte restituisce la carta GIAPPONESE (e con SAMPLE in un'altra posizione): solo ultimo ripiego
@@ -31,16 +35,26 @@ if _old.get("_v") != 2:
 def get(url):
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 digimon-set-tracker"})
     return urllib.request.urlopen(req, timeout=30).read()
+SPOIL = set()
+def save(im, f, t):
+    a = im.copy(); a.thumbnail((480, 672)); a.save(f, "WEBP", quality=80, method=4)
+    b = im.copy(); b.thumbnail((120, 168)); b.save(t, "WEBP", quality=75, method=4)
 def one(code):
     t, f = out / "t" / (code + ".webp"), out / "f" / (code + ".webp")
-    if t.exists() and f.exists(): return "cache"
     q = urllib.parse.quote(code)
-    for tpl in (SRC_ALT if "_P" in code else SRC):
+    if t.exists() and f.exists():
+        if SST.get(code) != "spoiler": return "cache"
+        for tpl in (SRC_ALT if "_P" in code else SRC):   # anteprima: c'è già la versione ufficiale?
+            try:
+                save(Image.open(io.BytesIO(get(tpl.format(q)))).convert("RGB"), f, t); SST.pop(code, None); return "ufficiale"
+            except Exception: pass
+        SPOIL.add(code); return "cache"
+    for tpl in (SRC_ALT if "_P" in code else SRC) + [SRC_SPOILER]:
         for _ in range(2):
             try:
                 im = Image.open(io.BytesIO(get(tpl.format(q)))).convert("RGB")
-                a = im.copy(); a.thumbnail((480, 672)); a.save(f, "WEBP", quality=80, method=4)
-                b = im.copy(); b.thumbnail((120, 168)); b.save(t, "WEBP", quality=75, method=4)
+                save(im, f, t)
+                if tpl == SRC_SPOILER: SPOIL.add(code); return "spoiler"
                 return "ok"
             except Exception:
                 pass
@@ -60,6 +74,7 @@ def _small(im):
     g = im.convert("L").resize((215, 300)); g.paste(0, (0, 108, 215, 182)); return g   # fascia della scritta esclusa
 def same(a, b): return ImageStat.Stat(ImageChops.difference(_small(a), _small(b))).mean[0] < 7
 def clean(code):
+    if code in SPOIL: return "spoiler"
     if SST.get(code) in ("ok", "pulita") or code in ERR: return SST.get(code, "errata")
     f, t = out / "f" / (code + ".webp"), out / "t" / (code + ".webp")
     if not f.exists(): return "manca"
@@ -91,4 +106,4 @@ with cf.ThreadPoolExecutor(12) as ex:
 SST["_v"] = 2
 SJ.write_text(json.dumps(SST, separators=(",", ":")))
 cs = Counter(SST.get(c) for c in codes)
-print("::notice title=Scritta SAMPLE::%d immagini senza scritta, %d sostituite con una versione pulita, %d ancora con la scritta (nessuna fonte pulita per ora)" % (cs.get("ok", 0), cs.get("pulita", 0), cs.get("sample", 0)))
+print("::notice title=Scritta SAMPLE::%d immagini senza scritta, %d sostituite con una versione pulita, %d ancora con la scritta (nessuna fonte pulita per ora), %d anteprime di spoiler" % (cs.get("ok", 0), cs.get("pulita", 0), cs.get("sample", 0), cs.get("spoiler", 0)))

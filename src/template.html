@@ -1174,6 +1174,9 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
 .dkbody { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 10px 0 calc(16px + env(safe-area-inset-bottom, 0px)); }
 .dkinfo2 { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 8px; font: 600 .7rem var(--font-display); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
 /* Informazioni a sezioni */
+.spn { margin-top: 4px; font-size: .78rem; font-weight: 600; color: var(--accent); }
+.spnote { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 12px; padding: 10px 14px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line)); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); font-size: .85rem; line-height: 1.45; color: var(--ink-2); }
+.spnote b { color: var(--accent); font-size: .9rem; }
 .idet { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); margin-bottom: 10px; }
 .idet > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px; padding: 0 16px; font-weight: 600; cursor: pointer; }
 .idet > summary::-webkit-details-marker { display: none; }
@@ -1598,6 +1601,8 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
 <script>
 (function () {
   var DATA = JSON.parse(document.getElementById("data").textContent);
+  // lettere speciali per la ricerca (es. "ð" di Hjaðningar Waltz, BT27-100): definite qui perché fold() si usa già mentre si leggono le carte
+  var FOLDMAP = { "ß": "ss", "æ": "ae", "œ": "oe", "ø": "o", "ł": "l", "đ": "d", "ð": "d", "þ": "th", "ı": "i" };
   var TYPES = { BT: "Booster", EX: "Extra Booster", ST: "Starter Deck", LM: "Limited", PB: "Premium Bandai", AL: "Altri" };
   var COLORS = { Red: "Rosso", Blue: "Blu", Yellow: "Giallo", Green: "Verde", Black: "Nero", Purple: "Viola", White: "Bianco" };
   var CARDTYPES = ["Digimon", "Digi-Egg", "Tamer", "Option", "Digimon/Option"];
@@ -1683,13 +1688,21 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     var b = el("div", cls), im = document.createElement("img");
     im.alt = ""; im.loading = "lazy"; im.decoding = "async"; im.referrerPolicy = "no-referrer";
     im.onerror = function () { b.classList.add("noimg"); };
-    var key = c.img || c.code, ek = encodeURIComponent(key) + ".webp" + (ERRATA[key] && kind !== "pre" ? "?e=1" : "");
+    var key = c.img || c.code, ek = encodeURIComponent(key) + ".webp" + imgQ(key, kind, c);
     if (kind === "f") im.setAttribute("data-lq", IMG + "t/" + ek);
     setImg(im, IMG + kind + "/" + ek);
     b.appendChild(im); return b;
   }
 
   var ERRATA = {}; (DATA.errata || []).forEach(function (k) { ERRATA[k] = 1; });
+  // parte finale dell'indirizzo dell'immagine: "?e=1" dopo un'errata; "?sp=1" per le carte di un prodotto non ancora uscito
+  // (anteprime degli spoiler): all'uscita l'indirizzo cambia e il telefono riscarica l'immagine ufficiale invece di tenere l'anteprima
+  function imgQ(key, kind, c) {
+    var q = [];
+    if (ERRATA[key] && kind !== "pre") q.push("e=1");
+    if (c && soonSet(SETBY[c.set])) q.push("sp=1");
+    return q.length ? "?" + q.join("&") : "";
+  }
   var SETS = DATA.sets, SETBY = {};
   SETS.forEach(function (s) { SETBY[s.id] = s; });
   var CARDS = DATA.cards.map(function (a) {
@@ -2001,7 +2014,6 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     });
   }
 
-  var FOLDMAP = { "ß": "ss", "æ": "ae", "œ": "oe", "ø": "o", "ł": "l", "đ": "d", "ð": "d", "þ": "th", "ı": "i" };
   function fold(t) {
     t = String(t || "").toLowerCase();
     if (t.normalize) t = t.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -2155,7 +2167,8 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     if (s.up) {
       var bd = el("span", "badge"); bd.innerHTML = CLOCK + "<span>" + esc(upBadge(s.up)) + "</span>"; v.appendChild(bd);
       b.appendChild(el("div", "d", upWhen(s.up)));
-      if (PRODUCTS[s.code]) t.onclick = function () { openUp(s.code); }; else t.disabled = true;
+      var sps = spoilerSet(s.code); if (sps) b.appendChild(el("div", "spn", "Spoiler · " + spoilerN(sps) + " carte svelate"));
+      if (PRODUCTS[s.code] || sps) t.onclick = function () { openUp(s.code); }; else t.disabled = true;
       t.appendChild(b); return t;
     }
     if (s.date && s.date.charAt(0) !== "0") b.appendChild(el("div", "d", monthLabel(s.date)));
@@ -2200,7 +2213,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     pageTitle("Prodotti", "Artwork, contenuto e avanzamento della tua collezione per ogni prodotto, dal più recente.");
     if (!DESK) segProd("sets");
     var q = normQ(st.q);
-    var all = (DESK ? upcomingSets() : []).concat(SETS);
+    var all = (DESK ? upcomingSets() : []).concat(SETS.filter(function (x) { return !soonSet(x); }));
     var hits = {};
     var list = all.filter(function (s) {
       if (st.type !== "ALL" && s.type !== st.type) return false;
@@ -2617,7 +2630,8 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   // Prodotti non ancora usciti: solo la scheda, le carte arrivano dopo
   function openUp(code, fromHome) {
     st.back = { y: window.pageYOffset || document.documentElement.scrollTop || 0, q: st.q, type: st.type, qm: st.qm, home: !!fromHome };
-    st.tab = "cards"; st.setId = "up-" + code; qi.value = ""; st.q = ""; window.scrollTo(0, 0); render();
+    var sp = spoilerSet(code); st.shown = PAGE;
+    st.tab = "cards"; st.setId = sp ? sp.id : "up-" + code; qi.value = ""; st.q = ""; window.scrollTo(0, 0); render();
   }
   function renderUp(code) {
     var u = (DATA.upcoming || []).filter(function (x) { return x.code === code; })[0];
@@ -2665,6 +2679,13 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
         if (hasDate && !pb) { var dm = s.date.split("-"); var mn = MONTHS[+dm[1] - 1]; h.appendChild(el("div", "sub", "Uscita: " + mn.charAt(0).toUpperCase() + mn.slice(1) + " " + dm[0])); }
       }
       H.appendChild(h);
+      if (soonSet(s)) {
+        var su = (DATA.upcoming || []).filter(function (x) { return x.code === s.code; })[0];
+        var sn = el("div", "spnote"); sn.appendChild(el("b", "", "In arrivo · " + (su ? upWhen(su) : monthLabel(s.date))));
+        var nAlt = cardsOfSet(s.id).length - spoilerN(s);
+        sn.appendChild(el("span", "", "Spoiler: " + spoilerN(s) + " carte" + (nAlt ? " e " + nAlt + (nAlt === 1 ? " alternative art" : " alternative art") : "") + " svelate finora, con le immagini di anteprima ufficiali (con la scritta SAMPLE). Le altre arriveranno man mano che vengono annunciate."));
+        H.appendChild(sn);
+      }
       if (pb && !DESK) { var det = el("details", "pdet"); if (!fromColl) det.open = true; det.appendChild(el("summary", "", "Dettagli del prodotto e rarità")); det.appendChild(pb); H.appendChild(det); }
       else if (pb) H.appendChild(pb);
     } else if (st.setId) {} else if (DESK) { renderCardsDesk(q); return; }
@@ -3362,6 +3383,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
         mid.appendChild(el("span", "tk", u.code + " · " + u.kind));
         mid.appendChild(el("div", "tn fit", u.name));
         if (u.note) mid.appendChild(el("div", "tt", u.note));
+        var sps = spoilerSet(u.code); if (sps) mid.appendChild(el("div", "spn", "Spoiler · " + spoilerN(sps) + " carte svelate: tocca per vederle"));
         r.appendChild(mid);
         var tw = el("div", "tw"), when = upWhen(u);
         tw.appendChild(el("b", "", u.prec === "none" ? "Da definire" : when));
@@ -3369,7 +3391,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
         else if (u.prec === "none") tw.appendChild(el("span", "tchip m", "Annunciato"));
         else { var cd = cdText(u); tw.appendChild(el("span", "tchip m", cd.big ? (DESK ? "Mese annunciato · tra " : "Tra ") + cd.big + " " + cd.unit : cd.unit)); }
         r.appendChild(tw);
-        if (PRODUCTS[u.code]) r.onclick = function () { openUp(u.code); }; else r.disabled = true;
+        if (PRODUCTS[u.code] || sps) r.onclick = function () { openUp(u.code); }; else r.disabled = true;
         m.appendChild(r);
       });
       tl.appendChild(m);
@@ -3446,6 +3468,11 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   }
   function esc(t) { return String(t).replace(/[&<>]/g, function (ch) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch]; }); }
   function openSoon() { st.tab = "sets"; st.type = "SOON"; st.setId = null; qi.value = ""; st.q = ""; window.scrollTo(0, 0); render(); }
+  // Prodotti in arrivo con le prime carte svelate (spoiler, es. BT27, ottobre 2026): il set ha una data futura. Negli elenchi dei
+  // prodotti usciti non compare (lo rappresenta la sua voce "In arrivo"), ma aprendo la voce in arrivo si vede la pagina con le carte annunciate.
+  function soonSet(s) { return !!(s && !s.up && s.date && s.date.charAt(0) !== "0" && daysTo(s.date) > 0); }
+  function spoilerSet(code) { for (var i = 0; i < SETS.length; i++) { var s = SETS[i]; if (s.code === code && soonSet(s) && (s.v || []).length) return s; } return null; }
+  function spoilerN(s) { return cardsOfSet(s.id).filter(function (c) { return !c.suf; }).length; }
   function openSet(id) { st.back = { y: 0, q: "", type: st.type, qm: st.qm, home: true }; st.tab = "cards"; st.setId = id; st.shown = PAGE; qi.value = ""; st.q = ""; window.scrollTo(0, 0); render(); }
   function renderInfo() {
     pageTitle("Informazioni", "Un catalogo per i Tamer: da dove arrivano i dati e dove resta la tua collezione.");
@@ -3479,7 +3506,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   }
   function recentSets(n) {
     var IMP = { BT: 0, EX: 1, ST: 2, LM: 3, PB: 4, AL: 5 };
-    return SETS.filter(function (x) { return x.date && x.date.charAt(0) !== "0" && BANNERS[x.code]; })
+    return SETS.filter(function (x) { return x.date && x.date.charAt(0) !== "0" && BANNERS[x.code] && !soonSet(x); })
       .sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : (IMP[a.type] - IMP[b.type]) || (numOf(b.code) - numOf(a.code)); }).slice(0, n);
   }
   function monthLabel(d) { var p = d.split("-"), m = MONTHS[+p[1] - 1]; return m.charAt(0).toUpperCase() + m.slice(1) + " " + p[0]; }
@@ -3637,7 +3664,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       h.appendChild(g);
     }
     h.appendChild(el("h3", "", "Altri set recenti"));
-    var rec = SETS.filter(function (x) { return x.date && x.date.charAt(0) !== "0" && BANNERS[x.code]; })
+    var rec = SETS.filter(function (x) { return x.date && x.date.charAt(0) !== "0" && BANNERS[x.code] && !soonSet(x); })
       .sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : (IMP[a.type] - IMP[b.type]) || (numOf(b.code) - numOf(a.code)); }).slice(0, 12);
     var g2 = el("div", "hgrid three");
     rec.forEach(function (x) {

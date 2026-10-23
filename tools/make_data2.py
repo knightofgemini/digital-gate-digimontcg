@@ -7,6 +7,8 @@ def cl(v):
     return "" if v in ("-","–") else v
 # base cards: one per cardNumber, prefer id==cardNumber
 best={}
+def placeholder(k): return (k["name"]["english"] or "").strip().startswith("[[")   # carta non ancora svelata (spoiler)
+src=[k for k in src if not placeholder(k)]
 for k in src:
     n=k["cardNumber"].strip()
     if n not in best or (k["id"]==n and best[n]["id"]!=n): best[n]=k
@@ -16,7 +18,7 @@ NAMES={ # prefix -> set name
  "BT10":"Xros Encounter","BT11":"Dimensional Phase","BT12":"Across Time","BT13":"Versus Royal Knights","BT14":"Blast Ace",
  "BT15":"Exceed Apocalypse","BT16":"Beginning Observer","BT17":"Secret Crisis","BT18":"Special Booster Ver.2.0",
  "BT19":"Special Booster Ver.2.0 / 2.5","BT20":"Special Booster Ver.2.5","BT21":"World Convergence","BT22":"Cyber Eden",
- "BT23":"Hackers' Slumber","BT24":"Time Stranger","BT25":"Dual Revolution","BT26":"Timeless Bonds",
+ "BT23":"Hackers' Slumber","BT24":"Time Stranger","BT25":"Dual Revolution","BT26":"Timeless Bonds","BT27":"Ignition of X",
  "EX1":"Classic Collection","EX2":"Digital Hazard","EX3":"Draconic Roar","EX4":"Alternative Being","EX5":"Animal Colosseum",
  "EX6":"Infernal Ascension","EX7":"Digimon Liberator","EX8":"Chain of Liberation","EX9":"Versus Monsters","EX10":"Sinister Order",
  "EX11":"Dawn of Liberator","EX12":"Digital World Shambala","EX13":"Chivalrous XIII",
@@ -59,7 +61,7 @@ for n,k in best.items():
         num=int(n.split("-")[1])
         if num>62: continue  # LM-09 Distancia Cero: non ancora uscito
         p="LM01-05" if num<=44 else "LM06" if num<=50 else "LM07" if num<=56 else "LM08"
-    if p not in NAMES: missing.add(p)
+    if p not in NAMES: missing.add(p); continue   # prodotto senza nome (es. spoiler di un set non ancora aggiunto): si salta
     evo=[]
     for c in k.get("digivolveCondition") or []:
         evo.append(("Lv."+str(c.get("level",""))+" "+str(c.get("color","")) + ": " + str(c.get("cost",""))).strip())
@@ -75,6 +77,11 @@ for n,k in best.items():
     fix_card(n,rows[-1])
     o=OFF.get(n,{}); x={}
     if "dual" in o and o["dual"].get("lines") not in (None,["-"]): x["d"]={"c":o["dual"].get("cost",""),"col":o["dual"].get("color",""),"l":o["dual"]["lines"]}
+    elif cl(k.get("optionCardEffect")):   # lato Option non ancora trascritto: dalla fonte, con le spiegazioni standard
+        L=[l.strip() for l in k["optionCardEffect"].split("\n") if l.strip()]
+        L=[l+" (Specified conditions meet color requirements.)" if l.startswith("＜Use Req.") and "(" not in l.split("＞",1)[1] else l for l in L]
+        if "Arts Digivolve" in (k.get("dualEffect") or ""): L.append("＜Arts Digivolve＞ (Instead of trashing after use, your cards may digivolve into this card without paying the cost.)")
+        x["d"]={"c":rows[-1][9],"col":cl(k.get("optionCardColourRequirement")),"l":L}
     if "ovf" in o: x["o"]=o["ovf"][1]
     if x: rows[-1].append(x)
     cnt[p]+=1
@@ -98,7 +105,7 @@ DATES={"BT1":"2021-02-12","BT2":"2021-02-12","BT3":"2021-03-12","BT4":"2021-06-1
  "BT7":"2022-03-04","BT8":"2022-05-13","BT9":"2022-07-29","BT10":"2022-10-14","BT11":"2023-02-17","BT12":"2023-04-28",
  "BT13":"2023-07-21","BT14":"2023-11-17","BT15":"2024-02-16","BT16":"2024-05-24","BT17":"2024-08-09","BT18":"2024-11-01",
  "BT19":"2024-11-01","BT20":"2025-02-01","BT21":"2025-04-25","BT22":"2025-07-25","BT23":"2025-10-24","BT24":"2026-01-23",
- "BT25":"2026-05-22","BT26":"2026-09-04",
+ "BT25":"2026-05-22","BT26":"2026-09-04","BT27":"2026-12-11",
  "EX1":"2021-12-10","EX2":"2022-06-24","EX3":"2022-11-11","EX4":"2023-06-23","EX5":"2024-01-19","EX6":"2024-06-28",
  "EX7":"2024-09-13","EX8":"2025-01-01","EX9":"2025-06-26","EX10":"2025-09-19","EX11":"2026-02-14","EX12":"2026-07-04","EX13":"2026-10-02",
  "ST1":"2021-01-29","ST2":"2021-01-29","ST3":"2021-01-29","ST4":"2021-06-11","ST5":"2021-06-11","ST6":"2021-06-11",
@@ -148,6 +155,7 @@ for k in src:
     n=k["cardNumber"].strip(); vid=k["id"].strip()
     if n not in home or "Errata" in vid: continue
     suf=vid[len(n):]
+    if n+suf in FIX.get("_remove_versions",[])+FIX.get("_hold_versions",[]): continue   # versioni tolte su richiesta o ancora senza immagine
     for part in re.split(r'\n|\u25b9',k.get("notes") or ""):
         for pid in prod_ids(part):
             if pid not in setids: continue
@@ -203,5 +211,5 @@ out={"sets":sets,"cards":rows,"upcoming":upcoming,"versions":VERS,"banners":sort
      "errata":sorted(f[:-5] for f in __import__("os").listdir(SP+"errata") if f.endswith(".webp")),
      "ban":json.load(open(SP+"../tools/banlist.json",encoding="utf-8"))}  # lista ufficiale carte bandite/limitate
 s=json.dumps(out,ensure_ascii=False,separators=(",",":")).replace("</","<\\/")
-open(SP+"data.json","w",encoding="utf-8").write(s)
+open(__import__("os").environ.get("DATA_OUT") or SP+"data.json","w",encoding="utf-8").write(s)   # DATA_OUT: scrive altrove (usato da merge_set.py)
 print(len(rows),"cards",len(sets),"sets",len(s)//1024,"KB")

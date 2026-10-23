@@ -388,9 +388,45 @@
  "ST24-08": {
   "dp": "2000"
  },
+ "BT27-020": {
+  "dp": "2000"
+ },
+ "BT27-051": {
+  "lv": "Lv.5",
+  "form": "Ultimate",
+  "evo_set": "Lv.4 Green: 4; Lv.4 Yellow: 4",
+  "text": [
+   [
+    14,
+    "w/[Leomon]\u00a0in its name or",
+    "w/[Leomon]\u00a0in name or"
+   ]
+  ]
+ },
+ "BT27-067": {
+  "cost": "5"
+ },
+ "BT27-082": {
+  "attr": "Virus",
+  "text": [
+   [
+    11,
+    "If this effect didn't delete, Trash their",
+    "If this effect didn't delete, trash their"
+   ]
+  ]
+ },
  "_note": "Correzioni verificate sulle immagini ufficiali delle carte (ott. 2026).",
  "_remove": [
   "P-226",
   "P-251"
- ]
+ ],
+ "_remove_versions": [
+  "ST24-11_P2",
+  "ST24-11_P3"
+ ],
+ "_hold_versions": [
+  "BT27-103_P2"
+ ],
+ "_hold_note": "_hold_versions: versioni già annunciate ma ancora senza immagine (spoiler); toglierle da qui quando l'immagine è disponibile."
 }
