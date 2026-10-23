@@ -8,6 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       prova: { description: "Prova: rami con -prova nel nome e nessuna segnalazione", type: boolean, default: false }
+      prova_mail: { description: "Manda solo una segnalazione di prova (per controllare che arrivi la mail) e la richiude", type: boolean, default: false }
   schedule:
     - cron: "37 5 * * *"
 permissions:
@@ -21,10 +22,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Segnalazione di prova (mail)
+        if: inputs.prova_mail
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          url=$(gh issue create --repo "${{ github.repository }}" --title "Prova dell'avviso delle nuove carte spoiler" --body "Questa è una prova: se ti è arrivata la mail, gli avvisi del controllo giornaliero funzionano. @${{ github.repository_owner }}")
+          gh issue close "$url" --repo "${{ github.repository }}" --comment "Prova conclusa."
+          echo "::notice title=Prova::segnalazione di prova inviata e chiusa: $url"
       - uses: actions/checkout@v4
+        if: ${{ !inputs.prova_mail }}
       - name: Scarica la raccolta TakaOtaku
+        if: ${{ !inputs.prova_mail }}
         run: git clone -q --depth 1 https://github.com/TakaOtaku/Digimon-Card-App "$RUNNER_TEMP/taka"
       - name: Stato dell'ultimo avviso
+        if: ${{ !inputs.prova_mail }}
         id: prev
         shell: bash
         run: |
@@ -32,15 +44,16 @@ jobs:
             echo "ids=$(git show FETCH_HEAD:stato.txt 2>/dev/null | head -1)" >> "$GITHUB_OUTPUT"
           fi
       - name: Confronta con il catalogo
+        if: ${{ !inputs.prova_mail }}
         id: c
         env:
           TAKA: ${{ runner.temp }}/taka
         run: python3 tools/spoiler_check.py --apply --report "$RUNNER_TEMP/report.md" --out "$GITHUB_OUTPUT" --prev "${{ steps.prev.outputs.ids }}"
       - name: Riepilogo
-        if: always()
+        if: ${{ always() && !inputs.prova_mail }}
         run: cat "$RUNNER_TEMP/report.md" >> "$GITHUB_STEP_SUMMARY" || true
       - name: Ramo spoiler-nuove e segnalazione
-        if: steps.c.outputs.cambiato == '1' && steps.c.outputs.ids != steps.prev.outputs.ids
+        if: ${{ !inputs.prova_mail && steps.c.outputs.cambiato == '1' && steps.c.outputs.ids != steps.prev.outputs.ids }}
         env:
           GH_TOKEN: ${{ github.token }}
           SUF: ${{ inputs.prova && '-prova' || '' }}
@@ -68,11 +81,11 @@ jobs:
           echo "${{ steps.c.outputs.ids }}" > stato.txt
           git add stato.txt; git commit -qm "Stato del controllo spoiler"; git push -q -f origin "spoiler-stato$SUF"
       - name: Nessuna novità da segnalare
-        if: steps.c.outputs.cambiato != '1' || steps.c.outputs.ids == steps.prev.outputs.ids
+        if: ${{ !inputs.prova_mail && (steps.c.outputs.cambiato != '1' || steps.c.outputs.ids == steps.prev.outputs.ids) }}
         run: echo "Nessuna novità rispetto all'ultimo avviso"
       - name: Chiudi la segnalazione quando tutto è pubblicato
         # nessuna differenza fra la raccolta e il catalogo pubblicato: le carte segnalate sono state pubblicate
-        if: steps.c.outputs.cambiato != '1' && !inputs.prova
+        if: ${{ !inputs.prova_mail && !inputs.prova && steps.c.outputs.cambiato != '1' }}
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
