@@ -70,3 +70,12 @@ jobs:
       - name: Nessuna novità da segnalare
         if: steps.c.outputs.cambiato != '1' || steps.c.outputs.ids == steps.prev.outputs.ids
         run: echo "Nessuna novità rispetto all'ultimo avviso"
+      - name: Chiudi la segnalazione quando tutto è pubblicato
+        # nessuna differenza fra la raccolta e il catalogo pubblicato: le carte segnalate sono state pubblicate
+        if: steps.c.outputs.cambiato != '1' && !inputs.prova
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          num=$(gh issue list --repo "${{ github.repository }}" --state open --search "Nuove carte spoiler in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$num" ]; then gh issue close "$num" --repo "${{ github.repository }}" --comment "Tutte le carte segnalate sono nel catalogo pubblicato."; fi

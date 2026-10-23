@@ -4476,7 +4476,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     document.getElementById("qm-text").setAttribute("aria-pressed", String(st.qm === "text"));
     chips.hidden = !isSets || !DESK;
     qi.hidden = isSoon || isHome || isUp || dkNoSearch;
-    document.getElementById("hint").textContent = "Carte in inglese, da una raccolta pubblica aggiornata fino a BT26, EX13 e ST24, più promo e RB01. Quantità e collezione restano salvate in questo browser.";
+    document.getElementById("hint").textContent = "Carte in inglese, da una raccolta pubblica aggiornata fino a BT26, EX13 e ST24, più promo, RB01 e gli spoiler dei prodotti in arrivo. Quantità e collezione restano salvate in questo browser.";
     qi.placeholder = prodM ? (DESK ? "Cerca in questo prodotto, es. Agumon" : "Cerca in " + (SETBY[st.setId] ? SETBY[st.setId].code : "questo prodotto") + ", es. Agumon") : botM && st.ownOnly ? (st.cview === "fav" ? "Cerca nelle preferite…" : st.cview === "wish" ? "Cerca nella wishlist…" : "Cerca nella collezione…") : botM && st.tab === "cards" ? "Cerca per nome, codice o testo…" : botM ? "Cerca per set, codice o Digimon…" : dkM ? "Cerca una carta, es. Agumon" : isDeck ? "Cerca una carta da aggiungere, es. Agumon o BT1-010" : isSets ? "Cerca per set, codice o Digimon, es. BT10 o Omnimon" :
       st.qm === "name" ? "Cerca per nome, es. Omnimon" :
       st.qm === "text" ? "Cerca nel testo un nome, keyword o parola, es. Omnimon, Barrier o draw" :
