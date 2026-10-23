@@ -386,6 +386,7 @@ body.desk .alts .alt .pline .ptag { font-size: .5rem; padding: 2px 0; width: 3.4
 .row.upc .ttl { font-weight: 500; }
 .fit { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nml { max-width: 100%; }
+.fit.two.wrap2 { white-space: normal; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: clip; overflow-wrap: anywhere; }
 .subline .cdn { color: var(--accent); font-weight: 600; }
 .subline .mon { text-transform: capitalize; }
 .row.upc .note { grid-column: 1 / -1; color: var(--ink-2); font-size: .8rem; }
@@ -1712,7 +1713,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   function isAceX(extra) { return /(^|\n)Effetto ACE:/.test(extra || ""); }
   function isAce(c) { return isAceX(c.extra); }
   // nome su una sola riga negli elenchi: se è lungo si rimpicciolisce (fitAll) invece di andare a capo
-  function nameLine(c) { var d = el("div", "nml fit"); d.appendChild(nameFrag(c)); return d; }
+  function nameLine(c) { var d = el("div", "nml fit two"); d.appendChild(nameFrag(c)); return d; }
   function nameFrag(c, star) {
     var f = document.createDocumentFragment(); f.appendChild(document.createTextNode(c.name));
     if (isAce(c)) { f.appendChild(document.createTextNode(" ")); f.appendChild(el("span", "acet", "ACE")); if (star) f.appendChild(el("span", "acestar", "*")); }
@@ -2037,7 +2038,19 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     if (PRODUCTS[u.code]) { r.disabled = false; r.onclick = function () { openUp(u.code); }; }
     return r;
   }
+  // nomi molto lunghi ("two"): prima si rimpiccioliscono su una riga fino a una grandezza ancora leggibile,
+  // se non basta vanno su due righe (rimpicciolendosi quanto serve per starci), oltre compaiono i puntini
+  function fitTwo(e) {
+    e.style.fontSize = ""; e.classList.remove("wrap2");
+    var fs0 = parseFloat(getComputedStyle(e).fontSize), fs = fs0, min1 = Math.max(11, fs0 * .62);
+    if (e.scrollWidth > e.clientWidth + 0.5 && e.clientWidth > 0) { fs = Math.max(min1, Math.floor(fs * e.clientWidth / e.scrollWidth * 2) / 2); e.style.fontSize = fs + "px"; }
+    while (e.scrollWidth > e.clientWidth + 0.5 && fs > min1) { fs -= 0.5; e.style.fontSize = fs + "px"; }
+    if (e.scrollWidth <= e.clientWidth + 0.5 || !e.clientWidth) return;
+    e.classList.add("wrap2"); fs = fs0; e.style.fontSize = fs + "px";
+    while (e.scrollHeight > fs * 1.2 * 2 + 1 && fs > 8) { fs -= 0.5; e.style.fontSize = fs + "px"; }
+  }
   function fitOne(e) {
+    if (e.classList.contains("two")) { fitTwo(e); return; }
     e.style.fontSize = "";
     var fs = parseFloat(getComputedStyle(e).fontSize);
     if (e.classList.contains("one")) e.style.whiteSpace = "";
@@ -3238,7 +3251,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
         var t = el("div", "tile"); t.tabIndex = 0; t.setAttribute("role", "button");
         t.appendChild(picBox("pic", "f", c)); t.appendChild(favBtn(c));
         var cl = el("div", "cline"); cl.style.background = gradient(c.colors, "to right"); t.appendChild(cl);
-        var tn = el("div", "tname fit"); tn.appendChild(nameFrag(c)); t.appendChild(tn);
+        var tn = el("div", "tname fit two"); tn.appendChild(nameFrag(c)); t.appendChild(tn);
         listLines(c).forEach(function (x) { t.appendChild(x); });
         t.appendChild(qtyControl(c, function () { recomputeStats(); render(); }));
         var fbg = favBadges(c); if (fbg) t.appendChild(fbg);
@@ -4150,7 +4163,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     }
     // nome, codice, rarità, versione e copie in tutto
     var nb = el("div", "cname");
-    var h = el("h2", "fit"); h.appendChild(nameFrag(c, true)); nb.appendChild(h);
+    var h = el("h2", "fit two"); h.appendChild(nameFrag(c, true)); nb.appendChild(h);
     var sub = el("div", "csub"); sub.appendChild(document.createTextNode(c.code));
     var rr = (c.rar || "").trim();
     if (rr) { sub.appendChild(document.createTextNode(" · ")); var hr = rarBadge(c); hr.className += " hrar r-" + rr; sub.appendChild(hr); }
@@ -5350,7 +5363,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       var t = el("div", "tile"); t.tabIndex = 0; t.setAttribute("role", "button");
       t.appendChild(picBox("pic", "f", c));
       var cl = el("div", "cline"); cl.style.background = gradient(c.colors, "to right"); t.appendChild(cl);
-      var tn = el("div", "tname fit"); tn.appendChild(nameFrag(c)); t.appendChild(tn);
+      var tn = el("div", "tname fit two"); tn.appendChild(nameFrag(c)); t.appendChild(tn);
       listLines(c).forEach(function (x) { t.appendChild(x); });
       t.appendChild(deckQty(d, c, cb));
       if (bb) { var tb = el("div", "dbl"); tb.appendChild(bb); t.appendChild(tb); }
