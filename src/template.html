@@ -909,6 +909,50 @@ body.mob .mpane .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .cver .cvt small { font-size: .76rem; color: var(--ink-2); }
 .mown .own .ctot { font-weight: 400; font-size: .8rem; color: var(--ink-2); margin-left: 6px; }
 .mhbtns .favb.big, .mhbtns .favl { width: 44px; height: 44px; }
+/* EX13 (telefono): resto della scheda ridisegnata (carSheet) */
+body.mob .sheet-head.chead { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.chm { display: flex; flex-direction: column; align-items: center; text-align: center; line-height: 1.2; min-width: 0; }
+.chm b { font-size: .95rem; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chm small { font-size: .78rem; color: var(--ink-2); }
+.cpane .car { margin-top: 12px; }
+.cname { text-align: center; margin: 2px 0 12px; }
+.cname h2 { margin: 0; font: 700 1.6rem/1.15 var(--font-display); white-space: nowrap; overflow: hidden; }
+.csub { margin-top: 4px; font-size: .9rem; color: var(--ink-2); }
+.csub .hrar { display: inline-flex; }
+.cname .acenote { margin: 6px 0 0; }
+.cdata { display: flex; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; margin: 0 0 10px; overflow: hidden; }
+.cdc { flex: 1 1 0; min-width: 0; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.cdc + .cdc { border-left: 1px solid var(--line); }
+.cdc.w2 { flex-grow: 2; }
+.cdc > span { font: 600 .66rem var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.cdc > b { font-size: .95rem; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cdc .ccol { display: flex; align-items: center; gap: 4px; }
+.cdc .ccol i { flex: none; width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.18); }
+.ctags { margin: 0 0 10px; }
+.ctags .tags { justify-content: center; }
+.cpw { margin: 0 0 12px; }
+.cprices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.cpb { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; cursor: pointer; }
+.cpb.open { border-color: var(--ink-2); }
+.cpb .cpt { width: 100%; display: flex; align-items: center; gap: 6px; font-size: .85rem; font-weight: 600; color: var(--ink-2); }
+.cpb .cpt .cmk, .cpb .cpt .ctk { width: 18px; height: 18px; }
+.cpb .pchev { margin-left: auto; width: 16px; height: 16px; }
+.cpb.open .pchev { transform: rotate(180deg); }
+.cpb .cpv { font: 700 1.35rem/1.25 var(--font-display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cpb .cpv.na { color: var(--ink-2); font-weight: 500; }
+.cpb .cpv.shoplink { padding: 2px 6px; margin: 0 -6px; border-radius: 8px; }
+.cpb .cpv.shoplink:active { transform: scale(.97); }
+.cpb small { font-size: .74rem; color: var(--ink-2); }
+.cpb .clow { color: var(--ok); font-weight: 600; }
+.cpdet { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.cpdb { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 0 0; }
+.cpdh { display: flex; align-items: center; gap: 6px; padding: 0 12px 8px; font-size: .88rem; }
+.cpdh .cmk, .cpdh .ctk { width: 18px; height: 18px; }
+.cevo { grid-template-columns: minmax(0, 1fr); }
+.cfoot { flex: none; position: sticky; bottom: 0; z-index: 4; margin: auto calc(-1 * var(--mg, 14px)) 0; padding: 10px var(--mg, 14px) calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--bg); border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+.cfoot .own { margin: 0; min-height: 52px; padding: 6px 6px 6px 14px; border-radius: 12px; }
+.cfoot .own > span { font-weight: 600; }
+body.mob .cfoot .qbtn { width: 42px; height: 42px; border-radius: 11px; }
 .vcard { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); padding: 12px; display: flex; flex-direction: column; gap: 12px; }
 .vcard.cur { border: 2px solid var(--accent); }
 .vcard .vh { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
@@ -3928,64 +3972,20 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       var p1 = el("div", "mpane"), p2 = el("div", "mpane vers");
       var preSec = kids.filter(function (k) { return k.classList.contains("altsec") && k.querySelector(".from.pre"); })[0];
       // 1) carta con frecce per la precedente/successiva ai lati
-      var mi = navIdx(c), CAR = isCarousel(c), cvers = CAR ? carVers(c) : null;
+      var mi = navIdx(c), CAR = isCarousel(c);
       function anav(cls, lbl, path, target) {
         var b = el("button", "anav " + cls); b.type = "button"; b.setAttribute("aria-label", lbl); b.innerHTML = SVGN + path + "</svg>";
         if (target && !SHSTACK.length) b.onclick = function () { st.open = target; drawSheet(); var n2 = sheet.querySelector(".sheet"); if (n2) n2.scrollTop = 0; }; else b.disabled = true;
         return b;
       }
-      if (CAR) {
-        // EX13: carosello. Carta grande al centro su fondo del colore della carta, ai lati spuntano la precedente e la successiva
-        // (toccandole si passa a quelle), dietro la carta un bordo se ci sono altre versioni; sotto i pulsanti delle versioni.
-        var car = el("div", "car"); car.style.background = gradient(c.colors, "to right");
-        var goTo = function (target) { return function () { st.open = target; drawSheet(); var n2 = sheet.querySelector(".sheet"); if (n2) n2.scrollTop = 0; }; };
-        var nbB = function (cls, lbl, target) {
-          if (!target || SHSTACK.length) return;
-          var b = el("button", "cnb " + cls); b.type = "button"; b.setAttribute("aria-label", lbl + ": " + target.name + " (" + target.code + ")");
-          b.appendChild(picBox("cnp", "f", target)); b.onclick = goTo(target); car.appendChild(b);
-        };
-        nbB("prev", "Carta precedente", mi >= 0 ? NAVLIST[mi - 1] : null);
-        nbB("next", "Carta successiva", mi >= 0 ? NAVLIST[mi + 1] : null);
-        if (cvers.length > 1) { var stk = el("span", "cstk"); stk.setAttribute("aria-hidden", "true"); car.appendChild(stk); }
-        car.appendChild(picBox("cpic", "f", c));
-        p1.appendChild(car);
-        if (cvers.length > 1) {
-          var cvr = el("div", "cvers"); cvr.setAttribute("role", "radiogroup"); cvr.setAttribute("aria-label", "Versione della carta");
-          cvers.forEach(function (a) {
-            var on = a.k === c.k, b = el("button", "cver" + (on ? " on" : "")); b.type = "button";
-            b.setAttribute("role", "radio"); b.setAttribute("aria-checked", String(on));
-            b.appendChild(picBox("cth", "t", a));
-            var tx = el("span", "cvt"), lb = el("b"), fs = SETBY[hostSet(a)];
-            if (fs && fs.code !== "EX13") lb.appendChild(document.createTextNode(fs.code + " "));
-            var mk = a.mark === 1 ? "★" : a.mark === 2 ? "★★" : a.mark === "SP" ? "SP" : "";
-            if (!a.suf) lb.appendChild(document.createTextNode("Regular"));
-            else if (mk) lb.appendChild(rarLabel(mk));
-            else lb.appendChild(document.createTextNode(verLabel(a.ver) || "Alternative Art"));
-            tx.appendChild(lb);
-            var bv = bestVal(a); tx.appendChild(el("small", "", bv == null ? "N/D" : eurT(bv)));
-            b.appendChild(tx);
-            if (!on) b.onclick = function () { if (!inDk) st.exitSet = hostSet(a); st.open = a; drawSheet(); };
-            cvr.appendChild(b);
-          });
-          p1.appendChild(cvr);
-          requestAnimationFrame(function () { var o = cvr.querySelector(".on"); if (o && cvr.scrollWidth > cvr.clientWidth) cvr.scrollLeft = o.offsetLeft - (cvr.clientWidth - o.offsetWidth) / 2; });
-        }
-        // cuore e liste in alto accanto alla chiusura (niente schede Effetto / Versioni: le versioni sono i pulsanti sotto la carta)
-        var flb = favListsBtn(c); mhb.insertBefore(flb, xb); mhb.insertBefore(favBtn(c, "big", function () { render(); drawSheet(); }), flb);
-      } else {
+      if (CAR) carSheet({ sh: sh, head: head, xb: xb, c: c, kids: kids, preSec: preSec, inDk: inDk, mi: mi, tags: tags, stats: stats, art: art });
+      else {
       art.appendChild(anav("prev", "Carta precedente", '<path d="M15 5l-7 7 7 7"/>', mi >= 0 ? NAVLIST[mi - 1] : null));
       art.appendChild(anav("next", "Carta successiva", '<path d="M9 5l7 7-7 7"/>', mi >= 0 ? NAVLIST[mi + 1] : null));
       p1.appendChild(art);
-      }
       // 2) copie, direttamente sotto la carta
       var ob = el("div", "mown");
       kids.forEach(function (k) { if (k.classList.contains("own")) ob.appendChild(k); });
-      if (CAR && cvers.length > 1) {
-        // EX13: le copie sono della versione scelta; accanto il totale di tutte le versioni
-        var ctn = 0; cvers.forEach(function (a) { ctn += owned(a); });
-        var oo = ob.querySelectorAll(".own"), ol = oo[oo.length - 1];
-        if (ol && ol.firstChild && ctn !== owned(c)) ol.firstChild.appendChild(el("span", "ctot", ctn === 1 ? "1 in tutto" : ctn + " in tutto"));
-      }
       p1.appendChild(ob);
       kids.forEach(function (k) { if (k.classList.contains("pbox")) p1.appendChild(k); });
       // 3) dati ed effetti
@@ -4024,8 +4024,6 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
         p2.appendChild(v);
       });
       if (!alts.length) p2.appendChild(el("p", "hint vnone", "Questa carta non ha altre versioni (alternative art o ristampe)."));
-      if (CAR) { st.shTab = "fx"; sh.appendChild(p1); }
-      else {
       var tab = st.shTab === "ver" ? "ver" : "fx";
       var seg = el("div", "mseg"); seg.setAttribute("role", "tablist");
       [["fx", "Effetto"], ["ver", "Versioni · " + all.length]].forEach(function (x) {
@@ -4068,6 +4066,139 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     if (!wasOpen) sheetIn(sh, scrim);
     fitAll();
     sh.tabIndex = -1; sh.focus({ preventScroll: true });
+  }
+  // ---- EX13 sul telefono: scheda carta ridisegnata (proposta "C - Carosello", ottobre 2026).
+  // In alto chiusura, nome del prodotto con "Carta N di M", cuore e liste; carosello con la carta grande sul colore della carta
+  // e le vicine ai lati; versioni come pulsanti; nome, codice e rarità centrati; una riga di dati; prezzi affiancati;
+  // poi tratti, digievoluzioni ed effetti come nel resto dell'app; copie possedute in una barra fissa in basso.
+  function carSheet(o) {
+    var c = o.c, sh = o.sh, head = o.head, inDk = o.inDk, mi = o.mi, vers = carVers(c), hs = SETBY[hostSet(c)];
+    var reopen = function (target) { st.open = target; drawSheet(); var n2 = sheet.querySelector(".sheet"); if (n2) n2.scrollTop = 0; };
+    // intestazione
+    head.innerHTML = ""; head.classList.add("chead");
+    head.appendChild(o.xb);
+    var hm = el("div", "chm"); hm.appendChild(el("b", "", hs ? hs.name : ""));
+    var num = parseInt((c.code.split("-")[1] || ""), 10);
+    if (hs && hs.n && num) hm.appendChild(el("small", "", "Carta " + num + " di " + hs.n));
+    head.appendChild(hm);
+    var hb = el("div", "mhbtns"); hb.appendChild(favBtn(c, "big", function () { render(); drawSheet(); })); hb.appendChild(favListsBtn(c)); head.appendChild(hb);
+    var p = el("div", "mpane cpane");
+    // carosello
+    var car = el("div", "car"); car.style.background = gradient(c.colors, "to right");
+    [["prev", "Carta precedente", mi >= 0 ? NAVLIST[mi - 1] : null], ["next", "Carta successiva", mi >= 0 ? NAVLIST[mi + 1] : null]].forEach(function (x) {
+      var t = x[2]; if (!t || SHSTACK.length) return;
+      var b = el("button", "cnb " + x[0]); b.type = "button"; b.setAttribute("aria-label", x[1] + ": " + t.name + " (" + t.code + ")");
+      b.appendChild(picBox("cnp", "f", t)); b.onclick = function () { reopen(t); }; car.appendChild(b);
+    });
+    if (vers.length > 1) { var stk = el("span", "cstk"); stk.setAttribute("aria-hidden", "true"); car.appendChild(stk); }
+    car.appendChild(picBox("cpic", "f", c));
+    p.appendChild(car);
+    // versioni
+    if (vers.length > 1) {
+      var cvr = el("div", "cvers"); cvr.setAttribute("role", "radiogroup"); cvr.setAttribute("aria-label", "Versione della carta");
+      vers.forEach(function (a) {
+        var on = a.k === c.k, b = el("button", "cver" + (on ? " on" : "")); b.type = "button";
+        b.setAttribute("role", "radio"); b.setAttribute("aria-checked", String(on));
+        b.appendChild(picBox("cth", "t", a));
+        var tx = el("span", "cvt"), lb = el("b"), fs = SETBY[hostSet(a)];
+        if (fs && fs.code !== "EX13") lb.appendChild(document.createTextNode(fs.code + " "));
+        var mk = a.mark === 1 ? "★" : a.mark === 2 ? "★★" : a.mark === "SP" ? "SP" : "";
+        if (!a.suf) lb.appendChild(document.createTextNode("Regular"));
+        else if (mk) lb.appendChild(rarLabel(mk));
+        else lb.appendChild(document.createTextNode(verLabel(a.ver) || "Alternative Art"));
+        tx.appendChild(lb);
+        var bv = bestVal(a); tx.appendChild(el("small", "", bv == null ? "N/D" : eurT(bv)));
+        b.appendChild(tx);
+        if (!on) b.onclick = function () { if (!inDk) st.exitSet = hostSet(a); st.open = a; drawSheet(); };
+        cvr.appendChild(b);
+      });
+      p.appendChild(cvr);
+      requestAnimationFrame(function () { var on = cvr.querySelector(".on"); if (on && cvr.scrollWidth > cvr.clientWidth) cvr.scrollLeft = on.offsetLeft - (cvr.clientWidth - on.offsetWidth) / 2; });
+    }
+    // nome, codice, rarità, versione e copie in tutto
+    var nb = el("div", "cname");
+    var h = el("h2", "fit"); h.appendChild(nameFrag(c, true)); nb.appendChild(h);
+    var sub = el("div", "csub"); sub.appendChild(document.createTextNode(c.code));
+    var rr = (c.rar || "").trim();
+    if (rr) { sub.appendChild(document.createTextNode(" · ")); var hr = rarBadge(c); hr.className += " hrar r-" + rr; sub.appendChild(hr); }
+    if (c.suf && c.ver && c.ver !== "Normal") {
+      var RN = {}; Object.keys(RARN).forEach(function (k) { RN[RARN[k].toLowerCase()] = 1; });
+      c.ver.split(/\s*-\s*/).filter(function (vp) { return !RN[vp.toLowerCase()] && !/^(promo|rare|alternative art)$/i.test(vp); }).forEach(function (vp) {
+        sub.appendChild(document.createTextNode(" · ")); sub.appendChild(el("span", /foil/i.test(vp) ? "foil" : "", vp));
+      });
+    }
+    if (vers.length > 1) {
+      var tot = 0; vers.forEach(function (a) { tot += owned(a); });
+      sub.appendChild(document.createTextNode(" · " + (tot === 1 ? "1 copia in tutto" : tot + " copie in tutto")));
+    }
+    nb.appendChild(sub);
+    if (isAce(c)) nb.appendChild(el("p", "acenote", "* ACE è il simbolo stampato accanto al nome delle carte Digimon ACE: non fa parte del nome della carta."));
+    p.appendChild(nb);
+    // una riga di dati (le parole delle carte restano in inglese)
+    var dt = el("div", "cdata");
+    function cell(lbl, val, cls) { if (!val) return; var d = el("div", "cdc" + (cls ? " " + cls : "")); d.appendChild(el("span", "", lbl)); if (typeof val === "string") d.appendChild(el("b", "", val)); else d.appendChild(val); dt.appendChild(d); }
+    cell("Tipo", c.ct, c.ct && c.ct.length > 8 ? "w2" : "");
+    cell("Livello", c.lv);
+    cell("Costo", c.ct === "Digimon/Option" ? "" : c.play);
+    cell("DP", c.dp);
+    if (c.colors.length) {
+      var cb = el("b", "ccol"); c.colors.forEach(function (x) { var i = el("i"); i.style.background = colorVar(x); cb.appendChild(i); });
+      if (c.colors.length === 1) cb.appendChild(document.createTextNode(c.colors[0]));
+      cb.title = c.colors.join(" / "); cb.setAttribute("aria-label", c.colors.join(" / "));
+      cell("Colore", cb);
+    }
+    p.appendChild(dt);
+    // forma | attribute | trait come sulla carta stampata
+    var idr = o.tags.querySelector(".idrow");
+    if (idr) { var tw = el("div", "tagrows ctags"); tw.appendChild(idr); p.appendChild(tw); }
+    o.kids.forEach(function (k) { if (k.classList.contains("banline")) p.appendChild(k); });
+    // prezzi affiancati: il valore apre il negozio, il resto del riquadro apre/chiude i dettagli sotto
+    if (priceCovered(c) || ctCovered(c)) {
+      var pw = el("div", "fx pbox cpw"), pg = el("div", "cprices"), det = el("div", "cpdet");
+      var cv = priceCovered(c) ? cmVal(c) : null, tv = ctCovered(c) ? ctVal(c) : null;
+      var low = cv != null && tv != null && cv !== tv ? (cv < tv ? "cm" : "ct") : "";
+      function pbx(kind, mark, name, val, tag, url, row, open, setOpen) {
+        var b = el("div", "cpb" + (open ? " open" : "")); b.setAttribute("role", "button"); b.tabIndex = 0; b.setAttribute("aria-expanded", String(open));
+        b.setAttribute("aria-label", "Dettagli prezzo " + name);
+        var t = el("span", "cpt"); t.appendChild(mark); t.appendChild(el("span", "", name));
+        var ch = el("span", "pchev"); ch.setAttribute("aria-hidden", "true"); t.appendChild(ch); b.appendChild(t);
+        var v = el("b", "cpv" + (val == null ? " na" : ""), val == null ? "N/D" : eurN(val) + " €");
+        b.appendChild(url && val != null ? shopLink(v, url, "Apri la carta su " + name) : v);
+        var lb = el("small", "", val == null ? "Non disponibile" : tag); if (low === kind) { lb.appendChild(document.createTextNode(" · ")); lb.appendChild(el("span", "clow", "più basso")); }
+        b.appendChild(lb);
+        var tog = function () { setOpen(!open); drawSheet(); };
+        b.onclick = tog; b.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tog(); } };
+        pg.appendChild(b);
+        // dettagli: gli stessi della scheda di sempre (medie Cardmarket; lingua, condizione, venditore CardTrader)
+        if (open && row && row.tagName === "DETAILS") {
+          var bx = el("div", "cpdb"); var hh = el("div", "cpdh"); hh.appendChild(mark.cloneNode(true)); hh.appendChild(el("b", "", name)); bx.appendChild(hh);
+          Array.prototype.slice.call(row.children).forEach(function (k) { if (k.tagName !== "SUMMARY") bx.appendChild(k); });
+          det.appendChild(bx);
+        }
+      }
+      if (priceCovered(c)) {
+        var pp = priceOf(c), useTr = pp && pp[1] == null && pp[0] != null;
+        pbx("cm", cmMark(), "Cardmarket", cv, useTr ? "Trend" : "Minimo", cmUrl(c), cmRow(c), cmDetOpen, function (v) { cmDetOpen = v; });
+      }
+      if (ctCovered(c)) pbx("ct", ctMark(), "CardTrader", tv, "Minimo", ctUrl(c), ctRow(c), ctDetOpen, function (v) { ctDetOpen = v; });
+      pw.appendChild(pg); if (det.children.length) pw.appendChild(det); p.appendChild(pw);
+    }
+    // digievoluzioni (senza i riquadri Costo/DP/Rarità, già nella riga dei dati)
+    var ev = Array.prototype.slice.call(o.stats.children).filter(function (k) { return k.classList.contains("wide"); });
+    if (ev.length) { var es = el("div", "stats cevo"); ev.forEach(function (k) { es.appendChild(k); }); p.appendChild(es); }
+    // effetti e regole
+    o.kids.forEach(function (k) {
+      if (k === o.art || k === o.tags || k === o.stats || k === o.preSec) return;
+      if (/\b(own|pbox|altsec|banline)\b/.test(k.className)) return;
+      p.appendChild(k);
+    });
+    if (o.preSec) p.appendChild(o.preSec);
+    sh.appendChild(p);
+    // barra fissa in basso: copie possedute (e nel mazzo, se aperta dall'editor)
+    var bar = el("div", "cfoot");
+    o.kids.forEach(function (k) { if (k.classList.contains("own")) bar.appendChild(k); });
+    sh.appendChild(bar);
+    st.shTab = "fx";
   }
   function favListsBtn(c) {
     var b = el("button", "favl"); b.type = "button"; b.innerHTML = ICO_LISTS; b.setAttribute("aria-label", "Liste e avviso di prezzo"); b.title = "Liste e avviso di prezzo";
