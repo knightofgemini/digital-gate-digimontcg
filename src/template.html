@@ -1319,6 +1319,12 @@ body.mob .menu-scrim { transition: opacity .3s ease-out; }
 body.mob .qbtn { border-radius: 11px; }
 body.mob .dksel .qbtn, body.mob .scan .own .qbtn { width: 40px; height: 40px; }
 body.mob .schrow .qty .qbtn { border-radius: 10px; }
+/* Contatori −/+ ovunque nello stile della barra della scheda carta (23 ottobre 2026): pulsanti e numero racchiusi in un riquadro */
+body.mob .qty { background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 3px; gap: 4px; }
+body.mob .cfoot .qty { padding: 4px; }
+body.desk .qty { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 2px; }
+body.desk .qty .qbtn { border-radius: 9px; border: 1.5px solid var(--line); }
+body.desk .qty .qbtn.on { border-color: var(--accent); }
 .schrm { width: 28px; height: 28px; border-radius: 50%; border: 0; background: none; color: var(--ink-2); display: grid; place-items: center; cursor: pointer; padding: 0; }
 .schrm svg { width: 16px; height: 16px; }
 .schempty { text-align: center; padding: 22px 12px 10px; color: var(--ink-2); }
