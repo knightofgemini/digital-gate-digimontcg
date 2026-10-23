@@ -398,8 +398,8 @@
   "text": [
    [
     14,
-    "w/[Leomon]\u00a0in its name or",
-    "w/[Leomon]\u00a0in name or"
+    "w/[Leomon] in its name or",
+    "w/[Leomon] in name or"
    ]
   ]
  },
@@ -416,6 +416,15 @@
    ]
   ]
  },
+ "EX14-012": {
+  "text": [
+   [
+    11,
+    "gets +3000 DP until your opponent's turn ends.",
+    "gets +3000 DP until the end of your opponent's turn."
+   ]
+  ]
+ },
  "_note": "Correzioni verificate sulle immagini ufficiali delle carte (ott. 2026).",
  "_remove": [
   "P-226",
@@ -426,7 +435,10 @@
   "ST24-11_P3"
  ],
  "_hold_versions": [
-  "BT27-103_P2"
+  "BT27-103_P2",
+  "EX14-012_P1",
+  "EX14-054_P1",
+  "EX14-054_P2"
  ],
  "_hold_note": "_hold_versions: versioni già annunciate ma ancora senza immagine (spoiler); toglierle da qui quando l'immagine è disponibile."
 }

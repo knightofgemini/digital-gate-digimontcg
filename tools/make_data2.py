@@ -1,6 +1,7 @@
 import json,re,collections
 SP=__import__("os").path.join(__import__("os").path.dirname(__import__("os").path.abspath(__file__)),"..","src")+"/"
-src=json.load(open("/home/claude/TakaOtaku_Digimon-Card-App/src/assets/cardlists/PreparedDigimonCardsENG.json",encoding="utf-8"))
+TAKA=__import__("os").environ.get("TAKA") or "/home/claude/TakaOtaku_Digimon-Card-App"   # TAKA: cartella della raccolta (in Actions: clonata altrove)
+src=json.load(open(TAKA+"/src/assets/cardlists/PreparedDigimonCardsENG.json",encoding="utf-8"))
 def nat(s): return [int(t) if t.isdigit() else t for t in re.split(r'(\d+)',s.lower())]
 def cl(v):
     v=(v or "").strip() if isinstance(v,str) else ""
@@ -21,7 +22,7 @@ NAMES={ # prefix -> set name
  "BT23":"Hackers' Slumber","BT24":"Time Stranger","BT25":"Dual Revolution","BT26":"Timeless Bonds","BT27":"Ignition of X",
  "EX1":"Classic Collection","EX2":"Digital Hazard","EX3":"Draconic Roar","EX4":"Alternative Being","EX5":"Animal Colosseum",
  "EX6":"Infernal Ascension","EX7":"Digimon Liberator","EX8":"Chain of Liberation","EX9":"Versus Monsters","EX10":"Sinister Order",
- "EX11":"Dawn of Liberator","EX12":"Digital World Shambala","EX13":"Chivalrous XIII",
+ "EX11":"Dawn of Liberator","EX12":"Digital World Shambala","EX13":"Chivalrous XIII","EX14":"Malevolent VII",
  "ST1":"Gaia Red","ST2":"Cocytus Blue","ST3":"Heaven's Yellow","ST4":"Giga Green","ST5":"Machine Black","ST6":"Venomous Violet",
  "ST7":"Gallantmon","ST8":"Ulforce Veedramon","ST9":"Ultimate Ancient Dragon","ST10":"Parallel World Tactician","ST12":"Jesmon",
  "ST13":"Ragnaloardmon","ST14":"Beelzemon Advanced Deck Set","ST15":"Dragon of Courage","ST16":"Wolf of Friendship",
@@ -107,7 +108,8 @@ DATES={"BT1":"2021-02-12","BT2":"2021-02-12","BT3":"2021-03-12","BT4":"2021-06-1
  "BT19":"2024-11-01","BT20":"2025-02-01","BT21":"2025-04-25","BT22":"2025-07-25","BT23":"2025-10-24","BT24":"2026-01-23",
  "BT25":"2026-05-22","BT26":"2026-09-04","BT27":"2026-12-11",
  "EX1":"2021-12-10","EX2":"2022-06-24","EX3":"2022-11-11","EX4":"2023-06-23","EX5":"2024-01-19","EX6":"2024-06-28",
- "EX7":"2024-09-13","EX8":"2025-01-01","EX9":"2025-06-26","EX10":"2025-09-19","EX11":"2026-02-14","EX12":"2026-07-04","EX13":"2026-10-02",
+ "EX7":"2024-09-13","EX8":"2025-01-01","EX9":"2025-06-26","EX10":"2025-09-19","EX11":"2026-02-14","EX12":"2026-07-04","EX13":"2026-10-02","EX14":"2027-01-31",   # EX14: noto solo il mese (gennaio 2027), ultimo giorno così resta "in arrivo" tutto il mese
+
  "ST1":"2021-01-29","ST2":"2021-01-29","ST3":"2021-01-29","ST4":"2021-06-11","ST5":"2021-06-11","ST6":"2021-06-11",
  "ST7":"2021-10-15","ST8":"2021-10-15","ST9":"2022-05-13","ST10":"2022-05-13","ST12":"2022-10-14","ST13":"2022-10-14",
  "ST14":"2023-03-24","ST15":"2023-10-13","ST16":"2023-10-13","ST17":"2024-03-08","ST18":"2024-09-13","ST19":"2024-09-13",

@@ -1,0 +1,72 @@
+name: Nuove carte (spoiler)
+# Ogni giorno controlla nella raccolta TakaOtaku se ci sono carte nuove nei prodotti in arrivo (es. BT27, EX14),
+# immagini arrivate per le versioni tenute da parte o prodotti nuovi con carte già svelate.
+# Se c'è qualcosa: prepara i dati nel ramo "spoiler-nuove" (NON pubblicati) e avvisa con una segnalazione (issue)
+# con l'elenco e le immagini. La pubblicazione avviene solo dopo il controllo sulle immagini e l'ok dell'utente.
+# Avviso una volta sola per le stesse novità (stato salvato nel ramo "spoiler-stato").
+on:
+  workflow_dispatch:
+    inputs:
+      prova: { description: "Prova: rami con -prova nel nome e nessuna segnalazione", type: boolean, default: false }
+  schedule:
+    - cron: "37 5 * * *"
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: spoiler
+  cancel-in-progress: false
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scarica la raccolta TakaOtaku
+        run: git clone -q --depth 1 https://github.com/TakaOtaku/Digimon-Card-App "$RUNNER_TEMP/taka"
+      - name: Stato dell'ultimo avviso
+        id: prev
+        shell: bash
+        run: |
+          if git fetch -q --depth 1 origin spoiler-stato${{ inputs.prova && '-prova' || '' }} 2>/dev/null; then
+            echo "ids=$(git show FETCH_HEAD:stato.txt 2>/dev/null | head -1)" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Confronta con il catalogo
+        id: c
+        env:
+          TAKA: ${{ runner.temp }}/taka
+        run: python3 tools/spoiler_check.py --apply --report "$RUNNER_TEMP/report.md" --out "$GITHUB_OUTPUT" --prev "${{ steps.prev.outputs.ids }}"
+      - name: Riepilogo
+        if: always()
+        run: cat "$RUNNER_TEMP/report.md" >> "$GITHUB_STEP_SUMMARY" || true
+      - name: Ramo spoiler-nuove e segnalazione
+        if: steps.c.outputs.cambiato == '1' && steps.c.outputs.ids != steps.prev.outputs.ids
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SUF: ${{ inputs.prova && '-prova' || '' }}
+        shell: bash
+        run: |
+          set -eE
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          if ! git diff --quiet src/data.json; then
+            git checkout -q -B "spoiler-nuove$SUF"
+            git add src/data.json
+            git commit -qm "Spoiler: carte nuove dal controllo del $(date +%d/%m/%Y) (da controllare, non pubblicate)"
+            git push -q -f origin "spoiler-nuove$SUF"
+          fi
+          echo "" >> "$RUNNER_TEMP/report.md"; echo "@${{ github.repository_owner }}" >> "$RUNNER_TEMP/report.md"
+          # una sola segnalazione aperta alla volta: le novità successive diventano commenti
+          if [ -n "$SUF" ]; then echo "Prova: nessuna segnalazione"; else
+          num=$(gh issue list --repo "${{ github.repository }}" --state open --search "Nuove carte spoiler in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$num" ]; then gh issue comment "$num" --repo "${{ github.repository }}" --body-file "$RUNNER_TEMP/report.md"
+          else gh issue create --repo "${{ github.repository }}" --title "Nuove carte spoiler da controllare" --body-file "$RUNNER_TEMP/report.md"; fi
+          fi
+          # stato: le novità già segnalate (per non ripetere l'avviso domani)
+          d=$(mktemp -d); git worktree add -q --detach "$d"; cd "$d"
+          git checkout -q --orphan "spoiler-stato$SUF"; git rm -rqf --ignore-unmatch .
+          echo "${{ steps.c.outputs.ids }}" > stato.txt
+          git add stato.txt; git commit -qm "Stato del controllo spoiler"; git push -q -f origin "spoiler-stato$SUF"
+      - name: Nessuna novità da segnalare
+        if: steps.c.outputs.cambiato != '1' || steps.c.outputs.ids == steps.prev.outputs.ids
+        run: echo "Nessuna novità rispetto all'ultimo avviso"
