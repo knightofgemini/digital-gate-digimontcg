@@ -890,6 +890,25 @@ body.mob .mown .own > span { font-weight: 600; }
 body.mob .mown .qbtn { width: 42px; height: 42px; border-radius: 11px; }
 body.mob .mpane .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .mpane.vers { display: flex; flex-direction: column; gap: 14px; }
+/* EX13 (telefono): carosello con carta grande, carte vicine ai lati, sfondo del colore della carta e versioni come pulsanti */
+.car { --cw: min(290px, calc(100% - 84px)); position: relative; margin: 0 0 12px; border-radius: 22px; overflow: hidden; padding: 18px 0; display: flex; justify-content: center; }
+.car .cpic { position: relative; z-index: 2; width: var(--cw); aspect-ratio: 5 / 7; border-radius: 12px; overflow: hidden; background: var(--surface-2); box-shadow: 0 14px 30px rgba(0,0,0,.32); }
+.car .cpic img, .car .cnb img, .cver .cth img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.car .cstk { position: absolute; z-index: 1; top: 8px; bottom: 30px; left: 50%; width: calc(var(--cw) - 36px); transform: translateX(-50%); border-radius: 12px; background: rgba(0,0,0,.26); }
+.car .cnb { position: absolute; top: 50%; width: calc(var(--cw) * .8); aspect-ratio: 5 / 7; transform: translateY(-50%); padding: 0; border: 0; border-radius: 10px; overflow: hidden; background: rgba(0,0,0,.22); opacity: .6; cursor: pointer; }
+.car .cnb.prev { right: calc(50% + var(--cw) / 2 + 12px); }
+.car .cnb.next { left: calc(50% + var(--cw) / 2 + 12px); }
+.cvers { display: flex; gap: 8px; overflow-x: auto; margin: 0 calc(-1 * var(--mg, 14px)) 14px; padding: 2px var(--mg, 14px); scrollbar-width: none; }
+.cvers::-webkit-scrollbar { display: none; }
+.cvers > :first-child { margin-left: auto; } .cvers > :last-child { margin-right: auto; }
+.cver { flex: none; display: flex; align-items: center; gap: 8px; height: 52px; padding: 5px 12px 5px 5px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; text-align: left; }
+.cver.on { border: 2px solid var(--accent); padding: 4px 11px 4px 4px; }
+.cver .cth { flex: none; width: 29px; height: 40px; border-radius: 4px; overflow: hidden; background: var(--surface-2); }
+.cver .cvt { display: flex; flex-direction: column; line-height: 1.2; white-space: nowrap; }
+.cver .cvt b { font-size: .88rem; display: flex; align-items: center; gap: 4px; }
+.cver .cvt small { font-size: .76rem; color: var(--ink-2); }
+.mown .own .ctot { font-weight: 400; font-size: .8rem; color: var(--ink-2); margin-left: 6px; }
+.mhbtns .favb.big, .mhbtns .favl { width: 44px; height: 44px; }
 .vcard { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); padding: 12px; display: flex; flex-direction: column; gap: 12px; }
 .vcard.cur { border: 2px solid var(--accent); }
 .vcard .vh { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
@@ -3909,18 +3928,64 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       var p1 = el("div", "mpane"), p2 = el("div", "mpane vers");
       var preSec = kids.filter(function (k) { return k.classList.contains("altsec") && k.querySelector(".from.pre"); })[0];
       // 1) carta con frecce per la precedente/successiva ai lati
-      var mi = NAVLIST.indexOf(c);
+      var mi = navIdx(c), CAR = isCarousel(c), cvers = CAR ? carVers(c) : null;
       function anav(cls, lbl, path, target) {
         var b = el("button", "anav " + cls); b.type = "button"; b.setAttribute("aria-label", lbl); b.innerHTML = SVGN + path + "</svg>";
         if (target && !SHSTACK.length) b.onclick = function () { st.open = target; drawSheet(); var n2 = sheet.querySelector(".sheet"); if (n2) n2.scrollTop = 0; }; else b.disabled = true;
         return b;
       }
+      if (CAR) {
+        // EX13: carosello. Carta grande al centro su fondo del colore della carta, ai lati spuntano la precedente e la successiva
+        // (toccandole si passa a quelle), dietro la carta un bordo se ci sono altre versioni; sotto i pulsanti delle versioni.
+        var car = el("div", "car"); car.style.background = gradient(c.colors, "to right");
+        var goTo = function (target) { return function () { st.open = target; drawSheet(); var n2 = sheet.querySelector(".sheet"); if (n2) n2.scrollTop = 0; }; };
+        var nbB = function (cls, lbl, target) {
+          if (!target || SHSTACK.length) return;
+          var b = el("button", "cnb " + cls); b.type = "button"; b.setAttribute("aria-label", lbl + ": " + target.name + " (" + target.code + ")");
+          b.appendChild(picBox("cnp", "f", target)); b.onclick = goTo(target); car.appendChild(b);
+        };
+        nbB("prev", "Carta precedente", mi >= 0 ? NAVLIST[mi - 1] : null);
+        nbB("next", "Carta successiva", mi >= 0 ? NAVLIST[mi + 1] : null);
+        if (cvers.length > 1) { var stk = el("span", "cstk"); stk.setAttribute("aria-hidden", "true"); car.appendChild(stk); }
+        car.appendChild(picBox("cpic", "f", c));
+        p1.appendChild(car);
+        if (cvers.length > 1) {
+          var cvr = el("div", "cvers"); cvr.setAttribute("role", "radiogroup"); cvr.setAttribute("aria-label", "Versione della carta");
+          cvers.forEach(function (a) {
+            var on = a.k === c.k, b = el("button", "cver" + (on ? " on" : "")); b.type = "button";
+            b.setAttribute("role", "radio"); b.setAttribute("aria-checked", String(on));
+            b.appendChild(picBox("cth", "t", a));
+            var tx = el("span", "cvt"), lb = el("b"), fs = SETBY[hostSet(a)];
+            if (fs && fs.code !== "EX13") lb.appendChild(document.createTextNode(fs.code + " "));
+            var mk = a.mark === 1 ? "★" : a.mark === 2 ? "★★" : a.mark === "SP" ? "SP" : "";
+            if (!a.suf) lb.appendChild(document.createTextNode("Regular"));
+            else if (mk) lb.appendChild(rarLabel(mk));
+            else lb.appendChild(document.createTextNode(verLabel(a.ver) || "Alternative Art"));
+            tx.appendChild(lb);
+            var bv = bestVal(a); tx.appendChild(el("small", "", bv == null ? "N/D" : eurT(bv)));
+            b.appendChild(tx);
+            if (!on) b.onclick = function () { if (!inDk) st.exitSet = hostSet(a); st.open = a; drawSheet(); };
+            cvr.appendChild(b);
+          });
+          p1.appendChild(cvr);
+          requestAnimationFrame(function () { var o = cvr.querySelector(".on"); if (o && cvr.scrollWidth > cvr.clientWidth) cvr.scrollLeft = o.offsetLeft - (cvr.clientWidth - o.offsetWidth) / 2; });
+        }
+        // cuore e liste in alto accanto alla chiusura (niente schede Effetto / Versioni: le versioni sono i pulsanti sotto la carta)
+        var flb = favListsBtn(c); mhb.insertBefore(flb, xb); mhb.insertBefore(favBtn(c, "big", function () { render(); drawSheet(); }), flb);
+      } else {
       art.appendChild(anav("prev", "Carta precedente", '<path d="M15 5l-7 7 7 7"/>', mi >= 0 ? NAVLIST[mi - 1] : null));
       art.appendChild(anav("next", "Carta successiva", '<path d="M9 5l7 7-7 7"/>', mi >= 0 ? NAVLIST[mi + 1] : null));
       p1.appendChild(art);
+      }
       // 2) copie, direttamente sotto la carta
       var ob = el("div", "mown");
       kids.forEach(function (k) { if (k.classList.contains("own")) ob.appendChild(k); });
+      if (CAR && cvers.length > 1) {
+        // EX13: le copie sono della versione scelta; accanto il totale di tutte le versioni
+        var ctn = 0; cvers.forEach(function (a) { ctn += owned(a); });
+        var oo = ob.querySelectorAll(".own"), ol = oo[oo.length - 1];
+        if (ol && ol.firstChild && ctn !== owned(c)) ol.firstChild.appendChild(el("span", "ctot", ctn === 1 ? "1 in tutto" : ctn + " in tutto"));
+      }
       p1.appendChild(ob);
       kids.forEach(function (k) { if (k.classList.contains("pbox")) p1.appendChild(k); });
       // 3) dati ed effetti
@@ -3959,6 +4024,8 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
         p2.appendChild(v);
       });
       if (!alts.length) p2.appendChild(el("p", "hint vnone", "Questa carta non ha altre versioni (alternative art o ristampe)."));
+      if (CAR) { st.shTab = "fx"; sh.appendChild(p1); }
+      else {
       var tab = st.shTab === "ver" ? "ver" : "fx";
       var seg = el("div", "mseg"); seg.setAttribute("role", "tablist");
       [["fx", "Effetto"], ["ver", "Versioni · " + all.length]].forEach(function (x) {
@@ -3970,6 +4037,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       var segRow = el("div", "msegrow shsegrow"); segRow.appendChild(seg);
       segRow.appendChild(favBtn(c, "big", function () { render(); drawSheet(); })); segRow.appendChild(favListsBtn(c));
       sh.appendChild(segRow); p1.hidden = tab !== "fx"; p2.hidden = tab !== "ver"; sh.appendChild(p1); sh.appendChild(p2);
+      }
     }
     if (DESK) {
       // desktop: finestra a due colonne (immagine e versioni a sinistra, dati e testo a destra) con frecce e chiusura
@@ -4411,11 +4479,36 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   swipe(menuEl, function (dx, dy) { if (DESK && dx > 60 && Math.abs(dy) < 60) menuOpen(false); });
   dragDown(menuEl, { css: true, when: function () { return menuEl.classList.contains("open"); }, scrim: function () { return menuScrim; }, close: function () { menuOpen(false); } });
   // scheda carta: giù per chiudere, sinistra/destra per la carta successiva/precedente
+  // EX13 sul telefono: scheda carta a carosello (prova, ottobre 2026)
+  function isCarousel(c) { var s = SETBY[hostSet(c)]; return !DESK && !!s && s.code === "EX13"; }
+  // versioni della carta: Regular, poi quelle di EX13 (★, ★★, SP), poi quelle uscite in altri prodotti
+  function carVers(c) {
+    var base = c.suf ? Object.getPrototypeOf(c) : c, mo = { 1: 1, 2: 2, SP: 3 };
+    var al = altsOf(base).map(function (a, i) { return [a, i]; });
+    al.sort(function (x, y) {
+      var ex = SETBY[hostSet(x[0])], ey = SETBY[hostSet(y[0])];
+      var gx = ex && ex.code === "EX13" ? 0 : 1, gy = ey && ey.code === "EX13" ? 0 : 1;
+      if (gx !== gy) return gx - gy;
+      var mx = mo[x[0].mark] || 9, my = mo[y[0].mark] || 9;
+      return mx !== my ? mx - my : x[1] - y[1];
+    });
+    return [base].concat(al.map(function (x) { return x[0]; }));
+  }
+  // posizione nell'elenco per precedente/successiva; nel carosello anche dopo aver cambiato versione
+  function navIdx(c) {
+    var i = NAVLIST.indexOf(c);
+    if (i < 0 && isCarousel(c)) carVers(c).some(function (v) { i = NAVLIST.indexOf(v); return i >= 0; });
+    return i;
+  }
   function sheetGestures(sh, c) {
     dragDown(sh, { scrim: function () { return sh.parentNode; }, close: function () { closeSheet(); } });
+    // la fila delle versioni (carosello EX13) scorre di lato: lì lo scorrimento non cambia carta
+    var inStrip = false;
+    sh.addEventListener("touchstart", function (e) { inStrip = !!(e.target && e.target.closest && e.target.closest(".cvers")); }, { passive: true });
     swipe(sh, function (dx, dy, dt) {
+      if (inStrip) return;
       if (Math.abs(dx) > 70 && Math.abs(dy) < 50) {
-        var i = NAVLIST.indexOf(c), n = dx < 0 ? NAVLIST[i + 1] : NAVLIST[i - 1];
+        var i = navIdx(c), n = dx < 0 ? NAVLIST[i + 1] : NAVLIST[i - 1];
         if (i >= 0 && n) { st.open = n; drawSheet(); var nsh = sheet.querySelector(".sheet"); if (nsh) { nsh.animate([{ transform: "translateX(" + (dx < 0 ? 40 : -40) + "px)", opacity: .4 }, { transform: "none", opacity: 1 }], { duration: 180, easing: "ease-out" }); } }
       }
     });
