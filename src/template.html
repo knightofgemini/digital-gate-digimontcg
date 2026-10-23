@@ -891,7 +891,7 @@ body.mob .mown .qbtn { width: 42px; height: 42px; border-radius: 11px; }
 body.mob .mpane .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .mpane.vers { display: flex; flex-direction: column; gap: 14px; }
 /* Telefono: scheda carta a carosello con carta grande, carte vicine ai lati e versioni come pulsanti */
-.car { --cw: min(290px, calc(100% - 84px)); --csh: 0 1px 3px rgba(15,26,46,.10), 0 8px 18px rgba(15,26,46,.10), 0 22px 40px -12px rgba(15,26,46,.22); position: relative; margin: 0 0 12px; border-radius: 22px; overflow: hidden; overflow-x: clip; overflow-y: visible; padding: 18px 0; display: flex; justify-content: center; }
+.car { --cw: min(290px, calc(100% - 84px)); --csh: 0 1px 3px rgba(15,26,46,.10), 0 8px 18px rgba(15,26,46,.10), 0 22px 40px -12px rgba(15,26,46,.22); position: relative; margin: 0 0 12px; border-radius: 22px; overflow: hidden; overflow-x: clip; overflow-y: visible; padding: 14px 0 6px; display: flex; justify-content: center; }
 .car .cpic { position: relative; z-index: 2; width: var(--cw); aspect-ratio: 5 / 7; border-radius: 12px; overflow: hidden; background: var(--surface-2); box-shadow: var(--csh); }
 /* ombra morbida che sfuma (non tagliata dal bordo del carosello): più leggera nel tema chiaro, più profonda nello scuro */
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .car { --csh: 0 2px 6px rgba(0,0,0,.30), 0 12px 24px rgba(0,0,0,.30), 0 28px 48px -14px rgba(0,0,0,.55); } }
@@ -901,7 +901,7 @@ body.mob .mpane .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .car .cnb { position: absolute; top: 50%; width: calc(var(--cw) * .8); aspect-ratio: 5 / 7; transform: translateY(-50%); padding: 0; border: 0; border-radius: 10px; overflow: hidden; background: var(--surface-2); opacity: .5; cursor: pointer; }
 .car .cnb.prev { right: calc(50% + var(--cw) / 2 + 12px); }
 .car .cnb.next { left: calc(50% + var(--cw) / 2 + 12px); }
-.cvers { display: flex; gap: 8px; overflow-x: auto; margin: 0 calc(-1 * var(--mg, 14px)) 14px; padding: 2px var(--mg, 14px); scrollbar-width: none; }
+.cvers { display: flex; gap: 8px; overflow-x: auto; margin: 0 calc(-1 * var(--mg, 14px)) 6px; padding: 2px var(--mg, 14px); scrollbar-width: none; }
 .cvers::-webkit-scrollbar { display: none; }
 .cvers > :first-child { margin-left: auto; } .cvers > :last-child { margin-right: auto; }
 .cver { flex: none; display: flex; align-items: center; gap: 8px; height: 52px; padding: 5px 12px 5px 5px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; text-align: left; }
@@ -917,8 +917,8 @@ body.mob .sheet-head.chead { display: grid; grid-template-columns: auto minmax(0
 .chm { display: flex; flex-direction: column; align-items: center; text-align: center; line-height: 1.2; min-width: 0; }
 .chm b { font-size: .95rem; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chm small { font-size: .78rem; color: var(--ink-2); }
-.cpane .car { margin: 4px calc(-1 * var(--mg, 14px)) 10px; border-radius: 0; }
-.cname { text-align: center; margin: 2px 0 12px; }
+.cpane .car { margin: 4px calc(-1 * var(--mg, 14px)) 4px; border-radius: 0; }
+.cname { text-align: center; margin: 0 0 12px; }
 .cname h2 { margin: 0; font: 700 1.6rem/1.15 var(--font-display); white-space: nowrap; overflow: hidden; }
 .csub { margin-top: 4px; font-size: .9rem; color: var(--ink-2); }
 .csub .hrar { display: inline-flex; }
