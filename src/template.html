@@ -1195,14 +1195,6 @@ html, body, button, a, [role="button"], input, label, summary { -webkit-tap-high
 .tbw { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .tbw .thumb { margin-left: 0; }
 .tbw .tband { display: block; height: 4px; border-radius: 2px; }
-.tbw { touch-action: manipulation; }
-.thumb .tfav { position: absolute; right: 3px; bottom: 3px; width: 18px; height: 18px; border-radius: 50%; background: rgba(11,17,32,.78); display: grid; place-items: center; pointer-events: none; }
-.thumb .tfav svg { width: 11px; height: 11px; fill: var(--accent); }
-.thumb .tpop { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
-.thumb .tpop svg { width: 30px; height: 30px; fill: none; stroke: #fff; stroke-width: 2; filter: drop-shadow(0 2px 6px rgba(0,0,0,.6)); animation: tpop .65s ease-out forwards; }
-.thumb .tpop.on svg { fill: var(--accent); stroke: none; }
-@keyframes tpop { 0% { transform: scale(.3); opacity: 0; } 25% { transform: scale(1.15); opacity: 1; } 55% { transform: scale(1); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .thumb .tpop svg { animation: none; opacity: 0; } }
 /* filtri: griglia a tre colonne */
 body.mob .mfbar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 body.mob .mfbar[hidden] { display: none; }
@@ -3000,32 +2992,6 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   function favCount() { return Object.keys(FAV.f).length; }
   function listById(id) { for (var i = 0; i < FAV.l.length; i++) if (FAV.l[i].id === id) return FAV.l[i]; return null; }
   function favIn(c) { var L = st.flist && listById(st.flist); return L ? !!L.k[c.k] : isFav(c); }
-  // vista elenco sul telefono: doppio tocco sulla miniatura = preferita (cuore che compare e resta sulla miniatura);
-  // un tocco solo apre la scheda come prima, con un attimo di attesa per capire se arriva il secondo tocco
-  function thumbFav(tw, c) {
-    var th = tw.querySelector(".thumb"); if (!th) return;
-    function badge() {
-      var r = tw.closest(".row"), fb = r && r.querySelector(".trow .favb");
-      if (fb) { var on = isFav(c); fb.classList.toggle("on", on); fb.setAttribute("aria-pressed", String(on)); fb.setAttribute("aria-label", on ? "Togli dalle preferite" : "Aggiungi alle preferite"); return; }
-      var b = th.querySelector(".tfav");
-      if (isFav(c) && !b) { b = el("span", "tfav"); b.innerHTML = HEART; b.setAttribute("aria-label", "Preferita"); b.setAttribute("role", "img"); th.appendChild(b); }
-      else if (!isFav(c) && b) b.remove();
-    }
-    var last = 0, tm = 0;
-    tw.addEventListener("click", function (e) {
-      e.stopPropagation();
-      var now = Date.now();
-      if (last && now - last < 320) {
-        clearTimeout(tm); last = 0;
-        favSet(c, !isFav(c)); badge(); favToast(c);
-        var pop = el("span", "tpop" + (isFav(c) ? " on" : "")); pop.innerHTML = HEART; th.appendChild(pop);
-        setTimeout(function () { pop.remove(); if (st.cview === "fav" || st.cview === "wish") render(); }, 650);
-      } else {
-        last = now;
-        tm = setTimeout(function () { last = 0; st.open = c; drawSheet(); }, 300);
-      }
-    });
-  }
   function favSet(c, on) {
     if (on) { if (!FAV.f[c.k]) FAV.f[c.k] = Date.now(); }
     else { delete FAV.f[c.k]; FAV.l.forEach(function (L) { delete L.k[c.k]; }); delete FAV.a[c.k]; }
@@ -3314,7 +3280,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       // telefono: riga leggera senza bordo, colori in fondo alla miniatura e i due prezzi in una sola pastiglia
       if (!DESK) {
         var r = el("div", "row card p1"); r.tabIndex = 0; r.setAttribute("role", "button");
-        var tw = thumbBand(c); thumbFav(tw, c); r.appendChild(tw);
+        r.appendChild(thumbBand(c));
         // il nome corre su tutta la riga, anche sopra −/+ (così i nomi lunghi si rimpiccioliscono poco); in fondo il cuore, in colonna con il +
         var trl = el("div", "trow"); trl.appendChild(nameLine(c)); trl.appendChild(favBtn(c)); r.appendChild(trl); var mid = el("div", "name");
         listLines(c).forEach(function (x) { mid.appendChild(x); });
