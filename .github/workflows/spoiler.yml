@@ -8,6 +8,8 @@ on:
   workflow_dispatch:
     inputs:
       prova: { description: "Prova: rami con -prova nel nome e nessuna segnalazione", type: boolean, default: false }
+  push:
+    branches: [spoiler-test]
   schedule:
     - cron: "37 5 * * *"
 permissions:
@@ -28,7 +30,7 @@ jobs:
         id: prev
         shell: bash
         run: |
-          if git fetch -q --depth 1 origin spoiler-stato${{ inputs.prova && '-prova' || '' }} 2>/dev/null; then
+          if git fetch -q --depth 1 origin spoiler-stato-prova 2>/dev/null; then
             echo "ids=$(git show FETCH_HEAD:stato.txt 2>/dev/null | head -1)" >> "$GITHUB_OUTPUT"
           fi
       - name: Confronta con il catalogo
@@ -43,7 +45,7 @@ jobs:
         if: steps.c.outputs.cambiato == '1' && steps.c.outputs.ids != steps.prev.outputs.ids
         env:
           GH_TOKEN: ${{ github.token }}
-          SUF: ${{ inputs.prova && '-prova' || '' }}
+          SUF: -prova
         shell: bash
         run: |
           set -eE
