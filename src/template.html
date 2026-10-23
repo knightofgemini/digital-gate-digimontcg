@@ -1393,7 +1393,7 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
 /* ---- Preferiti (ottobre 2026) ---- */
 .tile { position: relative; }
 .favb { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 999px; background: rgba(11,17,32,.72); color: #fff; cursor: pointer; }
-.favb svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; }
+.favb svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .favb.on { color: var(--accent); }
 .favb.on svg { fill: currentColor; stroke: none; }
 .tile > .favb { position: absolute; top: 12px; right: 12px; z-index: 2; }
