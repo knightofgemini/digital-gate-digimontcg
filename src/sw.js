@@ -6,7 +6,7 @@ self.addEventListener("activate", function (e) { e.waitUntil(caches.keys().then(
 self.addEventListener("fetch", function (e) {
   var u = new URL(e.request.url);
   if (e.request.method !== "GET" || u.origin !== location.origin) return;
-  // immagini di carte, prodotti e banner: le salva l'app stessa (cache "dg-img-v1"), qui niente doppione
+  // immagini di carte, prodotti e banner: le salva l'app stessa (cache "dg-img-v2"), qui niente doppione
   if (/\/(img|prod|banners)\//.test(u.pathname)) return;
   e.respondWith(fetch(e.request).then(function (r) { var cp = r.clone(); caches.open(C).then(function (c) { c.put(e.request, cp); }); return r; })
     .catch(function () { return caches.match(e.request).then(function (m) { return m || caches.match("index.html"); }); }));

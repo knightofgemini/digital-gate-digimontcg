@@ -18,7 +18,8 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: www/img
-          key: img-v1-${{ hashFiles('src/data.json', 'src/errata/*') }}
+          # una cache nuova a ogni build: così si conservano anche le immagini senza SAMPLE sostituite (www/img/sample.json)
+          key: img-v1-${{ hashFiles('src/data.json', 'src/errata/*') }}-${{ github.run_id }}
           restore-keys: img-v1-
       - run: pip install pillow
       # prezzi più recenti (ramo "prezzi", aggiornato ogni notte da prezzi.yml); se manca resta src/prices.json
