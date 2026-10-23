@@ -890,7 +890,7 @@ body.mob .mown .own > span { font-weight: 600; }
 body.mob .mown .qbtn { width: 42px; height: 42px; border-radius: 11px; }
 body.mob .mpane .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .mpane.vers { display: flex; flex-direction: column; gap: 14px; }
-/* EX13 (telefono): carosello con carta grande, carte vicine ai lati, sfondo del colore della carta e versioni come pulsanti */
+/* Telefono: scheda carta a carosello con carta grande, carte vicine ai lati e versioni come pulsanti */
 .car { --cw: min(290px, calc(100% - 84px)); --csh: 0 1px 3px rgba(15,26,46,.10), 0 8px 18px rgba(15,26,46,.10), 0 22px 40px -12px rgba(15,26,46,.22); position: relative; margin: 0 0 12px; border-radius: 22px; overflow: hidden; overflow-x: clip; overflow-y: visible; padding: 18px 0; display: flex; justify-content: center; }
 .car .cpic { position: relative; z-index: 2; width: var(--cw); aspect-ratio: 5 / 7; border-radius: 12px; overflow: hidden; background: var(--surface-2); box-shadow: var(--csh); }
 /* ombra morbida che sfuma (non tagliata dal bordo del carosello): più leggera nel tema chiaro, più profonda nello scuro */
@@ -912,7 +912,7 @@ body.mob .mpane .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .cver .cvt small { font-size: .76rem; color: var(--ink-2); }
 .mown .own .ctot { font-weight: 400; font-size: .8rem; color: var(--ink-2); margin-left: 6px; }
 .mhbtns .favb.big, .mhbtns .favl { width: 44px; height: 44px; }
-/* EX13 (telefono): resto della scheda ridisegnata (carSheet) */
+/* Telefono: resto della scheda carta ridisegnata (carSheet) */
 body.mob .sheet-head.chead { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; }
 .chm { display: flex; flex-direction: column; align-items: center; text-align: center; line-height: 1.2; min-width: 0; }
 .chm b { font-size: .95rem; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -4074,14 +4074,15 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     fitAll();
     sh.tabIndex = -1; sh.focus({ preventScroll: true });
   }
-  // ---- EX13 sul telefono: scheda carta ridisegnata (proposta "C - Carosello", ottobre 2026).
+  // ---- Telefono e APK: scheda carta ridisegnata per tutte le carte (proposta "C - Carosello", ottobre 2026).
   // In alto chiusura, nome del prodotto con "Carta N di M", cuore e liste; carosello con la carta grande sul colore della carta
   // e le vicine ai lati; versioni come pulsanti; nome, codice e rarità centrati; una riga di dati; prezzi affiancati;
   // poi tratti, digievoluzioni ed effetti come nel resto dell'app; copie possedute in una barra fissa in basso.
   // nome della versione: Regular, oppure "Alt-Art" seguito da ★, ★★ o SP (scelta dell'utente); codice del prodotto se è di un altro
   function carVerName(a, lb) {
     var fs = SETBY[hostSet(a)];
-    if (fs && fs.code !== "EX13") lb.appendChild(document.createTextNode(fs.code + " "));
+    var bs = SETBY[a.set];
+    if (fs && bs && fs.id !== bs.id) lb.appendChild(document.createTextNode(fs.code + " "));
     var mk = a.mark === 1 ? "★" : a.mark === 2 ? "★★" : a.mark === "SP" ? "SP" : "";
     if (!a.suf) lb.appendChild(document.createTextNode("Regular"));
     else if (mk || /alternative art/i.test(a.ver || "")) { lb.appendChild(document.createTextNode("Alt-Art")); if (mk) lb.appendChild(rarLabel(mk)); }
@@ -4096,7 +4097,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     head.appendChild(o.xb);
     var hm = el("div", "chm"); hm.appendChild(el("b", "", hs ? hs.name : ""));
     var num = parseInt((c.code.split("-")[1] || ""), 10);
-    if (hs && hs.n && num) hm.appendChild(el("small", "", "Carta " + num + " di " + hs.n));
+    if (hs && hs.n && num && c.code.split("-")[0] === hs.code && num <= hs.n) hm.appendChild(el("small", "", "Carta " + num + " di " + hs.n));
     head.appendChild(hm);
     var hb = el("div", "mhbtns"); hb.appendChild(favBtn(c, "big", function () { render(); drawSheet(); })); hb.appendChild(favListsBtn(c)); head.appendChild(hb);
     var p = el("div", "mpane cpane");
@@ -4631,15 +4632,15 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   swipe(menuEl, function (dx, dy) { if (DESK && dx > 60 && Math.abs(dy) < 60) menuOpen(false); });
   dragDown(menuEl, { css: true, when: function () { return menuEl.classList.contains("open"); }, scrim: function () { return menuScrim; }, close: function () { menuOpen(false); } });
   // scheda carta: giù per chiudere, sinistra/destra per la carta successiva/precedente
-  // EX13 sul telefono: scheda carta a carosello (prova, ottobre 2026)
-  function isCarousel(c) { var s = SETBY[hostSet(c)]; return !DESK && !!s && s.code === "EX13"; }
-  // versioni della carta: Regular, poi quelle di EX13 (★, ★★, SP), poi quelle uscite in altri prodotti
+  // telefono/APK: scheda carta a carosello per tutte le carte (provata su EX13, estesa a tutta l'app il 23 ottobre 2026)
+  function isCarousel(c) { return !DESK; }
+  // versioni della carta: Regular, poi quelle del suo prodotto (★, ★★, SP), poi quelle uscite in altri prodotti
   function carVers(c) {
     var base = c.suf ? Object.getPrototypeOf(c) : c, mo = { 1: 1, 2: 2, SP: 3 };
     var al = altsOf(base).map(function (a, i) { return [a, i]; });
     al.sort(function (x, y) {
       var ex = SETBY[hostSet(x[0])], ey = SETBY[hostSet(y[0])];
-      var gx = ex && ex.code === "EX13" ? 0 : 1, gy = ey && ey.code === "EX13" ? 0 : 1;
+      var gx = ex && ex.id === base.set ? 0 : 1, gy = ey && ey.id === base.set ? 0 : 1;
       if (gx !== gy) return gx - gy;
       var mx = mo[x[0].mark] || 9, my = mo[y[0].mark] || 9;
       return mx !== my ? mx - my : x[1] - y[1];
@@ -4654,7 +4655,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   }
   function sheetGestures(sh, c) {
     dragDown(sh, { scrim: function () { return sh.parentNode; }, close: function () { closeSheet(); } });
-    // la fila delle versioni (carosello EX13) scorre di lato: lì lo scorrimento non cambia carta
+    // la fila delle versioni (carosello) scorre di lato: lì lo scorrimento non cambia carta
     var inStrip = false;
     sh.addEventListener("touchstart", function (e) { inStrip = !!(e.target && e.target.closest && e.target.closest(".cvers")); }, { passive: true });
     swipe(sh, function (dx, dy, dt) {
