@@ -1177,6 +1177,45 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
 .spn { margin-top: 4px; font-size: .78rem; font-weight: 600; color: var(--accent); }
 .spnote { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 12px; padding: 10px 14px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line)); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); font-size: .85rem; line-height: 1.45; color: var(--ink-2); }
 .spnote b { color: var(--accent); font-size: .9rem; }
+.offpage { max-width: 640px; padding-bottom: 24px; }
+.offintro { margin: -4px 0 14px; color: var(--ink-2); font-size: .92rem; line-height: 1.55; }
+.offbox { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 14px 16px; margin-bottom: 10px; }
+.offsh { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.offsh b { font-size: 1.05rem; }
+.offsz, .offw { color: var(--ink-2); font-size: .85rem; white-space: nowrap; }
+.offsub { color: var(--ink-2); font-size: .82rem; margin-top: 4px; }
+.offsub.ok { color: var(--ok); font-weight: 600; }
+.offprog { margin-top: 12px; }
+.offpl { display: flex; justify-content: space-between; gap: 10px; font-size: .88rem; }
+.offpl .offpt { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.offnote { margin: 10px 0 0; font-size: .85rem; color: var(--ink-2); line-height: 1.5; }
+.offnote.warn { color: var(--accent); }
+.offstat .btn { margin-top: 12px; }
+.offh { font: 600 .72rem var(--font-display); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-2); margin: 22px 0 10px; }
+.offh + .offintro { margin-top: -4px; }
+.offopt.cur { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.offoh { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.offoh b { font-size: 1rem; }
+.offopt p { margin: 6px 0 12px; color: var(--ink-2); font-size: .88rem; line-height: 1.5; }
+.offof { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.offof .btn { flex: none; }
+.btn:disabled { opacity: .55; cursor: default; filter: none; }
+.offauto { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
+.offauto input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--accent); flex: none; }
+.offauto span { display: flex; flex-direction: column; gap: 3px; }
+.offauto small { color: var(--ink-2); font-size: .82rem; }
+.offlist { padding: 4px 0; }
+.offrow { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 8px 0 16px; border-top: 1px solid var(--line); }
+.offrow:first-child { border-top: 0; }
+.offrt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.offrt b { font-size: .9rem; }
+.offrt span { color: var(--ink-2); font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.offst { flex: none; color: var(--ink-2); font-size: .8rem; font-variant-numeric: tabular-nums; }
+.offst.ok { color: var(--ok); font-weight: 600; padding-right: 8px; }
+.offdl { flex: none; width: 40px; height: 40px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--accent); display: grid; place-items: center; cursor: pointer; }
+.offdl svg { width: 20px; height: 20px; }
+.offdl:disabled { opacity: .45; cursor: default; }
+.offdel { display: block; margin: 18px auto 0; border: 0; background: none; color: var(--c-red); font: 600 .9rem var(--font-body); padding: 12px; cursor: pointer; }
 .idet { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); margin-bottom: 10px; }
 .idet > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px; padding: 0 16px; font-weight: 600; cursor: pointer; }
 .idet > summary::-webkit-details-marker { display: none; }
@@ -1614,8 +1653,8 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   // In memoria restano le ultime 300 (indirizzi "blob:"), così i ridisegni dell'elenco non le fanno lampeggiare.
   // Miniatura come anteprima (23 ottobre 2026): per le carte grandi (img/f) si mostra prima la miniatura (img/t, pochi KB, scaricata
   // con precedenza alta) e appena la grande è pronta (già decodificata) prende il suo posto; attributo "data-lq" = indirizzo della miniatura.
-  var IMGC = null, IMGMEM = new Map(), IMGFLY = {}, IMGMAX = 500, IMGAGE = 30 * 864e5;
-  try { if (window.caches && window.fetch && window.URL && URL.createObjectURL && /^https?:/.test(location.protocol)) IMGC = caches.open("dg-img-v3").catch(function () { IMGC = null; return null; }); ["dg-img-v1", "dg-img-v2"].forEach(function (n) { caches.delete(n).catch(function () {}); }); } catch (e) { IMGC = null; }
+  var IMGNAME = "dg-img-v3", IMGC = null, IMGMEM = new Map(), IMGFLY = {}, IMGMAX = 500, IMGAGE = 30 * 864e5;
+  try { if (window.caches && window.fetch && window.URL && URL.createObjectURL && /^https?:/.test(location.protocol)) IMGC = caches.open(IMGNAME).catch(function () { IMGC = null; return null; }); ["dg-img-v1", "dg-img-v2"].forEach(function (n) { caches.delete(n).catch(function () {}); }); } catch (e) { IMGC = null; }
   try { if (IMGC && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {}); } catch (e) {}
   function imgMem(url, u) {
     if (u) { IMGMEM.set(url, u); if (IMGMEM.size > IMGMAX) { var k = IMGMEM.keys().next().value; var o = IMGMEM.get(k); IMGMEM.delete(k); setTimeout(function () { try { URL.revokeObjectURL(o); } catch (e) {} }, 4000); } return u; }
@@ -1880,9 +1919,10 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     cards: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
     coll: '<rect x="4" y="3" width="12" height="16" rx="2"/><path d="M8 21h10a2 2 0 0 0 2-2V7"/>',
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
+    offline: '<path d="M12 4v11M7 10l5 5 5-5"/><path d="M5 20h14"/>',
     deck: '<rect x="7" y="3" width="13" height="17" rx="2"/><path d="M4 7v12a2 2 0 0 0 2 2h9"/><path d="M11 9h5M11 13h5"/>'
   };
-  var MENU = [["home", "Home"], ["sets", "Prodotti"], ["soon", "Prossime uscite"], ["cards", "Ricerca carte"], ["coll", "La mia collezione"], ["deck", "Deckbuilding"], ["info", "Informazioni"]];
+  var MENU = [["home", "Home"], ["sets", "Prodotti"], ["soon", "Prossime uscite"], ["cards", "Ricerca carte"], ["coll", "La mia collezione"], ["deck", "Deckbuilding"], ["offline", "Immagini offline"], ["info", "Informazioni"]];
   var menuEl = document.getElementById("menu"), menuBtn = document.getElementById("menuBtn"), menuScrim = document.getElementById("menuScrim");
   function menuOpen(o, fromHistory) {
     var was = menuEl.classList.contains("open");
@@ -1895,15 +1935,15 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     menuEl.setAttribute("aria-hidden", String(!o)); menuBtn.setAttribute("aria-expanded", String(o)); moreBtn.setAttribute("aria-expanded", String(o));
     if (o) drawMenu();
   }
-  function curPage() { return st.tab === "home" ? "home" : st.tab === "info" ? "info" : st.tab === "deck" ? "deck" : st.tab === "sets" ? (st.type === "SOON" ? "soon" : "sets") : st.setId ? "sets" : st.ownOnly ? "coll" : "cards"; }
+  function curPage() { return st.tab === "home" ? "home" : st.tab === "info" ? "info" : st.tab === "offline" ? "offline" : st.tab === "deck" ? "deck" : st.tab === "sets" ? (st.type === "SOON" ? "soon" : "sets") : st.setId ? "sets" : st.ownOnly ? "coll" : "cards"; }
   function drawMenu() {
     var nav = document.getElementById("menuNav"); nav.innerHTML = "";
     document.querySelector("#menu .mh span").textContent = DESK ? "Menu" : "Altro";
     MENU.forEach(function (m) {
-      if (!DESK && m[0] !== "soon" && m[0] !== "info") return;
+      if (!DESK && m[0] !== "soon" && m[0] !== "offline" && m[0] !== "info") return;
       if (m[0] === "home") nav.appendChild(el("div", "grp", "Esplora"));
       if (m[0] === "coll") nav.appendChild(el("div", "grp", "Il tuo spazio"));
-      if (m[0] === "info") nav.appendChild(el("div", "grp", "Progetto"));
+      if (m[0] === "offline") nav.appendChild(el("div", "grp", "Progetto"));
       var b = el("button"); b.type = "button";
       b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + IC[m[0]] + "</svg>";
       b.appendChild(el("span", "lbl", m[1])); if (DESK) b.title = m[1];
@@ -1962,6 +2002,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     else if (where === "cards") st.tab = "cards";
     else if (where === "coll") { st.tab = "cards"; st.ownOnly = true; }
     else if (where === "info") st.tab = "info";
+    else if (where === "offline") st.tab = "offline";
     else if (where === "deck") { st.tab = "deck"; st.deckId = null; qi.value = ""; st.q = ""; }
     window.scrollTo(0, 0); render();
   }
@@ -3496,6 +3537,198 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     });
     out.appendChild(h);
   }
+  // ---- Immagini offline (23 ottobre 2026): pagina del menu (⋯ sul telefono, "Progetto" su PC) per scaricare in anticipo
+  // le immagini nella stessa memoria del dispositivo usata quando si sfoglia (IMGNAME). Scelte: solo miniature, tutto in HD
+  // (carte grandi + miniature + pre errata + banner + confezioni + loghi) o un prodotto alla volta. Salta ciò che è già salvato,
+  // 6 scaricamenti alla volta, pausa/ripresa. Impostazioni in "dg-offline": m = "t"/"hd" (scelta), full = completato almeno una volta,
+  // auto = scarica da solo le immagini nuove (prodotti nuovi), done = firma dell'elenco completato, paused = messo in pausa,
+  // miss = immagini che il sito non ha (es. ST24-11_P2/P3): contano come "fatte" ma si riprovano a ogni avvio.
+  // All'avvio (dopo 8 s) se l'elenco è cambiato o lo scaricamento era a metà riparte da solo (a metà: non con i dati mobili).
+  var OFFAVG = { f: 72200, t: 6350, pre: 79400, b: 243800, pk: 28000, lg: 21900 };   // pesi medi misurati sul sito (byte)
+  var OFF = { m: "", full: false, auto: true, done: "", paused: false, miss: [] }, OFFRUN = null, OFFHAVE = null, OFFLIST = {};
+  try { var of0 = JSON.parse(localStorage.getItem("dg-offline") || "null"); if (of0 && typeof of0 === "object") Object.keys(OFF).forEach(function (k) { if (k in of0) OFF[k] = of0[k]; }); } catch (e) {}
+  function offSave() { try { localStorage.setItem("dg-offline", JSON.stringify(OFF)); } catch (e) {} }
+  function cardUrl(kind, key, c) { return IMG + kind + "/" + encodeURIComponent(key) + ".webp" + imgQ(key, kind, c); }   // stesso indirizzo di picBox (anche "?sp=1" degli spoiler)
+  // elenco delle immagini: scope "t" (miniature), "hd" (tutto) o l'id di un prodotto (tutto di quel prodotto)
+  function offItems(scope) {
+    if (OFFLIST[scope]) return OFFLIST[scope];
+    var seen = {}, list = [];
+    function add(u, w) { if (!seen[u]) { seen[u] = 1; list.push({ u: u, w: w }); } }
+    function addCard(c) { var k = c.img || c.code; add(cardUrl("t", k, c), OFFAVG.t); if (scope !== "t") add(cardUrl("f", k, c), OFFAVG.f); }
+    function addProd(code) {
+      if (BANNERS[code]) add(IMGB + code + ".webp", OFFAVG.b);
+      var p = PRODUCTS[code]; if (p && p.pk) add(IMGP + p.k + ".webp", OFFAVG.pk); if (p && p.lg) add(IMGP + "logo/" + p.k + ".webp", OFFAVG.lg);
+    }
+    if (scope === "t" || scope === "hd") {
+      CARDS.forEach(addCard); SETS.forEach(function (x) { cardsOfSet(x.id).forEach(addCard); });
+      if (scope === "hd") {
+        Object.keys(ERRATA).forEach(function (k) { add(cardUrl("pre", k), OFFAVG.pre); });
+        Object.keys(BANNERS).forEach(addProd); Object.keys(PRODUCTS).forEach(addProd);
+      }
+    } else if (SETBY[scope]) { cardsOfSet(scope).forEach(addCard); addProd(SETBY[scope].code); }
+    var h = 5381, j = scope + "|" + list.length; list.forEach(function (x) { for (var i = 0; i < x.u.length; i++) h = ((h * 33) ^ x.u.charCodeAt(i)) >>> 0; });
+    list.sig = j + "|" + h; list.w = list.reduce(function (a, x) { return a + x.w; }, 0);
+    return (OFFLIST[scope] = list);
+  }
+  function offMB(b) { var m = b / 1048576; return m >= 100 ? Math.round(m / 10) * 10 + " MB" : m >= 10 ? Math.round(m) + " MB" : (Math.round(m * 10) / 10).toLocaleString("it-IT") + " MB"; }
+  function offNum(n) { return n.toLocaleString("it-IT"); }
+  function offCell() { var c = navigator.connection; return !!(c && (c.type === "cellular" || c.saveData)); }
+  // immagini già salvate (indirizzi), lette una volta e poi aggiornate mentre si scarica
+  function offLoadHave() {
+    if (!IMGC) return Promise.resolve(null);
+    return IMGC.then(function (c) { if (!c) return null; return c.keys().then(function (ks) { var h = {}; ks.forEach(function (r) { h[r.url] = 1; }); OFFHAVE = h; return h; }); }).catch(function () { return null; });
+  }
+  function offCount(list) { var n = 0; if (OFFHAVE) list.forEach(function (x) { if (OFFHAVE[x.u]) n++; }); return n; }
+  function offMiss(list) { var m = {}, n = 0; (OFF.miss || []).forEach(function (u) { m[u] = 1; }); list.forEach(function (x) { if (m[x.u] && !(OFFHAVE && OFFHAVE[x.u])) n++; }); return n; }
+  function offStart(scope, quiet) {
+    if (OFFRUN && !OFFRUN.end) return;
+    var list = offItems(scope);
+    var R = OFFRUN = { scope: scope, total: list.length, done: 0, fail: 0, row: 0, stop: false, end: false, quiet: !!quiet };
+    if (scope === "t" || scope === "hd") { OFF.paused = false; offSave(); }
+    offDraw();
+    if (!IMGC) { R.end = true; R.err = "Questo browser non permette di salvare le immagini."; offDraw(); return; }
+    IMGC.then(function (c) {
+      if (!c) throw new Error("no cache");
+      return offLoadHave().then(function () {
+        var todo = list.filter(function (x) { return !OFFHAVE || !OFFHAVE[x.u]; }), i = 0;
+        R.done = R.total - todo.length; offDraw();
+        function one() {
+          if (R.stop || i >= todo.length) return Promise.resolve();
+          var x = todo[i++];
+          return imgFetch(c, x.u).catch(function () { return imgFetch(c, x.u); }).then(function () {
+            R.row = 0; if (OFFHAVE) OFFHAVE[x.u] = 1;
+          }, function () {
+            R.fail++; R.row++; if (R.row < 3 && (OFF.miss || []).indexOf(x.u) < 0 && (OFF.miss || []).length < 60) { (OFF.miss = OFF.miss || []).push(x.u); offSave(); }
+            if (R.row >= 25) { R.stop = true; R.err = "Connessione assente o troppo lenta: lo scaricamento si è fermato. Puoi riprenderlo più tardi."; }
+          }).then(function () { R.done++; offTick(); return one(); });
+        }
+        var ws = []; for (var k = 0; k < 6; k++) ws.push(one());
+        return Promise.all(ws);
+      });
+    }).then(function () {
+      R.end = true;
+      if ((scope === "t" || scope === "hd") && OFF.m === scope) {
+        if (!R.stop) { OFF.done = R.fail ? "" : list.sig; OFF.full = true; } else OFF.paused = true;   // con immagini mancanti si riprovano al prossimo avvio
+        offSave();
+      }
+      offDraw();
+    }, function () { R.end = true; R.err = "Non è stato possibile salvare le immagini su questo dispositivo."; offDraw(); });
+  }
+  function offPause() { if (OFFRUN && !OFFRUN.end) OFFRUN.stop = true; }
+  function offChoose(scope) {
+    function go() { OFF.m = scope; if (OFF.done.indexOf(scope + "|") !== 0) OFF.full = false; offSave(); offStart(scope); }
+    if (offCell()) askConfirm({ title: "Scaricare circa " + offMB(offItems(scope).w) + "?", text: "Sei connesso con i dati mobili: ti consigliamo di usare il Wi-Fi.", ok: "Scarica", onOk: go });
+    else go();
+  }
+  function offDelete() {
+    askConfirm({ title: "Eliminare le immagini salvate?", text: "Le immagini verranno riscaricate da internet quando le guardi.", ok: "Elimina", onOk: function () {
+      offPause(); OFF.m = ""; OFF.full = false; OFF.done = ""; OFF.paused = false; OFF.miss = []; offSave(); OFFHAVE = {};
+      var p = window.caches ? caches.delete(IMGNAME).catch(function () {}) : Promise.resolve();
+      p.then(function () { if (IMGC) IMGC = caches.open(IMGNAME).catch(function () { IMGC = null; return null; }); OFFRUN = null; offDraw(); });
+    } });
+  }
+  // aggiornamento della pagina mentre si scarica (al massimo una volta per fotogramma)
+  var offRaf = 0;
+  function offTick() { if (offRaf) return; offRaf = requestAnimationFrame(function () { offRaf = 0; offProg(); }); }
+  function offProg() {
+    var R = OFFRUN, w = document.getElementById("offprog"); if (!w || !R) return;
+    var pc = R.total ? Math.floor(R.done / R.total * 100) : 100;
+    var bar = w.querySelector(".progress i"), t = w.querySelector(".offpt");
+    if (bar) bar.style.width = pc + "%";
+    if (t) t.textContent = offNum(R.done) + " di " + offNum(R.total) + " · " + pc + "%";
+    var row = R.scope !== "t" && R.scope !== "hd" ? document.querySelector('.offrow[data-id="' + R.scope + '"] .offst') : null;
+    if (row) row.textContent = pc + "%";
+    var oc = document.getElementById("offoc-" + R.scope); if (oc && !R.end) oc.textContent = "Scaricamento in corso…";
+  }
+  function offDraw() { if (st.tab === "offline" && document.querySelector(".offpage")) { var y = window.pageYOffset; render(); window.scrollTo(0, y); } }
+  function offSetsList() {
+    return SETS.filter(function (x) { return (x.v || []).length; }).slice().sort(function (a, b) {
+      var ad = a.date || "", bd = b.date || ""; return ad < bd ? 1 : ad > bd ? -1 : numOf(b.code) - numOf(a.code);
+    });
+  }
+  function renderOffline() {
+    pageTitle("Immagini offline", "Scarica le immagini nel dispositivo: compaiono subito e funzionano anche senza internet.");
+    var P = el("div", "offpage");
+    if (!DESK) P.appendChild(el("p", "offintro", "Scarica le immagini nel dispositivo: compaiono subito e funzionano anche senza internet. Restano salvate anche quando aggiorni l'app."));
+    else P.appendChild(el("p", "offintro", "Restano salvate anche quando aggiorni l'app."));
+    if (!OFFHAVE) offLoadHave().then(function (h) { if (h) offDraw(); });
+    var R = OFFRUN, running = R && !R.end;
+    // stato
+    var S = el("div", "offbox offstat");
+    if (!IMGC) S.appendChild(el("p", "offnote", "Questo browser non permette di salvare le immagini nel dispositivo."));
+    else {
+      var nT = 0, nF = 0, nO = 0;
+      if (OFFHAVE) Object.keys(OFFHAVE).forEach(function (u) { if (u.indexOf(IMG + "t/") === 0) nT++; else if (u.indexOf(IMG + "f/") === 0) nF++; else nO++; });
+      var hd = el("div", "offsh"); hd.appendChild(el("b", "", OFFHAVE ? offNum(nT + nF + nO) + (nT + nF + nO === 1 ? " immagine salvata" : " immagini salvate") : "Controllo delle immagini salvate…"));
+      var sz = el("span", "offsz"); hd.appendChild(sz); S.appendChild(hd);
+      if (OFFHAVE) S.appendChild(el("div", "offsub", offNum(nF) + " carte grandi · " + offNum(nT) + " miniature · " + offNum(nO) + " banner, confezioni e loghi"));
+      if (navigator.storage && navigator.storage.estimate) navigator.storage.estimate().then(function (e) { if (e && e.usage && nT + nF + nO) sz.textContent = "circa " + offMB(e.usage); }).catch(function () {});
+      if (R && (R.scope === "t" || R.scope === "hd" || running)) {
+        var pw = el("div", "offprog"); pw.id = "offprog";
+        var lbl = R.scope === "t" ? "Miniature" : R.scope === "hd" ? "Tutto in HD" : (SETBY[R.scope] ? SETBY[R.scope].code : "Prodotto");
+        var top = el("div", "offpl"); top.appendChild(el("b", "", (running ? (R.stop ? "Pausa…" : "Scaricamento · ") : R.stop ? "In pausa · " : "Completato · ") + lbl)); top.appendChild(el("span", "offpt", ""));
+        pw.appendChild(top); pw.appendChild(pbar(0, 1)); S.appendChild(pw);
+        if (R.err) S.appendChild(el("p", "offnote warn", R.err));
+        else if (R.end && !R.stop && R.fail) S.appendChild(el("p", "offnote", offNum(R.fail) + (R.fail === 1 ? " immagine non è disponibile" : " immagini non sono disponibili") + " sul sito: verranno riprovate la prossima volta."));
+        if (running) S.appendChild(btn("Metti in pausa", "", offPause));
+      } else if (OFF.m && OFF.paused) {
+        var L0 = offItems(OFF.m), h0 = offCount(L0);
+        S.appendChild(el("p", "offnote", "In pausa: " + (OFF.m === "t" ? "miniature" : "tutto in HD") + (OFFHAVE ? ", " + offNum(h0) + " di " + offNum(L0.length) + " salvate." : ".")));
+      }
+      if (OFF.m && OFF.paused && !running) S.appendChild(btn("Riprendi", "pri", function () { offStart(OFF.m); }));
+    }
+    P.appendChild(S);
+    if (!IMGC) { out.appendChild(P); return; }
+    // le due scelte
+    P.appendChild(el("h3", "offh", "Cosa scaricare"));
+    [["t", "Solo miniature", "Ogni carta compare subito in piccolo, anche offline; quella nitida arriva quando c'è internet."],
+     ["hd", "Tutto in HD", "Carte grandi, miniature, banner e confezioni: l'app non scarica più nessuna immagine."]].forEach(function (o) {
+      var L = offItems(o[0]), cur = OFF.m === o[0], have = OFFHAVE ? offCount(L) : -1, nm = OFFHAVE ? offMiss(L) : 0, all = have >= 0 && have + nm >= L.length;
+      var b = el("div", "offbox offopt" + (cur ? " cur" : ""));
+      var h = el("div", "offoh"); h.appendChild(el("b", "", o[1])); h.appendChild(el("span", "offw", "circa " + offMB(L.w))); b.appendChild(h);
+      b.appendChild(el("p", "", o[2]));
+      var f = el("div", "offof");
+      var fs = el("span", "offsub", have < 0 ? offNum(L.length) + " immagini" : all ? "✓ Tutte salvate" + (nm ? " · " + nm + " non disponibili" : "") : offNum(have) + " di " + offNum(L.length) + " salvate");
+      fs.id = "offoc-" + o[0]; if (all) fs.classList.add("ok"); f.appendChild(fs);
+      var bb = btn(cur && all ? "Scelta attuale" : cur && running && R.scope === o[0] ? "In corso…" : all ? "Scegli" : "Scarica", cur && all ? "" : "pri", function () { offChoose(o[0]); });
+      if (running || (cur && all)) bb.disabled = true;
+      f.appendChild(bb); b.appendChild(f); P.appendChild(b);
+    });
+    if (OFF.m) {
+      var au = el("label", "offbox offauto"), ck = document.createElement("input"); ck.type = "checkbox"; ck.checked = OFF.auto !== false;
+      ck.onchange = function () { OFF.auto = ck.checked; offSave(); };
+      au.appendChild(ck); var tx = el("span"); tx.appendChild(el("b", "", "Scarica da solo le immagini nuove")); tx.appendChild(el("small", "", "Quando arrivano prodotti o carte nuove, all'apertura dell'app."));
+      au.appendChild(tx); P.appendChild(au);
+    }
+    // per prodotto
+    P.appendChild(el("h3", "offh", "Per prodotto"));
+    P.appendChild(el("p", "offintro", "Solo i prodotti che ti interessano, in HD."));
+    var lw = el("div", "offbox offlist");
+    offSetsList().forEach(function (x) {
+      var L = offItems(x.id), have = OFFHAVE ? offCount(L) : -1, all = have >= 0 && have + offMiss(L) >= L.length, me = R && R.scope === x.id && !R.end;
+      // percentuale delle sole carte grandi (miniature, banner e confezioni possono essere già salvati sfogliando)
+      var Lf = L.filter(function (z) { return z.w === OFFAVG.f; }), pHd = Math.floor(offCount(Lf) / Math.max(1, Lf.length) * 100);
+      var r = el("div", "offrow"); r.setAttribute("data-id", x.id);
+      var t = el("div", "offrt"); t.appendChild(el("b", "", x.code)); t.appendChild(el("span", "", x.name)); r.appendChild(t);
+      r.appendChild(el("span", "offst" + (all ? " ok" : ""), me ? (R.total ? Math.floor(R.done / R.total * 100) : 0) + "%" : all ? "✓ Salvato" : pHd >= 1 ? pHd + "% · " + offMB(L.w) : offMB(L.w)));
+      var d = el("button", "offdl"); d.type = "button"; d.setAttribute("aria-label", "Scarica " + x.code);
+      d.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IC.offline + "</svg>";
+      d.disabled = all || running; d.hidden = all;
+      d.onclick = function () { offStart(x.id); };
+      r.appendChild(d); lw.appendChild(r);
+    });
+    P.appendChild(lw);
+    var del = el("button", "offdel", "Elimina immagini salvate"); del.type = "button"; del.onclick = offDelete; P.appendChild(del);
+    out.appendChild(P);
+    offProg();
+  }
+  // all'avvio: completa lo scaricamento lasciato a metà o aggiunge le immagini nuove
+  setTimeout(function () {
+    if (!OFF.m || OFF.paused || !IMGC) return;
+    var L = offItems(OFF.m); if (OFF.done === L.sig) return;
+    if (OFF.full ? OFF.auto === false : offCell()) return;
+    offStart(OFF.m, true);
+  }, 8000);
   function upSorted() {
     var IMP = { BT: 0, EX: 1, ST: 2, LM: 3, PB: 4, AL: 5 };
     return (DATA.upcoming || []).slice().sort(function (a, b) {
@@ -4451,7 +4684,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   function render() {
     recomputeStatsIfNeeded();
     var isDeck = st.tab === "deck", isDeckList = isDeck && !st.deckId;
-    var isInfo = st.tab === "info", isHome = st.tab === "home" || isInfo || isDeckList, isSets = st.tab === "sets", isSoon = isSets && st.type === "SOON";
+    var isInfo = st.tab === "info", isOff = st.tab === "offline", isHome = st.tab === "home" || isInfo || isOff || isDeckList, isSets = st.tab === "sets", isSoon = isSets && st.type === "SOON";
     var isUp = st.tab === "cards" && /^up-/.test(st.setId || "");
     ["home", "sets", "cards"].forEach(function (t) { document.getElementById("tab-" + t).setAttribute("aria-selected", st.tab === t ? "true" : "false"); });
     // su desktop Ricerca e Collezione hanno i filtri nella colonna a sinistra
@@ -4509,7 +4742,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     drawTabbar(); if (!DESK) drawMfbar();
     trackNav();
     if (isDeck) { document.getElementById("hint").hidden = true; if (st.deckId) renderDeck(); else renderDeckList(); }
-    else if (isInfo) renderInfo(); else if (isHome) renderHome(); else if (isSoon) renderSoon(); else if (isSets) renderSets(); else if (isUp) renderUp(st.setId.slice(3)); else renderCards();
+    else if (isInfo) renderInfo(); else if (isOff) renderOffline(); else if (isHome) renderHome(); else if (isSoon) renderSoon(); else if (isSets) renderSets(); else if (isUp) renderUp(st.setId.slice(3)); else renderCards();
     if (mfsGo) mfsGo.textContent = LASTN > 0 ? "Mostra " + LASTN + (LASTN === 1 ? " carta" : " carte") : LASTN === 0 ? "Nessuna carta: chiudi" : "Mostra i risultati";
     fitAll();
   }
