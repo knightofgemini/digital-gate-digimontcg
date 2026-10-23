@@ -76,9 +76,12 @@ jobs:
           python3 - <<'PY'
           import pathlib, re
           p = pathlib.Path("android/app/src/main/res/values/styles.xml"); t = p.read_text()
+          # barra di stato dello stesso blu notte dell'app già all'apertura (poi l'app la adatta al tema con il plugin StatusBar)
+          if "android:statusBarColor" not in t:
+              t = re.sub(r'(<style name="AppTheme.NoActionBar"[^>]*>)', r'\1\n        <item name="android:statusBarColor">#0b1120</item>\n        <item name="android:windowLightStatusBar">false</item>', t)
           if "windowSplashScreenBackground" not in t and "Theme.SplashScreen" in t:
               t = re.sub(r'(<style name="AppTheme.NoActionBarLaunch"[^>]*>)', r'\1\n        <item name="windowSplashScreenBackground">#0b1120</item>\n        <item name="windowSplashScreenAnimatedIcon">@drawable/digital_gate_splash_empty</item>', t)
-              p.write_text(t)
+          p.write_text(t)
           print(t)
           PY
           ls android/app/src/main/res/mipmap-anydpi-v26 android/app/src/main/res/mipmap-anydpi-v33 android/app/src/main/res/drawable

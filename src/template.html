@@ -1790,7 +1790,20 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   var DARKMQ = window.matchMedia ? matchMedia("(prefers-color-scheme: dark)") : null;
   function isDark() { var t = document.documentElement.getAttribute("data-theme"); return t ? t === "dark" : !!(DARKMQ && DARKMQ.matches); }
   var SVGO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+  // APK: barra di stato di Android (ora, batteria) dello stesso colore dello sfondo dell'app, icone chiare o scure secondo il tema;
+  // sito: colore della barra del browser (meta theme-color). Si aggiorna cambiando tema o tema del telefono.
+  function syncBars() {
+    var dk = isDark(), col = dk ? "#0b1120" : "#f1f4f9";
+    var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute("content", col);
+    var SB = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.StatusBar;
+    if (!SB) return;
+    try {
+      var p1 = SB.setBackgroundColor({ color: col }), p2 = SB.setStyle({ style: dk ? "DARK" : "LIGHT" });
+      [p1, p2].forEach(function (pr) { if (pr && pr.catch) pr.catch(function () {}); });
+    } catch (e) {}
+  }
   function drawSideTools() {
+    syncBars();
     var dk = isDark(), tb = document.getElementById("themeBtn");
     tb.innerHTML = SVGO + (dk ? '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>' : '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>') + "</svg>";
     tb.appendChild(el("span", "", dk ? "Tema chiaro" : "Tema scuro")); tb.title = dk ? "Passa al tema chiaro" : "Passa al tema scuro";
