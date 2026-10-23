@@ -385,6 +385,7 @@ body.desk .alts .alt .pline .ptag { font-size: .5rem; padding: 2px 0; width: 3.4
 .soon .ttl { font-weight: 500; }
 .row.upc .ttl { font-weight: 500; }
 .fit { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nml { max-width: 100%; }
 .subline .cdn { color: var(--accent); font-weight: 600; }
 .subline .mon { text-transform: capitalize; }
 .row.upc .note { grid-column: 1 / -1; color: var(--ink-2); font-size: .8rem; }
@@ -1704,6 +1705,8 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   // Digimon ACE: l'icona "ACE" è stampata accanto al nome ma non fa parte del nome (regolamento ufficiale)
   function isAceX(extra) { return /(^|\n)Effetto ACE:/.test(extra || ""); }
   function isAce(c) { return isAceX(c.extra); }
+  // nome su una sola riga negli elenchi: se è lungo si rimpicciolisce (fitAll) invece di andare a capo
+  function nameLine(c) { var d = el("div", "nml fit"); d.appendChild(nameFrag(c)); return d; }
   function nameFrag(c, star) {
     var f = document.createDocumentFragment(); f.appendChild(document.createTextNode(c.name));
     if (isAce(c)) { f.appendChild(document.createTextNode(" ")); f.appendChild(el("span", "acet", "ACE")); if (star) f.appendChild(el("span", "acestar", "*")); }
@@ -2032,11 +2035,13 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     e.style.fontSize = "";
     var fs = parseFloat(getComputedStyle(e).fontSize);
     if (e.classList.contains("one")) e.style.whiteSpace = "";
+    if (e.scrollWidth > e.clientWidth + 0.5 && e.clientWidth > 0) { fs = Math.max(8, Math.floor(fs * e.clientWidth / e.scrollWidth * 2) / 2); e.style.fontSize = fs + "px"; }
     while (e.scrollWidth > e.clientWidth + 0.5 && fs > 8) { fs -= 0.5; e.style.fontSize = fs + "px"; }
     if (e.classList.contains("one") && e.scrollWidth > e.clientWidth + 0.5) e.style.whiteSpace = "normal";
   }
   function fitAll() { var n = document.querySelectorAll(".fit"); for (var i = 0; i < n.length; i++) fitOne(n[i]); }
   window.addEventListener("resize", fitAll);
+  try { document.fonts.ready.then(fitAll); } catch (e) {}
   if (window.ResizeObserver) new ResizeObserver(fitAll).observe(document.body);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitAll);
 
@@ -3227,7 +3232,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
         var t = el("div", "tile"); t.tabIndex = 0; t.setAttribute("role", "button");
         t.appendChild(picBox("pic", "f", c)); t.appendChild(favBtn(c));
         var cl = el("div", "cline"); cl.style.background = gradient(c.colors, "to right"); t.appendChild(cl);
-        var tn = el("div", "tname"); tn.appendChild(nameFrag(c)); t.appendChild(tn);
+        var tn = el("div", "tname fit"); tn.appendChild(nameFrag(c)); t.appendChild(tn);
         listLines(c).forEach(function (x) { t.appendChild(x); });
         t.appendChild(qtyControl(c, function () { recomputeStats(); render(); }));
         var fbg = favBadges(c); if (fbg) t.appendChild(fbg);
@@ -3240,7 +3245,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       if (!DESK) {
         var r = el("div", "row card p1"); r.tabIndex = 0; r.setAttribute("role", "button");
         r.appendChild(thumbBand(c));
-        var mid = el("div", "name"); mid.appendChild(nameFrag(c));
+        var mid = el("div", "name"); mid.appendChild(nameLine(c));
         listLines(c).forEach(function (x) { mid.appendChild(x); });
         var pp = pricePill(c); if (pp) mid.appendChild(pp);
         var fbm = favBadges(c); if (fbm) mid.appendChild(fbm);
@@ -3250,7 +3255,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       var r = el("div", "row card"); r.tabIndex = 0; r.setAttribute("role", "button");
       var sw = el("div", "swatch"); sw.style.background = gradient(c.colors); r.appendChild(sw);
       r.appendChild(picBox("thumb", "t", c));
-      var mid = el("div", "name"); mid.appendChild(nameFrag(c));
+      var mid = el("div", "name"); mid.appendChild(nameLine(c));
       listLines(c).forEach(function (x) { mid.appendChild(x); });
       var fbd = favBadges(c); if (fbd) mid.appendChild(fbd);
       r.appendChild(mid);
@@ -3868,7 +3873,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       var vparts = c.ver.split(/\s*-\s*/).filter(function (vp) { return !RN[vp.toLowerCase()] && !/^(promo|rare)$/i.test(vp); });
       if (vparts.length) { hc.appendChild(document.createTextNode(" · ")); vparts.forEach(function (vp, i) { if (i) hc.appendChild(document.createTextNode(" - ")); hc.appendChild(el("span", /foil/i.test(vp) ? "foil" : "", vp)); }); }
     }
-    var h2n = el("h2"); h2n.appendChild(nameFrag(c, true)); t.appendChild(hc); t.appendChild(h2n);
+    var h2n = el("h2", "fit"); h2n.appendChild(nameFrag(c, true)); t.appendChild(hc); t.appendChild(h2n);
     if (isAce(c)) t.appendChild(el("p", "acenote", "* ACE è il simbolo stampato accanto al nome delle carte Digimon ACE: non fa parte del nome della carta."));
     head.appendChild(t);
     sh.appendChild(head);
@@ -4957,7 +4962,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       g[1].forEach(function (c) {
         var r = el("div", "drow"); r.tabIndex = 0; r.setAttribute("role", "button");
         r.appendChild(picBox("thumb", "t", c));
-        var nm = el("div", "dnm"); nm.appendChild(nameFrag(c)); nm.appendChild(el("small", "", c.code + (c.suf ? " · " + (verLabel(c.ver) || "Alternative Art") : ""))); r.appendChild(nm);
+        var nm = el("div", "dnm"); nm.appendChild(nameLine(c)); nm.appendChild(el("small", "", c.code + (c.suf ? " · " + (verLabel(c.ver) || "Alternative Art") : ""))); r.appendChild(nm);
         var rc = el("div", "dright"); rc.appendChild(deckQty(d, c, function () { render(); })); var bb = banBadge(c, d); if (bb) rc.appendChild(bb); r.appendChild(rc);
         r.onclick = function () { st.open = c; drawSheet(); };
         r.onkeydown = function (e) { if (e.target === r && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); st.open = c; drawSheet(); } };
@@ -5162,7 +5167,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       sec.appendChild(pl);
       if (selC) {
         var c = selC, sb = el("div", "dksel");
-        var nm = el("div", "name"); nm.appendChild(nameFrag(c)); nm.appendChild(el("div", "sub", c.code + (c.suf ? " · " + (verLabel(c.ver) || "Alternative Art") : ""))); sb.appendChild(nm);
+        var nm = el("div", "name"); nm.appendChild(nameLine(c)); nm.appendChild(el("div", "sub", c.code + (c.suf ? " · " + (verLabel(c.ver) || "Alternative Art") : ""))); sb.appendChild(nm);
         var rc = el("div", "dright"); rc.appendChild(deckQty(d, c, function () { if (!inDeck(d, c)) st.dkSel = null; render(); }));
         var bb = banBadge(c, d); if (bb) rc.appendChild(bb); sb.appendChild(rc);
         var ib = el("button", "dkinfo"); ib.type = "button"; ib.setAttribute("aria-label", "Apri la scheda di " + c.name);
@@ -5338,7 +5343,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       var t = el("div", "tile"); t.tabIndex = 0; t.setAttribute("role", "button");
       t.appendChild(picBox("pic", "f", c));
       var cl = el("div", "cline"); cl.style.background = gradient(c.colors, "to right"); t.appendChild(cl);
-      var tn = el("div", "tname"); tn.appendChild(nameFrag(c)); t.appendChild(tn);
+      var tn = el("div", "tname fit"); tn.appendChild(nameFrag(c)); t.appendChild(tn);
       listLines(c).forEach(function (x) { t.appendChild(x); });
       t.appendChild(deckQty(d, c, cb));
       if (bb) { var tb = el("div", "dbl"); tb.appendChild(bb); t.appendChild(tb); }
@@ -5350,7 +5355,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     var r = el("div", "row card" + (DESK ? "" : " p1")); r.tabIndex = 0; r.setAttribute("role", "button");
     if (DESK) { var sw = el("div", "swatch"); sw.style.background = gradient(c.colors); r.appendChild(sw); r.appendChild(picBox("thumb", "t", c)); }
     else r.appendChild(thumbBand(c));
-    var mid = el("div", "name"); mid.appendChild(nameFrag(c));
+    var mid = el("div", "name"); mid.appendChild(nameLine(c));
     listLines(c).forEach(function (x) { mid.appendChild(x); });
     r.appendChild(mid);
     var rc = el("div", "dright"); rc.appendChild(deckQty(d, c, cb));
