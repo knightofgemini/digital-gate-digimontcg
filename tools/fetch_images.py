@@ -14,6 +14,20 @@ SRC = ["https://world.digimoncard.com/images/cardlist/card/{}.png", "https://en.
        "https://web-garage.takaotaku.de/{}.webp"]
 # per le versioni alternative la numerazione _Pn è quella di TakaOtaku: prima la sua fonte
 SRC_ALT = [SRC[2], SRC[0], SRC[1]]
+# en.digimoncard.com a volte restituisce la carta GIAPPONESE (e con SAMPLE in un'altra posizione): solo ultimo ripiego
+SRC = [SRC[0], SRC[2], SRC[1]]
+# correzione del 23 ottobre 2026: la prima pulizia SAMPLE accettava anche en.digimoncard.com e ha messo alcune immagini
+# giapponesi; le immagini "pulite" di allora si cancellano e si riscaricano (versione 2 di sample.json)
+_SJ0 = out / "sample.json"
+try: _old = json.loads(_SJ0.read_text())
+except Exception: _old = {}
+if _old.get("_v") != 2:
+    for _k, _s in _old.items():
+        if _s == "pulita":
+            for _d in ("f", "t"):
+                _p = out / _d / (_k + ".webp")
+                if _p.exists(): _p.unlink()
+    _SJ0.write_text(json.dumps({"_v": 2}))
 def get(url):
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 digimon-set-tracker"})
     return urllib.request.urlopen(req, timeout=30).read()
@@ -44,7 +58,7 @@ except Exception: SST = {}
 ERR = {x.stem for x in (root / "src" / "errata").glob("*.webp")}
 def _small(im):
     g = im.convert("L").resize((215, 300)); g.paste(0, (0, 108, 215, 182)); return g   # fascia della scritta esclusa
-def same(a, b): return ImageStat.Stat(ImageChops.difference(_small(a), _small(b))).mean[0] < 8
+def same(a, b): return ImageStat.Stat(ImageChops.difference(_small(a), _small(b))).mean[0] < 7
 def clean(code):
     if SST.get(code) in ("ok", "pulita") or code in ERR: return SST.get(code, "errata")
     f, t = out / "f" / (code + ".webp"), out / "t" / (code + ".webp")
@@ -54,7 +68,8 @@ def clean(code):
     s = score(cur)
     if s is None or s <= SOGLIA: return "ok"
     q = urllib.parse.quote(code)
-    for tpl in [SRC[1], SRC[2], SRC[0]]:
+    # solo TakaOtaku e il sito ufficiale internazionale (inglese); mai en.digimoncard.com
+    for tpl in ["https://web-garage.takaotaku.de/{}.webp", "https://world.digimoncard.com/images/cardlist/card/{}.png"]:
         try: im = Image.open(io.BytesIO(get(tpl.format(q)))).convert("RGB")
         except Exception: continue
         cs = score(im)
@@ -73,6 +88,7 @@ print("::notice title=Immagini::%d carte, %d con immagine, %d senza. Esempi manc
 print("senza immagine:", [c for c, r in res.items() if r == "manca"][:40])
 with cf.ThreadPoolExecutor(12) as ex:
     for code, r in zip(codes, ex.map(clean, codes)): SST[code] = r
+SST["_v"] = 2
 SJ.write_text(json.dumps(SST, separators=(",", ":")))
 cs = Counter(SST.get(c) for c in codes)
 print("::notice title=Scritta SAMPLE::%d immagini senza scritta, %d sostituite con una versione pulita, %d ancora con la scritta (nessuna fonte pulita per ora)" % (cs.get("ok", 0), cs.get("pulita", 0), cs.get("sample", 0)))

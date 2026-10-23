@@ -1603,12 +1603,12 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   var CARDTYPES = ["Digimon", "Digi-Egg", "Tamer", "Option", "Digimon/Option"];
   var PAGE = 80;
   var IMG = "https://knightofgemini.github.io/digital-gate-digimontcg/img/";
-  // ---- Immagini salvate nel dispositivo: la prima volta si scaricano e si conservano (Cache Storage "dg-img-v2"; v2 dal 23 ottobre 2026, quando sono state tolte le immagini con la scritta SAMPLE),
+  // ---- Immagini salvate nel dispositivo: la prima volta si scaricano e si conservano (Cache Storage "dg-img-v3"; v2/v3 dal 23 ottobre 2026, pulizia delle immagini con la scritta SAMPLE),
   // dalla seconda compaiono subito, anche senza internet. Ogni 30 giorni una copia vista viene ricontrollata in sottofondo.
   // Il caricamento parte quando l'immagine è entro ~2400 px dallo schermo (si scaricano in anticipo quelle che stanno per arrivare).
   // In memoria restano le ultime 300 (indirizzi "blob:"), così i ridisegni dell'elenco non le fanno lampeggiare.
   var IMGC = null, IMGMEM = new Map(), IMGFLY = {}, IMGMAX = 300, IMGAGE = 30 * 864e5;
-  try { if (window.caches && window.fetch && window.URL && URL.createObjectURL && /^https?:/.test(location.protocol)) IMGC = caches.open("dg-img-v2").catch(function () { IMGC = null; return null; }); caches.delete("dg-img-v1").catch(function () {}); } catch (e) { IMGC = null; }
+  try { if (window.caches && window.fetch && window.URL && URL.createObjectURL && /^https?:/.test(location.protocol)) IMGC = caches.open("dg-img-v3").catch(function () { IMGC = null; return null; }); ["dg-img-v1", "dg-img-v2"].forEach(function (n) { caches.delete(n).catch(function () {}); }); } catch (e) { IMGC = null; }
   try { if (IMGC && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {}); } catch (e) {}
   function imgMem(url, u) {
     if (u) { IMGMEM.set(url, u); if (IMGMEM.size > IMGMAX) { var k = IMGMEM.keys().next().value; var o = IMGMEM.get(k); IMGMEM.delete(k); setTimeout(function () { try { URL.revokeObjectURL(o); } catch (e) {} }, 4000); } return u; }
