@@ -4106,9 +4106,10 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
         var tx = el("span", "cvt"), lb = el("b"), fs = SETBY[hostSet(a)];
         if (fs && fs.code !== "EX13") lb.appendChild(document.createTextNode(fs.code + " "));
         var mk = a.mark === 1 ? "★" : a.mark === 2 ? "★★" : a.mark === "SP" ? "SP" : "";
+        // Regular, oppure "Alt-Art" seguito da ★, ★★ o SP (scelta dell'utente)
         if (!a.suf) lb.appendChild(document.createTextNode("Regular"));
-        else if (mk) lb.appendChild(rarLabel(mk));
-        else lb.appendChild(document.createTextNode(verLabel(a.ver) || "Alternative Art"));
+        else if (mk || /alternative art/i.test(a.ver || "")) { lb.appendChild(document.createTextNode("Alt-Art")); if (mk) lb.appendChild(rarLabel(mk)); }
+        else lb.appendChild(document.createTextNode(verLabel(a.ver) || "Alt-Art"));
         tx.appendChild(lb);
         var bv = bestVal(a); tx.appendChild(el("small", "", bv == null ? "N/D" : eurT(bv)));
         b.appendChild(tx);
