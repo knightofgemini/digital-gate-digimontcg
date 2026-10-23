@@ -1072,7 +1072,14 @@ body.mob .row.card.p1 .thumb { position: relative; margin-left: 0; }
 /* nome su tutta la larghezza della riga, sopra le righe sotto e sopra −/+ */
 body.mob .row.card.p1 { grid-template-rows: auto auto; row-gap: 0; }
 body.mob .row.card.p1 > .tbw { grid-column: 1; grid-row: 1 / span 2; }
-body.mob .row.card.p1 > .nml { grid-column: 2 / span 2; grid-row: 1; align-self: end; font-weight: 500; min-width: 0; }
+body.mob .row.card.p1 > .nml, body.mob .row.card.p1 > .trow { grid-column: 2 / span 2; grid-row: 1; align-self: end; font-weight: 500; min-width: 0; }
+/* telefono, elenco: cuore in fondo alla riga del nome, largo come il + e allineato a lui (bordo 1 px + margine 3 px del riquadro −/+) */
+body.mob .row.card.p1 > .trow { display: flex; align-items: center; gap: 4px; }
+body.mob .row.card.p1 > .trow .nml { flex: 1; min-width: 0; }
+body.mob .row.card.p1 > .trow .favb { flex: none; width: 40px; height: 30px; margin: -4px 4px -4px 0; border-radius: 10px; background: none; color: var(--ink-2); }
+body.mob .row.card.p1 > .trow .favb.on { color: var(--accent); }
+body.mob .row.card.p1 > .trow .favb svg { width: 20px; height: 20px; }
+@media (max-width: 369px) { body.mob .row.card.p1 > .trow .favb { width: 34px; } }
 body.mob .row.card.p1 > .name { grid-column: 2; grid-row: 2; align-self: start; }
 body.mob .row.card.p1 > .qty, body.mob .row.card.p1 > .dright { grid-column: 3; grid-row: 2; align-self: center; }
 .thumb .tband { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; }
@@ -1398,6 +1405,12 @@ body.desk .scan.res .scres:not(.schist), body.desk .scan.hist .schist { transfor
 .favb.on { color: var(--accent); }
 .favb.on svg { fill: currentColor; stroke: none; }
 .tile > .favb { position: absolute; top: 12px; right: 12px; z-index: 2; }
+/* telefono, griglia: cuore accanto al nome, largo come il + e allineato a lui (bordo 1 px + margine 3 px del riquadro −/+) */
+body.mob .tile .trow { display: flex; align-items: center; gap: 4px; min-width: 0; }
+body.mob .tile .trow .tname { flex: 1; min-width: 0; }
+body.mob .tile .trow .favb { flex: none; width: 40px; height: 30px; margin: -4px 4px -4px 0; border-radius: 10px; background: none; color: var(--ink-2); }
+body.mob .tile .trow .favb.on { color: var(--accent); }
+body.mob .tile .trow .favb svg { width: 20px; height: 20px; }
 .favb.big { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); flex: none; }
 .favb.big svg { width: 20px; height: 20px; }
 .favb.big.on { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
@@ -2992,11 +3005,12 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   function thumbFav(tw, c) {
     var th = tw.querySelector(".thumb"); if (!th) return;
     function badge() {
+      var r = tw.closest(".row"), fb = r && r.querySelector(".trow .favb");
+      if (fb) { var on = isFav(c); fb.classList.toggle("on", on); fb.setAttribute("aria-pressed", String(on)); fb.setAttribute("aria-label", on ? "Togli dalle preferite" : "Aggiungi alle preferite"); return; }
       var b = th.querySelector(".tfav");
       if (isFav(c) && !b) { b = el("span", "tfav"); b.innerHTML = HEART; b.setAttribute("aria-label", "Preferita"); b.setAttribute("role", "img"); th.appendChild(b); }
       else if (!isFav(c) && b) b.remove();
     }
-    badge();
     var last = 0, tm = 0;
     tw.addEventListener("click", function (e) {
       e.stopPropagation();
@@ -3284,9 +3298,11 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     items.forEach(function (c) {
       if (st.view === "grid") {
         var t = el("div", "tile"); t.tabIndex = 0; t.setAttribute("role", "button");
-        t.appendChild(picBox("pic", "f", c)); t.appendChild(favBtn(c));
+        t.appendChild(picBox("pic", "f", c)); if (DESK) t.appendChild(favBtn(c));
         var cl = el("div", "cline"); cl.style.background = gradient(c.colors, "to right"); t.appendChild(cl);
-        var tn = el("div", "tname fit two"); tn.appendChild(nameFrag(c)); t.appendChild(tn);
+        var tn = el("div", "tname fit two"); tn.appendChild(nameFrag(c));
+        // telefono: cuore accanto al nome (non copre più il DP della carta), in colonna con il + sotto
+        if (DESK) t.appendChild(tn); else { var trw = el("div", "trow"); trw.appendChild(tn); trw.appendChild(favBtn(c)); t.appendChild(trw); }
         listLines(c).forEach(function (x) { t.appendChild(x); });
         t.appendChild(qtyControl(c, function () { recomputeStats(); render(); }));
         var fbg = favBadges(c); if (fbg) t.appendChild(fbg);
@@ -3299,8 +3315,8 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       if (!DESK) {
         var r = el("div", "row card p1"); r.tabIndex = 0; r.setAttribute("role", "button");
         var tw = thumbBand(c); thumbFav(tw, c); r.appendChild(tw);
-        // il nome corre su tutta la riga, anche sopra −/+ (così i nomi lunghi si rimpiccioliscono poco)
-        r.appendChild(nameLine(c)); var mid = el("div", "name");
+        // il nome corre su tutta la riga, anche sopra −/+ (così i nomi lunghi si rimpiccioliscono poco); in fondo il cuore, in colonna con il +
+        var trl = el("div", "trow"); trl.appendChild(nameLine(c)); trl.appendChild(favBtn(c)); r.appendChild(trl); var mid = el("div", "name");
         listLines(c).forEach(function (x) { mid.appendChild(x); });
         var pp = pricePill(c); if (pp) mid.appendChild(pp);
         var fbm = favBadges(c); if (fbm) mid.appendChild(fbm);
