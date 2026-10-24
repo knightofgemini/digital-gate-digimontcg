@@ -1739,7 +1739,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   function imgQ(key, kind, c) {
     var q = [];
     if (ERRATA[key] && kind !== "pre") q.push("e=1");
-    if (c && soonSet(SETBY[c.set])) q.push("sp=1");
+    if (c && soonSet(SETBY[c.set])) q.push("sp=2");   // sp=2: anteprime ritagliate senza il margine bianco (24 ottobre 2026)
     return q.length ? "?" + q.join("&") : "";
   }
   var SETS = DATA.sets, SETBY = {};

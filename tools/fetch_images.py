@@ -16,6 +16,11 @@ SRC = ["https://world.digimoncard.com/images/cardlist/card/{}.png", "https://en.
 # "-Sample" (951x1295, con la scritta SAMPLE). Si usa come ultimo ripiego e l'immagine resta segnata "spoiler" in sample.json:
 # a ogni build si riprovano le fonti normali e appena una risponde l'immagine viene sostituita.
 SRC_SPOILER = "https://web-garage.takaotaku.de/{}-Sample.webp"
+# l'anteprima ha un margine bianco e gli angoli arrotondati: si ritaglia la sola carta (tools/spoiler_trim.py).
+# SPV = versione del ritaglio: cambiandola, le anteprime già salvate nella cache di Actions vengono riscaricate.
+sys.path.insert(0, str(root / "tools"))
+from spoiler_trim import trim as spoiler_trim
+SPV = 2
 # per le versioni alternative la numerazione _Pn è quella di TakaOtaku: prima la sua fonte
 SRC_ALT = [SRC[2], SRC[0], SRC[1]]
 # en.digimoncard.com a volte restituisce la carta GIAPPONESE (e con SAMPLE in un'altra posizione): solo ultimo ripiego
@@ -36,6 +41,16 @@ def get(url):
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 digimon-set-tracker"})
     return urllib.request.urlopen(req, timeout=30).read()
 SPOIL = set()
+try: _SST0 = json.loads((out / "sample.json").read_text())
+except Exception: _SST0 = {}
+if _SST0.get("_spv") != SPV:   # anteprime salvate con un ritaglio vecchio (o senza): si cancellano e si riscaricano
+    for _k, _s in list(_SST0.items()):
+        if _s == "spoiler":
+            for _d in ("f", "t"):
+                _p = out / _d / (_k + ".webp")
+                if _p.exists(): _p.unlink()
+            del _SST0[_k]
+    _SST0["_spv"] = SPV; (out / "sample.json").write_text(json.dumps(_SST0, separators=(",", ":")))
 def save(im, f, t):
     a = im.copy(); a.thumbnail((480, 672)); a.save(f, "WEBP", quality=80, method=4)
     b = im.copy(); b.thumbnail((120, 168)); b.save(t, "WEBP", quality=75, method=4)
@@ -53,6 +68,7 @@ def one(code):
         for _ in range(2):
             try:
                 im = Image.open(io.BytesIO(get(tpl.format(q)))).convert("RGB")
+                if tpl == SRC_SPOILER: im = spoiler_trim(im)
                 save(im, f, t)
                 if tpl == SRC_SPOILER: SPOIL.add(code); return "spoiler"
                 return "ok"
@@ -103,7 +119,7 @@ print("::notice title=Immagini::%d carte, %d con immagine, %d senza. Esempi manc
 print("senza immagine:", [c for c, r in res.items() if r == "manca"][:40])
 with cf.ThreadPoolExecutor(12) as ex:
     for code, r in zip(codes, ex.map(clean, codes)): SST[code] = r
-SST["_v"] = 2
+SST["_v"] = 2; SST["_spv"] = SPV
 SJ.write_text(json.dumps(SST, separators=(",", ":")))
 cs = Counter(SST.get(c) for c in codes)
 print("::notice title=Scritta SAMPLE::%d immagini senza scritta, %d sostituite con una versione pulita, %d ancora con la scritta (nessuna fonte pulita per ora), %d anteprime di spoiler" % (cs.get("ok", 0), cs.get("pulita", 0), cs.get("sample", 0), cs.get("spoiler", 0)))
