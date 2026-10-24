@@ -22,10 +22,11 @@ C0=$(python3 tools/bgtest_cdp.py count); log "a schermo acceso dopo 45 s: $C0 im
 adb shell dumpsys battery unplug; adb shell input keyevent KEYCODE_SLEEP; sleep 5
 adb shell dumpsys deviceidle force-idle | tee -a "$OUT"
 log "schermo spento, Doze forzato"
-for i in 1 2 3 4 5 6; do
+for i in $(seq 1 ${ROUNDS:-6}); do
   sleep 40
   ST=$(adb shell dumpsys activity processes 2>/dev/null | tr -d '\r' | grep -A2 "sandboxed_process\|$PKG" | grep -o "procState=[A-Z_]*\|curProcState=[0-9]*\|frozen=[a-z]*" | sort | uniq -c | tr '\n' ' ')
   log "dopo $((i*40)) s a schermo spento · processi: $ST · ultima riga: $(tail -1 logcat-$NAME.txt 2>/dev/null)"
+  adb shell dumpsys deviceidle get deep | tr -d '\r' | sed 's/^/   doze: /' | tee -a "$OUT"
 done
 C1=$(timeout 20 python3 tools/bgtest_cdp.py count 2>/dev/null || echo "?")
 log "subito al risveglio (senza riaccendere lo schermo): $C1 immagini"
@@ -33,5 +34,6 @@ adb shell dumpsys deviceidle unforce >/dev/null; adb shell dumpsys battery reset
 adb shell input keyevent KEYCODE_WAKEUP
 sleep 3
 C2=$(python3 tools/bgtest_cdp.py count); log "schermo riacceso: $C2 immagini"
-log "RISULTATO $NAME: acceso $C0 -> dopo 4 minuti spento $C1 (riacceso $C2)"
+log "RISULTATO $NAME: acceso $C0 -> dopo $(( ${ROUNDS:-6} * 40 / 60 )) minuti spento $C1 (riacceso $C2)"
+grep -h "priorita" "logcat-$NAME.txt" | head -2 | tee -a "$OUT"
 pkill -f "logcat -v time" || true

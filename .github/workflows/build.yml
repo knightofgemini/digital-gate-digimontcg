@@ -178,14 +178,19 @@ jobs:
           api-level: 34
           target: google_apis
           arch: x86_64
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          # rete lenta come un cellulare 3G, così lo scaricamento dura più della prova a schermo spento
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -netspeed umts -netdelay umts
           disable-animations: true
-          script: bash tools/bgtest.sh vecchia/DigimonSetTracker.apk pubblicata && bash tools/bgtest.sh nuova/DigimonSetTracker.apk nuova
+          script: ROUNDS=12 bash tools/bgtest.sh nuova/DigimonSetTracker.apk nuova
       - name: Riepilogo
         if: always()
         run: |
           for f in bgtest-*.txt; do echo "### $f"; cat "$f"; echo; done | tee -a "$GITHUB_STEP_SUMMARY"
           grep -h "RISULTATO" bgtest-*.txt | sed 's/^/::notice title=Prova sottofondo::/' || true
-      - uses: actions/upload-artifact@v4
+      - name: Risultati nel ramo analysis-out
         if: always()
-        with: { name: bgtest, path: "*.txt" }
+        run: |
+          mkdir -p analysis && cp *.txt analysis/ 2>/dev/null || true
+          git config user.name "github-actions"; git config user.email "actions@github.com"
+          git checkout -q --orphan analysis-out; git rm -rqf --cached . >/dev/null
+          git add -f analysis; git commit -qm "prova sottofondo"; git push -q -f origin analysis-out
