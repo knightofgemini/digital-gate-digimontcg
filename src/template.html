@@ -1215,6 +1215,11 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
 .offdl { flex: none; width: 40px; height: 40px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--accent); display: grid; place-items: center; cursor: pointer; }
 .offdl svg { width: 20px; height: 20px; }
 .offdl:disabled { opacity: .45; cursor: default; }
+.offdl.del { color: var(--ink-2); }
+.offdl + .offdl { margin-left: -4px; }
+.offtoast { position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 12px); opacity: 0; z-index: 80; max-width: calc(100% - 32px); padding: 10px 16px; border-radius: 12px; background: var(--ink); color: var(--bg); font: 600 .85rem var(--font-body); box-shadow: 0 8px 24px rgba(0,0,0,.25); transition: opacity .3s, transform .3s; pointer-events: none; }
+.offtoast.on { opacity: 1; transform: translate(-50%, 0); }
+body.desk .offtoast { bottom: 24px; }
 .offdel { display: block; margin: 18px auto 0; border: 0; background: none; color: var(--c-red); font: 600 .9rem var(--font-body); padding: 12px; cursor: pointer; }
 .idet { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); margin-bottom: 10px; }
 .idet > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px; padding: 0 16px; font-weight: 600; cursor: pointer; }
@@ -1696,12 +1701,24 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   function imgLq(im, url, u) {
     if (im.getAttribute("data-src") === url && !im.getAttribute("data-ok")) { im.src = u; im.classList.add("lq"); }
   }
+  // Versioni delle immagini (24 ottobre 2026): il sito pubblica img/v.json = {percorso: N} con le immagini cambiate dopo la
+  // prima pubblicazione (anteprime sostituite dalle ufficiali, scritta SAMPLE tolta, errata, banner aggiornati…). Il loro indirizzo
+  // diventa ...webp?v=N: il telefono non le ha ancora salvate e le riscarica (anche in sottofondo, vedi Immagini offline).
+  var SITE = IMG.replace(/img\/$/, ""), VMAP = {};
+  try { VMAP = JSON.parse(localStorage.getItem("dg-imgv") || "{}") || {}; } catch (e) { VMAP = {}; }
+  function vpath(u) { var q = u.indexOf("?"); return (q < 0 ? u : u.slice(0, q)).slice(SITE.length); }
+  function vurl(u) {
+    if (!u || u.indexOf(SITE) !== 0 || /[?&]v=\d/.test(u)) return u;
+    var n = VMAP[decodeURIComponent(vpath(u))]; if (!n) return u;
+    return u + (u.indexOf("?") < 0 ? "?" : "&") + "v=" + n;
+  }
   function imgNow(im, url) {
+    url = vurl(url);
     if (im.getAttribute("data-src") !== url) { im.removeAttribute("data-ok"); im.classList.remove("lq"); }
     im.setAttribute("data-src", url);
     if (!IMGC) { im.src = url; return; }
     var m = imgMem(url); if (m) { imgFull(im, url, m); return; }
-    var lq = im.getAttribute("data-lq");
+    var lq = vurl(im.getAttribute("data-lq"));
     if (lq && lq !== url && !im.getAttribute("data-ok")) { var ml = imgMem(lq); if (ml) imgLq(im, url, ml); else getImg(lq, true).then(function (u) { imgLq(im, url, u); }, function () {}); }
     getImg(url).then(function (u) { imgFull(im, url, u); }, function () { if (im.getAttribute("data-src") === url) { im.classList.remove("lq"); im.src = url; } });
   }
@@ -1716,11 +1733,12 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   }, { rootMargin: "2400px 800px" }); } catch (e) { imgIO = null; }
   // negli elenchi: già in memoria → subito; altrimenti appena si avvicina allo schermo
   function setImg(im, url) {
+    url = vurl(url);
     var m = IMGC && imgMem(url);
     if (m) { im.setAttribute("data-src", url); im.setAttribute("data-ok", "1"); im.src = m; return; }
     if (!IMGC || !imgIO) { im.loading = "lazy"; im.setAttribute("data-src", url); im.src = url; return; }
     im.removeAttribute("loading"); im.setAttribute("data-src", url);
-    var lq = im.getAttribute("data-lq"), ml = lq && imgMem(lq); if (ml) imgLq(im, url, ml);   // miniatura già in memoria: subito
+    var lq = vurl(im.getAttribute("data-lq")), ml = lq && imgMem(lq); if (ml) imgLq(im, url, ml);   // miniatura già in memoria: subito
     imgIO.observe(im);
   }
   function picBox(cls, kind, c) {
@@ -1944,7 +1962,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       if (m[0] === "home") nav.appendChild(el("div", "grp", "Esplora"));
       if (m[0] === "coll") nav.appendChild(el("div", "grp", "Il tuo spazio"));
       if (m[0] === "offline") nav.appendChild(el("div", "grp", "Progetto"));
-      var b = el("button"); b.type = "button";
+      var b = el("button"); b.type = "button"; b.setAttribute("data-m", m[0]);
       b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + IC[m[0]] + "</svg>";
       b.appendChild(el("span", "lbl", m[1])); if (DESK) b.title = m[1];
       if (m[0] === "soon" && (DATA.upcoming || []).length) b.appendChild(el("span", "nb", String(DATA.upcoming.length)));
@@ -1953,6 +1971,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       b.onclick = function () { var ov = history.state && history.state.ov === "menu"; menuOpen(false, true); if (ov) replaceNext = true; go(m[0]); if (replaceNext) { replaceNext = false; var rs = snap(); rs.d = ovDepth(); history.replaceState(rs, ""); } };
       nav.appendChild(b);
     });
+    if (typeof drawMenuBadge === "function") drawMenuBadge();
   }
   // telefono: ogni sezione (Carte, Collezione, editor del mazzo) ricorda la propria ricerca e i propri filtri
   var FKEYS = ["q", "qm", "color", "ct", "lv", "cost", "attr", "sp", "rar", "exp"], FSTORE = {};
@@ -3541,21 +3560,29 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   // le immagini nella stessa memoria del dispositivo usata quando si sfoglia (IMGNAME). Scelte: solo miniature, tutto in HD
   // (carte grandi + miniature + pre errata + banner + confezioni + loghi) o un prodotto alla volta. Salta ciò che è già salvato,
   // 6 scaricamenti alla volta, pausa/ripresa. Impostazioni in "dg-offline": m = "t"/"hd" (scelta), full = completato almeno una volta,
-  // auto = scarica da solo le immagini nuove (prodotti nuovi), done = firma dell'elenco completato, paused = messo in pausa,
-  // miss = immagini che il sito non ha (es. ST24-11_P2/P3): contano come "fatte" ma si riprovano a ogni avvio.
-  // All'avvio (dopo 8 s) se l'elenco è cambiato o lo scaricamento era a metà riparte da solo (a metà: non con i dati mobili).
+  // auto = scarica in sottofondo le immagini nuove e aggiornate, done = firma dell'elenco completato, paused = messo in pausa,
+  // miss = immagini che il sito non ha: contano come "fatte" ma si riprovano a ogni avvio,
+  // ps = prodotti scaricati uno per uno (anche loro aggiornati in automatico), x = prodotti tolti a mano da "Tutto in HD".
+  // 24 ottobre 2026: nell'APK lo scaricamento continua anche con l'app in sottofondo (servizio nativo BgDownload con notifica
+  // dell'avanzamento, android-src/); sul sito continua finché la pagina resta aperta, anche cambiando schermata.
   var OFFAVG = { f: 72200, t: 6350, pre: 79400, b: 243800, pk: 28000, lg: 21900 };   // pesi medi misurati sul sito (byte)
-  var OFF = { m: "", full: false, auto: true, done: "", paused: false, miss: [] }, OFFRUN = null, OFFHAVE = null, OFFLIST = {};
+  var OFF = { m: "", full: false, auto: false, done: "", paused: false, miss: [], ps: [], x: [] }, OFFRUN = null, OFFHAVE = null, OFFLIST = {};
   try { var of0 = JSON.parse(localStorage.getItem("dg-offline") || "null"); if (of0 && typeof of0 === "object") Object.keys(OFF).forEach(function (k) { if (k in of0) OFF[k] = of0[k]; }); } catch (e) {}
   function offSave() { try { localStorage.setItem("dg-offline", JSON.stringify(OFF)); } catch (e) {} }
-  function cardUrl(kind, key, c) { return IMG + kind + "/" + encodeURIComponent(key) + ".webp" + imgQ(key, kind, c); }   // stesso indirizzo di picBox (anche "?sp=1" degli spoiler)
+  function cardUrl(kind, key, c) { return vurl(IMG + kind + "/" + encodeURIComponent(key) + ".webp" + imgQ(key, kind, c)); }   // stesso indirizzo di picBox
+  function offOwner(c) { return c.suf ? (c.from || c.set) : c.set; }   // prodotto a cui "appartiene" l'immagine della carta
   // elenco delle immagini: scope "t" (miniature), "hd" (tutto) o l'id di un prodotto (tutto di quel prodotto)
   function offItems(scope) {
     if (OFFLIST[scope]) return OFFLIST[scope];
-    var seen = {}, list = [];
-    function add(u, w) { if (!seen[u]) { seen[u] = 1; list.push({ u: u, w: w }); } }
-    function addCard(c) { var k = c.img || c.code; add(cardUrl("t", k, c), OFFAVG.t); if (scope !== "t") add(cardUrl("f", k, c), OFFAVG.f); }
+    var seen = {}, list = [], X = {};
+    if (scope === "hd") (OFF.x || []).forEach(function (id) { X[id] = 1; });
+    function add(u, w) { u = vurl(u); if (!seen[u]) { seen[u] = 1; list.push({ u: u, w: w }); } }
+    function addCard(c) {
+      var k = c.img || c.code; add(cardUrl("t", k, c), OFFAVG.t);
+      if (scope !== "t" && !X[offOwner(c)]) add(cardUrl("f", k, c), OFFAVG.f);
+    }
     function addProd(code) {
+      if (X[(SETS.filter(function (s) { return s.code === code; })[0] || {}).id]) return;
       if (BANNERS[code]) add(IMGB + code + ".webp", OFFAVG.b);
       var p = PRODUCTS[code]; if (p && p.pk) add(IMGP + p.k + ".webp", OFFAVG.pk); if (p && p.lg) add(IMGP + "logo/" + p.k + ".webp", OFFAVG.lg);
     }
@@ -3565,6 +3592,9 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
         Object.keys(ERRATA).forEach(function (k) { add(cardUrl("pre", k), OFFAVG.pre); });
         Object.keys(BANNERS).forEach(addProd); Object.keys(PRODUCTS).forEach(addProd);
       }
+    } else if (scope === "upd") {   // aggiornamento automatico: la scelta generale più i prodotti scaricati uno per uno
+      if (OFF.m) offItems(OFF.m).forEach(function (x) { add(x.u, x.w); });
+      (OFF.ps || []).forEach(function (id) { if (SETBY[id]) offItems(id).forEach(function (x) { add(x.u, x.w); }); });
     } else if (SETBY[scope]) { cardsOfSet(scope).forEach(addCard); addProd(SETBY[scope].code); }
     var h = 5381, j = scope + "|" + list.length; list.forEach(function (x) { for (var i = 0; i < x.u.length; i++) h = ((h * 33) ^ x.u.charCodeAt(i)) >>> 0; });
     list.sig = j + "|" + h; list.w = list.reduce(function (a, x) { return a + x.w; }, 0);
@@ -3573,25 +3603,53 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   function offMB(b) { var m = b / 1048576; return m >= 100 ? Math.round(m / 10) * 10 + " MB" : m >= 10 ? Math.round(m) + " MB" : (Math.round(m * 10) / 10).toLocaleString("it-IT") + " MB"; }
   function offNum(n) { return n.toLocaleString("it-IT"); }
   function offCell() { var c = navigator.connection; return !!(c && (c.type === "cellular" || c.saveData)); }
-  // immagini già salvate (indirizzi), lette una volta e poi aggiornate mentre si scarica
+  // immagini già salvate (indirizzi), lette una volta e poi aggiornate mentre si scarica; intanto si tolgono le copie vecchie
+  // delle immagini aggiornate (stesso percorso con un'altra versione ?v=)
   function offLoadHave() {
     if (!IMGC) return Promise.resolve(null);
-    return IMGC.then(function (c) { if (!c) return null; return c.keys().then(function (ks) { var h = {}; ks.forEach(function (r) { h[r.url] = 1; }); OFFHAVE = h; return h; }); }).catch(function () { return null; });
+    return IMGC.then(function (c) {
+      if (!c) return null;
+      return c.keys().then(function (ks) {
+        var h = {};
+        ks.forEach(function (r) {
+          var u = r.url, cur = vurl(u.replace(/[?&]v=\d+$/, ""));
+          if (cur !== u) { c.delete(r).catch(function () {}); return; }   // versione superata
+          h[u] = 1;
+        });
+        OFFHAVE = h; return h;
+      });
+    }).catch(function () { return null; });
   }
   function offCount(list) { var n = 0; if (OFFHAVE) list.forEach(function (x) { if (OFFHAVE[x.u]) n++; }); return n; }
   function offMiss(list) { var m = {}, n = 0; (OFF.miss || []).forEach(function (u) { m[u] = 1; }); list.forEach(function (x) { if (m[x.u] && !(OFFHAVE && OFFHAVE[x.u])) n++; }); return n; }
+  // ---- servizio nativo dell'APK: tiene viva l'app in sottofondo e mostra l'avanzamento nella notifica
+  var BGD = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BgDownload, offNotT = 0;
+  function offLabel(scope) { return scope === "t" ? "Miniature" : scope === "hd" ? "Tutto in HD" : scope === "upd" ? "Immagini nuove e aggiornate" : (SETBY[scope] ? SETBY[scope].code + " · " + SETBY[scope].name : "Prodotto"); }
+  function offBgStart(R) {
+    if (!BGD || R.total - R.done < 30) return;   // pochi file: non serve
+    try { BGD.start({ title: "Scaricamento immagini · " + offLabel(R.scope), text: "Preparazione…", noAsk: R.quiet }).then(function () { R.bg = true; offNotify(true); }, function () {}); } catch (e) {}
+  }
+  function offNotify(force) {
+    var R = OFFRUN; if (!R || !R.bg) return;
+    var now = Date.now(); if (!force && now - offNotT < 1500) return; offNotT = now;
+    var pc = R.total ? Math.floor(R.done / R.total * 100) : 0;
+    try { BGD.update({ title: "Scaricamento immagini · " + offLabel(R.scope), text: offNum(R.done) + " di " + offNum(R.total) + " · " + pc + "%", done: R.done, total: R.total }); } catch (e) {}
+  }
+  function offBgStop(R) { if (R && R.bg) { R.bg = false; try { BGD.stop(); } catch (e) {} } }
   function offStart(scope, quiet) {
     if (OFFRUN && !OFFRUN.end) return;
+    if (scope === "upd") delete OFFLIST.upd;
     var list = offItems(scope);
     var R = OFFRUN = { scope: scope, total: list.length, done: 0, fail: 0, row: 0, stop: false, end: false, quiet: !!quiet };
     if (scope === "t" || scope === "hd") { OFF.paused = false; offSave(); }
-    offDraw();
+    offDraw(); drawMenuBadge();
     if (!IMGC) { R.end = true; R.err = "Questo browser non permette di salvare le immagini."; offDraw(); return; }
     IMGC.then(function (c) {
       if (!c) throw new Error("no cache");
       return offLoadHave().then(function () {
         var todo = list.filter(function (x) { return !OFFHAVE || !OFFHAVE[x.u]; }), i = 0;
         R.done = R.total - todo.length; offDraw();
+        if (todo.length) offBgStart(R);
         function one() {
           if (R.stop || i >= todo.length) return Promise.resolve();
           var x = todo[i++];
@@ -3600,45 +3658,82 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
           }, function () {
             R.fail++; R.row++; if (R.row < 3 && (OFF.miss || []).indexOf(x.u) < 0 && (OFF.miss || []).length < 60) { (OFF.miss = OFF.miss || []).push(x.u); offSave(); }
             if (R.row >= 25) { R.stop = true; R.err = "Connessione assente o troppo lenta: lo scaricamento si è fermato. Puoi riprenderlo più tardi."; }
-          }).then(function () { R.done++; offTick(); return one(); });
+          }).then(function () { R.done++; offTick(); offNotify(); return one(); });
         }
         var ws = []; for (var k = 0; k < 6; k++) ws.push(one());
         return Promise.all(ws);
       });
     }).then(function () {
-      R.end = true;
+      R.end = true; offBgStop(R);
       if ((scope === "t" || scope === "hd") && OFF.m === scope) {
         if (!R.stop) { OFF.done = R.fail ? "" : list.sig; OFF.full = true; } else OFF.paused = true;   // con immagini mancanti si riprovano al prossimo avvio
         offSave();
       }
-      offDraw();
-    }, function () { R.end = true; R.err = "Non è stato possibile salvare le immagini su questo dispositivo."; offDraw(); });
+      if (SETBY[scope] && !R.stop && (OFF.ps || []).indexOf(scope) < 0) { (OFF.ps = OFF.ps || []).push(scope); OFF.x = (OFF.x || []).filter(function (id) { return id !== scope; }); delete OFFLIST.hd; offSave(); }
+      if (scope === "upd" && !R.stop) { OFF.updSig = list.sig; offSave(); if (R.total - R.fail > 0 && R.newN) offToast(R.newN); }
+      offDraw(); drawMenuBadge();
+    }, function () { R.end = true; offBgStop(R); R.err = "Non è stato possibile salvare le immagini su questo dispositivo."; offDraw(); drawMenuBadge(); });
+  }
+  function offToast(n) {
+    if (st.tab === "offline") return;
+    var t = el("div", "offtoast", offNum(n) + (n === 1 ? " immagine nuova o aggiornata scaricata" : " immagini nuove o aggiornate scaricate"));
+    document.body.appendChild(t); setTimeout(function () { t.classList.add("on"); }, 20);
+    setTimeout(function () { t.classList.remove("on"); setTimeout(function () { t.remove(); }, 400); }, 3500);
   }
   function offPause() { if (OFFRUN && !OFFRUN.end) OFFRUN.stop = true; }
   function offChoose(scope) {
-    function go() { OFF.m = scope; if (OFF.done.indexOf(scope + "|") !== 0) OFF.full = false; offSave(); offStart(scope); }
+    function go() { OFF.m = scope; if (scope === "hd") { OFF.x = []; delete OFFLIST.hd; } if (OFF.done.indexOf(scope + "|") !== 0) OFF.full = false; offSave(); offStart(scope); }
     if (offCell()) askConfirm({ title: "Scaricare circa " + offMB(offItems(scope).w) + "?", text: "Sei connesso con i dati mobili: ti consigliamo di usare il Wi-Fi.", ok: "Scarica", onOk: go });
     else go();
   }
   function offDelete() {
     askConfirm({ title: "Eliminare le immagini salvate?", text: "Le immagini verranno riscaricate da internet quando le guardi.", ok: "Elimina", onOk: function () {
-      offPause(); OFF.m = ""; OFF.full = false; OFF.done = ""; OFF.paused = false; OFF.miss = []; offSave(); OFFHAVE = {};
+      offPause(); OFF.m = ""; OFF.full = false; OFF.done = ""; OFF.paused = false; OFF.miss = []; OFF.ps = []; OFF.x = []; OFF.updSig = ""; offSave(); OFFHAVE = {}; OFFLIST = {};
       var p = window.caches ? caches.delete(IMGNAME).catch(function () {}) : Promise.resolve();
       p.then(function () { if (IMGC) IMGC = caches.open(IMGNAME).catch(function () { IMGC = null; return null; }); OFFRUN = null; offDraw(); });
     } });
   }
+  // un solo prodotto: si tolgono le carte grandi (solo quelle del prodotto, non le ristampe di altri prodotti), le pre errata e
+  // banner/confezione/logo; le miniature restano se è scelto "Solo miniature" o "Tutto in HD". Con "Tutto in HD" il prodotto
+  // viene escluso dall'elenco (OFF.x), così l'aggiornamento automatico non lo riscarica.
+  function offDeleteSet(id) {
+    var s = SETBY[id]; if (!s) return;
+    askConfirm({ title: ["Eliminare le immagini di ", s.code, "?"], text: "Le immagini di questo prodotto verranno riscaricate da internet quando le guardi.", ok: "Elimina", onOk: function () {
+      var keepT = !!OFF.m, del = [];
+      cardsOfSet(id).forEach(function (c) {
+        if (offOwner(c) !== id) return;
+        var k = c.img || c.code; del.push(cardUrl("f", k, c)); if (!keepT) del.push(cardUrl("t", k, c));
+        if (ERRATA[k]) del.push(cardUrl("pre", k));
+      });
+      if (BANNERS[s.code]) del.push(vurl(IMGB + s.code + ".webp"));
+      var p = PRODUCTS[s.code]; if (p && p.pk) del.push(vurl(IMGP + p.k + ".webp")); if (p && p.lg) del.push(vurl(IMGP + "logo/" + p.k + ".webp"));
+      OFF.ps = (OFF.ps || []).filter(function (x) { return x !== id; });
+      if (OFF.m === "hd" && (OFF.x || []).indexOf(id) < 0) (OFF.x = OFF.x || []).push(id);
+      OFFLIST = {}; offSave();
+      del.forEach(function (u) { if (OFFHAVE) delete OFFHAVE[u]; var m = IMGMEM.get(u); if (m) IMGMEM.delete(u); });
+      IMGC.then(function (c) { return c && Promise.all(del.map(function (u) { return c.delete(u).catch(function () {}); })); }).then(function () { offDraw(); }, function () { offDraw(); });
+    } });
+  }
   // aggiornamento della pagina mentre si scarica (al massimo una volta per fotogramma)
   var offRaf = 0;
-  function offTick() { if (offRaf) return; offRaf = requestAnimationFrame(function () { offRaf = 0; offProg(); }); }
+  function offTick() { if (offRaf) return; offRaf = requestAnimationFrame(function () { offRaf = 0; offProg(); drawMenuBadge(); }); }
   function offProg() {
     var R = OFFRUN, w = document.getElementById("offprog"); if (!w || !R) return;
     var pc = R.total ? Math.floor(R.done / R.total * 100) : 100;
     var bar = w.querySelector(".progress i"), t = w.querySelector(".offpt");
     if (bar) bar.style.width = pc + "%";
     if (t) t.textContent = offNum(R.done) + " di " + offNum(R.total) + " · " + pc + "%";
-    var row = R.scope !== "t" && R.scope !== "hd" ? document.querySelector('.offrow[data-id="' + R.scope + '"] .offst') : null;
+    var row = SETBY[R.scope] ? document.querySelector('.offrow[data-id="' + R.scope + '"] .offst') : null;
     if (row) row.textContent = pc + "%";
     var oc = document.getElementById("offoc-" + R.scope); if (oc && !R.end) oc.textContent = "Scaricamento in corso…";
+  }
+  // nel menu (⋯ / barra laterale) accanto a "Immagini offline" la percentuale mentre scarica, da qualsiasi schermata
+  function drawMenuBadge() {
+    var b = document.querySelector('#menuNav button[data-m="offline"]'); if (!b) return;
+    var R = OFFRUN, on = R && !R.end, nb = b.querySelector(".nb");
+    if (!on) { if (nb) nb.remove(); return; }
+    if (!nb) { nb = el("span", "nb"); b.appendChild(nb); }
+    nb.textContent = (R.total ? Math.floor(R.done / R.total * 100) : 0) + "%";
   }
   function offDraw() { if (st.tab === "offline" && document.querySelector(".offpage")) { var y = window.pageYOffset; render(); window.scrollTo(0, y); } }
   function offSetsList() {
@@ -3646,11 +3741,13 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       var ad = a.date || "", bd = b.date || ""; return ad < bd ? 1 : ad > bd ? -1 : numOf(b.code) - numOf(a.code);
     });
   }
+  var ICO_TRASH = '<path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/>';
   function renderOffline() {
     pageTitle("Immagini offline", "Scarica le immagini nel dispositivo: compaiono subito e funzionano anche senza internet.");
     var P = el("div", "offpage");
-    if (!DESK) P.appendChild(el("p", "offintro", "Scarica le immagini nel dispositivo: compaiono subito e funzionano anche senza internet. Restano salvate anche quando aggiorni l'app."));
-    else P.appendChild(el("p", "offintro", "Restano salvate anche quando aggiorni l'app."));
+    var bgTxt = BGD ? " Lo scaricamento continua anche con l'app in sottofondo." : " Lo scaricamento continua anche se cambi schermata, finché la pagina resta aperta.";
+    if (!DESK) P.appendChild(el("p", "offintro", "Scarica le immagini nel dispositivo: compaiono subito e funzionano anche senza internet. Restano salvate anche quando aggiorni l'app." + bgTxt));
+    else P.appendChild(el("p", "offintro", "Restano salvate anche quando aggiorni l'app." + bgTxt));
     if (!OFFHAVE) offLoadHave().then(function (h) { if (h) offDraw(); });
     var R = OFFRUN, running = R && !R.end;
     // stato
@@ -3663,11 +3760,11 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       var sz = el("span", "offsz"); hd.appendChild(sz); S.appendChild(hd);
       if (OFFHAVE) S.appendChild(el("div", "offsub", offNum(nF) + " carte grandi · " + offNum(nT) + " miniature · " + offNum(nO) + " banner, confezioni e loghi"));
       if (navigator.storage && navigator.storage.estimate) navigator.storage.estimate().then(function (e) { if (e && e.usage && nT + nF + nO) sz.textContent = "circa " + offMB(e.usage); }).catch(function () {});
-      if (R && (R.scope === "t" || R.scope === "hd" || running)) {
+      if (R && (R.scope === "t" || R.scope === "hd" || R.scope === "upd" || running)) {
         var pw = el("div", "offprog"); pw.id = "offprog";
-        var lbl = R.scope === "t" ? "Miniature" : R.scope === "hd" ? "Tutto in HD" : (SETBY[R.scope] ? SETBY[R.scope].code : "Prodotto");
-        var top = el("div", "offpl"); top.appendChild(el("b", "", (running ? (R.stop ? "Pausa…" : "Scaricamento · ") : R.stop ? "In pausa · " : "Completato · ") + lbl)); top.appendChild(el("span", "offpt", ""));
+        var top = el("div", "offpl"); top.appendChild(el("b", "", (running ? (R.stop ? "Pausa…" : "Scaricamento · ") : R.stop ? "In pausa · " : "Completato · ") + offLabel(R.scope))); top.appendChild(el("span", "offpt", ""));
         pw.appendChild(top); pw.appendChild(pbar(0, 1)); S.appendChild(pw);
+        if (running && R.bg) S.appendChild(el("p", "offnote", "Puoi uscire dall'app: l'avanzamento resta nella notifica."));
         if (R.err) S.appendChild(el("p", "offnote warn", R.err));
         else if (R.end && !R.stop && R.fail) S.appendChild(el("p", "offnote", offNum(R.fail) + (R.fail === 1 ? " immagine non è disponibile" : " immagini non sono disponibili") + " sul sito: verranno riprovate la prossima volta."));
         if (running) S.appendChild(btn("Metti in pausa", "", offPause));
@@ -3686,7 +3783,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       var L = offItems(o[0]), cur = OFF.m === o[0], have = OFFHAVE ? offCount(L) : -1, nm = OFFHAVE ? offMiss(L) : 0, all = have >= 0 && have + nm >= L.length;
       var b = el("div", "offbox offopt" + (cur ? " cur" : ""));
       var h = el("div", "offoh"); h.appendChild(el("b", "", o[1])); h.appendChild(el("span", "offw", "circa " + offMB(L.w))); b.appendChild(h);
-      b.appendChild(el("p", "", o[2]));
+      b.appendChild(el("p", "", o[2] + (o[0] === "hd" && cur && (OFF.x || []).length ? " Esclusi i prodotti che hai eliminato (" + OFF.x.map(function (id) { return (SETBY[id] || {}).code; }).join(", ") + ")." : "")));
       var f = el("div", "offof");
       var fs = el("span", "offsub", have < 0 ? offNum(L.length) + " immagini" : all ? "✓ Tutte salvate" + (nm ? " · " + nm + " non disponibili" : "") : offNum(have) + " di " + offNum(L.length) + " salvate");
       fs.id = "offoc-" + o[0]; if (all) fs.classList.add("ok"); f.appendChild(fs);
@@ -3694,41 +3791,76 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       if (running || (cur && all)) bb.disabled = true;
       f.appendChild(bb); b.appendChild(f); P.appendChild(b);
     });
-    if (OFF.m) {
-      var au = el("label", "offbox offauto"), ck = document.createElement("input"); ck.type = "checkbox"; ck.checked = OFF.auto !== false;
-      ck.onchange = function () { OFF.auto = ck.checked; offSave(); };
-      au.appendChild(ck); var tx = el("span"); tx.appendChild(el("b", "", "Scarica da solo le immagini nuove")); tx.appendChild(el("small", "", "Quando arrivano prodotti o carte nuove, all'apertura dell'app."));
-      au.appendChild(tx); P.appendChild(au);
-    }
+    // spunta: aggiornamenti automatici in sottofondo
+    var au = el("label", "offbox offauto"), ck = document.createElement("input"); ck.type = "checkbox"; ck.checked = !!OFF.auto;
+    ck.onchange = function () { OFF.auto = ck.checked; offSave(); if (OFF.auto) offAuto(false); };
+    au.appendChild(ck); var tx = el("span");
+    tx.appendChild(el("b", "", "Scarica in sottofondo le immagini nuove e aggiornate"));
+    tx.appendChild(el("small", "", "All'uscita di carte nuove o quando vengono aggiornate le immagini (es. le ufficiali al posto delle anteprime degli spoiler, artwork e banner aggiornati), per la scelta qui sopra e per i prodotti che hai scaricato. Con i dati mobili solo aggiornamenti piccoli (fino a 10 MB)."));
+    au.appendChild(tx); P.appendChild(au);
     // per prodotto
     P.appendChild(el("h3", "offh", "Per prodotto"));
-    P.appendChild(el("p", "offintro", "Solo i prodotti che ti interessano, in HD."));
+    P.appendChild(el("p", "offintro", "Solo i prodotti che ti interessano, in HD. Il cestino elimina le immagini di quel prodotto."));
     var lw = el("div", "offbox offlist");
     offSetsList().forEach(function (x) {
       var L = offItems(x.id), have = OFFHAVE ? offCount(L) : -1, all = have >= 0 && have + offMiss(L) >= L.length, me = R && R.scope === x.id && !R.end;
       // percentuale delle sole carte grandi (miniature, banner e confezioni possono essere già salvati sfogliando)
-      var Lf = L.filter(function (z) { return z.w === OFFAVG.f; }), pHd = Math.floor(offCount(Lf) / Math.max(1, Lf.length) * 100);
+      var Lf = L.filter(function (z) { return z.w === OFFAVG.f; }), hF = offCount(Lf), pHd = Math.floor(hF / Math.max(1, Lf.length) * 100);
       var r = el("div", "offrow"); r.setAttribute("data-id", x.id);
       var t = el("div", "offrt"); t.appendChild(el("b", "", x.code)); t.appendChild(el("span", "", x.name)); r.appendChild(t);
       r.appendChild(el("span", "offst" + (all ? " ok" : ""), me ? (R.total ? Math.floor(R.done / R.total * 100) : 0) + "%" : all ? "✓ Salvato" : pHd >= 1 ? pHd + "% · " + offMB(L.w) : offMB(L.w)));
-      var d = el("button", "offdl"); d.type = "button"; d.setAttribute("aria-label", "Scarica " + x.code);
-      d.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IC.offline + "</svg>";
-      d.disabled = all || running; d.hidden = all;
-      d.onclick = function () { offStart(x.id); };
-      r.appendChild(d); lw.appendChild(r);
+      if (hF && !me) {
+        var dz = el("button", "offdl del"); dz.type = "button"; dz.setAttribute("aria-label", "Elimina le immagini di " + x.code);
+        dz.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICO_TRASH + "</svg>";
+        dz.disabled = running; dz.onclick = function () { offDeleteSet(x.id); }; r.appendChild(dz);
+      }
+      if (!all) {
+        var d = el("button", "offdl"); d.type = "button"; d.setAttribute("aria-label", "Scarica " + x.code);
+        d.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IC.offline + "</svg>";
+        d.disabled = running; d.onclick = function () { offStart(x.id); }; r.appendChild(d);
+      }
+      lw.appendChild(r);
     });
     P.appendChild(lw);
     var del = el("button", "offdel", "Elimina immagini salvate"); del.type = "button"; del.onclick = offDelete; P.appendChild(del);
     out.appendChild(P);
     offProg();
   }
-  // all'avvio: completa lo scaricamento lasciato a metà o aggiunge le immagini nuove
-  setTimeout(function () {
-    if (!OFF.m || OFF.paused || !IMGC) return;
-    var L = offItems(OFF.m); if (OFF.done === L.sig) return;
-    if (OFF.full ? OFF.auto === false : offCell()) return;
-    offStart(OFF.m, true);
-  }, 8000);
+  // ---- scaricamento automatico: all'avvio (dopo 8 s) e quando arrivano versioni nuove delle immagini
+  function offAuto(start) {
+    if (!IMGC || (OFFRUN && !OFFRUN.end)) return;
+    // scaricamento generale lasciato a metà (non in pausa): riparte, ma non con i dati mobili
+    if (start && OFF.m && !OFF.paused && !OFF.full && OFF.done !== offItems(OFF.m).sig && !offCell()) { offStart(OFF.m, true); return; }
+    if (!OFF.auto || OFF.paused || !(OFF.m || (OFF.ps || []).length)) return;
+    delete OFFLIST.upd; var L = offItems("upd");
+    offLoadHave().then(function () {
+      if (OFFRUN && !OFFRUN.end) return;
+      var todo = L.filter(function (x) { return !OFFHAVE || !OFFHAVE[x.u]; }), miss = {};
+      (OFF.miss || []).forEach(function (u) { miss[u] = 1; });
+      var newN = todo.filter(function (x) { return !miss[x.u]; }).length;
+      if (!todo.length) return;
+      var w = todo.reduce(function (a, x) { return a + x.w; }, 0);
+      if (offCell() && w > 10 * 1048576) return;
+      offStart("upd", true); if (OFFRUN) OFFRUN.newN = newN;
+    });
+  }
+  // versioni delle immagini pubblicate dal sito (img/v.json): se cambiano, gli indirizzi delle immagini aggiornate cambiano
+  function loadVersions() {
+    if (!/^https?:/.test(location.protocol) && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) return Promise.resolve(false);
+    return fetch(SITE + "img/v.json?t=" + Date.now(), { cache: "no-store" }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (v) {
+      if (!v || typeof v !== "object") return false;
+      var a = JSON.stringify(v), b = JSON.stringify(VMAP); if (a === b) return false;
+      VMAP = v; try { localStorage.setItem("dg-imgv", a); } catch (e) {}
+      OFFLIST = {}; return true;
+    }).catch(function () { return false; });
+  }
+  setTimeout(function () { loadVersions().then(function () { offAuto(true); }); }, 8000);
+  // tornando nell'app dopo un po' si ricontrolla (nuove carte o immagini aggiornate pubblicate nel frattempo)
+  var offLastChk = Date.now();
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState !== "visible" || Date.now() - offLastChk < 3 * 3600e3) return;
+    offLastChk = Date.now(); loadVersions().then(function (ch) { if (ch || OFF.auto) offAuto(false); });
+  });
   function upSorted() {
     var IMP = { BT: 0, EX: 1, ST: 2, LM: 3, PB: 4, AL: 5 };
     return (DATA.upcoming || []).slice().sort(function (a, b) {
@@ -4769,7 +4901,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       var im = box.querySelector("img");
       if (!im || !im.getAttribute("src") || box.classList.contains("noimg")) { hide(); return; }
       hide(); cur = box; last = e;
-      var fu = (im.getAttribute("data-src") || im.src).replace(/\/t\/([^\/]+)$/, "/f/$1");
+      var fu = (im.getAttribute("data-src") || im.src).replace(/[?&]v=\d+$/, "").replace(/\/t\/([^\/]+)$/, "/f/$1");   // la versione (?v=) è di ogni immagine: la grande ha la sua
       pim.setAttribute("data-lq", fu.replace(/\/f\/([^\/]+)$/, "/t/$1")); imgNow(pim, fu);   // miniatura subito, poi la grande
       timer = setTimeout(function () { timer = null; if (cur === box) { place(last); pop.classList.add("on"); } }, 350);
     });
@@ -5918,7 +6050,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       var im = new Image(); im.crossOrigin = "anonymous"; im.referrerPolicy = "no-referrer";
       im.onload = function () { res(scSig(im, im.naturalWidth, im.naturalHeight)); };
       im.onerror = function () { res(null); };
-      im.src = IMG + "t/" + encodeURIComponent(key) + ".webp" + (ERRATA[key] ? "?e=1" : "");
+      im.src = vurl(IMG + "t/" + encodeURIComponent(key) + ".webp" + imgQ(key, "t", a));
     });
     return SCSIG[key];
   }

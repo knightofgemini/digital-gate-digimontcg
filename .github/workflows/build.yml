@@ -31,6 +31,7 @@ jobs:
       - run: python3 tools/fetch_banners.py
       - run: python3 tools/fetch_product_images.py
       - run: python3 tools/apply_errata_images.py
+      - run: python3 tools/img_versions.py   # img/v.json: immagini cambiate (il telefono le riscarica)
       - uses: actions/configure-pages@v5
         continue-on-error: true
       - uses: actions/upload-pages-artifact@v3
