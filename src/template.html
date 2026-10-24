@@ -1220,7 +1220,10 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
 .offtoast { position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 12px); opacity: 0; z-index: 80; max-width: calc(100% - 32px); padding: 10px 16px; border-radius: 12px; background: var(--ink); color: var(--bg); font: 600 .85rem var(--font-body); box-shadow: 0 8px 24px rgba(0,0,0,.25); transition: opacity .3s, transform .3s; pointer-events: none; }
 .offtoast.on { opacity: 1; transform: translate(-50%, 0); }
 body.desk .offtoast { bottom: 24px; }
-.offdel { display: block; margin: 18px auto 0; border: 0; background: none; color: var(--c-red); font: 600 .9rem var(--font-body); padding: 12px; cursor: pointer; }
+.offdel { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin: 18px 0 0; min-height: 48px; border: 1px solid color-mix(in srgb, var(--c-red) 45%, var(--line)); border-radius: 12px; background: var(--surface); color: var(--c-red); font: 600 .92rem var(--font-body); padding: 0 16px; cursor: pointer; }
+.offdel svg { width: 20px; height: 20px; }
+.offdel:disabled { opacity: .5; cursor: default; }
+.offacts { display: flex; align-items: center; gap: 8px; flex: none; }
 .idet { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); margin-bottom: 10px; }
 .idet > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px; padding: 0 16px; font-weight: 600; cursor: pointer; }
 .idet > summary::-webkit-details-marker { display: none; }
@@ -1959,9 +1962,10 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     document.querySelector("#menu .mh span").textContent = DESK ? "Menu" : "Altro";
     MENU.forEach(function (m) {
       if (!DESK && m[0] !== "soon" && m[0] !== "offline" && m[0] !== "info") return;
+      if (DESK && m[0] === "offline") return;   // su PC non serve (connessione veloce, le immagini viste restano comunque salvate)
       if (m[0] === "home") nav.appendChild(el("div", "grp", "Esplora"));
       if (m[0] === "coll") nav.appendChild(el("div", "grp", "Il tuo spazio"));
-      if (m[0] === "offline") nav.appendChild(el("div", "grp", "Progetto"));
+      if (m[0] === (DESK ? "info" : "offline")) nav.appendChild(el("div", "grp", "Progetto"));
       var b = el("button"); b.type = "button"; b.setAttribute("data-m", m[0]);
       b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + IC[m[0]] + "</svg>";
       b.appendChild(el("span", "lbl", m[1])); if (DESK) b.title = m[1];
@@ -3687,11 +3691,33 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     else go();
   }
   function offDelete() {
-    askConfirm({ title: "Eliminare le immagini salvate?", text: "Le immagini verranno riscaricate da internet quando le guardi.", ok: "Elimina", onOk: function () {
+    askConfirm({ title: "Eliminare tutte le immagini salvate?", text: "Miniature, carte grandi, banner e confezioni verranno riscaricati da internet quando li guardi.", ok: "Elimina", onOk: function () {
       offPause(); OFF.m = ""; OFF.full = false; OFF.done = ""; OFF.paused = false; OFF.miss = []; OFF.ps = []; OFF.x = []; OFF.updSig = ""; offSave(); OFFHAVE = {}; OFFLIST = {};
       var p = window.caches ? caches.delete(IMGNAME).catch(function () {}) : Promise.resolve();
       p.then(function () { if (IMGC) IMGC = caches.open(IMGNAME).catch(function () { IMGC = null; return null; }); OFFRUN = null; offDraw(); });
     } });
+  }
+  // una delle due scelte generali: "t" = tutte le miniature; "hd" = tutto tranne le miniature (carte grandi, pre errata, banner,
+  // confezioni, loghi). Togliere la scelta attuale la azzera (niente più aggiornamenti automatici per quella scelta).
+  function offDeleteKind(kind) {
+    var isT = kind === "t";
+    askConfirm({ title: isT ? "Eliminare tutte le miniature?" : "Eliminare le immagini in HD?",
+      text: isT ? "Le miniature verranno riscaricate da internet quando le guardi." : "Carte grandi, banner e confezioni verranno riscaricati da internet quando li guardi. Le miniature restano.",
+      ok: "Elimina", onOk: function () {
+        offPause();
+        if (OFF.m === kind || (!isT && OFF.m === "hd")) { OFF.m = ""; OFF.full = false; OFF.done = ""; OFF.paused = false; }
+        if (!isT) { OFF.ps = []; OFF.x = []; }
+        OFFLIST = {}; offSave();
+        var pre = IMG + "t/";
+        IMGC.then(function (c) {
+          if (!c) return;
+          return c.keys().then(function (ks) {
+            return Promise.all(ks.filter(function (r) { return (r.url.indexOf(pre) === 0) === isT; }).map(function (r) {
+              if (OFFHAVE) delete OFFHAVE[r.url]; IMGMEM.delete(r.url); return c.delete(r).catch(function () {});
+            }));
+          });
+        }).then(function () { offDraw(); }, function () { offDraw(); });
+      } });
   }
   // un solo prodotto: si tolgono le carte grandi (solo quelle del prodotto, non le ristampe di altri prodotti), le pre errata e
   // banner/confezione/logo; le miniature restano se è scelto "Solo miniature" o "Tutto in HD". Con "Tutto in HD" il prodotto
@@ -3789,7 +3815,15 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       fs.id = "offoc-" + o[0]; if (all) fs.classList.add("ok"); f.appendChild(fs);
       var bb = btn(cur && all ? "Scelta attuale" : cur && running && R.scope === o[0] ? "In corso…" : all ? "Scegli" : "Scarica", cur && all ? "" : "pri", function () { offChoose(o[0]); });
       if (running || (cur && all)) bb.disabled = true;
-      f.appendChild(bb); b.appendChild(f); P.appendChild(b);
+      // cestino: se ci sono immagini di questo tipo salvate
+      var nk = 0; if (OFFHAVE) Object.keys(OFFHAVE).forEach(function (u) { if ((u.indexOf(IMG + "t/") === 0) === (o[0] === "t")) nk++; });
+      var acts = el("div", "offacts");
+      if (nk && !running) {
+        var dk = el("button", "offdl del"); dk.type = "button"; dk.setAttribute("aria-label", o[0] === "t" ? "Elimina tutte le miniature" : "Elimina le immagini in HD"); dk.title = dk.getAttribute("aria-label");
+        dk.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICO_TRASH + "</svg>";
+        dk.onclick = function () { offDeleteKind(o[0]); }; acts.appendChild(dk);
+      }
+      acts.appendChild(bb); f.appendChild(acts); b.appendChild(f); P.appendChild(b);
     });
     // spunta: aggiornamenti automatici in sottofondo
     var au = el("label", "offbox offauto"), ck = document.createElement("input"); ck.type = "checkbox"; ck.checked = !!OFF.auto;
@@ -3822,7 +3856,9 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       lw.appendChild(r);
     });
     P.appendChild(lw);
-    var del = el("button", "offdel", "Elimina immagini salvate"); del.type = "button"; del.onclick = offDelete; P.appendChild(del);
+    var del = el("button", "offdel"); del.type = "button"; del.onclick = offDelete;
+    del.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICO_TRASH + "</svg>";
+    del.appendChild(document.createTextNode("Elimina tutte le immagini salvate")); del.disabled = !!running; P.appendChild(del);
     out.appendChild(P);
     offProg();
   }
