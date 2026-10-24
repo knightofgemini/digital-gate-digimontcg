@@ -1,0 +1,34 @@
+[09:23:04] app pid=3128 socket=webview_devtools_remote_3128
+[09:23:12] avviato: 148 di 13.178 · 1%
+[09:24:00] a schermo acceso dopo 45 s: 2200 immagini
+Now forced in to deep idle mode
+[09:24:05] schermo spento, Doze forzato
+[09:24:45] dopo 40 s a schermo spento · processi:       1 curProcState=4  · ultima riga: 10-24 09:24:44.604 I/DGBG    ( 3128): avanzamento 5263/13178
+   doze: IDLE
+[09:25:25] dopo 80 s a schermo spento · processi:       1 curProcState=4  · ultima riga: 10-24 09:25:25.420 I/DGBG    ( 3128): avanzamento 8013/13178
+   doze: IDLE
+[09:26:05] dopo 120 s a schermo spento · processi:       1 curProcState=4  · ultima riga: 10-24 09:26:04.695 I/DGBG    ( 3128): avanzamento 10837/13178
+   doze: IDLE
+[09:26:45] dopo 160 s a schermo spento · processi:       1 curProcState=17  · ultima riga: 10-24 09:26:38.385 I/DGBG    ( 3128): priorita pagina: 2 ridotta se invisibile: true
+   doze: IDLE
+[09:27:25] dopo 200 s a schermo spento · processi:       1 curProcState=17  · ultima riga: 10-24 09:26:38.385 I/DGBG    ( 3128): priorita pagina: 2 ridotta se invisibile: true
+   doze: IDLE
+[09:28:05] dopo 240 s a schermo spento · processi:       1 curProcState=17  · ultima riga: 10-24 09:26:38.385 I/DGBG    ( 3128): priorita pagina: 2 ridotta se invisibile: true
+   doze: IDLE
+[09:28:45] dopo 280 s a schermo spento · processi:       1 curProcState=17  · ultima riga: 10-24 09:26:38.385 I/DGBG    ( 3128): priorita pagina: 2 ridotta se invisibile: true
+   doze: IDLE
+[09:29:26] dopo 320 s a schermo spento · processi:       1 curProcState=17  · ultima riga: 10-24 09:26:38.385 I/DGBG    ( 3128): priorita pagina: 2 ridotta se invisibile: true
+   doze: IDLE
+[09:30:06] dopo 360 s a schermo spento · processi:       1 curProcState=17  · ultima riga: 10-24 09:26:38.385 I/DGBG    ( 3128): priorita pagina: 2 ridotta se invisibile: true
+   doze: IDLE
+[09:30:46] dopo 400 s a schermo spento · processi:       1 curProcState=17  · ultima riga: 10-24 09:26:38.385 I/DGBG    ( 3128): priorita pagina: 2 ridotta se invisibile: true
+   doze: IDLE
+[09:31:26] dopo 440 s a schermo spento · processi:       1 curProcState=17  · ultima riga: 10-24 09:26:38.385 I/DGBG    ( 3128): priorita pagina: 2 ridotta se invisibile: true
+   doze: IDLE
+[09:32:06] dopo 480 s a schermo spento · processi:       1 curProcState=17  · ultima riga: 10-24 09:26:38.385 I/DGBG    ( 3128): priorita pagina: 2 ridotta se invisibile: true
+   doze: IDLE
+[09:32:26] subito al risveglio (senza riaccendere lo schermo): ? immagini
+[09:32:40] schermo riacceso: 13178 immagini
+[09:32:40] RISULTATO nuova: acceso 2200 -> dopo 8 minuti spento ? (riacceso 13178)
+10-24 09:23:09.485 I/DGBG    ( 3128): priorita pagina: 2 ridotta se invisibile: false
+10-24 09:26:38.385 I/DGBG    ( 3128): priorita pagina: 2 ridotta se invisibile: true
