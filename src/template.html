@@ -3944,6 +3944,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   // tornando nell'app dopo un po' si ricontrolla (nuove carte o immagini aggiornate pubblicate nel frattempo)
   var offLastChk = Date.now();
   document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible" && st.tab === "offline") offDraw();   // es. di ritorno dalle impostazioni della batteria
     if (document.visibilityState !== "visible" || Date.now() - offLastChk < 3 * 3600e3) return;
     offLastChk = Date.now(); loadVersions().then(function (ch) { if (ch || OFF.auto) offAuto(false); });
   });
