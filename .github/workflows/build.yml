@@ -3,12 +3,14 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      prova_apk: { description: "Solo prova: costruisce l'APK senza pubblicare sito e release (APK negli artifact)", type: boolean, default: false }
 permissions:
   contents: write
   pages: write
   id-token: write
 concurrency:
-  group: build
+  group: build-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   web:
@@ -41,6 +43,7 @@ jobs:
             !www/img
   deploy:
     needs: web
+    if: ${{ !inputs.prova_apk }}
     runs-on: ubuntu-latest
     environment: { name: github-pages, url: "${{ steps.d.outputs.page_url }}" }
     steps:
@@ -69,6 +72,31 @@ jobs:
           if "android.hardware.camera" not in t: add += '    <uses-feature android:name="android.hardware.camera" android:required="false" />\n'
           t = t.replace("</manifest>", add + "</manifest>"); p.write_text(t)
           print(t)
+          PY
+      - name: Scaricamento in background (servizio e plugin nativi in android-src/)
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, shutil
+          src = pathlib.Path("android-src/java"); dst = pathlib.Path("android/app/src/main/java")
+          for f in src.rglob("*.java"):
+              t = dst / f.relative_to(src); t.parent.mkdir(parents=True, exist_ok=True); shutil.copy(f, t); print("copiato", t)
+          ma = next(dst.rglob("MainActivity.java")); t = ma.read_text()
+          if "BgDownloadPlugin" not in t:
+              t = t.replace("public class MainActivity extends BridgeActivity {}",
+                  "public class MainActivity extends BridgeActivity {\n"
+                  "    @Override\n    public void onCreate(android.os.Bundle savedInstanceState) {\n"
+                  "        registerPlugin(BgDownloadPlugin.class);\n        super.onCreate(savedInstanceState);\n    }\n}")
+              assert "registerPlugin(BgDownloadPlugin.class)" in t, "MainActivity non riconosciuta:\n" + t
+              ma.write_text(t)
+          print(ma.read_text())
+          p = pathlib.Path("android/app/src/main/AndroidManifest.xml"); t = p.read_text()
+          add = ""
+          for perm in ("FOREGROUND_SERVICE", "FOREGROUND_SERVICE_DATA_SYNC", "POST_NOTIFICATIONS", "WAKE_LOCK"):
+              if "android.permission." + perm not in t: add += '    <uses-permission android:name="android.permission.%s" />\n' % perm
+          t = t.replace("</manifest>", add + "</manifest>")
+          if "BgDownloadService" not in t:
+              t = t.replace("</application>", '        <service android:name=".BgDownloadService" android:exported="false" android:foregroundServiceType="dataSync" />\n    </application>')
+          p.write_text(t); print(t)
           PY
       - run: npx capacitor-assets generate --android
       - name: Icona Digital Gate (adattiva, rotonda, a tema) e splash nativo solo blu notte (il marchio è nell'intro)
@@ -113,7 +141,11 @@ jobs:
           WANT=$(keytool -list -v -keystore android-keys/debug.keystore -storepass android -alias androiddebugkey | grep -m1 "SHA256:" | awk '{print $2}' | tr -d ':' | tr 'A-F' 'a-f')
           echo "firma APK: $GOT"; echo "chiave:     $WANT"
           test -n "$GOT" && test "$GOT" = "$WANT"
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.prova_apk }}
+        with: { name: apk-prova, path: DigimonSetTracker.apk, retention-days: 7 }
       - name: Pubblica APK nella release "latest"
+        if: ${{ !inputs.prova_apk }}
         env: { GH_TOKEN: "${{ github.token }}" }
         run: |
           gh release delete latest --yes --cleanup-tag || true
