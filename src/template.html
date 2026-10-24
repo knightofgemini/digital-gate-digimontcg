@@ -1200,6 +1200,10 @@ body.mob.kbd .dksheet.on:not(.full) { height: min(62vh, calc(100vh - var(--kb, 0
 .offof { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .offof .btn { flex: none; }
 .btn:disabled { opacity: .55; cursor: default; filter: none; }
+.offbat { display: flex; align-items: center; gap: 12px; border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.offbat > div { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.offbat small { color: var(--ink-2); font-size: .82rem; line-height: 1.45; }
+.offbat .btn { flex: none; }
 .offauto { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
 .offauto input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--accent); flex: none; }
 .offauto span { display: flex; flex-direction: column; gap: 3px; }
@@ -3584,7 +3588,7 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   // 24 ottobre 2026: nell'APK lo scaricamento continua anche con l'app in sottofondo (servizio nativo BgDownload con notifica
   // dell'avanzamento, android-src/); sul sito continua finché la pagina resta aperta, anche cambiando schermata.
   var OFFAVG = { f: 72200, t: 6350, pre: 79400, b: 243800, pk: 28000, lg: 21900 };   // pesi medi misurati sul sito (byte)
-  var OFF = { m: "", full: false, auto: false, done: "", paused: false, miss: [], ps: [], x: [] }, OFFRUN = null, OFFHAVE = null, OFFLIST = {};
+  var OFF = { m: "", full: false, auto: false, done: "", paused: false, miss: [], ps: [], x: [], run: "", updSig: "" }, OFFRUN = null, OFFHAVE = null, OFFLIST = {};
   try { var of0 = JSON.parse(localStorage.getItem("dg-offline") || "null"); if (of0 && typeof of0 === "object") Object.keys(OFF).forEach(function (k) { if (k in of0) OFF[k] = of0[k]; }); } catch (e) {}
   function offSave() { try { localStorage.setItem("dg-offline", JSON.stringify(OFF)); } catch (e) {} }
   function cardUrl(kind, key, c) { return vurl(IMG + kind + "/" + encodeURIComponent(key) + ".webp" + imgQ(key, kind, c)); }   // stesso indirizzo di picBox
@@ -3647,11 +3651,11 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     if (!BGD || R.total - R.done < 30) return;   // pochi file: non serve
     try { BGD.start({ title: "Scaricamento immagini · " + offLabel(R.scope), text: "Preparazione…", noAsk: R.quiet }).then(function () { R.bg = true; offNotify(true); }, function () {}); } catch (e) {}
   }
-  function offNotify(force) {
+  function offNotify(force, msg) {
     var R = OFFRUN; if (!R || !R.bg) return;
     var now = Date.now(); if (!force && now - offNotT < 1500) return; offNotT = now;
     var pc = R.total ? Math.floor(R.done / R.total * 100) : 0;
-    try { BGD.update({ title: "Scaricamento immagini · " + offLabel(R.scope), text: offNum(R.done) + " di " + offNum(R.total) + " · " + pc + "%", done: R.done, total: R.total }); } catch (e) {}
+    try { BGD.update({ title: "Scaricamento immagini · " + offLabel(R.scope), text: (msg ? msg + " · " : "") + offNum(R.done) + " di " + offNum(R.total) + " · " + pc + "%", done: R.done, total: R.total }); } catch (e) {}
   }
   function offBgStop(R) { if (R && R.bg) { R.bg = false; try { BGD.stop(); } catch (e) {} } }
   function offStart(scope, quiet) {
@@ -3667,22 +3671,40 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
       return offLoadHave().then(function () {
         var todo = list.filter(function (x) { return !OFFHAVE || !OFFHAVE[x.u]; }), i = 0;
         R.done = R.total - todo.length; offDraw();
-        if (todo.length) offBgStart(R);
+        if (todo.length) { offBgStart(R); OFF.run = scope; offSave(); }
+        // senza connessione (es. Wi-Fi a riposo a schermo spento) non ci si ferma: si aspetta e si riprova la stessa immagine,
+        // con attese crescenti (5 s … 60 s); ci si arrende solo dopo 20 minuti senza nessuno scaricamento riuscito
+        var lastOk = Date.now(), waitMs = 0;
+        function pause(ms) { return new Promise(function (res) { var t = setTimeout(res, ms); function on() { clearTimeout(t); window.removeEventListener("online", on); res(); } window.addEventListener("online", on); }); }
         function one() {
           if (R.stop || i >= todo.length) return Promise.resolve();
           var x = todo[i++];
-          return imgFetch(c, x.u).catch(function () { return imgFetch(c, x.u); }).then(function () {
-            R.row = 0; if (OFFHAVE) OFFHAVE[x.u] = 1;
-          }, function () {
-            R.fail++; R.row++; if (R.row < 3 && (OFF.miss || []).indexOf(x.u) < 0 && (OFF.miss || []).length < 60) { (OFF.miss = OFF.miss || []).push(x.u); offSave(); }
-            if (R.row >= 25) { R.stop = true; R.err = "Connessione assente o troppo lenta: lo scaricamento si è fermato. Puoi riprenderlo più tardi."; }
-          }).then(function () { R.done++; offTick(); offNotify(); return one(); });
+          function attempt(n) {
+            return imgFetch(c, x.u).then(function () {
+              R.row = 0; waitMs = 0; lastOk = Date.now(); R.wait = false; if (OFFHAVE) OFFHAVE[x.u] = 1;
+            }, function (e) {
+              // errore di rete (o del server): non è l'immagine che manca, si riprova finché la rete torna
+              var offline = navigator.onLine === false || !/^http 4/.test(String(e && e.message));
+              if (offline && !R.stop) {
+                R.row++;
+                if (Date.now() - lastOk > 20 * 60e3) { R.stop = true; R.err = "Connessione assente da molto tempo: lo scaricamento si è fermato. Puoi riprenderlo più tardi."; return; }
+                if (R.row < 3) return pause(1000).then(function () { return R.stop ? null : attempt(n + 1); });
+                waitMs = Math.min(30e3, waitMs ? waitMs * 2 : 5e3); R.wait = true; offNotify(true, "In attesa della connessione…");
+                return pause(waitMs).then(function () { return R.stop ? null : attempt(n + 1); });
+              }
+              if (R.stop) return;
+              if (n < 1) return attempt(n + 1);
+              R.fail++; if ((OFF.miss || []).indexOf(x.u) < 0 && (OFF.miss || []).length < 60) { (OFF.miss = OFF.miss || []).push(x.u); offSave(); }   // immagine che il sito non ha
+            });
+          }
+          return attempt(0).then(function () { R.done++; offTick(); offNotify(); return one(); });
         }
         var ws = []; for (var k = 0; k < 6; k++) ws.push(one());
         return Promise.all(ws);
       });
     }).then(function () {
       R.end = true; offBgStop(R);
+      OFF.run = ""; offSave();   // finito, messo in pausa o fermato: niente ripresa automatica al prossimo avvio
       if ((scope === "t" || scope === "hd") && OFF.m === scope) {
         if (!R.stop) { OFF.done = R.fail ? "" : list.sig; OFF.full = true; } else OFF.paused = true;   // con immagini mancanti si riprovano al prossimo avvio
         offSave();
@@ -3816,6 +3838,18 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
     }
     P.appendChild(S);
     if (!IMGC) { out.appendChild(P); return; }
+    // APK: se l'app non è esclusa dal risparmio energetico, Android può fermare lo scaricamento a schermo spento
+    if (BGD && BGD.battery) {
+      var bw = el("div", "offbox offbat"); bw.hidden = true; P.appendChild(bw);
+      BGD.battery().then(function (r) {
+        if (!r || r.ignoring) return;
+        bw.hidden = false;
+        var t = el("div"); t.appendChild(el("b", "", "Scaricamento a schermo spento"));
+        t.appendChild(el("small", "", "Il risparmio energetico di Android può interromperlo. Consenti all'app di funzionare in sottofondo senza limiti."));
+        bw.appendChild(t);
+        bw.appendChild(btn("Consenti", "", function () { BGD.askBattery().then(function () {}, function () {}); }));
+      }, function () {});
+    }
     // le due scelte
     P.appendChild(el("h3", "offh", "Cosa scaricare"));
     [["t", "Solo miniature", "Ogni carta compare subito in piccolo, anche offline; quella nitida arriva quando c'è internet."],
@@ -3879,6 +3913,8 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   // ---- scaricamento automatico: all'avvio (dopo 8 s) e quando arrivano versioni nuove delle immagini
   function offAuto(start) {
     if (PCDEV || !IMGC || (OFFRUN && !OFFRUN.end)) return;
+    // uno scaricamento interrotto perché Android ha chiuso l'app (OFF.run ancora impostato): riprende da dove era
+    if (start && OFF.run && (OFF.run === "t" || OFF.run === "hd" || OFF.run === "upd" || SETBY[OFF.run]) && !(offCell() && OFF.run === "hd")) { offStart(OFF.run, true); return; }
     // scaricamento generale lasciato a metà (non in pausa): riparte, ma non con i dati mobili
     if (start && OFF.m && !OFF.paused && !OFF.full && OFF.done !== offItems(OFF.m).sig && !offCell()) { offStart(OFF.m, true); return; }
     if (!OFF.auto || OFF.paused || !(OFF.m || (OFF.ps || []).length)) return;

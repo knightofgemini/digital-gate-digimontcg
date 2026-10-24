@@ -11,6 +11,7 @@ import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.net.wifi.WifiManager;
 import androidx.core.app.NotificationCompat;
 
 /**
@@ -22,6 +23,7 @@ public class BgDownloadService extends Service {
     static final String CH = "dg_download";
     static final int ID = 4271;
     private PowerManager.WakeLock lock;
+    private WifiManager.WifiLock wifi;   // a schermo spento molti telefoni mettono a riposo il Wi-Fi: così resta acceso
 
     static Notification build(Context ctx, String title, String text, int done, int total) {
         NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -60,6 +62,14 @@ public class BgDownloadService extends Service {
             lock.setReferenceCounted(false);
             lock.acquire(6 * 60 * 60 * 1000L);   // al massimo 6 ore, poi si libera da sé
         }
+        if (wifi == null) {
+            try {
+                WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                wifi = wm.createWifiLock(Build.VERSION.SDK_INT >= 29 ? WifiManager.WIFI_MODE_FULL_HIGH_PERF : WifiManager.WIFI_MODE_FULL, "DigitalGate:download");
+                wifi.setReferenceCounted(false);
+                wifi.acquire();
+            } catch (Exception e) { wifi = null; }
+        }
         return START_NOT_STICKY;
     }
 
@@ -71,6 +81,8 @@ public class BgDownloadService extends Service {
     public void onDestroy() {
         if (lock != null && lock.isHeld()) lock.release();
         lock = null;
+        try { if (wifi != null && wifi.isHeld()) wifi.release(); } catch (Exception e) {}
+        wifi = null;
         super.onDestroy();
     }
 

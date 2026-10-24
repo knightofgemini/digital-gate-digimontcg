@@ -92,7 +92,7 @@ jobs:
           print(ma.read_text())
           p = pathlib.Path("android/app/src/main/AndroidManifest.xml"); t = p.read_text()
           add = ""
-          for perm in ("FOREGROUND_SERVICE", "FOREGROUND_SERVICE_DATA_SYNC", "POST_NOTIFICATIONS", "WAKE_LOCK"):
+          for perm in ("FOREGROUND_SERVICE", "FOREGROUND_SERVICE_DATA_SYNC", "POST_NOTIFICATIONS", "WAKE_LOCK", "ACCESS_WIFI_STATE", "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"):
               if "android.permission." + perm not in t: add += '    <uses-permission android:name="android.permission.%s" />\n' % perm
           t = t.replace("</manifest>", add + "</manifest>")
           if "BgDownloadService" not in t:
@@ -155,3 +155,37 @@ jobs:
           sleep 5
           gh release edit latest --draft=false || true
           gh release view latest --json isDraft,name
+  bgtest:
+    # solo nelle prove (prova_apk): emulatore Android 14, scaricamento a schermo spento con la versione pubblicata e con la nuova
+    needs: apk
+    if: ${{ inputs.prova_apk }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: apk-prova, path: nuova }
+      - name: APK pubblicato (per il confronto)
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: mkdir -p vecchia && gh release download latest -p DigimonSetTracker.apk -D vecchia
+      - run: pip install websocket-client
+      - name: KVM per l'emulatore
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: bash tools/bgtest.sh vecchia/DigimonSetTracker.apk pubblicata && bash tools/bgtest.sh nuova/DigimonSetTracker.apk nuova
+      - name: Riepilogo
+        if: always()
+        run: |
+          for f in bgtest-*.txt; do echo "### $f"; cat "$f"; echo; done | tee -a "$GITHUB_STEP_SUMMARY"
+          grep -h "RISULTATO" bgtest-*.txt | sed 's/^/::notice title=Prova sottofondo::/' || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: bgtest, path: "*.txt" }
