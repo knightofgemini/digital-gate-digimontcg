@@ -215,8 +215,8 @@ function Details({ title, open: o0, children }: { title: string; open: boolean; 
     <View style={{ marginBottom: 6, borderWidth: 1, borderColor: t.line, borderRadius: 12, backgroundColor: t.surface }}>
       <Pressable onPress={() => setOpen(!open)} accessibilityState={{ expanded: open }} style={{ minHeight: 46, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
         <Text style={{ color: t.ink, fontWeight: "600" }}>{title}</Text>
-        <Svg width={14} height={14} viewBox="0 0 24 24" style={{ transform: [{ rotate: open ? "180deg" : "0deg" }] }}>
-          <Path d="M5 9l7 7 7-7" stroke={t.ink} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <Svg width={18} height={18} viewBox="0 0 24 24" style={{ transform: [{ rotate: open ? "180deg" : "0deg" }] }}>
+          <Path d="M5 9l7 7 7-7" stroke={t.ink} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" fill="none" />
         </Svg>
       </Pressable>
       {open ? children : null}
