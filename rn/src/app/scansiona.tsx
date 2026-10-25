@@ -2,8 +2,9 @@
 // (o il nome) e propone le versioni ordinate per somiglianza; si segnano le copie e la scansione resta in cronologia.
 // Anche da una foto della galleria. Nessuna foto viene inviata o salvata.
 import { useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, View, useWindowDimensions } from "react-native";
-import { Text } from "../Text";
+import { Animated, Easing, Platform, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
+import { DISPLAY, Text } from "../Text";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
@@ -47,10 +48,17 @@ export default function Scansiona() {
   const cur = useRef<ScanItem | null>(null);
 
   // cornice della carta al centro (proporzioni di una carta)
-  const fw = Math.min(view.w * 0.72, (view.h * 0.55) * 0.716),
+  const fw = Math.min(view.w * 0.72, view.h * 0.56 * 0.716, 360),
     fh = fw / 0.716,
     fx = (view.w - fw) / 2,
-    fy = (view.h - fh) / 2 - 20;
+    fy = view.h * 0.44 - fh / 2;
+  // riga azzurra che scorre su e giù nella cornice mentre si cerca
+  const line = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const a = Animated.loop(Animated.sequence([Animated.timing(line, { toValue: 1, duration: 1100, easing: Easing.inOut(Easing.ease), useNativeDriver: Platform.OS !== "web" }), Animated.timing(line, { toValue: 0, duration: 1100, easing: Easing.inOut(Easing.ease), useNativeDriver: Platform.OS !== "web" })]));
+    a.start();
+    return () => a.stop();
+  }, []);
 
   useEffect(() => {
     live.current = true;
@@ -171,42 +179,109 @@ export default function Scansiona() {
     <View style={{ flex: 1, backgroundColor: "#000" }} onLayout={(e) => setV({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
       <Engine />
       {perm?.granted && <CameraView ref={cam} style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }} facing="back" enableTorch={torch} onCameraReady={() => setCamOk(true)} onMountError={() => setCamOk(false)} animateShutter={false} />}
-      {/* cornice */}
-      <View pointerEvents="none" style={{ position: "absolute", left: fx, top: fy, width: fw, height: fh, borderRadius: 14, borderWidth: 3, borderColor: res ? "#46bd73" : "rgba(255,255,255,.9)" }} />
-      <SafeAreaView style={{ position: "absolute", left: 0, right: 0, top: 0 }} edges={["top"]}>
-        <View style={{ flexDirection: "row", alignItems: "center", padding: 12, gap: 12 }}>
-          <Btn label="✕" onPress={close} />
-          <Text style={{ flex: 1, color: "#fff", fontSize: 18, fontWeight: "800", textAlign: "center" }}>Scansiona una carta</Text>
-          <Btn label="🔦" on={torch} onPress={() => setTorch(!torch)} />
-        </View>
-        {!!status && !res && !hist && (
-          <View style={{ alignSelf: "center", backgroundColor: warn ? "rgba(192,38,30,.85)" : "rgba(0,0,0,.6)", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8, marginHorizontal: 16 }}>
-            <Text style={{ color: "#fff", fontWeight: "600", textAlign: "center" }}>{status}</Text>
-          </View>
-        )}
-      </SafeAreaView>
-      {!res && !hist && (
-        <SafeAreaView edges={["bottom"]} style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}>
-          <View style={{ flexDirection: "row", gap: 10, padding: 16 }}>
-            <Pressable onPress={fromPhoto} style={{ flex: 1, alignItems: "center", paddingVertical: 14, borderRadius: 14, backgroundColor: camOk ? "rgba(255,255,255,.18)" : t.accent }}>
-              <Text style={{ color: camOk ? "#fff" : t.accentInk, fontWeight: "800" }}>Usa una foto</Text>
-            </Pressable>
-            <Pressable onPress={() => setHist(true)} style={{ flex: 1, alignItems: "center", paddingVertical: 14, borderRadius: 14, backgroundColor: "rgba(255,255,255,.18)" }}>
-              <Text style={{ color: "#fff", fontWeight: "800" }}>Cronologia{SCH.length ? " · " + SCH.length : ""}</Text>
-            </Pressable>
+      {/* fuori dalla cornice tutto scurito; angoli arancioni (verdi a carta trovata) e riga che scorre */}
+      <View pointerEvents="none" style={{ position: "absolute", left: fx - 1000, top: fy - 1000, width: fw + 2000, height: fh + 2000, borderWidth: 1000, borderRadius: 1018, borderColor: "rgba(5,8,15,.62)" }} />
+      <View pointerEvents="none" style={{ position: "absolute", left: fx, top: fy, width: fw, height: fh }}>
+        {[
+          { left: -3, top: -3, borderRightWidth: 0, borderBottomWidth: 0, borderTopLeftRadius: 18 },
+          { right: -3, top: -3, borderLeftWidth: 0, borderBottomWidth: 0, borderTopRightRadius: 18 },
+          { left: -3, bottom: -3, borderRightWidth: 0, borderTopWidth: 0, borderBottomLeftRadius: 18 },
+          { right: -3, bottom: -3, borderLeftWidth: 0, borderTopWidth: 0, borderBottomRightRadius: 18 },
+        ].map((c, i) => (
+          <View key={i} style={[{ position: "absolute", width: 34, height: 34, borderWidth: 4, borderColor: res ? "#4ade80" : "#ff7a3d" }, c]} />
+        ))}
+        {!res && !hist && ready ? (
+          <Animated.View style={{ position: "absolute", left: "8%", right: "8%", height: 2, borderRadius: 2, backgroundColor: "#63d5ee", opacity: 0.9, boxShadow: "0 0 14px #63d5ee", top: line.interpolate({ inputRange: [0, 1], outputRange: [fh * 0.06, fh * 0.94] }) }} />
+        ) : null}
+      </View>
+      {/* intestazione */}
+      <View style={{ position: "absolute", left: 0, right: 0, top: 0 }}>
+        <Svg pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 100">
+          <Defs>
+            <LinearGradient id="schead" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor="#05080f" stopOpacity={0.75} />
+              <Stop offset="1" stopColor="#05080f" stopOpacity={0} />
+            </LinearGradient>
+          </Defs>
+          <Rect width="10" height="100" fill="url(#schead)" />
+        </Svg>
+        <SafeAreaView edges={["top"]}>
+          <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 10, paddingHorizontal: 12, paddingBottom: 10, gap: 10 }}>
+            <ScBtn icon="x" onPress={close} label="Chiudi" />
+            <Text style={{ flex: 1, color: "#f1f4f9", fontFamily: DISPLAY, fontWeight: "700", fontSize: 17.6, letterSpacing: 0.35, textAlign: "center" }}>Scansiona una carta</Text>
+            <View style={{ opacity: camOk ? 1 : 0 }} pointerEvents={camOk ? "auto" : "none"}>
+              <ScBtn icon="torch" on={torch} onPress={() => setTorch(!torch)} label="Torcia" />
+            </View>
           </View>
         </SafeAreaView>
-      )}
+      </View>
+      {!!status && !res && !hist ? (
+        <View pointerEvents="none" style={{ position: "absolute", left: 16, right: 16, top: fy + fh + 16, alignItems: "center" }}>
+          <View style={{ maxWidth: "100%", paddingVertical: 9, paddingHorizontal: 16, borderRadius: 99, backgroundColor: "rgba(19,27,46,.82)", borderWidth: 1, borderColor: warn ? "rgba(255,122,61,.6)" : "rgba(255,255,255,.12)" }}>
+            <Text style={{ color: "#f1f4f9", fontWeight: "500", fontSize: 14.7, lineHeight: 19, textAlign: "center" }}>{status}</Text>
+          </View>
+        </View>
+      ) : null}
+      {!res && !hist ? (
+        <View style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}>
+          <Svg pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 100">
+            <Defs>
+              <LinearGradient id="scfoot" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor="#05080f" stopOpacity={0} />
+                <Stop offset="1" stopColor="#05080f" stopOpacity={0.8} />
+              </LinearGradient>
+            </Defs>
+            <Rect width="10" height="100" fill="url(#scfoot)" />
+          </Svg>
+          <SafeAreaView edges={["bottom"]}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: camOk ? "space-between" : "center", gap: 12, paddingTop: 14, paddingHorizontal: 22, paddingBottom: 18 }}>
+              <ScPill icon="pic" label="Usa una foto" big={!camOk} onPress={fromPhoto} />
+              {camOk ? (
+                <ScPill icon="hist" label="Cronologia" onPress={() => setHist(true)} badge={SCH.length} />
+              ) : null}
+            </View>
+          </SafeAreaView>
+        </View>
+      ) : null}
       {res && <Result r={res} cur={cur.current} again={again} openHist={() => setHist(true)} />}
       {hist && <History close={() => setHist(false)} />}
     </View>
   );
 }
 
-function Btn({ label, onPress, on }: { label: string; onPress: () => void; on?: boolean }) {
+const SCICO: Record<string, string[]> = {
+  x: ["M6 6l12 12M18 6L6 18"],
+  torch: ["M8 3h8l-1 5H9z", "M9 8l1 13h4l1-13", "M12 12v3"],
+  pic: ["M5.5 4.5h13a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2z", "M20.5 16l-5-5-8.5 8.5"],
+  hist: ["M3.5 12a8.5 8.5 0 1 0 2.6-6.1", "M3 4.5V9h4.5", "M12 7.5V12l3 2"],
+};
+function ScIco({ name, color, size = 22 }: { name: string; color: string; size?: number }) {
   return (
-    <Pressable onPress={onPress} hitSlop={8} style={{ width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: on ? "#ff7a3d" : "rgba(0,0,0,.5)" }}>
-      <Text style={{ color: "#fff", fontSize: 18, fontWeight: "800" }}>{label}</Text>
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      {SCICO[name].map((d) => (
+        <Path key={d} d={d} stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      ))}
+      {name === "pic" ? <Circle cx={9} cy={10} r={1.8} stroke={color} strokeWidth={2} fill="none" /> : null}
+    </Svg>
+  );
+}
+function ScBtn({ icon, onPress, on, label }: { icon: string; onPress: () => void; on?: boolean; label: string }) {
+  return (
+    <Pressable onPress={onPress} accessibilityLabel={label} style={{ width: 46, height: 46, borderRadius: 23, borderWidth: 1, borderColor: on ? "#ff7a3d" : "rgba(255,255,255,.18)", backgroundColor: on ? "#ff7a3d" : "rgba(19,27,46,.72)", alignItems: "center", justifyContent: "center" }}>
+      <ScIco name={icon} color={on ? "#1a0b03" : "#f1f4f9"} />
+    </Pressable>
+  );
+}
+function ScPill({ icon, label, onPress, big, badge }: { icon: string; label: string; onPress: () => void; big?: boolean; badge?: number }) {
+  return (
+    <Pressable onPress={onPress} style={{ height: big ? 52 : 46, flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: big ? 18 : 12, paddingRight: big ? 22 : 16, borderRadius: big ? 26 : 23, borderWidth: 1, borderColor: big ? "#ff7a3d" : "rgba(255,255,255,.18)", backgroundColor: big ? "#ff7a3d" : "rgba(19,27,46,.72)" }}>
+      <ScIco name={icon} color={big ? "#1a0b03" : "#f1f4f9"} size={20} />
+      <Text style={{ color: big ? "#1a0b03" : "#f1f4f9", fontFamily: DISPLAY, fontWeight: "600", fontSize: big ? 16 : 14.4 }}>{label}</Text>
+      {badge ? (
+        <View style={{ minWidth: 20, height: 20, paddingHorizontal: 6, borderRadius: 10, backgroundColor: "#63d5ee", alignItems: "center", justifyContent: "center" }}>
+          <Text style={{ color: "#06222a", fontFamily: DISPLAY, fontWeight: "700", fontSize: 11.5, lineHeight: 20 }}>{badge}</Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
