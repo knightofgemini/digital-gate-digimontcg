@@ -1,6 +1,6 @@
 // Elementi grafici dell'app attuale usati in più pagine: banner dei prodotti (.bn), riquadro del prodotto (.pv),
 // etichette sul banner (.badge), barre di avanzamento (.progress, .pg2/.hpg), pulsanti (.btn), titoletti (.sec-h), riquadri (.panel).
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Pressable, View, ViewStyle } from "react-native";
 import { Image } from "expo-image";
 import Svg, { Circle, Defs, Path, RadialGradient, LinearGradient, Rect, Stop } from "react-native-svg";
@@ -167,6 +167,16 @@ export function Panel({ title, children, style }: { title?: string; children: Re
     <View style={[{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 18 }, style]}>
       {title ? <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.5, letterSpacing: 1.85, textTransform: "uppercase", marginBottom: 12 }}>{title}</Text> : null}
       {children}
+    </View>
+  );
+}
+
+// griglia a due colonne con larghezze esatte (come grid-template-columns: repeat(2, 1fr)): l'ultima carta da sola resta mezza
+export function Grid2({ gap, children }: { gap: number; children: (w: number) => ReactNode }) {
+  const [w, setW] = useState(0);
+  return (
+    <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ flexDirection: "row", flexWrap: "wrap", gap }}>
+      {w ? children(Math.floor((w - gap) / 2)) : null}
     </View>
   );
 }

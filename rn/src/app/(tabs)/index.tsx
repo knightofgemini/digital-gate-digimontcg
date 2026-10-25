@@ -6,7 +6,7 @@ import { openDeck, openSet, openSoon, openUpcoming } from "../../nav";
 import { useTheme } from "../../theme";
 import { PageTitle } from "../../ui";
 import { Screen, goTab } from "../../chrome";
-import { Badge, Banner, Btn, ICO_ARROW, ICO_PLUS, Panel, ProdVisual, ProgLine, Progress, SecHead } from "../../visual";
+import { Badge, Banner, Grid2, Btn, ICO_ARROW, ICO_PLUS, Panel, ProdVisual, ProgLine, Progress, SecHead } from "../../visual";
 import { S, setStats, useStore } from "../../store";
 import { deckStats, newDeck } from "../../decks";
 
@@ -103,12 +103,12 @@ export default function Home() {
           <DeckResume />
         </View>
         <SecHead title="Usciti di recente" link="Tutti →" onLink={() => goTab("sets")} />
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
-          {recentSets(8).map((x) => {
+        <Grid2 gap={12}>
+          {(w) => recentSets(8).map((x) => {
             const isNew = daysTo(x.date) >= -60;
             const s = stats[x.id];
             return (
-              <View key={x.id} style={{ width: "47.5%", flexGrow: 1, flexBasis: "40%" }}>
+              <View key={x.id} style={{ width: w }}>
                 <Banner code={x.code} name={x.name} onPress={() => openSet(x.id)}>
                   {isNew ? <Badge icon="spark" text="Nuovo" isNew /> : null}
                 </Banner>
@@ -120,7 +120,7 @@ export default function Home() {
               </View>
             );
           })}
-        </View>
+        </Grid2>
       </ScrollView>
     </Screen>
   );

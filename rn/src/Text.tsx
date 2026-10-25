@@ -39,7 +39,7 @@ function resolve(style: any, parent: Ctx, input?: boolean): [TextStyle | null, C
   // dentro un altro testo: niente da cambiare se non indica carattere, spessore o corsivo
   if (parent && !input && s.fontFamily == null && s.fontWeight == null && s.fontStyle == null) return [null, me];
   const f = famOf(disp, w, it);
-  const out: TextStyle = { fontFamily: f, fontWeight: "normal", fontStyle: f.endsWith("Italic") ? "normal" : s.fontStyle };
+  const out: { -readonly [K in keyof TextStyle]: TextStyle[K] } = { fontFamily: f, fontWeight: "normal", fontStyle: f.endsWith("Italic") ? "normal" : s.fontStyle };
   if (!parent && !input) {
     const fs = s.fontSize ?? 15;
     if (s.fontSize == null) out.fontSize = 15;

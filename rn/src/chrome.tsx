@@ -174,7 +174,7 @@ const NOBAR = /^\/(carta|scansiona)/;
 export function goTab(id: TabId) {
   const href = TABS.find((x) => x[0] === id)![3];
   if (router.canDismiss()) router.dismissAll();
-  router.navigate(href as any);
+  router.navigate((id === "sets" ? { pathname: href, params: { seg: "sets" } } : href) as any);
 }
 
 function curTab(path: string, from?: string): TabId | null {
