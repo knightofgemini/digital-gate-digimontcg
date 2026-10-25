@@ -14,6 +14,7 @@ import { UpdateCheck } from "../Update";
 import { loadThemePref, useTheme } from "../theme";
 import { FONTS } from "../Text";
 import { MoreSheet, TabBar, useTabPad } from "../chrome";
+import { Intro } from "../Intro";
 
 function Root() {
   const t = useTheme();
@@ -36,6 +37,7 @@ function Root() {
       <ToastHost />
       <FavSheetHost />
       <UpdateCheck />
+      <Intro />
     </>
   );
 }

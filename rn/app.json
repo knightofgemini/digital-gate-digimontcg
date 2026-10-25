@@ -41,7 +41,19 @@
           "photosPermission": "Digital Gate apre le foto che scegli per riconoscere le carte."
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0b1120",
+          "image": "./assets/splash-empty.png",
+          "imageWidth": 1,
+          "dark": {
+            "backgroundColor": "#0b1120",
+            "image": "./assets/splash-empty.png"
+          }
+        }
+      ]
     ],
     "extra": {
       "build": 0
