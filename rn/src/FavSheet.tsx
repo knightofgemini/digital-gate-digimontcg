@@ -1,7 +1,10 @@
 // Foglio "Salva in…": preferite, liste personali e avviso di prezzo per una versione della carta (come nell'app attuale).
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, Switch, View } from "react-native";
-import { Text, TextInput } from "./Text";
+import { DISPLAY, Text, TextInput } from "./Text";
+import Svg, { Path } from "react-native-svg";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { CmMark, CtMark } from "./shops";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Card, SETBY, hostSet, verLabel } from "./data";
 import { Heart, ListsIcon } from "./items";
@@ -22,122 +25,127 @@ export function FavSheet({ c, onClose }: { c: Card | null; onClose: () => void }
   useStore();
   const [nw, setNw] = useState<string | null>(null);
   const [eurTxt, setEurTxt] = useState<string | null>(null);
+  const insB = useSafeAreaInsets().bottom;
   if (!c) return null;
   const vk = SETBY[hostSet(c)];
   const alertOn = S.fav.a[c.k] != null;
 
+  // riga di una lista (.fsrow2): icona nel riquadretto (cuore arancione per le Preferite), nome e numero di carte, casella
   const Row = ({ name, sub, on, fav, onT }: { name: string; sub: string; on: boolean; fav?: boolean; onT: (v: boolean) => void }) => (
-    <Pressable onPress={() => onT(!on)} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderColor: t.line }}>
-      {fav ? <Heart on size={22} color={t.ink2} /> : <ListsIcon color={t.ink2} />}
-      <View style={{ flex: 1 }}>
-        <Text style={{ color: t.ink, fontWeight: "700" }}>{name}</Text>
-        <Text style={{ color: t.ink2, fontSize: 12 }}>{sub}</Text>
+    <Pressable onPress={() => onT(!on)} accessibilityRole="checkbox" accessibilityState={{ checked: on }} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 56, paddingHorizontal: 14, borderBottomWidth: 1, borderColor: t.line }}>
+      <View style={{ width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: fav ? t.accentSoft : t.surface2 }}>{fav ? <Heart on size={17} color={t.accent} /> : <ListsIcon color={t.cyan} size={17} />}</View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={{ color: t.ink, fontWeight: "600", fontSize: 15.2, lineHeight: 20 }}>{name}</Text>
+        <Text style={{ color: t.ink2, fontSize: 12.5, lineHeight: 16 }}>{sub}</Text>
       </View>
-      <View style={{ width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: on ? t.accent : t.line, backgroundColor: on ? t.accent : "transparent", alignItems: "center", justifyContent: "center" }}>
-        {on && <Text style={{ color: t.accentInk, fontWeight: "900" }}>✓</Text>}
+      <View style={{ width: 22, height: 22, borderRadius: 5, borderWidth: on ? 0 : 1.5, borderColor: t.ink2, backgroundColor: on ? t.accent : t.surface2, alignItems: "center", justifyContent: "center" }}>
+        {on ? (
+          <Svg width={12} height={10} viewBox="0 0 12 10">
+            <Path d="M1 5l3.5 3.5L11 1.5" stroke={t.accentInk} strokeWidth={2.2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          </Svg>
+        ) : null}
       </View>
     </Pressable>
   );
+  const create = () => {
+    if ((nw || "").trim()) listNew(nw!.trim(), c);
+    setNw(null);
+  };
+  const on = alertOn;
 
   return (
-    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
-      <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,.55)" }} onPress={onClose} />
-      <SafeAreaView edges={["bottom"]} style={{ backgroundColor: t.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, maxHeight: "86%" }}>
-        <View style={{ alignItems: "center", paddingTop: 8 }}>
-          <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: t.line }} />
-        </View>
-        <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
-          <Text style={{ color: t.ink, fontSize: 20, fontWeight: "800" }}>Salva in…</Text>
-          <Text style={{ color: t.ink2, marginBottom: 8 }}>{c.name + " · " + c.code + (c.suf ? " · " + (verLabel(c.ver) || "Alternative Art") : "") + (vk ? " · " + vk.code : "")}</Text>
-          <Row name="Preferite" sub={favCount() + (favCount() === 1 ? " carta" : " carte")} on={isFav(c)} fav onT={(v) => favSet(c, v)} />
-          {S.fav.l.map((L) => {
-            const n = Object.keys(L.k).length;
-            return <Row key={L.id} name={L.n} sub={n + (n === 1 ? " carta" : " carte")} on={!!L.k[c.k]} onT={(v) => listToggle(L, c, v)} />;
-          })}
-          {nw != null ? (
-            <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
-              <TextInput
-                autoFocus
-                value={nw}
-                onChangeText={setNw}
-                placeholder="Nome della lista"
-                placeholderTextColor={t.ink2}
-                maxLength={40}
-                onSubmitEditing={() => {
-                  if (nw.trim()) listNew(nw.trim(), c);
-                  setNw(null);
-                }}
-                style={{ flex: 1, backgroundColor: t.surface, borderColor: t.line, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, color: t.ink }}
-              />
-              <Pressable
-                onPress={() => {
-                  if (nw.trim()) listNew(nw.trim(), c);
-                  setNw(null);
-                }}
-                style={{ backgroundColor: t.accent, borderRadius: 10, paddingHorizontal: 14, justifyContent: "center" }}
-              >
-                <Text style={{ color: t.accentInk, fontWeight: "800" }}>Crea</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <Pressable onPress={() => setNw("")} style={{ marginTop: 10 }}>
-              <Text style={{ color: t.accent, fontWeight: "700" }}>+ Nuova lista</Text>
-            </Pressable>
-          )}
-
-          {/* avviso di prezzo: segnalato nella Wishlist quando il prezzo più basso scende sotto la soglia */}
-          <View style={{ marginTop: 18, backgroundColor: t.surface, borderColor: t.line, borderWidth: 1, borderRadius: 12, padding: 12 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: t.ink, fontWeight: "700" }}>Avviso di prezzo</Text>
-                <Text style={{ color: t.ink2, fontSize: 12 }}>Segnalato nella Wishlist quando il prezzo più basso scende sotto la soglia</Text>
+    <Modal visible animationType="slide" transparent onRequestClose={onClose} statusBarTranslucent>
+      <Pressable style={{ flex: 1, backgroundColor: "rgba(4,8,18,.6)" }} onPress={onClose} />
+      <View style={{ maxHeight: "88%", backgroundColor: t.surface, borderTopWidth: 1, borderColor: t.line, borderTopLeftRadius: 22, borderTopRightRadius: 22, boxShadow: "0 -12px 32px rgba(0,0,0,.35)" }}>
+        <ScrollView contentContainerStyle={{ paddingTop: 8, paddingHorizontal: 16, paddingBottom: 18 + insB, gap: 12 }} keyboardShouldPersistTaps="handled">
+          <View style={{ alignSelf: "center", width: 40, height: 5, borderRadius: 3, backgroundColor: t.line }} />
+          <View>
+            <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 19.2 }}>Salva in…</Text>
+            <Text style={{ color: t.ink2, fontSize: 12.8, marginTop: 2 }}>{c.name + " · " + c.code + (c.suf ? " · " + (verLabel(c.ver) || "Alternative Art") : "") + (vk ? " · " + vk.code : "")}</Text>
+          </View>
+          <View style={{ borderWidth: 1, borderColor: t.line, borderRadius: 14, overflow: "hidden" }}>
+            <Row name="Preferite" sub={favCount() + (favCount() === 1 ? " carta" : " carte")} on={isFav(c)} fav onT={(v) => favSet(c, v)} />
+            {S.fav.l.map((L) => {
+              const n = Object.keys(L.k).length;
+              return <Row key={L.id} name={L.n} sub={n + (n === 1 ? " carta" : " carte")} on={!!L.k[c.k]} onT={(v) => listToggle(L, c, v)} />;
+            })}
+            {nw != null ? (
+              <View style={{ flexDirection: "row", gap: 6, alignItems: "center", paddingVertical: 8, paddingHorizontal: 14 }}>
+                <TextInput autoFocus value={nw} onChangeText={setNw} placeholder="Nome della lista" placeholderTextColor={t.ink2} maxLength={40} onSubmitEditing={create} style={{ flex: 1, minHeight: 36, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: t.accent, backgroundColor: t.surface, color: t.ink, fontWeight: "500", fontSize: 14.4 }} />
+                <Pressable onPress={create} style={{ minHeight: 36, paddingHorizontal: 14, justifyContent: "center", borderRadius: 999, backgroundColor: t.accent }}>
+                  <Text style={{ color: t.accentInk, fontWeight: "600", fontSize: 13.6 }}>Crea</Text>
+                </Pressable>
               </View>
-              <Switch
-                value={alertOn}
-                onValueChange={(v) => {
-                  if (!v) setAlert(c, null);
+            ) : (
+              <Pressable onPress={() => setNw("")} style={{ minHeight: 48, justifyContent: "center", paddingHorizontal: 14 }}>
+                <Text style={{ color: t.accent, fontWeight: "600", fontSize: 14.4 }}>+ Nuova lista</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* avviso di prezzo (.fsalert): segnalato nella Wishlist quando il prezzo più basso scende sotto la soglia */}
+          <View style={{ gap: 10, borderWidth: 1, borderColor: t.line, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ color: t.ink, fontWeight: "600", fontSize: 15.2, lineHeight: 20 }}>Avviso di prezzo</Text>
+                <Text style={{ color: t.ink2, fontSize: 12.5, lineHeight: 17 }}>Segnalato nella Wishlist quando il prezzo più basso scende sotto la soglia</Text>
+              </View>
+              <Pressable
+                accessibilityRole="switch"
+                accessibilityState={{ checked: on }}
+                accessibilityLabel="Avviso di prezzo"
+                onPress={() => {
+                  if (on) setAlert(c, null);
                   else {
                     const b0 = bestVal(c);
                     setAlert(c, b0 != null ? Math.max(0.01, Math.floor(b0 * 0.9 * 100) / 100) : 1);
                   }
                   setEurTxt(null);
                 }}
-                trackColor={{ true: t.accent, false: t.line }}
-              />
+                style={{ width: 50, height: 30, borderRadius: 999, backgroundColor: on ? t.accent : t.surface2, borderWidth: on ? 0 : 1, borderColor: t.line }}
+              >
+                <View style={{ position: "absolute", left: on ? 23 : 3, top: on ? 3 : 2, width: 24, height: 24, borderRadius: 12, backgroundColor: on ? t.accentInk : t.ink2 }} />
+              </Pressable>
             </View>
-            {alertOn && (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10 }}>
-                <Text style={{ color: t.ink, fontWeight: "700", fontSize: 16 }}>€</Text>
-                <TextInput
-                  value={eurTxt != null ? eurTxt : eurN(S.fav.a[c.k])}
-                  onChangeText={setEurTxt}
-                  keyboardType="decimal-pad"
-                  onEndEditing={() => {
-                    const v = parseFloat(String(eurTxt || "").replace(/\./g, "").replace(",", "."));
-                    if (v > 0) setAlert(c, v);
-                    setEurTxt(null);
-                  }}
-                  style={{ minWidth: 90, color: t.ink, fontWeight: "800", fontSize: 16, borderBottomWidth: 2, borderColor: t.accent, paddingVertical: 2 }}
-                />
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              {on ? (
+                <View style={{ width: 128, height: 44, flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.bg }}>
+                  <Text style={{ color: t.ink2 }}>€</Text>
+                  <TextInput
+                    value={eurTxt != null ? eurTxt : eurN(S.fav.a[c.k])}
+                    onChangeText={setEurTxt}
+                    keyboardType="decimal-pad"
+                    accessibilityLabel="Soglia di prezzo in euro"
+                    onEndEditing={() => {
+                      const v = parseFloat(String(eurTxt || "").replace(/\./g, "").replace(",", "."));
+                      if (v > 0) setAlert(c, Math.round(v * 100) / 100);
+                      setEurTxt(null);
+                    }}
+                    style={{ flex: 1, minWidth: 0, color: t.ink, fontWeight: "600", fontSize: 16 }}
+                  />
+                </View>
+              ) : null}
+              <View style={{ flex: 1, gap: 4 }}>
+                {(
+                  [
+                    ["cm", "Cardmarket", cmVal(c)],
+                    ["ct", "CardTrader", ctVal(c)],
+                  ] as [string, string, number | null][]
+                ).map(([k, n, v]) => (
+                  <View key={n} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    {k === "cm" ? <CmMark size={13} /> : <CtMark size={13} />}
+                    <Text style={{ color: t.ink2, fontSize: 12.8 }}>{n}</Text>
+                    <Text style={{ marginLeft: "auto", color: t.ink, fontWeight: "600", fontSize: 12.8 }}>{v == null ? "N/D" : eurN(v) + " €"}</Text>
+                  </View>
+                ))}
               </View>
-            )}
-            {(
-              [
-                ["Cardmarket", cmVal(c)],
-                ["CardTrader", ctVal(c)],
-              ] as [string, number | null][]
-            ).map(([n, v]) => (
-              <View key={n} style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8 }}>
-                <Text style={{ color: t.ink2 }}>{n}</Text>
-                <Text style={{ color: t.ink, fontWeight: "700" }}>{v == null ? "N/D" : eurN(v) + " €"}</Text>
-              </View>
-            ))}
+            </View>
           </View>
+          <Pressable onPress={onClose} style={{ minHeight: 50, borderRadius: 14, backgroundColor: t.accent, alignItems: "center", justifyContent: "center" }}>
+            <Text style={{ color: t.accentInk, fontWeight: "600", fontSize: 16 }}>Fine</Text>
+          </Pressable>
         </ScrollView>
-        <Pressable onPress={onClose} style={{ margin: 16, marginTop: 4, backgroundColor: t.accent, borderRadius: 12, paddingVertical: 14, alignItems: "center" }}>
-          <Text style={{ color: t.accentInk, fontWeight: "800", fontSize: 16 }}>Fine</Text>
-        </Pressable>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }

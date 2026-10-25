@@ -7,9 +7,9 @@ import { Linking, Modal, Pressable, ScrollView, View, useWindowDimensions } from
 import { DISPLAY, Text, TextInput } from "../../Text";
 import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { Chevron, FilterIcon, SearchIcon, SquareBtn } from "../../BottomBar";
-import { Btn, ICO_PLUS, Progress } from "../../visual";
+import { Btn, ICO_PLUS, Panel, Progress } from "../../visual";
 import { FitText } from "../../fit";
-import { ConfirmBox, ImportPanel } from "../../deckui";
+import { BanNote, ConfirmBox, ImportPanel } from "../../deckui";
 import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -501,52 +501,42 @@ function Stats({ d }: { d: any }) {
   const cols = deckColors(d);
   const totc = cols.reduce((m, x) => m + x[1], 0) || 1;
   return (
-    <View style={{ gap: 10, marginTop: 12 }}>
-      <View style={[s.panel, { padding: 12 }]}>
-        <Text style={{ color: t.ink, fontWeight: "800", marginBottom: 8 }}>Composizione</Text>
-        <View style={{ flexDirection: "row" }}>
+    <View style={{ gap: 10 }}>
+      <Panel title="Composizione">
+        <View style={{ flexDirection: "row", gap: 6 }}>
           {Object.keys(comp).map((k) => (
             <View key={k} style={{ flex: 1, alignItems: "center" }}>
-              <Text style={{ color: t.ink, fontSize: 20, fontWeight: "800" }}>{comp[k]}</Text>
-              <Text style={{ color: t.ink2, fontSize: 12 }}>{k}</Text>
+              <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 21.6 }}>{comp[k]}</Text>
+              <Text style={{ color: t.ink2, fontSize: 11.8 }}>{k}</Text>
             </View>
           ))}
         </View>
-      </View>
+      </Panel>
       {cols.length > 0 && (
-        <View style={[s.panel, { padding: 12 }]}>
-          <Text style={{ color: t.ink, fontWeight: "800", marginBottom: 8 }}>Colori</Text>
-          <View style={{ flexDirection: "row", height: 10, borderRadius: 5, overflow: "hidden" }}>
+        <Panel title="Colori">
+          <View style={{ flexDirection: "row", height: 10, borderRadius: 99, overflow: "hidden", gap: 2, marginBottom: 8 }}>
             {cols.map(([x, n]) => (
-              <View key={x} style={{ flex: n / totc, backgroundColor: t.cards[x] }} />
+              <View key={x} style={{ flex: n / totc, minWidth: 3, backgroundColor: t.cards[x] }} />
             ))}
           </View>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 8 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", columnGap: 10, rowGap: 4 }}>
             {cols.map(([x, n]) => (
               <View key={x} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: t.cards[x] }} />
-                <Text style={{ color: t.ink }}>{x + " " + n}</Text>
+                <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: t.cards[x] }} />
+                <Text style={{ color: t.ink2, fontSize: 12.5 }}>{x + " " + n}</Text>
               </View>
             ))}
           </View>
-        </View>
+        </Panel>
       )}
       {need > 0 && (
-        <View style={[s.panel, { padding: 12 }]}>
-          <Text style={{ color: t.ink, fontWeight: "800" }}>Dalla tua collezione</Text>
-          <Text style={{ color: t.ink, fontSize: 20, fontWeight: "800", marginTop: 4 }}>{have + " / " + need}</Text>
-          <Text style={{ color: t.ink2, fontSize: 13 }}>{have === need ? "Hai già tutte le copie del mazzo." : (need - have === 1 ? "Ti manca 1 copia" : "Ti mancano " + (need - have) + " copie") + " (contando la versione scelta nel mazzo)."}</Text>
-          <View style={{ height: 5, borderRadius: 3, backgroundColor: t.surface2, marginTop: 6, overflow: "hidden" }}>
-            <View style={{ width: (have / need) * 100 + "%", height: 5, backgroundColor: have === need ? "#46bd73" : t.accent }} />
-          </View>
-        </View>
+        <Panel title="Dalla tua collezione">
+          <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 21.6 }}>{have + " / " + need}</Text>
+          <Text style={{ color: t.ink2, fontSize: 13.4, marginTop: 2, marginBottom: 8 }}>{have === need ? "Hai già tutte le copie del mazzo." : (need - have === 1 ? "Ti manca 1 copia" : "Ti mancano " + (need - have) + " copie") + " (contando la versione scelta nel mazzo)."}</Text>
+          <Progress h={have} n={need} />
+        </Panel>
       )}
-      <Text style={{ color: t.ink2, fontSize: 12, lineHeight: 18 }}>
-        {banNote() + " "}
-        <Text style={{ color: t.accent }} onPress={() => Linking.openURL(banSource())}>
-          Fonte ufficiale
-        </Text>
-      </Text>
+      <BanNote top={8} />
     </View>
   );
 }
