@@ -1,11 +1,13 @@
 // Pagina di un prodotto: scheda con i dati ufficiali e carte raggruppate (Regular, Alternative Art, Ristampe...).
 // "up-CODICE" = prodotto in arrivo senza carte: solo la scheda.
 import { ReactNode, useMemo, useState } from "react";
-import { Linking, Pressable, SectionList, Text, View, useWindowDimensions } from "react-native";
+import { Linking, Pressable, SectionList, Text, TextInput, View, useWindowDimensions } from "react-native";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Card, PRODUCTS, SETBY, TYPES, UPCOMING, cardsOfSet, cdText, itDate, monthLabel, packUrl, setGroups, soonSet, typeOf } from "../../data";
+import { Card, PRODUCTS, SETBY, TYPES, UPCOMING, cardsOfSet, cdText, itDate, monthLabel, normQ, packUrl, relevance, setGroups, soonSet, typeOf } from "../../data";
+import { ActiveChips, FilterSheet } from "../../FilterSheet";
+import { EMPTY, Filters, cardMatches, fl } from "../../filters";
 import { openCard } from "../../nav";
 import { useTheme } from "../../theme";
 import { CardCell, Fit, Logo, common } from "../../ui";
@@ -25,16 +27,31 @@ export default function Prodotto() {
   const name = set ? set.name : up ? up.name : "Prodotto non trovato";
   const type = typeOf(code);
 
-  const sections = useMemo(() => {
-    if (!set) return [];
-    return setGroups(set.id, cardsOfSet(set.id))
-      .filter(([, l]) => l.length)
-      .map(([title, l]) => {
+  const [q, setQ] = useState("");
+  const [f, setF] = useState<Filters>(EMPTY);
+  const [fOpen, setFOpen] = useState(false);
+  const all = set ? cardsOfSet(set.id) : [];
+  const nf = (Object.keys(f) as (keyof Filters)[]).reduce((n, k) => n + (k === "qm" || !f[k] ? 0 : fl(f, k).length), 0);
+
+  // con una ricerca le carte vanno per rilevanza; senza, divise nelle sezioni del prodotto
+  const { sections, flat, n } = useMemo(() => {
+    if (!set) return { sections: [], flat: [] as Card[], n: 0 };
+    const nq = normQ(q);
+    const l = all.filter((c) => cardMatches(c, nq, f));
+    const groups: [string, Card[]][] = nq
+      ? [["", l.map((c, j) => ({ c, j, r: f.qm === "text" ? 0 : relevance(c, nq) })).sort((a, b) => a.r - b.r || a.j - b.j).map((o) => o.c)]]
+      : setGroups(set.id, l);
+    const flat: Card[] = [];
+    const sections = groups
+      .filter(([, g]) => g.length)
+      .map(([title, g]) => {
+        flat.push(...g);
         const rows: Card[][] = [];
-        for (let i = 0; i < l.length; i += cols) rows.push(l.slice(i, i + cols));
-        return { title: title + " (" + l.length + ")", data: rows };
+        for (let i = 0; i < g.length; i += cols) rows.push(g.slice(i, i + cols));
+        return { title: title ? title + " (" + g.length + ")" : g.length + (g.length === 1 ? " carta" : " carte"), data: rows };
       });
-  }, [set, cols]);
+    return { sections, flat, n: l.length };
+  }, [set, cols, q, f]);
 
   const header = (
     <View style={{ paddingTop: 8 }}>
@@ -55,7 +72,19 @@ export default function Prodotto() {
       <ProductFacts code={code} kind={up ? up.kind : type === "AL" ? "" : TYPES[type]} fallback={set && set.date.charAt(0) !== "0" ? set.date.slice(0, 7) : null} />
       {up && up.note ? <Text style={{ color: t.ink2, marginTop: 10 }}>{up.note}</Text> : null}
       {up && <Text style={{ color: t.ink2, marginTop: 16 }}>Le carte saranno aggiunte al catalogo dopo l'uscita.</Text>}
-      {set && !sections.length && <Text style={{ color: t.ink2, marginTop: 16 }}>Questo prodotto non contiene carte: solo accessori (playmat, bustine, box).</Text>}
+      {set && !all.length && <Text style={{ color: t.ink2, marginTop: 16 }}>Questo prodotto non contiene carte: solo accessori (playmat, bustine, box).</Text>}
+      {all.length > 0 && (
+        <View style={{ marginTop: 16 }}>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <TextInput value={q} onChangeText={setQ} placeholder={"Cerca in " + code} placeholderTextColor={t.ink2} style={[s.search, { flex: 1 }]} autoCorrect={false} returnKeyType="search" />
+            <Pressable onPress={() => setFOpen(true)} style={{ paddingHorizontal: 14, justifyContent: "center", borderRadius: 10, borderWidth: 1, borderColor: nf ? t.accent : t.line, backgroundColor: nf ? t.accent : t.surface }}>
+              <Text style={{ color: nf ? t.accentInk : t.ink, fontWeight: "700" }}>Filtri{nf ? " · " + nf : ""}</Text>
+            </Pressable>
+          </View>
+          <ActiveChips f={f} setF={setF} lockExp />
+          {!sections.length && <Text style={{ color: t.ink2, marginTop: 16 }}>Nessuna carta corrisponde ai filtri.</Text>}
+        </View>
+      )}
     </View>
   );
 
@@ -70,6 +99,8 @@ export default function Prodotto() {
         sections={sections}
         keyExtractor={(row) => row[0].k}
         stickySectionHeadersEnabled={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         ListHeaderComponent={header}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 30 }}
         initialNumToRender={8}
@@ -77,11 +108,12 @@ export default function Prodotto() {
         renderItem={({ item }) => (
           <View style={{ flexDirection: "row", marginHorizontal: -4 }}>
             {item.map((c) => (
-              <CardCell key={c.k} c={c} width={(width - 24) / cols} onPress={() => openCard(c)} />
+              <CardCell key={c.k} c={c} width={(width - 24) / cols} onPress={() => openCard(c, flat)} />
             ))}
           </View>
         )}
       />
+      <FilterSheet visible={fOpen} f={f} setF={setF} onClose={() => setFOpen(false)} count={n} lockExp />
     </SafeAreaView>
   );
 }

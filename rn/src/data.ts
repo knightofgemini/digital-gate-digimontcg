@@ -261,3 +261,85 @@ export function searchCards(src: Card[], q: string) {
     .sort((a, b) => a.r - b.r || a.j - b.j)
     .map((o) => o.c);
 }
+
+// ---- scheda carta
+export const hostSet = (c: Card) => (c.suf ? c.from || c.set : c.set);
+export const isAce = (c: Card) => /(^|\n)Effetto ACE:/.test(c.extra || "");
+export const hasErrata = (c: Card) => !!ERRATA[imgKey(c)];
+export const preUrl = (c: Card) => IMG + "pre/" + encodeURIComponent(imgKey(c)) + ".webp";
+
+// versioni della carta: Regular, poi quelle del suo prodotto (★, ★★, SP), poi quelle uscite in altri prodotti (dalle più recenti)
+export function carVers(c: Card): Card[] {
+  const base = c.suf ? BYKEY[c.k.split("~")[0]] || c : c;
+  const mo: Record<string, number> = { "1": 1, "2": 2, SP: 3 };
+  const dt = (e: Card) => (SETBY[e.from || ""] && SETBY[e.from || ""].date) || "";
+  const al = (BYCODE[base.code] || [])
+    .filter((a) => a.suf && a.k.split("~")[0] === base.k)
+    .sort((x, y) => (dt(y) < dt(x) ? -1 : dt(y) > dt(x) ? 1 : x.k < y.k ? -1 : 1))
+    .map((a, i) => [a, i] as [Card, number]);
+  al.sort((x, y) => {
+    const gx = hostSet(x[0]) === base.set ? 0 : 1,
+      gy = hostSet(y[0]) === base.set ? 0 : 1;
+    if (gx !== gy) return gx - gy;
+    const mx = mo[String(x[0].mark)] || 9,
+      my = mo[String(y[0].mark)] || 9;
+    return mx !== my ? mx - my : x[1] - y[1];
+  });
+  return [base].concat(al.map((x) => x[0]));
+}
+
+// righe "extra" divise per sezione (come splitExtra() del sito)
+const EVOTAG_RE = /^(Digivolve|DNA Digivolve|Burst Digivolve|App Fusion|Fusionize)$/;
+export function splitExtra(c: Card, iconClass: (s: string) => string) {
+  const r = { alt: [] as string[], spec: [] as string[], rule: [] as string[], other: [] as string[], link: [] as string[], asm: [] as string[], xros: [] as string[], ace: [] as string[], lreq: false, ldp: "" };
+  (c.extra || "").split("\n").forEach((line) => {
+    if (!line.trim()) return;
+    line = line.replace(/\u00a0/g, " ");
+    if (/^LinkReq:/.test(line)) {
+      r.link.push(line.replace(/^LinkReq:\s*/, "").trim());
+      r.lreq = true;
+      return;
+    }
+    if (/^LinkDP:/.test(line)) {
+      r.ldp = line.replace(/^LinkDP:\s*/, "").replace(/\s*DP\s*$/i, "").trim();
+      return;
+    }
+    if (/^Link:/.test(line) && r.lreq) {
+      r.link.push(line.replace(/^Link:\s*/, "").trim());
+      return;
+    }
+    line = line.replace(/^Link:\s*/, "[Link] ");
+    const body = line.replace(/^[^:\[]+:\s*(?=\[)/, ""),
+      tg = body.match(/^\[([^\]]+)\]/);
+    if (/\[Rule\]/.test(line)) r.rule.push(line.replace(/^.*?\[Rule\]\s*/, ""));
+    else if (tg && EVOTAG_RE.test(tg[1]))
+      body.split(/\s*(?=\[(?:Digivolve|DNA Digivolve|Burst Digivolve|App Fusion|Fusionize)\])/).forEach((x) => {
+        x = x.trim();
+        if (x) (/^\[Digivolve\]/.test(x) ? r.alt : r.spec).push(x);
+      });
+    else if (/^\[Link\]/.test(body)) r.link.push(body);
+    else if (/^Assembly:/.test(line)) r.asm.push(body);
+    else if (/^Digi-Xros:/.test(line)) r.xros.push(body);
+    else if (/^Effetto ACE:/.test(line)) r.ace.push(line.replace(/^Effetto ACE:\s*/, ""));
+    else if (tg && iconClass(tg[1]) !== "trt") r.other.push(body);
+    else r.other.push(line);
+  });
+  return r;
+}
+
+// ---- lista ban/restrizioni (tools/banlist.json)
+const BANNED: Record<string, 1> = {},
+  RESTR: Record<string, 1> = {};
+export const PAIRS: Record<string, string[]> = {};
+(BAN?.banned || []).forEach((x: string) => (BANNED[x] = 1));
+(BAN?.restricted || []).forEach((x: string) => (RESTR[x] = 1));
+(BAN?.pairs || []).forEach((p: [string, string[]]) =>
+  p[1].forEach((b) => {
+    (PAIRS[p[0]] = PAIRS[p[0]] || []).push(b);
+    (PAIRS[b] = PAIRS[b] || []).push(p[0]);
+  })
+);
+export const deckable = (c: Card) => /^(Digi-Egg|Digimon|Tamer|Option|Digimon\/Option)$/.test(c.ct);
+export function maxCopies(c: Card) {
+  return BANNED[c.code] ? 0 : RESTR[c.code] ? 1 : /up to 50 copies/.test(c.extra || "") ? 50 : 4;
+}
