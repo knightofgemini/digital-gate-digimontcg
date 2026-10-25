@@ -3556,11 +3556,28 @@ body.apk.mob .hgrid.up { margin-left: calc(-1 * var(--mg)); margin-right: calc(-
   function spoilerSet(code) { for (var i = 0; i < SETS.length; i++) { var s = SETS[i]; if (s.code === code && soonSet(s) && (s.v || []).length) return s; } return null; }
   function spoilerN(s) { return cardsOfSet(s.id).filter(function (c) { return !c.suf; }).length; }
   function openSet(id) { st.back = { y: 0, q: "", type: st.type, qm: st.qm, home: true }; st.tab = "cards"; st.setId = id; st.shown = PAGE; qi.value = ""; st.q = ""; window.scrollTo(0, 0); render(); }
+  // Backup (ottobre 2026): collezione, preferite e mazzi in un testo da copiare, per portarli su un altro telefono
+  // o nella nuova app (React Native). Stesso contenuto delle chiavi dgm-qty, dg-fav e dgm-decks.
+  function backupPanel() {
+    var p = el("div", "panel"); p.style.padding = "14px"; p.style.marginBottom = "14px";
+    p.appendChild(el("div", "eyebrow", "Backup dei tuoi dati"));
+    p.appendChild(el("p", "", "Copia in un testo la collezione, le preferite (con liste e avvisi) e i mazzi, per conservarli o incollarli su un altro telefono."));
+    var slot = el("div"), acts = el("div", "dacts");
+    acts.appendChild(btn("Copia backup", "pri", function () {
+      var t = JSON.stringify({ app: "digital-gate", v: 1, data: new Date().toISOString().slice(0, 10), qty: qty, fav: FAV, decks: decks });
+      var done = function () { toast("Backup copiato negli appunti."); };
+      var fallback = function () { slot.innerHTML = ""; var ta = el("textarea", "dta"); ta.rows = 6; ta.value = t; ta.readOnly = true; slot.appendChild(ta); ta.focus(); ta.select(); toast("Seleziona tutto il testo e copialo."); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, fallback); else fallback();
+    }));
+    p.appendChild(acts); p.appendChild(slot);
+    return p;
+  }
   function renderInfo() {
     pageTitle("Informazioni", "Un catalogo per i Tamer: da dove arrivano i dati e dove resta la tua collezione.");
+    out.appendChild(backupPanel());
     if (!DESK) {
       // telefono: sezioni che si aprono, con il salvataggio dei dati in evidenza
-      [["Dove sono salvati i miei dati?", "Le copie della collezione e i mazzi restano salvati su questo dispositivo, nel browser o nell'app. Non c'è ancora una sincronizzazione tra dispositivi: cancellando i dati del browser o disinstallando l'app si perdono.", true],
+      [["Dove sono salvati i miei dati?", "Le copie della collezione e i mazzi restano salvati su questo dispositivo, nel browser o nell'app. Non c'è ancora una sincronizzazione tra dispositivi: cancellando i dati del browser o disinstallando l'app si perdono: per conservarli usa il Backup qui sopra.", true],
        ["Cos'è Digital Gate", "Un catalogo non ufficiale del Digimon Card Game in inglese: tutti i prodotti, le carte (con ristampe e alternative art), le prossime uscite, la tua collezione e i tuoi mazzi."],
        ["Da dove arrivano i dati", "Carte dal database pubblico TakaOtaku (Digimon Card App) e dal sito ufficiale Bandai; date e materiali promozionali dal sito ufficiale Digimon Card Game. Il testo delle carte resta in inglese, come stampato. Possono esserci errori: segnalali e li correggo."],
        ["Regole e lista ban", "Mazzo principale di 50 carte, 0–5 Digi-Egg, massimo 4 copie per numero di carta. Lista ban e restrizioni in vigore dal " + fmtDate(BAN.effective) + ": " + BAN.banned.length + " bandite, " + BAN.restricted.length + " limitate, " + BAN.pairs.length + " coppie vietate."],
