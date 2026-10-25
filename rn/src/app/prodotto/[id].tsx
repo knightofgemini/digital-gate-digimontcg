@@ -10,8 +10,8 @@ import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { BANNERS, Card, PRODUCTS, SETBY, TYPES, UPCOMING, cardsOfSet, itDate, monthLabel, normQ, packUrl, relevance, setGroups, soonSet, typeOf, upWhen } from "../../data";
-import { ActiveChips, FilterSheet } from "../../FilterSheet";
-import { EMPTY, Filters, cardMatches, fl } from "../../filters";
+import { ActiveChips, FilterSheet, fltCount } from "../../FilterSheet";
+import { EMPTY, Filters, cardMatches, qmHolder } from "../../filters";
 import { CountRow, GridTile, ListRow } from "../../items";
 import { usePrices } from "../../prices";
 import { S, setStats, useStore } from "../../store";
@@ -52,7 +52,7 @@ export default function Prodotto() {
   const [f, setF] = useState<Filters>({ ...EMPTY, qm: qm || "" });
   const [fOpen, setFOpen] = useState(false);
   const all = set ? cardsOfSet(set.id) : [];
-  const nf = (Object.keys(f) as (keyof Filters)[]).reduce((n, k) => n + (k === "qm" || !f[k] ? 0 : fl(f, k).length), 0) + (f.qm ? 1 : 0);
+  const nf = fltCount(f, true);
 
   // con una ricerca le carte vanno per rilevanza; senza, divise nelle sezioni del prodotto
   const { sections, flat, n } = useMemo(() => {
@@ -201,7 +201,7 @@ export default function Prodotto() {
           )
         }
       />
-      {all.length ? <BottomBar q={q} setQ={setQ} placeholder={"Cerca in " + s.code + ", es. Agumon"} cam filter={{ n: nf, onPress: () => setFOpen(true) }} chips={nf ? <ActiveChips f={f} setF={setF} lockExp /> : undefined} /> : null}
+      {all.length ? <BottomBar q={q} setQ={setQ} placeholder={f.qm ? qmHolder(f.qm) : "Cerca in " + s.code + ", es. Agumon"} cam filter={{ n: nf, onPress: () => setFOpen(true) }} chips={nf ? <ActiveChips f={f} setF={setF} lockExp /> : undefined} /> : null}
       <FilterSheet visible={fOpen} f={f} setF={setF} onClose={() => setFOpen(false)} count={n} lockExp />
     </Screen>
   );

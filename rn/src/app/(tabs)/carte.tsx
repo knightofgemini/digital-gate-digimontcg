@@ -1,29 +1,24 @@
-// Ricerca carte: ricerca (Tutto / Nome / Testo), foglio dei filtri, filtri attivi come etichette, carte a elenco o a immagini.
+// Ricerca carte (come l'app attuale sul telefono): titolo, "N carte" con la vista elenco/immagini, carte nell'ordine
+// dei dati (dalle più recenti svelate); ricerca, fotocamera e Filtri nella barra in basso, filtri attivi come etichette.
 import { useMemo, useState } from "react";
-import { CARDS, SETS, normQ, relevance } from "../../data";
-import { FilterSheet } from "../../FilterSheet";
-import { EMPTY, Filters, anyFlt, cardMatches, srcCards } from "../../filters";
-import { CardList } from "../../items";
-import { SearchHead } from "../../SearchHead";
-import { useTheme } from "../../theme";
-import { common } from "../../ui";
+import { CARDS, normQ, relevance } from "../../data";
+import { ActiveChips, FilterSheet, fltCount } from "../../FilterSheet";
+import { EMPTY, Filters, anyFlt, cardMatches, qmHolder, srcCards } from "../../filters";
+import { CardList, CountRow } from "../../items";
+import { PageTitle } from "../../ui";
 import { Screen } from "../../chrome";
-
-// dal prodotto più recente al più vecchio, dentro lo stesso prodotto in ordine di numero
-const ORDER: Record<string, number> = {};
-SETS.forEach((s, i) => (ORDER[s.id] = i));
-const ALL = CARDS.slice().sort((a, b) => (ORDER[a.set] ?? 999) - (ORDER[b.set] ?? 999) || a.code.localeCompare(b.code, "en", { numeric: true }));
+import { BOTTOM_PAD, BottomBar } from "../../BottomBar";
+import { View } from "react-native";
 
 export default function Carte() {
-  const t = useTheme();
-  const s = common(t);
   const [q, setQ] = useState("");
   const [f, setF] = useState<Filters>(EMPTY);
   const [open, setOpen] = useState(false);
+  const nf = fltCount(f);
 
   const list = useMemo(() => {
     const nq = normQ(q);
-    const l = srcCards(f, ALL).filter((c) => cardMatches(c, nq, f));
+    const l = srcCards(f, CARDS).filter((c) => cardMatches(c, nq, f));
     if (!nq || f.qm === "text") return l;
     return l
       .map((c, j) => ({ c, j, r: relevance(c, nq) }))
@@ -33,8 +28,18 @@ export default function Carte() {
 
   return (
     <Screen>
-      <SearchHead title="Ricerca carte" q={q} setQ={setQ} f={f} setF={setF} openF={() => setOpen(true)} n={list.length} />
-      <CardList list={list} empty={q || anyFlt(f) ? "Nessuna carta corrisponde ai filtri." : ""} />
+      <CardList
+        list={list}
+        padBottom={BOTTOM_PAD + (nf ? 42 : 0)}
+        header={
+          <View style={{ paddingTop: 4 }}>
+            <PageTitle>Ricerca carte</PageTitle>
+            {list.length ? <CountRow n={list.length} top={8} /> : null}
+          </View>
+        }
+        empty={q || anyFlt(f) || f.qm ? "Nessuna carta corrisponde ai filtri." : ""}
+      />
+      <BottomBar q={q} setQ={setQ} placeholder={qmHolder(f.qm)} cam filter={{ n: nf, onPress: () => setOpen(true) }} chips={nf ? <ActiveChips f={f} setF={setF} /> : undefined} />
       <FilterSheet visible={open} f={f} setF={setF} onClose={() => setOpen(false)} count={list.length} />
     </Screen>
   );

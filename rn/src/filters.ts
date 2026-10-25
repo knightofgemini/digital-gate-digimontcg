@@ -184,3 +184,6 @@ export function cardMatches(c: Card, q: string, f: Filters) {
   }
   return true;
 }
+
+// testo del campo di ricerca secondo "Cerca in" (come nell'app attuale)
+export const qmHolder = (qm: string) => (qm === "name" ? "Cerca per nome, es. Omnimon" : qm === "text" ? "Cerca nel testo un nome, keyword o parola, es. Omnimon, Barrier o draw" : "Cerca per nome, codice o testo, es. Agumon");

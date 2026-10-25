@@ -1,118 +1,73 @@
-// Foglio "Filtri" dal basso (telefono): tutte le tendine del sito in un'unica pagina, una sezione per filtro.
-// Colore, Attributo e Tipo a scelta multipla; gli altri a scelta singola. Le parole delle carte restano in inglese.
-import { useMemo, useState } from "react";
-import { Modal, Pressable, ScrollView, View } from "react-native";
-import { Text, TextInput } from "./Text";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { fold } from "./data";
-import { DDN, EMPTY, Filters, Kind, MULTI, anyFlt, ddFix, ddKinds, ddOptions, fl } from "./filters";
+// Foglio "Filtri" dal basso (come .mfsheet dell'app attuale sul telefono): titolo con "Azzera", griglia a tre colonne
+// di menù a tendina (.dd: Cerca in, Colore, Tipologia, Livello solo per i Digimon, Costo, Attributo, Tipo, Rarità,
+// Espansione) e "Mostra N carte". Ogni tendina apre il suo elenco (.ddpop) sopra o sotto il pulsante, al massimo metà
+// schermo: Colore, Attributo e Tipo a scelta multipla (l'elenco resta aperto, caselle da spuntare), gli altri a scelta
+// singola; Livello, Costo, Rarità ed Espansione a griglia; Tipo con il campo per cercare in fondo.
+// Le parole delle carte restano in inglese.
+import { useMemo, useRef, useState } from "react";
+import { Modal, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, { Path } from "react-native-svg";
+import { DISPLAY, Text, TextInput } from "./Text";
+import { COLORS, SETBY, fold } from "./data";
+import { DDN, EMPTY, Filters, Kind, MARKV, MULTI, ddFix, ddKinds, ddOptions, ddShown, fl } from "./filters";
 import { useTheme } from "./theme";
+import { Chevron, FltChip } from "./BottomBar";
 
-export function FilterSheet({ visible, f, setF, onClose, count, lockExp }: { visible: boolean; f: Filters; setF: (f: Filters) => void; onClose: () => void; count: number; lockExp?: boolean }) {
+// segno ★ / ★★ / SP nelle tendine e nelle etichette (rarIcon)
+function RarLab({ v, size, color }: { v: string; size: number; color: string }) {
   const t = useTheme();
-  const [find, setFind] = useState("");
-  const kinds = ddKinds(f).filter((k) => k !== "qm" && !(lockExp && k === "exp"));
-
-  function pick(kind: Kind, v: string) {
-    let n: Filters = { ...f };
-    if (MULTI[kind] && v) {
-      const a = fl(f, kind);
-      const i = a.indexOf(v);
-      if (i >= 0) a.splice(i, 1);
-      else a.push(v);
-      n[kind] = a.join("|");
-    } else n[kind] = f[kind] === v ? "" : v;
-    if (kind === "ct") n = ddFix(n);
-    setF(n);
-  }
-
-  return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,.55)" }} onPress={onClose} />
-      <SafeAreaView edges={["bottom"]} style={{ backgroundColor: t.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, maxHeight: "86%" }}>
-        <View style={{ alignItems: "center", paddingTop: 8 }}>
-          <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: t.line }} />
-        </View>
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 10 }}>
-          <Text style={{ color: t.ink, fontSize: 20, fontWeight: "800" }}>Filtri</Text>
-          {anyFlt(f) && (
-            <Pressable onPress={() => setF({ ...EMPTY, qm: f.qm, exp: lockExp ? f.exp : "" })} hitSlop={8}>
-              <Text style={{ color: t.accent, fontWeight: "700" }}>Azzera</Text>
-            </Pressable>
-          )}
-        </View>
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }} keyboardShouldPersistTaps="handled">
-          {kinds.map((kind) => (
-            <Section key={kind + f.ct} kind={kind} f={f} pick={pick} find={kind === "sp" ? find : ""} setFind={kind === "sp" ? setFind : undefined} />
-          ))}
-        </ScrollView>
-        <Pressable onPress={onClose} style={{ margin: 16, marginTop: 4, backgroundColor: t.accent, borderRadius: 12, paddingVertical: 14, alignItems: "center" }}>
-          <Text style={{ color: t.accentInk, fontWeight: "800", fontSize: 16 }}>Mostra {count + (count === 1 ? " carta" : " carte")}</Text>
-        </Pressable>
-      </SafeAreaView>
-    </Modal>
-  );
-}
-
-function Section({ kind, f, pick, find, setFind }: { kind: Kind; f: Filters; pick: (k: Kind, v: string) => void; find: string; setFind?: (s: string) => void }) {
-  const t = useTheme();
-  const opts = useMemo(() => ddOptions(kind, f), [kind, f.ct]);
-  const [more, setMore] = useState(false);
-  const ff = fold(find);
-  let list = opts.filter((o) => o[0] !== "");
-  if (kind === "sp") {
-    // i tipi sono centinaia: si cercano, oppure si mostrano tutti a richiesta (quelli scelti sempre)
-    const chosen = fl(f, "sp");
-    list = list.filter((o) => (ff ? fold(o[1]).indexOf(ff) >= 0 : more || chosen.indexOf(o[0]!) >= 0));
-  }
-  const isOn = (v: string) => (MULTI[kind] ? fl(f, kind).indexOf(v) >= 0 : f[kind] === v);
-  return (
-    <View style={{ marginTop: 12 }}>
-      <Text style={{ color: t.ink2, fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 }}>
-        {DDN[kind]}
-        {MULTI[kind] ? " · anche più di uno" : ""}
-      </Text>
-      {setFind && (
-        <TextInput value={find} onChangeText={setFind} placeholder="Cerca un tipo, es. Dragonkin" placeholderTextColor={t.ink2} autoCorrect={false} style={{ backgroundColor: t.surface, borderColor: t.line, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, color: t.ink, marginBottom: 8 }} />
-      )}
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-        {list.map((o, i) =>
-          o[0] === null ? (
-            <Text key={"g" + i} style={{ width: "100%", color: t.ink2, fontSize: 12, marginTop: 6 }}>
-              {o[1]}
-            </Text>
-          ) : (
-            <Pressable key={o[0]} onPress={() => pick(kind, o[0]!)} style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 16, borderWidth: 1, borderColor: isOn(o[0]) ? t.accent : t.line, backgroundColor: isOn(o[0]) ? t.accent : t.surface }}>
-              {kind === "color" && <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: t.cards[o[0]] }} />}
-              <Text style={{ color: isOn(o[0]) ? t.accentInk : t.ink, fontWeight: "600", fontSize: 13 }}>{o[1]}</Text>
-            </Pressable>
-          )
-        )}
+  if (v === "SP")
+    return (
+      <View style={{ backgroundColor: t.ink2, borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1 }}>
+        <Text style={{ color: t.bg, fontWeight: "700", fontSize: size * 0.62, lineHeight: size * 0.75 }}>SP</Text>
       </View>
-      {kind === "sp" && !ff && (
-        <Pressable onPress={() => setMore(!more)} style={{ marginTop: 8 }}>
-          <Text style={{ color: t.accent, fontWeight: "700" }}>{more ? "Mostra meno" : "Mostra tutti i tipi (" + (opts.length - 1) + ")"}</Text>
-        </Pressable>
-      )}
-    </View>
+    );
+  return <Text style={{ color, fontSize: size * (v === "★★" ? 0.8 : 0.85), lineHeight: size * 1.2 }}>{v}</Text>;
+}
+
+// pallino "tutti i colori" a spicchi
+function Pie({ size }: { size: number }) {
+  const t = useTheme();
+  const ks = Object.keys(COLORS),
+    r = size / 2;
+  return (
+    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {ks.map((k, i) => {
+        const a0 = (i / ks.length) * 2 * Math.PI - Math.PI / 2,
+          a1 = ((i + 1) / ks.length) * 2 * Math.PI - Math.PI / 2;
+        const d = `M${r} ${r}L${r + r * Math.cos(a0)} ${r + r * Math.sin(a0)}A${r} ${r} 0 0 1 ${r + r * Math.cos(a1)} ${r + r * Math.sin(a1)}Z`;
+        return <Path key={k} d={d} fill={t.cards[k]} />;
+      })}
+    </Svg>
   );
 }
 
-// etichette dei filtri attivi sotto la ricerca, ognuna con ✕ per toglierla
+// etichette dei filtri attivi (.mbchip) e "Azzera", sopra la ricerca in basso
+export function fltActive(f: Filters, lockExp?: boolean): [Kind, string, string][] {
+  const a: [Kind, string, string][] = [];
+  if (f.qm) a.push(["qm", f.qm, f.qm === "name" ? "Solo nel nome" : "Solo nel testo"]);
+  fl(f, "color").forEach((v) => a.push(["color", v, v]));
+  if (f.ct) a.push(["ct", f.ct, f.ct]);
+  if (f.lv) a.push(["lv", f.lv, f.lv]);
+  if (f.cost) a.push(["cost", f.cost, "Costo " + f.cost]);
+  fl(f, "attr").forEach((v) => a.push(["attr", v, v]));
+  fl(f, "sp").forEach((v) => a.push(["sp", v, v]));
+  if (f.rar) a.push(["rar", f.rar, f.rar]);
+  if (f.exp && SETBY[f.exp] && !lockExp) a.push(["exp", f.exp, SETBY[f.exp].code]);
+  return a;
+}
 export function ActiveChips({ f, setF, lockExp }: { f: Filters; setF: (f: Filters) => void; lockExp?: boolean }) {
   const t = useTheme();
-  const chips: [Kind, string, string][] = [];
-  (Object.keys(f) as Kind[]).forEach((k) => {
-    if (k === "qm" || !f[k] || (lockExp && k === "exp")) return;
-    if (MULTI[k]) fl(f, k).forEach((v) => chips.push([k, v, v]));
-    else chips.push([k, f[k], k === "exp" ? ddOptions("exp", f).find((o) => o[0] === f.exp)?.[1] || f.exp : (k === "lv" || k === "cost" ? DDN[k] + " " : "") + f[k]]);
-  });
-  if (!chips.length) return null;
+  const act = fltActive(f, lockExp);
+  if (!act.length) return null;
   return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
-      {chips.map(([k, v, label]) => (
-        <Pressable
+    <>
+      {act.map(([k, v, label]) => (
+        <FltChip
           key={k + v}
+          label={label}
+          dot={k === "color" ? t.cards[v] : undefined}
           onPress={() => {
             const n = { ...f };
             n[k] = MULTI[k]
@@ -122,13 +77,190 @@ export function ActiveChips({ f, setF, lockExp }: { f: Filters; setF: (f: Filter
               : "";
             setF(k === "ct" ? ddFix(n) : n);
           }}
-          style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14, backgroundColor: t.surface2 }}
         >
-          {k === "color" && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: t.cards[v] }} />}
-          <Text style={{ color: t.ink, fontSize: 13, fontWeight: "600" }}>{label}</Text>
-          <Text style={{ color: t.ink2, fontSize: 13 }}>✕</Text>
-        </Pressable>
+          {k === "rar" && MARKV[v] != null ? <RarLab v={v} size={13.1} color={t.ink} /> : undefined}
+        </FltChip>
       ))}
+      <Pressable onPress={() => setF({ ...EMPTY, exp: lockExp ? f.exp : "" })} hitSlop={6} style={{ minHeight: 34, justifyContent: "center", paddingHorizontal: 6 }}>
+        <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "700", fontSize: 13.1 }}>Azzera</Text>
+      </Pressable>
+    </>
+  );
+}
+export const fltCount = (f: Filters, lockExp?: boolean) => fltActive(f, lockExp).length;
+
+type Rect = { x: number; y: number; w: number; h: number };
+
+export function FilterSheet({ visible, f, setF, onClose, count, lockExp }: { visible: boolean; f: Filters; setF: (f: Filters) => void; onClose: () => void; count: number; lockExp?: boolean }) {
+  const t = useTheme();
+  const ins = useSafeAreaInsets();
+  const { width: vw, height: vh } = useWindowDimensions();
+  const [dd, setDd] = useState<{ kind: Kind; r: Rect } | null>(null);
+  const refs = useRef<Record<string, any>>({});
+  const kinds = ddKinds(f).filter((k) => !(lockExp && k === "exp"));
+
+  function setK(kind: Kind, v: string) {
+    let n: Filters = { ...f, [kind]: v };
+    if (kind === "ct") n = ddFix(n);
+    setF(n);
+  }
+  function toggle(kind: Kind, v: string) {
+    if (!v) return setK(kind, "");
+    const a = fl(f, kind);
+    const i = a.indexOf(v);
+    if (i >= 0) a.splice(i, 1);
+    else a.push(v);
+    setK(kind, a.join("|"));
+  }
+  function open(kind: Kind) {
+    if (dd && dd.kind === kind) return setDd(null);
+    const node = refs.current[kind];
+    if (!node) return;
+    node.measureInWindow((x: number, y: number, w: number, h: number) => setDd({ kind, r: { x, y, w, h } }));
+  }
+  const close = () => (dd ? setDd(null) : onClose());
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent statusBarTranslucent onRequestClose={close}>
+      <Pressable style={{ flex: 1, backgroundColor: t.scrim }} onPress={onClose} />
+      <View style={{ maxHeight: "82%", backgroundColor: t.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: t.line, boxShadow: "0 -14px 36px rgba(0,0,0,.35)", paddingHorizontal: 14, paddingBottom: 14 + ins.bottom }}>
+        <Pressable onPress={onClose} accessibilityLabel="Chiudi i filtri" style={{ height: 26, alignItems: "center", justifyContent: "center" }}>
+          <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: t.line }} />
+        </Pressable>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 19.2 }}>Filtri</Text>
+          <Pressable onPress={() => setF({ ...EMPTY, exp: lockExp ? f.exp : "" })} hitSlop={6} style={{ minHeight: 40, justifyContent: "center" }}>
+            <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "700", fontSize: 15.2 }}>Azzera</Text>
+          </Pressable>
+        </View>
+        <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ paddingVertical: 6, flexDirection: "row", flexWrap: "wrap", gap: 6 }} keyboardShouldPersistTaps="handled" onScrollBeginDrag={() => setDd(null)}>
+          {kinds.map((kind) => {
+            const on = !!f[kind];
+            const exp = dd && dd.kind === kind;
+            const cols = fl(f, "color");
+            return (
+              <Pressable
+                key={kind}
+                ref={(n) => {
+                  refs.current[kind] = n;
+                }}
+                onPress={() => open(kind)}
+                accessibilityLabel={DDN[kind] + ": " + ddShown(kind, f)}
+                style={{ width: (vw - 28 - 12) / 3 - 0.5, height: 46, flexDirection: "row", alignItems: "center", gap: 4, paddingLeft: 10, paddingRight: 6, borderRadius: 11, borderWidth: on ? 1.5 : 1, borderColor: on || exp ? t.cyan : t.line, backgroundColor: on ? t.cyanSoft : t.surface }}
+              >
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={{ color: on ? t.cyan : t.ink2, opacity: on ? 0.8 : 1, fontFamily: DISPLAY, fontWeight: "600", fontSize: 9.6, lineHeight: 11, letterSpacing: 1.15, textTransform: "uppercase" }} numberOfLines={1}>
+                    {DDN[kind]}
+                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                    {kind === "color" && f.color ? cols.map((c) => <View key={c} style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: t.cards[c] }} />) : null}
+                    {kind === "rar" && MARKV[f.rar] != null ? (
+                      <RarLab v={f.rar} size={13.8} color={t.cyan} />
+                    ) : (
+                      <Text style={{ flexShrink: 1, color: on ? t.cyan : t.ink, fontWeight: "600", fontSize: 13.8, lineHeight: 16 }} numberOfLines={1}>
+                        {ddShown(kind, f)}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+                <View style={{ width: 18, alignItems: "center" }}>
+                  <Chevron color={t.ink2} up={!!exp} size={16} />
+                </View>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+        <Pressable onPress={onClose} style={{ marginTop: 14, height: 52, borderRadius: 14, backgroundColor: t.accent, alignItems: "center", justifyContent: "center" }}>
+          <Text style={{ color: t.accentInk, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16 }}>Mostra {count + (count === 1 ? " carta" : " carte")}</Text>
+        </Pressable>
+      </View>
+      {dd ? (
+        <>
+          <Pressable style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} onPress={() => setDd(null)} />
+          <DDPop kind={dd.kind} r={dd.r} f={f} vw={vw} vh={vh} pick={(v) => (MULTI[dd.kind] ? toggle(dd.kind, v) : (setK(dd.kind, v), setDd(null)))} />
+        </>
+      ) : null}
+    </Modal>
+  );
+}
+
+// elenco di una tendina (.ddpop.boxed)
+function DDPop({ kind, r, f, vw, vh, pick }: { kind: Kind; r: Rect; f: Filters; vw: number; vh: number; pick: (v: string) => void }) {
+  const t = useTheme();
+  const [find, setFind] = useState("");
+  const opts = useMemo(() => ddOptions(kind, f), [kind, f.ct]);
+  const multi = !!MULTI[kind];
+  const grid = kind === "lv" || kind === "cost" || kind === "rar" || kind === "exp";
+  const w = Math.min(vw - 16, Math.max(r.w, kind === "qm" || kind === "sp" || kind === "exp" ? 280 : 210));
+  const left = Math.max(8, Math.min(r.x, vw - w - 8));
+  // altezza stimata dell'elenco: sopra il pulsante se sotto non c'è spazio (e sempre per "Cerca in")
+  const nOpt = opts.filter((o) => o[0] !== null).length;
+  const ph = grid ? Math.ceil(nOpt / 4) * 50 + opts.filter((o) => o[0] === null).length * 26 + 70 : nOpt * 46 + 16 + (kind === "sp" ? 48 : 0);
+  const cap = Math.round(vh / 2),
+    below = vh - (r.y + r.h) - 12,
+    above = r.y - 12;
+  const up = (kind === "qm" && above >= Math.min(ph, 140)) || (ph > below && above > below);
+  const pos = up ? { bottom: vh - (r.y - 6), maxHeight: Math.max(120, Math.min(cap, above)) } : { top: r.y + r.h + 6, maxHeight: Math.min(cap, Math.max(160, below)) };
+  const isOn = (v: string) => (multi ? (v === "" ? !f[kind] : fl(f, kind).indexOf(v) >= 0) : (f[kind] || "") === v);
+  const ff = fold(find);
+  const first = kind === "rar" ? opts.find((o) => o[0] && MARKV[o[0]] != null)?.[0] : null;
+  const cellW = (w - 16 - 18) / 4;
+  const items: React.ReactNode[] = [];
+  opts.forEach((o, i) => {
+    if (o[0] === null) {
+      items.push(
+        <Text key={"g" + i} style={{ width: "100%", paddingTop: items.length ? 8 : 2, paddingHorizontal: 6, paddingBottom: 2, color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 9.9, letterSpacing: 1.2, textTransform: "uppercase" }}>
+          {o[1]}
+        </Text>
+      );
+      return;
+    }
+    const v = o[0];
+    if (ff && (i === 0 || fold(o[1]).indexOf(ff) < 0)) return;
+    const on = isOn(v);
+    const all = i === 0;
+    if (first && v === first) items.push(<View key="br" style={{ width: "100%" }} />);
+    items.push(
+      <Pressable
+        key={v || "all"}
+        onPress={() => pick(v)}
+        accessibilityRole="button"
+        accessibilityState={{ selected: on }}
+        style={[
+          { minHeight: 44, flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 10, backgroundColor: on ? t.cyanSoft : "transparent" },
+          grid && !all ? { width: cellW, justifyContent: "center", paddingHorizontal: 4, borderWidth: 1, borderColor: on ? t.cyan : t.line } : { paddingHorizontal: 12, width: grid ? "100%" : undefined },
+        ]}
+      >
+        {kind === "color" ? all ? <Pie size={15} /> : <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: t.cards[v] }} /> : null}
+        {kind === "rar" && MARKV[v] != null ? (
+          <RarLab v={v} size={14.1} color={on ? t.cyan : t.ink} />
+        ) : (
+          <Text style={{ color: on ? t.cyan : t.ink, fontWeight: on ? "700" : "500", fontSize: grid ? 14.1 : 15.2, lineHeight: 20, flexShrink: 1 }} numberOfLines={1}>
+            {o[1]}
+          </Text>
+        )}
+        {multi && !all ? (
+          <View style={{ marginLeft: "auto", width: 18, height: 18, borderRadius: 5, borderWidth: 1.5, borderColor: on ? t.cyan : t.line, backgroundColor: on ? t.cyan : "transparent", alignItems: "center", justifyContent: "center" }}>
+            {on ? (
+              <Svg width={10} height={8} viewBox="0 0 10 8">
+                <Path d="M1 4l3 3 5-6" stroke="#fff" strokeWidth={2} fill="none" />
+              </Svg>
+            ) : null}
+          </View>
+        ) : (on || multi) && !grid ? (
+          <Text style={{ marginLeft: "auto", color: t.cyan, fontWeight: "700", opacity: multi && !on ? 0 : 1 }}>✓</Text>
+        ) : null}
+      </Pressable>
+    );
+  });
+  return (
+    <View style={{ position: "absolute", left, width: w, ...pos, borderRadius: 14, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, boxShadow: "0 14px 40px rgba(0,0,0,.25)", overflow: "hidden" }}>
+      <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={[{ paddingVertical: 8, paddingHorizontal: 6, gap: grid ? 6 : 2 }, grid ? { flexDirection: "row", flexWrap: "wrap" } : null]} keyboardShouldPersistTaps="handled">
+        {items}
+      </ScrollView>
+      {kind === "sp" ? (
+        <TextInput value={find} onChangeText={setFind} placeholder="Cerca un tipo, es. Dragonkin" placeholderTextColor={t.ink2} autoCorrect={false} returnKeyType="done" style={{ height: 48, paddingHorizontal: 12, borderTopWidth: 1, borderColor: t.line, backgroundColor: t.surface2, color: t.ink, fontSize: 16 }} />
+      ) : null}
     </View>
   );
 }
