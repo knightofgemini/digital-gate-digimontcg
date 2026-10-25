@@ -13,7 +13,11 @@ export function openUpcoming(code: string) {
 export function openSet(id: string) {
   router.push({ pathname: "/prodotto/[id]", params: { id } });
 }
-export function openCard(c: Card, list?: Card[]) {
+// deck: scheda aperta dall'editor di un mazzo (mostra anche le copie nel mazzo)
+export function openCard(c: Card, list?: Card[], deck?: string) {
   NAVLIST = list && list.indexOf(c) >= 0 ? list : [c];
-  router.push({ pathname: "/carta/[k]", params: { k: c.k } });
+  router.push({ pathname: "/carta/[k]", params: deck ? { k: c.k, deck } : { k: c.k } });
+}
+export function openDeck(id: string) {
+  router.push({ pathname: "/mazzo/[id]", params: { id } });
 }

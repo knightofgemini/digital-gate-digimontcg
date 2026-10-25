@@ -13,12 +13,16 @@ import { ICO, Rich, iconClass, kwJoin, kwNoRem } from "../../rich";
 import { FavSheet } from "../../FavSheet";
 import { FavButton, ListsIcon, QtyControl } from "../../items";
 import { owned, useStore } from "../../store";
+import { deckById } from "../../decks";
+import { DeckQty, Lock } from "../../DeckQty";
 import { useTheme } from "../../theme";
 
 export default function Carta() {
-  const { k } = useLocalSearchParams<{ k: string }>();
+  const { k, deck } = useLocalSearchParams<{ k: string; deck?: string }>();
   const c0 = BYKEY[k];
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  // altezza reale dello spazio della scheda: ogni pagina del carosello la riempie (barre delle copie fisse in basso)
+  const [h, setH] = useState(height);
   usePrices();
   // elenco per scorrere: quello da cui si è aperta la scheda (anche se si apre una sua versione)
   const list = useMemo(() => {
@@ -35,6 +39,8 @@ export default function Carta() {
   return (
     <FlatList
       data={list}
+      onLayout={(e) => setH(e.nativeEvent.layout.height)}
+      style={{ flex: 1 }}
       horizontal
       pagingEnabled
       initialScrollIndex={start}
@@ -44,17 +50,19 @@ export default function Carta() {
       windowSize={3}
       initialNumToRender={1}
       maxToRenderPerBatch={2}
-      renderItem={({ item, index }) => <CardPage first={index === start ? c0 : item} width={width} />}
+      renderItem={({ item, index }) => <CardPage first={index === start ? c0 : item} width={width} height={h} deck={deck} />}
     />
   );
 }
 
-function CardPage({ first, width }: { first: Card; width: number }) {
+function CardPage({ first, width, height, deck }: { first: Card; width: number; height: number; deck?: string }) {
   const t = useTheme();
   const [c, setC] = useState(first);
   const [cmOpen, setCmOpen] = useState(false);
   const [ctOpen, setCtOpen] = useState(false);
   const [favFor, setFavFor] = useState<Card | null>(null);
+  const [unlocked, setUnlocked] = useState(false);
+  const dk = deck ? deckById(deck) : null;
   useStore();
   const vers = carVers(c);
   const hs = SETBY[hostSet(c)];
@@ -108,7 +116,7 @@ function CardPage({ first, width }: { first: Card; width: number }) {
   const copies = vers.reduce((n, a) => n + owned(a), 0);
 
   return (
-    <SafeAreaView style={{ width, flex: 1, backgroundColor: t.bg }} edges={["top"]}>
+    <SafeAreaView style={{ width, height, backgroundColor: t.bg }} edges={["top"]}>
       {/* intestazione: chiusura, nome del prodotto con "Carta N di M" */}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingVertical: 8 }}>
         <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/carte"))} hitSlop={12} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: t.surface2, alignItems: "center", justifyContent: "center" }}>
@@ -128,7 +136,7 @@ function CardPage({ first, width }: { first: Card; width: number }) {
           </Pressable>
         </View>
       </View>
-      <ScrollView contentContainerStyle={{ paddingBottom: 40, width: maxW, alignSelf: "center" }} nestedScrollEnabled>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40, width: maxW, alignSelf: "center" }} nestedScrollEnabled>
         {/* carta grande sul colore della carta */}
         <View style={{ marginHorizontal: 16, borderRadius: 18, paddingVertical: 18, alignItems: "center", backgroundColor: colBg + "33" }}>
           <Image source={fullUrl(c)} placeholder={thumbUrl(c)} placeholderContentFit="contain" style={{ width: "72%", aspectRatio: 0.716, borderRadius: 12 }} contentFit="contain" cachePolicy="disk" transition={150} recyclingKey={c.k} />
@@ -283,13 +291,31 @@ function CardPage({ first, width }: { first: Card; width: number }) {
           )}
         </View>
       </ScrollView>
-      {/* barra fissa in basso: copie possedute della versione aperta */}
-      <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderColor: t.line, backgroundColor: t.surface }}>
+      {/* barra fissa in basso: copie nel mazzo (se aperta dall'editor) e copie possedute della versione aperta */}
+      {dk && deckable(c) && (
+        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderColor: t.line, backgroundColor: t.surface }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: t.ink, fontWeight: "800" }}>Copie nel mazzo</Text>
+            <Text style={{ color: t.ink2, fontSize: 12 }} numberOfLines={1}>
+              {dk.name}
+            </Text>
+          </View>
+          <DeckQty d={dk} c={c} big />
+        </View>
+      )}
+      <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: dk ? 0 : 1, borderColor: t.line, backgroundColor: t.surface }}>
         <View style={{ flex: 1 }}>
           <Text style={{ color: t.ink, fontWeight: "800" }}>Copie possedute</Text>
           <Text style={{ color: t.ink2, fontSize: 12 }}>{verName(c)}</Text>
         </View>
-        <QtyControl c={c} big />
+        {dk && !unlocked ? (
+          <Pressable onPress={() => setUnlocked(true)} style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16, backgroundColor: t.surface2 }} accessibilityLabel="Sblocca la modifica della collezione">
+            <Lock color={t.ink2} />
+            <Text style={{ color: t.ink, fontWeight: "800" }}>{owned(c)}</Text>
+          </Pressable>
+        ) : (
+          <QtyControl c={c} big />
+        )}
       </View>
       <FavSheet c={favFor} onClose={() => setFavFor(null)} />
     </SafeAreaView>

@@ -2,6 +2,8 @@
 import { Tabs } from "expo-router";
 import { useTheme } from "../../theme";
 import { Icon } from "../../ui";
+import { decksTodo } from "../../decks";
+import { useStore } from "../../store";
 
 const TABS: [string, string, string][] = [
   ["index", "Home", "home"],
@@ -13,6 +15,8 @@ const TABS: [string, string, string][] = [
 
 export default function TabsLayout() {
   const t = useTheme();
+  useStore();
+  const todo = decksTodo();
   return (
     <Tabs
       screenOptions={{
@@ -26,7 +30,7 @@ export default function TabsLayout() {
       }}
     >
       {TABS.map(([name, title, icon]) => (
-        <Tabs.Screen key={name} name={name} options={{ title, tabBarIcon: ({ color }) => <Icon name={icon} color={String(color)} /> }} />
+        <Tabs.Screen key={name} name={name} options={{ title, tabBarIcon: ({ color }) => <Icon name={icon} color={String(color)} />, tabBarBadge: name === "mazzi" && todo ? todo : undefined, tabBarBadgeStyle: { backgroundColor: t.accent, color: t.accentInk } }} />
       ))}
     </Tabs>
   );
