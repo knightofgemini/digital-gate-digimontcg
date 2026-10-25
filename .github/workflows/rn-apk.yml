@@ -1,0 +1,70 @@
+name: Nuova app (React Native) - APK di prova
+# APK di prova della nuova app (cartella rn/, ramo react-native). Stesso nome del pacchetto e stessa chiave dell'APK attuale,
+# così si installa sopra; versionCode = build attuale + 1. Pubblicato solo nella release "rn-prova" (pre-release):
+# la release "latest", il sito e l'APK attuale non vengono toccati.
+on:
+  push:
+    branches: [react-native]
+    paths: ["rn/**", ".github/workflows/rn-apk.yml"]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: rn-apk-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env: { GH_TOKEN: "${{ github.token }}" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: rn/package-lock.json }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      # prezzi più recenti (ramo "prezzi"); se manca resta src/prices.json
+      - run: git fetch -q --depth=1 origin prezzi && git show FETCH_HEAD:prices.json > /tmp/p.json && mv /tmp/p.json src/prices.json || echo "ramo prezzi non disponibile"
+      - run: npm ci
+        working-directory: rn
+      - run: node scripts/sync-data.js
+        working-directory: rn
+      - name: Numero di versione (sopra l'APK pubblicato) e build 0 (niente avviso di aggiornamento nella prova)
+        working-directory: rn
+        run: |
+          LATEST=$(gh release view latest --json name -q .name | grep -oE '[0-9]+$' || echo 0)
+          VC=$((LATEST + 1))
+          echo "VC=$VC" >> $GITHUB_ENV
+          node -e '
+            const fs = require("fs"), j = JSON.parse(fs.readFileSync("app.json", "utf8"));
+            j.expo.android.versionCode = +process.env.VC; j.expo.version = "2.0." + process.env.VC;
+            j.expo.extra = Object.assign({}, j.expo.extra, { build: 0 });
+            fs.writeFileSync("app.json", JSON.stringify(j, null, 2));
+            console.log(j.expo.android, j.expo.version);'
+      - run: npx expo prebuild --platform android --clean --no-install
+        working-directory: rn
+      - name: Icona Digital Gate (la stessa dell'APK attuale) e firma fissa
+        working-directory: rn
+        run: |
+          cp -r ../android-res/. android/app/src/main/res/
+          cp ../android-keys/debug.keystore android/app/debug.keystore
+          grep -n -A6 "signingConfigs" android/app/build.gradle
+          echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g" >> android/gradle.properties
+      - run: chmod +x gradlew && ./gradlew assembleRelease --no-daemon
+        working-directory: rn/android
+      - run: cp rn/android/app/build/outputs/apk/release/app-release.apk DigitalGate-prova.apk
+      - name: Controllo firma (deve essere la stessa chiave dell'APK attuale)
+        run: |
+          BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+          GOT=$($BT/apksigner verify --print-certs DigitalGate-prova.apk | grep -m1 "certificate SHA-256 digest" | awk '{print $NF}')
+          WANT=$(keytool -list -v -keystore android-keys/debug.keystore -storepass android -alias androiddebugkey | grep -m1 "SHA256:" | awk '{print $2}' | tr -d ':' | tr 'A-F' 'a-f')
+          echo "firma APK: $GOT"; echo "chiave:     $WANT"
+          test -n "$GOT" && test "$GOT" = "$WANT"
+          $BT/aapt dump badging DigitalGate-prova.apk | head -3
+      - name: Release "rn-prova" (pre-release, non tocca "latest")
+        run: |
+          gh release delete rn-prova --yes --cleanup-tag || true
+          sleep 3
+          gh release create rn-prova DigitalGate-prova.apk --prerelease --latest=false --title "Nuova app (prova) · versione ${{ env.VC }}" --notes "APK di prova della nuova app React Native. Prima di installarlo copia il backup dall'app attuale (Informazioni → Backup dei tuoi dati)." --target "${{ github.sha }}"
+          sleep 3
+          gh release edit rn-prova --draft=false --prerelease || true
+          gh release view rn-prova --json isDraft,isPrerelease,name
