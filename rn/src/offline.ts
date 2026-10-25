@@ -14,6 +14,7 @@ import * as Network from "expo-network";
 import { BANNERS, CARDS, Card, NET, PRODUCTS, SETBY, SETS, cardsOfSet, errataKeys, hasErrata } from "./data";
 import { HAVE, dropAll, dropImgs, dropKind, fileOf, loadImages, loadVersions, saveImg, vurl } from "./imgstore";
 import { toast } from "./toast";
+import { BGD } from "./bgdl";
 
 export const AVG = { f: 72200, t: 6350, pre: 79400, b: 243800, pk: 28000, lg: 21900 }; // pesi medi misurati sul sito (byte)
 export type Item = { u: string; w: number; n: string };
@@ -127,9 +128,19 @@ export function useOffline() {
 export const PAGE = { open: false }; // pagina "Immagini offline" aperta (niente avviso a fine aggiornamento)
 
 // scaricamento in corso (uno alla volta)
-export type Run = { scope: string; total: number; done: number; fail: number; row: number; stop: boolean; end: boolean; quiet: boolean; err?: string; newN?: number; wait?: boolean };
+export type Run = { scope: string; total: number; done: number; fail: number; row: number; stop: boolean; end: boolean; quiet: boolean; err?: string; newN?: number; wait?: boolean; bg?: boolean };
 export let RUN: Run | null = null;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// notifica dell'avanzamento del servizio nativo (APK): al massimo ogni 1,5 secondi
+let notT = 0;
+function notify(R: Run, force?: boolean, msg?: string) {
+  if (!BGD || !R.bg) return;
+  const now = Date.now();
+  if (!force && now - notT < 1500) return;
+  notT = now;
+  const pc = R.total ? Math.floor((R.done / R.total) * 100) : 0;
+  BGD.update("Scaricamento immagini · " + label(R.scope), (msg ? msg + " · " : "") + R.done.toLocaleString("it-IT") + " di " + R.total.toLocaleString("it-IT") + " · " + pc + "%", R.done, R.total);
+}
 
 export async function start(scope: string, quiet = false) {
   if (RUN && !RUN.end) return;
@@ -145,6 +156,14 @@ export async function start(scope: string, quiet = false) {
   R.done = R.total - todo.length;
   emit();
   if (todo.length) {
+    // pochi file: il servizio in sottofondo non serve
+    if (BGD && todo.length >= 30)
+      BGD.start("Scaricamento immagini · " + label(scope), "Preparazione…", quiet).then((ok) => {
+        if (!ok) return;
+        if (R.end) return BGD && BGD.stop(); // già finito mentre partiva
+        R.bg = true;
+        notify(R, true);
+      });
     OFF.run = scope;
     save();
   }
@@ -178,6 +197,7 @@ export async function start(scope: string, quiet = false) {
             waitMs = Math.min(30e3, waitMs ? waitMs * 2 : 5e3);
             R.wait = true;
             tick();
+            notify(R, true, "In attesa della connessione…");
             await sleep(waitMs);
           }
           if (R.stop) break;
@@ -193,11 +213,16 @@ export async function start(scope: string, quiet = false) {
         break;
       }
       R.done++;
+      notify(R);
       tick();
     }
   };
   await Promise.all([0, 1, 2, 3, 4, 5].map(one));
   R.end = true;
+  if (R.bg) {
+    R.bg = false;
+    BGD && BGD.stop();
+  }
   OFF.run = ""; // finito, messo in pausa o fermato: niente ripresa automatica al prossimo avvio
   if ((scope === "t" || scope === "hd") && OFF.m === scope) {
     if (!R.stop) {

@@ -4,7 +4,7 @@
 // pulsante per scaricare) ed "Elimina tutte le immagini salvate". Le eliminazioni chiedono conferma; con i dati mobili
 // la scelta generale chiede conferma prima di scaricare.
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { AppState, Pressable, ScrollView, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { DISPLAY, Text } from "../Text";
 import { SETBY, SETS, numOf } from "../data";
@@ -15,6 +15,7 @@ import { PageTitle } from "../ui";
 import { Screen, useBarState } from "../chrome";
 import { Btn, Progress } from "../visual";
 import { ConfirmBox } from "../deckui";
+import { BGD } from "../bgdl";
 
 const ICO_TRASH = "M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6";
 const ICO_DL = "M12 4v11M7 10l5 5 5-5M5 20h14";
@@ -44,10 +45,14 @@ export default function Offline() {
   const bar = useBarState();
   useOffline();
   const [ask, setAsk] = useState<Ask | null>(null);
+  // app esclusa dal risparmio energetico (si ricontrolla tornando dalle impostazioni di Android)
+  const [bat, setBat] = useState(() => (BGD ? BGD.battery() : true));
   useEffect(() => {
     PAGE.open = true;
+    const sub = AppState.addEventListener("change", (s) => s === "active" && BGD && setBat(BGD.battery()));
     return () => {
       PAGE.open = false;
+      sub.remove();
     };
   }, []);
   const R = RUN,
@@ -69,7 +74,9 @@ export default function Offline() {
     <Screen bs={bar}>
       <ScrollView onScroll={bar.onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: 28 + 24 }}>
         <PageTitle>Immagini offline</PageTitle>
-        <Text style={{ color: t.ink2, fontSize: 14.7, lineHeight: 23, marginTop: -4, marginBottom: 14 }}>Scarica le immagini nel dispositivo: compaiono subito e funzionano anche senza internet. Restano salvate anche quando aggiorni l'app. Lo scaricamento continua finché l'app resta aperta, anche se cambi schermata.</Text>
+        <Text style={{ color: t.ink2, fontSize: 14.7, lineHeight: 23, marginTop: -4, marginBottom: 14 }}>
+          {"Scarica le immagini nel dispositivo: compaiono subito e funzionano anche senza internet. Restano salvate anche quando aggiorni l'app." + (BGD ? " Lo scaricamento continua anche con l'app in sottofondo." : " Lo scaricamento continua finché l'app resta aperta, anche se cambi schermata.")}
+        </Text>
 
         {/* stato */}
         <View style={{ borderWidth: 1, borderColor: t.line, borderRadius: 12, backgroundColor: t.surface, paddingVertical: 14, paddingHorizontal: 16, marginBottom: 10 }}>
@@ -85,6 +92,7 @@ export default function Offline() {
                 <Text style={{ color: t.ink2, fontSize: 13.6, fontVariant: ["tabular-nums"] }}>{num(R.done) + " di " + num(R.total) + " · " + pc + "%"}</Text>
               </View>
               <Progress h={R.done} n={Math.max(1, R.total)} style={{ marginTop: 8 }} />
+              {running && R.bg ? <Text style={{ color: t.ink2, fontSize: 13.6, lineHeight: 20, marginTop: 10 }}>Puoi uscire dall'app: l'avanzamento resta nella notifica.</Text> : null}
               {R.err ? (
                 <Text style={{ color: t.accent, fontSize: 13.6, lineHeight: 20, marginTop: 10 }}>{R.err}</Text>
               ) : R.wait && running ? (
@@ -99,6 +107,17 @@ export default function Offline() {
           ) : null}
           {OFF.m && OFF.paused && !running ? <Btn label="Riprendi" pri onPress={() => start(OFF.m)} style={{ alignSelf: "flex-start", marginTop: 12 }} /> : null}
         </View>
+
+        {/* APK: se l'app non è esclusa dal risparmio energetico, Android può fermare lo scaricamento a schermo spento */}
+        {BGD && !bat ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: t.dark ? "#885247" : "#d99e8b", borderRadius: 12, backgroundColor: t.surface, paddingVertical: 14, paddingHorizontal: 16, marginBottom: 10 }}>
+            <View style={{ flex: 1, gap: 3 }}>
+              <Text style={{ color: t.ink, fontWeight: "600", fontSize: 15.2 }}>Scaricamento a schermo spento</Text>
+              <Text style={{ color: t.ink2, fontSize: 13.1, lineHeight: 19 }}>Il risparmio energetico di Android può interromperlo. Consenti all'app di funzionare in sottofondo senza limiti.</Text>
+            </View>
+            <Btn label="Consenti" onPress={() => BGD && BGD.askBattery()} />
+          </View>
+        ) : null}
 
         <H>Cosa scaricare</H>
         {(
