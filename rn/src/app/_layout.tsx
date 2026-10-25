@@ -9,6 +9,7 @@ import { useFonts } from "expo-font";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { loadStore } from "../store";
 import { ToastHost } from "../toast";
+import { FavSheetHost } from "../FavSheet";
 import { UpdateCheck } from "../Update";
 import { loadThemePref, useTheme } from "../theme";
 import { FONTS } from "../Text";
@@ -33,6 +34,7 @@ function Root() {
       <TabBar />
       <MoreSheet />
       <ToastHost />
+      <FavSheetHost />
       <UpdateCheck />
     </>
   );

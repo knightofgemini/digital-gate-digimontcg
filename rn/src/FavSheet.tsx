@@ -8,6 +8,14 @@ import { Heart, ListsIcon } from "./items";
 import { bestVal, cmVal, ctVal, eurN } from "./prices";
 import { S, favCount, favSet, isFav, listNew, listToggle, setAlert, useStore } from "./store";
 import { useTheme } from "./theme";
+import { favSheetRef } from "./toast";
+
+// foglio aperto da "Liste e avviso" dell'avviso in basso, in qualunque pagina
+export function FavSheetHost() {
+  const [c, setC] = useState<Card | null>(null);
+  favSheetRef.open = setC;
+  return <FavSheet c={c} onClose={() => setC(null)} />;
+}
 
 export function FavSheet({ c, onClose }: { c: Card | null; onClose: () => void }) {
   const t = useTheme();
