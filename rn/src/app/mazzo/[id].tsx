@@ -3,7 +3,12 @@
 // barra "Cerca e aggiungi carte…" che apre il foglio di ricerca, e la vista Statistiche.
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Linking, Modal, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
-import { Text, TextInput } from "../../Text";
+import { DISPLAY, Text, TextInput } from "../../Text";
+import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
+import { Chevron, FilterIcon, SearchIcon, SquareBtn } from "../../BottomBar";
+import { Btn, ICO_PLUS, Progress } from "../../visual";
+import { FitText } from "../../fit";
+import { ConfirmBox, ImportPanel } from "../../deckui";
 import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -13,13 +18,12 @@ import { BanBadge, DeckQty } from "../../DeckQty";
 import { banEffective, banNote, banSource, deckColors, deckCover, deckCurve, deckGroups, deckById, deckStats, deckText, deleteDeck, dkGroups, isEgg } from "../../decks";
 import { ActiveChips, FilterSheet } from "../../FilterSheet";
 import { EMPTY, Filters, anyFlt, cardMatches, fl, srcCards } from "../../filters";
-import { ImportDeck } from "../../ImportDeck";
 import { openCard } from "../../nav";
 import { owned, saveDecks, useStore } from "../../store";
 import { useTheme } from "../../theme";
 import { toast } from "../../toast";
 import { ColorBand, common } from "../../ui";
-import { Screen } from "../../chrome";
+import { Screen, useKbd } from "../../chrome";
 import { rarLine } from "../../items";
 
 const ORDER: Record<string, number> = {};
@@ -40,6 +44,9 @@ export default function Mazzo() {
   const [cfm, setCfm] = useState("");
   const [add, setAdd] = useState<Filters | null>(null);
   const [name, setName] = useState(d ? d.name : "");
+  const [nameFocus, setNameFocus] = useState(false);
+  const [addF, setAddF] = useState(false);
+  const kbd = useKbd();
   // la scheda di una carta aperta dal foglio di ricerca va sopra: il foglio si nasconde e ricompare tornando qui
   const [away, setAway] = useState(false);
   useFocusEffect(useCallback(() => setAway(false), []));
@@ -73,244 +80,282 @@ export default function Mazzo() {
 
   return (
     <Screen>
-      {/* intestazione: indietro, nome del mazzo, azioni */}
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
-        <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/mazzi"))} hitSlop={10}>
-          <Text style={{ color: t.accent, fontSize: 26, fontWeight: "600", marginTop: -4 }}>‹</Text>
-        </Pressable>
-        <TextInput
-          value={name}
-          onChangeText={setName}
-          maxLength={60}
-          onEndEditing={() => {
-            d.name = name.trim() || d.name;
-            setName(d.name);
-            d.upd = Date.now();
-            saveDecks();
-          }}
-          style={{ flex: 1, color: t.ink, fontSize: 20, fontWeight: "800", paddingVertical: 4 }}
-        />
-        <Pressable onPress={() => setActs(!acts)} hitSlop={10} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: t.surface2, alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ color: t.ink, fontWeight: "900" }}>{acts ? "▴" : "⋯"}</Text>
-        </Pressable>
-      </View>
-      {acts && (
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, paddingHorizontal: 12, paddingBottom: 8 }}>
-          <Act
-            label="Esporta"
-            onPress={async () => {
-              await Clipboard.setStringAsync(deckText(d));
-              toast("Lista copiata negli appunti.");
-            }}
-          />
-          <Act label="Importa" onPress={() => setImp(true)} />
-          <Act
-            label={cfm === "empty" ? "Sicuro? Svuota" : "Svuota"}
-            warn={cfm === "empty"}
-            onPress={() => {
-              if (cfm !== "empty") return setCfm("empty");
-              d.cards = {};
+      <ScrollView ref={scroll} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4, paddingBottom: view === "deck" ? 100 : 28 }}>
+        {/* intestazione (.mdkh): indietro, nome del mazzo, freccia che apre le azioni */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginHorizontal: -6, marginTop: 10, marginBottom: 8 }}>
+          <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/mazzi"))} accessibilityLabel="I miei mazzi" style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
+            <Svg width={22} height={22} viewBox="0 0 24 24">
+              <Path d="M15 5l-7 7 7 7" stroke={t.ink} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            </Svg>
+          </Pressable>
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            maxLength={60}
+            accessibilityLabel="Nome del mazzo"
+            onFocus={() => setNameFocus(true)}
+            onBlur={() => setNameFocus(false)}
+            onEndEditing={() => {
+              d.name = name.trim() || d.name;
+              setName(d.name);
               d.upd = Date.now();
               saveDecks();
-              setCfm("");
-              toast("Mazzo svuotato.");
             }}
+            style={{ flex: 1, minWidth: 0, color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 19.2, paddingVertical: 6, borderBottomWidth: 1.5, borderStyle: "dashed", borderColor: nameFocus ? t.accent : "transparent" }}
           />
-          <Act label="Copertina" onPress={() => setCover(true)} />
-          <Act
-            label={cfm === "del" ? "Sicuro? Elimina" : "Elimina"}
-            warn
-            onPress={() => {
-              if (cfm !== "del") return setCfm("del");
-              deleteDeck(d.id);
-              router.back();
-            }}
-          />
+          <Pressable onPress={() => setActs(!acts)} accessibilityLabel={(acts ? "Nascondi" : "Mostra") + " le azioni del mazzo: esporta, importa, svuota, copertina, elimina"} accessibilityState={{ expanded: acts }} style={{ width: 44, height: 44, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, alignItems: "center", justifyContent: "center" }}>
+            <Chevron color={t.ink} up={acts} />
+          </Pressable>
         </View>
-      )}
-
-      <ScrollView ref={scroll} contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 100 }}>
-        {/* conteggi + curva + stato */}
-        <View style={[s.panel, { padding: 12 }]}>
-          <View style={{ flexDirection: "row", gap: 12 }}>
-            {(
-              [
-                ["Principale", st.main, 50, st.main === 50],
-                ["Digi-Egg", st.egg, 5, st.egg <= 5],
-              ] as [string, number, number, boolean][]
-            ).map(([l, v, mx, ok]) => (
-              <View key={l} style={{ flex: 1 }}>
-                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                  <Text style={{ color: t.ink2, fontSize: 12 }}>{l}</Text>
-                  <Text style={{ color: ok ? "#46bd73" : t.ink, fontWeight: "800" }}>{v + " / " + mx}</Text>
-                </View>
-                <View style={{ height: 5, borderRadius: 3, backgroundColor: t.surface2, marginTop: 4, overflow: "hidden" }}>
-                  <View style={{ width: Math.min(100, (v / mx) * 100) + "%", height: 5, backgroundColor: v > mx ? "#e5484d" : ok ? "#46bd73" : t.accent }} />
-                </View>
-              </View>
-            ))}
+        {acts ? (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+            <Btn
+              label="Esporta"
+              style={{ flex: 1, paddingHorizontal: 8 }}
+              onPress={async () => {
+                await Clipboard.setStringAsync(deckText(d));
+                toast("Lista copiata negli appunti.");
+              }}
+            />
+            <Btn label="Importa" style={{ flex: 1, paddingHorizontal: 8 }} onPress={() => setImp(true)} />
+            <Btn label="Svuota" style={{ flex: 1, paddingHorizontal: 8 }} onPress={() => setCfm("empty")} />
+            <Pressable onPress={() => setCfm("del")} accessibilityLabel="Elimina mazzo" style={{ width: 44, height: 42, borderRadius: 10, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, alignItems: "center", justifyContent: "center" }}>
+              <Svg width={19} height={19} viewBox="0 0 24 24">
+                <Path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" stroke={t.cards.Red} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              </Svg>
+            </Pressable>
+            <Btn label="Modifica copertina mazzo" icon="M4 5h16v14H4zM4 15l4-4 4 4 3-3 5 5M15 9.5h.01" style={{ width: "100%" }} onPress={() => setCover(true)} />
           </View>
-          {st.main > 0 && (
-            <View style={{ marginTop: 12 }}>
-              <Text style={{ color: t.ink2, fontSize: 12 }}>{view === "deck" ? "Curva · tocca un livello per andarci" : "Curva dei livelli"}</Text>
-              <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 6, marginTop: 6 }}>
+        ) : null}
+        {imp ? (
+          <ImportPanel
+            label="Sostituisci il contenuto"
+            onClose={() => setImp(false)}
+            onDone={(cards) => {
+              d.cards = cards;
+              d.upd = Date.now();
+              saveDecks();
+              setImp(false);
+              setActs(false);
+            }}
+          />
+        ) : null}
+
+        {/* conteggi + curva + stato (.dstat) */}
+        <View style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 12, padding: 12, flexDirection: "row", flexWrap: "wrap", columnGap: 12, rowGap: 12 }}>
+          {(
+            [
+              ["Principale", st.main, 50, st.main === 50],
+              ["Digi-Egg", st.egg, 5, st.egg <= 5],
+            ] as [string, number, number, boolean][]
+          ).map(([l, v, mx, ok]) => (
+            <View key={l} style={{ flex: 1, minWidth: 120 }}>
+              <Text style={{ color: t.ink2, fontSize: 11.2, letterSpacing: 0.9, textTransform: "uppercase", lineHeight: 16 }}>{l}</Text>
+              <Text style={{ color: ok ? t.ok : t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 19.2 }}>{v + " / " + mx}</Text>
+              <Progress h={v} n={mx} color={v > mx ? t.cards.Red : undefined} style={{ marginTop: 6 }} />
+            </View>
+          ))}
+          {st.main > 0 ? (
+            <View style={{ width: "100%", marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderColor: t.line }}>
+              <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.6, letterSpacing: 1.3, textTransform: "uppercase", marginBottom: 6 }}>{view === "deck" ? "Curva · tocca un livello per andarci" : "Curva dei livelli"}</Text>
+              <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 6, height: 74 }}>
                 {curve.map(([g, n]) => (
-                  <Pressable key={g} disabled={!n || view !== "deck"} onPress={() => goTo(g)} style={{ flex: 1, alignItems: "center" }}>
-                    <Text style={{ color: t.ink, fontSize: 11, fontWeight: "700" }}>{n}</Text>
-                    <View style={{ width: "70%", height: Math.round((n / cmax) * 40) + 2, borderRadius: 3, backgroundColor: /^Lv/.test(g) ? t.accent : t.ink2 }} />
-                    <Text style={{ color: t.ink2, fontSize: 10, marginTop: 2 }}>{g === "Tamer" ? "Tam." : g === "Option" ? "Opt." : g}</Text>
+                  <Pressable key={g} disabled={!n || view !== "deck"} onPress={() => goTo(g)} accessibilityLabel={"Vai a " + g} style={{ flex: 1, height: "100%", alignItems: "center", justifyContent: "flex-end", gap: 3 }}>
+                    <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.9 }}>{n}</Text>
+                    <View style={{ width: "100%", height: Math.max(2, Math.round((n / cmax) * 40)), borderTopLeftRadius: 4, borderTopRightRadius: 4, backgroundColor: /^Lv/.test(g) ? t.accent : t.cyan }} />
+                    <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.9 }}>{g === "Tamer" ? "Tam." : g === "Option" ? "Opt." : g}</Text>
                   </Pressable>
                 ))}
               </View>
             </View>
-          )}
+          ) : null}
           {!st.problems.length ? (
-            <Text style={{ color: "#46bd73", fontWeight: "700", marginTop: 10 }}>✓ Mazzo valido secondo le regole e la lista ban in vigore dal {banEffective()}.</Text>
-          ) : (
-            <View style={{ marginTop: 10, gap: 4 }}>
-              {st.main < 50 && <Text style={{ color: "#c77a0a", fontWeight: "700" }}>{"Bozza · " + (50 - st.main === 1 ? "manca 1 carta" : "mancano " + (50 - st.main) + " carte") + " al mazzo principale"}</Text>}
-              {others.map((x) => (
-                <Text key={x} style={{ color: "#e5484d" }}>
-                  {"• " + x}
-                </Text>
-              ))}
+            <View style={{ width: "100%", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10, backgroundColor: "rgba(74,222,128,.14)" }}>
+              <Text style={{ color: t.ok, fontWeight: "600", fontSize: 13.6 }}>✓ Mazzo valido secondo le regole e la lista ban in vigore dal {banEffective()}.</Text>
             </View>
+          ) : (
+            <>
+              {st.main < 50 ? (
+                <View style={{ width: "100%", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10, backgroundColor: t.accentSoft }}>
+                  <Text style={{ color: t.accent, fontWeight: "600", fontSize: 13.6 }}>{"Bozza · " + (50 - st.main === 1 ? "manca 1 carta" : "mancano " + (50 - st.main) + " carte") + " al mazzo principale"}</Text>
+                </View>
+              ) : null}
+              {others.length ? (
+                <View style={{ width: "100%", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10, gap: 3, backgroundColor: "rgba(239,91,85,.12)" }}>
+                  {others.map((x) => (
+                    <View key={x} style={{ flexDirection: "row", gap: 8, paddingLeft: 4 }}>
+                      <Text style={{ color: t.ink, fontSize: 13.6 }}>•</Text>
+                      <Text style={{ color: t.ink, fontSize: 13.6, flex: 1 }}>{x}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+            </>
           )}
         </View>
 
-        {/* Mazzo / Statistiche */}
-        <View style={{ flexDirection: "row", backgroundColor: t.surface2, borderRadius: 10, padding: 3, marginTop: 12 }}>
+        {/* Mazzo / Statistiche (.mseg) */}
+        <View style={{ flexDirection: "row", padding: 3, borderRadius: 12, backgroundColor: t.surface2, marginVertical: 12 }}>
           {(
             [
               ["deck", "Mazzo · " + tot],
               ["stats", "Statistiche"],
             ] as ["deck" | "stats", string][]
-          ).map(([v, l]) => (
-            <Pressable
-              key={v}
-              onPress={() => {
-                setView(v);
-                setSel(null);
-              }}
-              style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: "center", backgroundColor: view === v ? t.surface : "transparent" }}
-            >
-              <Text style={{ color: view === v ? t.ink : t.ink2, fontWeight: "700" }}>{l}</Text>
-            </Pressable>
-          ))}
+          ).map(([v, l]) => {
+            const on = view === v;
+            return (
+              <Pressable
+                key={v}
+                onPress={() => {
+                  setView(v);
+                  setSel(null);
+                }}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: on }}
+                style={{ flex: 1, minHeight: 42, borderRadius: 9, alignItems: "center", justifyContent: "center", backgroundColor: on ? t.surface : "transparent", boxShadow: on ? "0 1px 3px rgba(15,26,46,.15)" : undefined }}
+              >
+                <Text style={{ color: on ? t.ink : t.ink2, fontWeight: on ? "700" : "500", fontSize: 14.4, lineHeight: 20 }}>{l}</Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         {view === "deck" ? (
-          <>
+          <View style={{ gap: 18, marginTop: 2 }}>
             {groups.map(([g, cards]) => {
               const n = cards.reduce((m, c) => m + d.cards[c.k], 0);
               const selC = cards.find((c) => c.k === sel);
               return (
-                <View key={g} onLayout={(e) => (pos.current[g] = e.nativeEvent.layout.y)} style={{ marginTop: 16 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                    <Text style={{ color: t.ink, fontSize: 16, fontWeight: "800" }}>{g}</Text>
-                    <Text style={{ color: t.ink2, fontSize: 13 }}>{n + (n === 1 ? " carta" : " carte")}</Text>
-                    <Pressable onPress={() => addTo(g)} style={{ marginLeft: "auto", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 14, backgroundColor: t.surface2 }}>
-                      <Text style={{ color: t.accent, fontWeight: "800", fontSize: 13 }}>+ Aggiungi</Text>
+                <View key={g} onLayout={(e) => (pos.current[g] = e.nativeEvent.layout.y)}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                    <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16.3 }}>{g}</Text>
+                    <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 13.6 }}>{n + (n === 1 ? " carta" : " carte")}</Text>
+                    <Pressable onPress={() => addTo(g)} accessibilityLabel={"Aggiungi carte a " + g} style={{ marginLeft: "auto", minHeight: 38, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, flexDirection: "row", alignItems: "center", gap: 5 }}>
+                      <Text style={{ color: t.accent, fontSize: 17.6, lineHeight: 18 }}>+</Text>
+                      <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 13.6 }}>Aggiungi</Text>
                     </Pressable>
                   </View>
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", columnGap: 10, rowGap: 12 }}>
                     {cards.map((c) => (
                       <Pile key={c.k} c={c} q={d.cards[c.k]} on={sel === c.k} onPress={() => setSel(sel === c.k ? null : c.k)} />
                     ))}
                   </View>
-                  {selC && (
-                    <View style={[s.panel, { marginTop: 10, padding: 10, flexDirection: "row", alignItems: "center", gap: 10 }]}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ color: t.ink, fontWeight: "800" }} numberOfLines={1}>
-                          {selC.name}
+                  {selC ? (
+                    <View style={{ marginTop: 12, paddingVertical: 8, paddingLeft: 12, paddingRight: 6, borderRadius: 12, borderWidth: 1, borderColor: t.accent, backgroundColor: t.surface, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <FitText text={selC.name} size={15} style={{ color: t.ink, fontWeight: "600" }} />
+                        <Text style={{ color: t.ink2, fontSize: 12.8, lineHeight: 18 }} numberOfLines={1}>
+                          {selC.code + (selC.suf ? " · " + (verLabel(selC.ver) || "Alternative Art") : "")}
                         </Text>
-                        <Text style={{ color: t.ink2, fontSize: 12 }}>{selC.code + (selC.suf ? " · " + (verLabel(selC.ver) || "Alternative Art") : "")}</Text>
+                      </View>
+                      <View style={{ alignItems: "flex-end", gap: 4 }}>
+                        <DeckQty d={d} c={selC} />
                         <BanBadge c={selC} d={d} />
                       </View>
-                      <DeckQty d={d} c={selC} />
-                      <Pressable onPress={() => openCard(selC, cards, d.id)} hitSlop={8} style={{ width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, borderColor: t.ink2, alignItems: "center", justifyContent: "center" }}>
-                        <Text style={{ color: t.ink2, fontWeight: "900" }}>i</Text>
+                      <Pressable onPress={() => openCard(selC, cards, d.id)} accessibilityLabel={"Apri la scheda di " + selC.name} style={{ width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center" }}>
+                        <Svg width={22} height={22} viewBox="0 0 24 24">
+                          <Circle cx={12} cy={12} r={9} stroke={t.accent} strokeWidth={2} fill="none" />
+                          <Path d="M12 11v6M12 7.5v.5" stroke={t.accent} strokeWidth={2} strokeLinecap="round" />
+                        </Svg>
                       </Pressable>
                     </View>
-                  )}
+                  ) : null}
                 </View>
               );
             })}
-            {!groups.length && (
-              <View style={[s.panel, { padding: 16, marginTop: 16, alignItems: "center" }]}>
-                <Text style={{ color: t.ink2, textAlign: "center" }}>Il mazzo è vuoto: cerca le carte e aggiungile con +, oppure importa una lista dal ⋯ in alto.</Text>
+            {!groups.length ? (
+              <View style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 14, paddingVertical: 34, paddingHorizontal: 18, alignItems: "center", gap: 16 }}>
+                <Text style={{ color: t.ink2, textAlign: "center" }}>Il mazzo è vuoto: cerca le carte e aggiungile con +, oppure importa una lista dalla freccia in alto.</Text>
+                <Btn label="Aggiungi carte" pri icon={ICO_PLUS} onPress={() => setAdd({ ...EMPTY })} />
               </View>
-            )}
-          </>
+            ) : null}
+          </View>
         ) : (
           <Stats d={d} />
         )}
       </ScrollView>
 
-      {/* barra "Cerca e aggiungi carte…" */}
-      {view === "deck" && (
-        <View style={{ position: "absolute", left: 12, right: 12, bottom: 16 }}>
-          <Pressable onPress={() => setAdd({ ...EMPTY })} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingVertical: 14, borderRadius: 14, backgroundColor: t.accent }}>
-            <Text style={{ color: t.accentInk, fontSize: 16, fontWeight: "800" }}>⌕  Cerca e aggiungi carte…</Text>
+      {/* barra "Cerca e aggiungi carte…" con Filtra (.dkbar) */}
+      {view === "deck" && !kbd ? (
+        <View pointerEvents="box-none" style={{ position: "absolute", left: 0, right: 0, bottom: 0, paddingTop: 12, paddingHorizontal: 14, paddingBottom: 8, flexDirection: "row", gap: 8, alignItems: "center" }}>
+          <Svg pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 100">
+            <Defs>
+              <LinearGradient id="dkbarfade" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor={t.bg} stopOpacity={0} />
+                <Stop offset="0.45" stopColor={t.bg} stopOpacity={1} />
+                <Stop offset="1" stopColor={t.bg} stopOpacity={1} />
+              </LinearGradient>
+            </Defs>
+            <Rect width="10" height="100" fill="url(#dkbarfade)" />
+          </Svg>
+          <Pressable onPress={() => setAdd({ ...EMPTY })} style={{ flex: 1, minWidth: 0, height: 48, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, boxShadow: "0 6px 18px rgba(0,0,0,.18)" }}>
+            <SearchIcon color={t.accent} />
+            <Text style={{ color: t.ink2, fontSize: 16 }} numberOfLines={1}>
+              Cerca e aggiungi carte…
+            </Text>
           </Pressable>
+          <SquareBtn size={48} onPress={() => (setAddF(true), setAdd({ ...EMPTY }))} label="Filtra">
+            <FilterIcon color={t.ink} />
+          </SquareBtn>
         </View>
-      )}
+      ) : null}
 
-      {add && <AddSheet d={d} f0={add} hidden={away} onOpen={() => setAway(true)} onClose={() => setAdd(null)} />}
-      <ImportDeck
-        visible={imp}
-        label="Sostituisci il contenuto"
-        onClose={() => setImp(false)}
-        onDone={(cards) => {
-          d.cards = cards;
+      {add && <AddSheet d={d} f0={add} openF={addF} hidden={away} onOpen={() => setAway(true)} onClose={() => (setAdd(null), setAddF(false))} />}
+      <CoverPicker visible={cover} d={d} onClose={() => setCover(false)} />
+      <ConfirmBox
+        visible={cfm === "empty"}
+        title={["Svuotare il mazzo ", d.name, "?"]}
+        text="Tutte le carte inserite verranno rimosse dalla lista."
+        ok="Svuota"
+        onClose={() => setCfm("")}
+        onOk={() => {
+          d.cards = {};
           d.upd = Date.now();
           saveDecks();
-          setImp(false);
-          setActs(false);
         }}
       />
-      <CoverPicker visible={cover} d={d} onClose={() => setCover(false)} />
+      <ConfirmBox
+        visible={cfm === "del"}
+        title={["Eliminare il mazzo ", d.name, "?"]}
+        text="Il mazzo verrà cancellato definitivamente."
+        ok="Elimina"
+        onClose={() => setCfm("")}
+        onOk={() => {
+          deleteDeck(d.id);
+          router.back();
+        }}
+      />
     </Screen>
   );
 }
 
-function Act({ label, onPress, warn }: { label: string; onPress: () => void; warn?: boolean }) {
-  const t = useTheme();
-  return (
-    <Pressable onPress={onPress} style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: t.surface2 }}>
-      <Text style={{ color: warn ? "#e5484d" : t.ink, fontWeight: "700" }}>{label}</Text>
-    </Pressable>
-  );
-}
-
-// pila di una carta: fino a 4 miniature sovrapposte e il numero di copie
+// pila di una carta (.dkpile): fino a 4 miniature affiancate e sovrapposte, il numero di copie in arancione
 function Pile({ c, q, on, onPress }: { c: Card; q: number; on: boolean; onPress: () => void }) {
   const t = useTheme();
-  const w = 62,
-    h = 87,
-    off = 7;
   const n = Math.min(q, 4);
   return (
-    <Pressable onPress={onPress} style={{ width: w + off * (n - 1), height: h + off * (n - 1) + 4, opacity: 1 }}>
+    <Pressable onPress={onPress} accessibilityLabel={c.name + " " + c.code + ", " + q + (q === 1 ? " copia" : " copie")} accessibilityState={{ selected: on }} style={{ flexDirection: "row", borderRadius: 7, outlineWidth: on ? 2 : 0, outlineColor: t.accent, outlineOffset: 3, outlineStyle: "solid" } as any}>
       {Array.from({ length: n }).map((_, i) => (
-        <Image key={i} source={thumbUrl(c)} style={{ position: "absolute", left: i * off, top: i * off, width: w, height: h, borderRadius: 5, borderWidth: on ? 2 : 0, borderColor: t.accent, backgroundColor: t.surface2 }} cachePolicy="disk" />
+        <View key={i} style={{ width: 74, height: 103, marginLeft: i ? -58 : 0, borderRadius: 6, overflow: "hidden", borderWidth: 1, borderColor: t.line, backgroundColor: t.cards[c.colors[0]] || t.surface2, boxShadow: "-5px 0 10px rgba(0,0,0,.3)" }}>
+          <Image source={thumbUrl(c)} style={{ width: "100%", height: "100%" }} contentFit="cover" cachePolicy="disk" />
+        </View>
       ))}
-      <View style={{ position: "absolute", right: -4, bottom: 0, backgroundColor: on ? t.accent : t.ink, borderRadius: 10, paddingHorizontal: 6, paddingVertical: 1 }}>
-        <Text style={{ color: on ? t.accentInk : t.bg, fontWeight: "900", fontSize: 12 }}>×{q}</Text>
+      <View style={{ position: "absolute", right: 4, bottom: 4, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 5, backgroundColor: t.accent }}>
+        <Text style={{ color: t.accentInk, fontFamily: DISPLAY, fontWeight: "700", fontSize: 11.8 }}>×{q}</Text>
       </View>
     </Pressable>
   );
 }
 
 // foglio di ricerca dal basso: ricerca, filtri e risultati con le copie nel mazzo
-function AddSheet({ d, f0, hidden, onOpen, onClose }: { d: any; f0: Filters; hidden: boolean; onOpen: () => void; onClose: () => void }) {
+function AddSheet({ d, f0, openF, hidden, onOpen, onClose }: { d: any; f0: Filters; openF?: boolean; hidden: boolean; onOpen: () => void; onClose: () => void }) {
   const t = useTheme();
   const s = common(t);
   useStore();
   const { height } = useWindowDimensions();
   const [q, setQ] = useState("");
   const [f, setF] = useState<Filters>(f0);
-  const [fOpen, setFOpen] = useState(false);
+  const [fOpen, setFOpen] = useState(!!openF);
   const [shown, setShown] = useState(40);
   const nq = normQ(q);
   const filt = !!nq || anyFlt(f);
