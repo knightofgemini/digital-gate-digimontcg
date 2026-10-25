@@ -53,8 +53,9 @@ for s in soon:
 # versioni annunciate ma tenute da parte perché senza immagine (_hold_versions): l'immagine è arrivata?
 import urllib.request
 FIX = json.load(open(root / "tools" / "card_fixes.json", encoding="utf-8"))
-def has_img(k):
-    for u in ("https://web-garage.takaotaku.de/%s-Sample.webp", "https://world.digimoncard.com/images/cardlist/card/%s.png"):
+def has_img(k, official_only=False):
+    srcs = ("https://web-garage.takaotaku.de/%s-Sample.webp", "https://world.digimoncard.com/images/cardlist/card/%s.png")
+    for u in srcs[1:] if official_only else srcs:
         try:
             r = urllib.request.urlopen(urllib.request.Request(u % k, method="HEAD", headers={"User-Agent": "Mozilla/5.0"}), timeout=15)
             if r.status == 200: return u % k
@@ -65,6 +66,15 @@ if ready:
     changed = True; ids_all += ["img:" + k for k, _ in ready]
     REP.append("## Versioni in attesa: ora c'è l'immagine")
     REP += ["- **%s**: da togliere da `_hold_versions` in tools/card_fixes.json dopo il controllo" % k for k, _ in ready]
+    REP.append(""); REP.append(" ".join('<img src="%s" width="150" alt="%s">' % (u, k) for k, u in ready)); REP.append("")
+# carte svelate ma tenute da parte (_hold: senza immagine, testo incompleto o immagine sbagliata): l'immagine è arrivata?
+# con "immagine sbagliata" nella nota conta solo l'immagine ufficiale (l'anteprima TakaOtaku c'è già ma è di un'altra carta)
+held = FIX.get("_hold", {})
+ready = [(k, u) for k, n in held.items() for u in [has_img(k, "sbagliata" in n)] if u]
+if ready:
+    changed = True; ids_all += ["hold:" + k for k, _ in ready]
+    REP.append("## Carte tenute da parte: ora c'è l'immagine")
+    REP += ["- **%s** (%s): da togliere da `_hold` in tools/card_fixes.json dopo il controllo di immagine e testo" % (k, held[k]) for k, _ in ready]
     REP.append(""); REP.append(" ".join('<img src="%s" width="150" alt="%s">' % (u, k) for k, u in ready)); REP.append("")
 # prodotti con carte svelate ma senza nome nel catalogo
 try:
@@ -82,7 +92,7 @@ try:
         REP += ["- %s: %d carte (va aggiunto il nome del prodotto)" % (p, n) for p, n in sorted(cnt.items())]
 except Exception as e:
     print("controllo prodotti nuovi non riuscito:", e)
-if a.apply and any(l.startswith("## ") and "in attesa" not in l and "non ancora nel catalogo" not in l for l in REP):
+if a.apply and any(l.startswith("## ") and "in attesa" not in l and "tenute da parte" not in l and "non ancora nel catalogo" not in l for l in REP):
     M.save(M.merge(CUR, NEW, [s["code"] for s in soon]))
 head = "Controllo del %s: " % datetime.date.today().strftime("%d/%m/%Y")
 text = head + ("carte nuove o cambiate nei prodotti in arrivo." if changed else "nessuna novità nei prodotti in arrivo (%s)." % ", ".join(s["code"] for s in soon))

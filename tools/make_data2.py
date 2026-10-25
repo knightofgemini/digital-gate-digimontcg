@@ -56,7 +56,7 @@ def fix_card(n,r):
         else: print("errata non applicata",n,old[:40])  # testo ufficiale: lato Option delle Digimon/Option e spiegazione Overflow
 rows=[]; cnt=collections.Counter(); missing=set()
 for n,k in best.items():
-    if n in FIX.get("_remove",[]): continue
+    if n in FIX.get("_remove",[]) or n in FIX.get("_hold",{}): continue   # tolte su richiesta o tenute da parte (spoiler da controllare)
     p=n.split("-")[0]
     if p=="LM":
         num=int(n.split("-")[1])

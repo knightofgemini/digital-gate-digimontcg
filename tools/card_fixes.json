@@ -416,6 +416,33 @@
    ]
   ]
  },
+ "BT27-008": {
+  "text": [
+   [
+    14,
+    "[Kyokomon]",
+    "[Kyokyomon]"
+   ]
+  ]
+ },
+ "BT27-015": {
+  "text": [
+   [
+    11,
+    "Then, if during an attack, Trash their",
+    "Then, if during an attack, trash their"
+   ]
+  ]
+ },
+ "BT27-087": {
+  "text": [
+   [
+    11,
+    "[Chronicle]\u00a0trait , gain",
+    "[Chronicle]\u00a0trait, gain"
+   ]
+  ]
+ },
  "EX14-012": {
   "text": [
    [
@@ -434,11 +461,21 @@
   "ST24-11_P2",
   "ST24-11_P3"
  ],
+ "_hold": {
+  "BT27-074": "senza immagine, testo incompleto",
+  "BT27-078": "senza immagine, testo incompleto",
+  "BT27-081": "senza immagine, testo incompleto",
+  "BT27-083": "senza immagine, testo incompleto",
+  "BT27-085": "senza immagine, testo incompleto",
+  "BT27-096": "senza immagine",
+  "BT27-097": "immagine sbagliata (l'anteprima TakaOtaku di BT27-097 è Keenan Crier BT27-096), testo incompleto"
+ },
  "_hold_versions": [
+  "BT27-035_P2",
   "BT27-103_P2",
   "EX14-012_P1",
   "EX14-054_P1",
   "EX14-054_P2"
  ],
- "_hold_note": "_hold_versions: versioni già annunciate ma ancora senza immagine (spoiler); toglierle da qui quando l'immagine è disponibile."
+ "_hold_note": "_hold_versions: versioni già annunciate ma ancora senza immagine (spoiler); toglierle da qui quando l'immagine è disponibile. _hold: carte svelate ma tenute da parte (senza immagine, testo incompleto o immagine sbagliata); toglierle da qui dopo il controllo sull'immagine."
 }
