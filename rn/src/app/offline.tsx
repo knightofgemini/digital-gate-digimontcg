@@ -1,125 +1,162 @@
-// Pagina "Immagini offline": miniature, tutto in HD o un prodotto alla volta, con dimensione stimata, avanzamento,
-// pausa/ripresa e svuotamento della memoria delle immagini.
-import { useEffect, useState } from "react";
+// Immagini offline (come renderOffline dell'app attuale sul telefono): riquadro con le immagini salvate e l'avanzamento,
+// "Cosa scaricare" (Solo miniature / Tutto in HD con peso stimato, quante sono salvate e "Scarica"), "Per prodotto"
+// (codice, nome, percentuale e pulsante per scaricare) ed "Elimina tutte le immagini salvate" con conferma.
+// Con i dati mobili chiede conferma prima di scaricare.
+// Differenze dovute alla memoria delle immagini della nuova app: non si cancella un solo prodotto o un solo tipo di immagine.
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
-import { Text } from "../Text";
+import Svg, { Path } from "react-native-svg";
 import * as Network from "expo-network";
-import { router } from "expo-router";
-import { SETS, TYPES, cardsOfSet, soonSet } from "../data";
-import { OFF, RUN, clearAll, items, label, mb, pause, progressOf, start, useOffline, weight } from "../offline";
+import { DISPLAY, Text } from "../Text";
+import { SETS, numOf } from "../data";
+import { AVG, OFF, RUN, clearAll, items, label, mb, pause, progressOf, start, useOffline, weight } from "../offline";
 import { useTheme } from "../theme";
-import { Logo, PageTitle, common } from "../ui";
-import { Screen } from "../chrome";
+import { PageTitle } from "../ui";
+import { Screen, useBarState } from "../chrome";
+import { Btn, Progress } from "../visual";
+import { ConfirmBox } from "../deckui";
+
+const ICO_TRASH = "M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6";
+const ICO_DL = "M12 4v11M7 10l5 5 5-5M5 20h14";
+const num = (n: number) => n.toLocaleString("it-IT");
+
+function SmallBtn({ icon, color, onPress, disabled, label }: { icon: string; color: string; onPress: () => void; disabled?: boolean; label: string }) {
+  const t = useTheme();
+  return (
+    <Pressable onPress={onPress} disabled={disabled} accessibilityLabel={label} style={{ width: 40, height: 40, borderRadius: 11, borderWidth: 1, borderColor: t.line, backgroundColor: t.bg, alignItems: "center", justifyContent: "center", opacity: disabled ? 0.45 : 1 }}>
+      <Svg width={20} height={20} viewBox="0 0 24 24">
+        <Path d={icon} stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      </Svg>
+    </Pressable>
+  );
+}
 
 export default function Offline() {
   const t = useTheme();
-  const s = common(t);
+  const bar = useBarState();
   useOffline();
   const [cell, setCell] = useState(false);
-  const [cfm, setCfm] = useState(false);
-  const [showSets, setShowSets] = useState(false);
+  const [ask, setAsk] = useState<string | null>(null);
+  const [del, setDel] = useState(false);
   useEffect(() => {
     Network.getNetworkStateAsync()
       .then((n) => setCell(n.type === Network.NetworkStateType.CELLULAR))
       .catch(() => {});
   }, []);
+  const go = (scope: string) => (cell ? setAsk(scope) : start(scope));
+  const running = RUN.running;
 
-  const Choice = ({ scope, title, text }: { scope: string; title: string; text: string }) => {
-    const n = items(scope).length,
-      p = progressOf(scope),
-      done = !!OFF.done[scope],
-      on = RUN.running && RUN.scope === scope;
-    const pc = n ? Math.floor((p / n) * 100) : 0;
-    return (
-      <View style={[s.panel, { padding: 14, marginTop: 10 }]}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Text style={{ color: t.ink, fontSize: 16, fontWeight: "800", flex: 1 }}>{title}</Text>
-          <Text style={{ color: t.ink2 }}>{"circa " + mb(weight(scope))}</Text>
-        </View>
-        <Text style={{ color: t.ink2, marginTop: 4, lineHeight: 19 }}>{text}</Text>
-        {(p > 0 || on) && (
-          <View style={{ marginTop: 10 }}>
-            <View style={{ height: 6, borderRadius: 3, backgroundColor: t.surface2, overflow: "hidden" }}>
-              <View style={{ width: pc + "%", height: 6, backgroundColor: done ? "#46bd73" : t.accent }} />
-            </View>
-            <Text style={{ color: t.ink2, fontSize: 12, marginTop: 4 }}>{done ? "Completato: " + n.toLocaleString("it-IT") + " immagini salvate" : p.toLocaleString("it-IT") + " di " + n.toLocaleString("it-IT") + " immagini (" + pc + "%)" + (on ? "" : " · in pausa")}</Text>
-          </View>
-        )}
-        <Pressable
-          disabled={RUN.running && !on}
-          onPress={() => (on ? pause() : start(scope))}
-          style={{ marginTop: 10, alignItems: "center", paddingVertical: 11, borderRadius: 10, backgroundColor: on ? t.surface2 : t.accent, opacity: RUN.running && !on ? 0.4 : 1 }}
-        >
-          <Text style={{ color: on ? t.ink : t.accentInk, fontWeight: "800" }}>{on ? "Pausa" : done ? "Controlla di nuovo" : p ? "Riprendi" : "Scarica"}</Text>
-        </Pressable>
-      </View>
-    );
-  };
+  // immagini già salvate (unione di tutte le scelte), divise per tipo, e peso stimato
+  const sets = useMemo(() => SETS.filter((x) => (x.v || []).length).sort((a, b) => ((a.date || "") < (b.date || "") ? 1 : (a.date || "") > (b.date || "") ? -1 : numOf(b.code) - numOf(a.code))), []);
+  const seen: Record<string, number> = {};
+  ["t", "hd", ...sets.map((x) => x.id)].forEach((sc) => {
+    const p = progressOf(sc);
+    if (!p) return;
+    items(sc)
+      .slice(0, p)
+      .forEach((x) => (seen[x.u] = x.w));
+  });
+  let nF = 0,
+    nT = 0,
+    nO = 0,
+    w = 0;
+  Object.keys(seen).forEach((u) => {
+    const v = seen[u];
+    w += v;
+    if (v === AVG.f || v === AVG.pre) nF++;
+    else if (v === AVG.t) nT++;
+    else nO++;
+  });
+  const nAll = nF + nT + nO;
+
+  const pScope = RUN.scope;
+  const pTot = pScope ? items(pScope).length : 0;
+  const pDone = pScope ? progressOf(pScope) : 0;
+  const paused = !running && ["t", "hd"].find((sc) => OFF.pos[sc] && !OFF.done[sc]);
 
   return (
-    <Screen>
-      <ScrollView contentContainerStyle={s.pad}>
-        <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} hitSlop={12} style={{ marginBottom: 12 }}>
-          <Text style={{ color: t.accent, fontSize: 16, fontWeight: "600" }}>‹ Indietro</Text>
-        </Pressable>
+    <Screen bs={bar}>
+      <ScrollView onScroll={bar.onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: 28 + 24 }}>
         <PageTitle>Immagini offline</PageTitle>
-        <Text style={{ color: t.ink2, lineHeight: 20 }}>Scarica in anticipo le immagini delle carte per vederle anche senza internet e senza attese. Le immagini che guardi restano comunque salvate da sole.</Text>
-        {cell && <Text style={{ color: "#c77a0a", fontWeight: "700", marginTop: 8 }}>Sei sotto rete mobile: per scaricare molte immagini è meglio il Wi-Fi.</Text>}
-        <Choice scope="t" title="Miniature" text="Le immagini piccole di tutte le carte (elenchi e ricerca)." />
-        <Choice scope="hd" title="Tutto in HD" text="Tutte le carte in grande, le miniature, le versioni pre errata, le confezioni e i loghi dei prodotti." />
+        <Text style={{ color: t.ink2, fontSize: 14.7, lineHeight: 23, marginTop: -4, marginBottom: 14 }}>Scarica le immagini nel dispositivo: compaiono subito e funzionano anche senza internet. Restano salvate anche quando aggiorni l'app. Lo scaricamento continua finché l'app resta aperta, anche se cambi schermata.</Text>
 
-        <Pressable onPress={() => setShowSets(!showSets)} style={{ marginTop: 16 }}>
-          <Text style={{ color: t.accent, fontWeight: "800" }}>{showSets ? "Nascondi i prodotti" : "Oppure un prodotto alla volta"}</Text>
-        </Pressable>
-        {showSets &&
-          Object.keys(TYPES).map((tp) => {
-            const list = SETS.filter((x) => x.type === tp && cardsOfSetLen(x.id) && !soonSet(x));
-            if (!list.length) return null;
+        {/* stato */}
+        <View style={{ borderWidth: 1, borderColor: t.line, borderRadius: 12, backgroundColor: t.surface, paddingVertical: 14, paddingHorizontal: 16, marginBottom: 10 }}>
+          <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
+            <Text style={{ color: t.ink, fontWeight: "600", fontSize: 16.8 }}>{num(nAll) + (nAll === 1 ? " immagine salvata" : " immagini salvate")}</Text>
+            {nAll ? <Text style={{ color: t.ink2, fontSize: 13.6 }}>{"circa " + mb(w)}</Text> : null}
+          </View>
+          <Text style={{ color: t.ink2, fontSize: 13.1, marginTop: 4 }}>{num(nF) + " carte grandi · " + num(nT) + " miniature · " + num(nO) + " confezioni e loghi"}</Text>
+          {pScope && (running || pDone) ? (
+            <View style={{ marginTop: 12 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 10 }}>
+                <Text style={{ color: t.ink, fontWeight: "600", fontSize: 14.1 }}>{(running ? "Scaricamento · " : OFF.done[pScope] ? "Completato · " : "In pausa · ") + label(pScope)}</Text>
+                <Text style={{ color: t.ink2, fontSize: 14.1, fontVariant: ["tabular-nums"] }}>{pTot ? Math.floor((pDone / pTot) * 100) + "%" : ""}</Text>
+              </View>
+              <Progress h={pDone} n={pTot} style={{ marginTop: 8 }} />
+            </View>
+          ) : null}
+          {running ? <Btn label="Metti in pausa" onPress={pause} style={{ alignSelf: "flex-start", marginTop: 12 }} /> : null}
+          {paused ? <Btn label="Riprendi" pri onPress={() => go(paused)} style={{ alignSelf: "flex-start", marginTop: 12 }} /> : null}
+        </View>
+
+        <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.5, letterSpacing: 1.85, textTransform: "uppercase", marginTop: 22, marginBottom: 10 }}>Cosa scaricare</Text>
+        {(
+          [
+            ["t", "Solo miniature", "Ogni carta compare subito in piccolo, anche offline; quella nitida arriva quando c'è internet."],
+            ["hd", "Tutto in HD", "Carte grandi, miniature, banner e confezioni: l'app non scarica più nessuna immagine."],
+          ] as [string, string, string][]
+        ).map(([sc, title, text]) => {
+          const n = items(sc).length,
+            p = progressOf(sc),
+            all = !!OFF.done[sc],
+            cur = RUN.scope === sc || !!OFF.pos[sc] || all;
+          return (
+            <View key={sc} style={{ borderWidth: 1, borderColor: cur ? t.accent : t.line, borderRadius: 12, backgroundColor: t.surface, paddingVertical: 14, paddingHorizontal: 16, marginBottom: 10, boxShadow: cur ? `inset 0 0 0 1px ${t.accent}` : undefined }}>
+              <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
+                <Text style={{ color: t.ink, fontWeight: "600", fontSize: 16 }}>{title}</Text>
+                <Text style={{ color: t.ink2, fontSize: 13.6 }}>{"circa " + mb(weight(sc))}</Text>
+              </View>
+              <Text style={{ color: t.ink2, fontSize: 14.1, lineHeight: 21, marginTop: 6, marginBottom: 12 }}>{text}</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                <Text style={{ color: all ? t.ok : t.ink2, fontWeight: all ? "600" : "400", fontSize: 13.1 }}>{all ? "✓ Tutte salvate" : num(p) + " di " + num(n) + " salvate"}</Text>
+                <Btn label={all ? "Scelta attuale" : running && RUN.scope === sc ? "In corso…" : "Scarica"} pri={!all} onPress={() => !running && !all && go(sc)} />
+              </View>
+            </View>
+          );
+        })}
+
+        <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.5, letterSpacing: 1.85, textTransform: "uppercase", marginTop: 22, marginBottom: 10 }}>Per prodotto</Text>
+        <Text style={{ color: t.ink2, fontSize: 14.7, lineHeight: 23, marginTop: -4, marginBottom: 14 }}>Solo i prodotti che ti interessano, in HD.</Text>
+        <View style={{ borderWidth: 1, borderColor: t.line, borderRadius: 12, backgroundColor: t.surface, paddingVertical: 4 }}>
+          {sets.map((x, i) => {
+            const n = items(x.id).length,
+              p = progressOf(x.id),
+              all = !!OFF.done[x.id],
+              me = running && RUN.scope === x.id;
             return (
-              <View key={tp}>
-                <Text style={{ color: t.ink2, fontWeight: "700", marginTop: 14, marginBottom: 4 }}>{TYPES[tp]}</Text>
-                {list.map((x) => {
-                  const n = items(x.id).length,
-                    p = progressOf(x.id),
-                    on = RUN.running && RUN.scope === x.id,
-                    done = !!OFF.done[x.id];
-                  return (
-                    <View key={x.id} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderColor: t.line }}>
-                      <Logo code={x.code} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ color: t.ink, fontWeight: "700" }} numberOfLines={1}>
-                          {label(x.id)}
-                        </Text>
-                        <Text style={{ color: done ? "#46bd73" : t.ink2, fontSize: 12 }}>{done ? "Salvato" : p ? Math.floor((p / n) * 100) + "%" + (on ? "" : " · in pausa") : "circa " + mb(weight(x.id))}</Text>
-                      </View>
-                      <Pressable disabled={RUN.running && !on} onPress={() => (on ? pause() : start(x.id))} style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 14, backgroundColor: on ? t.surface2 : done ? t.surface2 : t.accent, opacity: RUN.running && !on ? 0.4 : 1 }}>
-                        <Text style={{ color: on || done ? t.ink : t.accentInk, fontWeight: "800", fontSize: 13 }}>{on ? "Pausa" : done ? "Aggiorna" : p ? "Riprendi" : "Scarica"}</Text>
-                      </Pressable>
-                    </View>
-                  );
-                })}
+              <View key={x.id} style={{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 52, paddingLeft: 16, paddingRight: 8, borderTopWidth: i ? 1 : 0, borderColor: t.line }}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={{ color: t.ink, fontWeight: "600", fontSize: 14.4, lineHeight: 19 }}>{x.code}</Text>
+                  <Text style={{ color: t.ink2, fontSize: 12.8, lineHeight: 17 }} numberOfLines={1}>
+                    {x.name}
+                  </Text>
+                </View>
+                <Text style={{ color: all ? t.ok : t.ink2, fontWeight: all ? "600" : "400", fontSize: 12.8, fontVariant: ["tabular-nums"], paddingRight: all ? 8 : 0 }}>{me ? Math.floor((p / Math.max(1, n)) * 100) + "%" : all ? "✓ Salvato" : p ? Math.floor((p / n) * 100) + "% · " + mb(weight(x.id)) : mb(weight(x.id))}</Text>
+                {!all ? <SmallBtn icon={ICO_DL} color={t.accent} disabled={running} label={"Scarica " + x.code} onPress={() => go(x.id)} /> : null}
               </View>
             );
           })}
-
-        <View style={[s.panel, { padding: 14, marginTop: 18 }]}>
-          <Text style={{ color: t.ink, fontWeight: "800" }}>Libera spazio</Text>
-          <Text style={{ color: t.ink2, marginTop: 4, lineHeight: 19 }}>Cancella tutte le immagini salvate nel telefono. Si riscaricheranno quando le guardi.</Text>
-          <Pressable
-            onPress={() => {
-              if (!cfm) return setCfm(true);
-              clearAll();
-              setCfm(false);
-            }}
-            style={{ marginTop: 10, alignItems: "center", paddingVertical: 11, borderRadius: 10, backgroundColor: cfm ? "#c0261e" : t.surface2 }}
-          >
-            <Text style={{ color: cfm ? "#fff" : "#e5484d", fontWeight: "800" }}>{cfm ? "Sicuro? Cancella le immagini" : "Cancella le immagini salvate"}</Text>
-          </Pressable>
         </View>
-        <Text style={{ color: t.ink2, fontSize: 12, marginTop: 12, lineHeight: 17 }}>Lo scaricamento continua finché l'app resta aperta, anche cambiando schermata.</Text>
+        <Pressable onPress={() => setDel(true)} disabled={running} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 18, minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: t.dark ? "#6e3a44" : "#e6a3a1", backgroundColor: t.surface, opacity: running ? 0.5 : 1 }}>
+          <Svg width={20} height={20} viewBox="0 0 24 24">
+            <Path d={ICO_TRASH} stroke={t.cards.Red} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          </Svg>
+          <Text style={{ color: t.cards.Red, fontWeight: "600", fontSize: 14.7 }}>Elimina tutte le immagini salvate</Text>
+        </Pressable>
       </ScrollView>
+      <ConfirmBox visible={!!ask} title={["Scaricare circa " + (ask ? mb(weight(ask)) : "") + "?"]} text="Sei connesso con i dati mobili: ti consigliamo di usare il Wi-Fi." ok="Scarica" onClose={() => setAsk(null)} onOk={() => ask && start(ask)} />
+      <ConfirmBox visible={del} title={["Eliminare tutte le immagini salvate?"]} text="Miniature, carte grandi, banner e confezioni verranno riscaricati da internet quando li guardi." ok="Elimina" onClose={() => setDel(false)} onOk={() => clearAll()} />
     </Screen>
   );
 }
-
-const cardsOfSetLen = (id: string) => cardsOfSet(id).length;
