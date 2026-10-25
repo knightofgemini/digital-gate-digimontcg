@@ -2,7 +2,8 @@
 // l'OCR confonde), altrimenti il nome (distanza di modifica) e, tra le carte con lo stesso nome, le parole dell'effetto.
 // Poi le versioni (Regular, ★, ★★, SP, ristampe) ordinate per somiglianza con l'illustrazione inquadrata.
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { BYCODE, CARDS, Card, carVers, fold, thumbUrl } from "../data";
+import { BYCODE, CARDS, Card, NET, SETBY, fold } from "../data";
+import { vurl } from "../imgstore";
 import { ask } from "./bridge";
 
 const scD = (s: string) => s.replace(/[OQD]/g, "0").replace(/[IL|]/g, "1").replace(/S/g, "5").replace(/B/g, "8").replace(/Z/g, "2").replace(/G/g, "6");
@@ -105,12 +106,20 @@ export function scanByName(txt: string) {
     .map((x) => x.code);
 }
 
-// versioni della carta: tutte (anche le ristampe con lo stesso numero in altri prodotti)
+// versioni della carta (come scVers dell'app attuale): la carta, le alternative dal prodotto più recente
+// al più vecchio, poi le ristampe con lo stesso numero in altri prodotti
 export function scVers(code: string) {
-  const all = (BYCODE[code] || []).filter((c) => !c.suf);
+  const all = BYCODE[code] || [];
+  const bases = all.filter((c) => !c.suf);
+  if (!bases.length) return [];
+  const dt = (e: Card) => (e.from && SETBY[e.from] && SETBY[e.from].date) || "";
+  const alts: Card[] = [];
+  const img: Record<string, 1> = {};
+  all.forEach((a) => a.suf && !img[a.img || a.k] && (img[a.img || a.k] = 1) && alts.push(a));
+  alts.sort((x, y) => (dt(y) < dt(x) ? -1 : dt(y) > dt(x) ? 1 : (x.img || "") < (y.img || "") ? -1 : 1));
   const seen: Record<string, 1> = {};
   const out: Card[] = [];
-  all.forEach((b) => carVers(b).forEach((a) => !seen[a.k] && (seen[a.k] = 1) && out.push(a)));
+  [bases[0], ...alts, ...bases.slice(1)].forEach((a) => !seen[a.k] && (seen[a.k] = 1) && out.push(a));
   return out;
 }
 
@@ -126,7 +135,7 @@ export async function readPhoto(img: string, crop: any, y0: number): Promise<Sca
 }
 export async function rankVers(vers: Card[], sig: number[] | null): Promise<{ a: Card; d: number | null }[]> {
   if (!sig || vers.length < 2) return vers.map((a) => ({ a, d: null }));
-  const r = await ask({ op: "rank", sig, urls: vers.map(thumbUrl) });
+  const r = await ask({ op: "rank", sig, urls: vers.map((a) => vurl(NET.t(a))) }); // dalla rete: la pagina del riconoscimento non legge i file dell'app
   return vers
     .map((a, i) => ({ a, d: r.d[i] as number | null, i }))
     .sort((x, y) => {

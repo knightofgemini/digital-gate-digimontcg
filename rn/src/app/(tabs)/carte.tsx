@@ -1,6 +1,7 @@
 // Ricerca carte (come l'app attuale sul telefono): titolo, "N carte" con la vista elenco/immagini, carte nell'ordine
 // dei dati (dalle più recenti svelate); ricerca, fotocamera e Filtri nella barra in basso, filtri attivi come etichette.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
 import { CARDS, normQ, relevance } from "../../data";
 import { ActiveChips, FilterSheet, fltCount } from "../../FilterSheet";
 import { EMPTY, Filters, anyFlt, cardMatches, qmHolder, srcCards } from "../../filters";
@@ -15,6 +16,17 @@ export default function Carte() {
   const [f, setF] = useState<Filters>(EMPTY);
   const [open, setOpen] = useState(false);
   const nf = fltCount(f);
+  // arrivando da "Tutte le espansioni" nei Filtri di un prodotto: stessa ricerca e stessi filtri, Filtri aperto
+  const p = useLocalSearchParams<{ q?: string; flt?: string; fo?: string; t?: string }>();
+  useEffect(() => {
+    if (p.flt == null) return;
+    try {
+      setF({ ...EMPTY, ...JSON.parse(p.flt) });
+    } catch {}
+    setQ(p.q || "");
+    if (p.fo === "1") setOpen(true);
+    router.setParams({ q: undefined, flt: undefined, fo: undefined, t: undefined });
+  }, [p.t]);
 
   const list = useMemo(() => {
     const nq = normQ(q);

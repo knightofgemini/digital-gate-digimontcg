@@ -24,6 +24,12 @@ const REGIONS: Record<string, string> = { Europe: "Europa", "North America": "No
 const UNITS: Record<string, string> = { pack: "a busta", deck: "a mazzo", box: "a box" };
 const spoilerN = (id: string) => cardsOfSet(id).filter((c) => !c.suf).length;
 
+// "Tutte le espansioni" nei Filtri: Ricerca carte con la stessa ricerca e gli stessi filtri (Filtri resta aperto)
+function allCards(q: string, f: Filters) {
+  if (router.canDismiss()) router.dismissAll();
+  router.navigate({ pathname: "/carte", params: { q, flt: JSON.stringify({ ...f, exp: "" }), fo: "1", t: String(Date.now()) } });
+}
+
 function BackLink({ label }: { label: string }) {
   const t = useTheme();
   return (
@@ -166,6 +172,7 @@ export default function Prodotto() {
   return (
     <Screen bs={bar}>
       <SectionList
+        key={s.id}
         sections={sections}
         keyExtractor={(row) => row[0].k}
         stickySectionHeadersEnabled={false}
@@ -204,7 +211,7 @@ export default function Prodotto() {
         }
       />
       {all.length ? <BottomBar q={q} setQ={setQ} placeholder={f.qm ? qmHolder(f.qm) : "Cerca in " + s.code + ", es. Agumon"} cam filter={{ n: nf, onPress: () => setFOpen(true) }} chips={nf ? <ActiveChips f={f} setF={setF} lockExp /> : undefined} /> : null}
-      <FilterSheet visible={fOpen} f={f} setF={setF} onClose={() => setFOpen(false)} count={n} lockExp />
+      <FilterSheet visible={fOpen} f={f} setF={setF} onClose={() => setFOpen(false)} count={n} lockExp expCur={s.id} onExp={(v) => (v ? router.setParams({ id: v }) : allCards(q, f))} />
     </Screen>
   );
 }

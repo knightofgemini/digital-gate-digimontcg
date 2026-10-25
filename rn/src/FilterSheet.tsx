@@ -91,13 +91,17 @@ export const fltCount = (f: Filters, lockExp?: boolean) => fltActive(f, lockExp)
 
 type Rect = { x: number; y: number; w: number; h: number };
 
-export function FilterSheet({ visible, f, setF, onClose, count, lockExp }: { visible: boolean; f: Filters; setF: (f: Filters) => void; onClose: () => void; count: number; lockExp?: boolean }) {
+// lockExp: pagina di un prodotto (l'espansione è il prodotto). Con onExp la tendina Espansione mostra il prodotto (expCur):
+// sceglierne un altro apre quel prodotto, "Tutte le espansioni" porta a Ricerca carte con gli stessi filtri
+export function FilterSheet({ visible, f: f0, setF: setF0, onClose, count, lockExp, expCur, onExp }: { visible: boolean; f: Filters; setF: (f: Filters) => void; onClose: () => void; count: number; lockExp?: boolean; expCur?: string; onExp?: (v: string) => void }) {
+  const f = onExp ? { ...f0, exp: expCur || "" } : f0;
+  const setF = (n: Filters) => setF0(onExp ? { ...n, exp: f0.exp } : n);
   const t = useTheme();
   const ins = useSafeAreaInsets();
   const { width: vw, height: vh } = useWindowDimensions();
   const [dd, setDd] = useState<{ kind: Kind; r: Rect } | null>(null);
   const refs = useRef<Record<string, any>>({});
-  const kinds = ddKinds(f).filter((k) => !(lockExp && k === "exp"));
+  const kinds = ddKinds(f).filter((k) => !(lockExp && k === "exp" && !onExp));
 
   function setK(kind: Kind, v: string) {
     let n: Filters = { ...f, [kind]: v };
@@ -135,7 +139,7 @@ export function FilterSheet({ visible, f, setF, onClose, count, lockExp }: { vis
         </View>
         <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ paddingVertical: 6, flexDirection: "row", flexWrap: "wrap", gap: 6 }} keyboardShouldPersistTaps="handled" onScrollBeginDrag={() => setDd(null)}>
           {kinds.map((kind) => {
-            const on = !!f[kind];
+            const on = !!f0[kind]; // nella pagina di un prodotto l'Espansione mostra il prodotto ma non è un filtro attivo
             const exp = dd && dd.kind === kind;
             const cols = fl(f, "color");
             return (
@@ -177,7 +181,7 @@ export function FilterSheet({ visible, f, setF, onClose, count, lockExp }: { vis
       {dd ? (
         <>
           <Pressable style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} onPress={() => setDd(null)} />
-          <DDPop kind={dd.kind} r={dd.r} f={f} vw={vw} vh={vh} pick={(v) => (MULTI[dd.kind] ? toggle(dd.kind, v) : (setK(dd.kind, v), setDd(null)))} />
+          <DDPop kind={dd.kind} r={dd.r} f={f} vw={vw} vh={vh} pick={(v) => (MULTI[dd.kind] ? toggle(dd.kind, v) : dd.kind === "exp" && onExp ? (setDd(null), v !== f.exp && onExp(v)) : (setK(dd.kind, v), setDd(null)))} />
         </>
       ) : null}
     </Modal>

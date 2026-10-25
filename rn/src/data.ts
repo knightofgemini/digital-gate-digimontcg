@@ -2,6 +2,7 @@
 // Stessa logica di src/template.html (CARDS, mkEntry, cardsOfSet, imgQ...).
 import raw from "../data/data.json";
 import rawProducts from "../data/products.json";
+import { shown } from "./imgstore";
 
 export const TYPES: Record<string, string> = { BT: "Booster", EX: "Extra Booster", ST: "Starter Deck", LM: "Limited", PB: "Premium Bandai", AL: "Altri" };
 export const COLORS: Record<string, string> = { Red: "Rosso", Blue: "Blu", Yellow: "Giallo", Green: "Verde", Black: "Nero", Purple: "Viola", White: "Bianco" };
@@ -196,15 +197,31 @@ function imgQ(key: string, c: Card) {
   return q.length ? "?" + q.join("&") : "";
 }
 const imgKey = (c: Card) => c.img || c.code;
-export const thumbUrl = (c: Card) => IMG + "t/" + encodeURIComponent(imgKey(c)) + ".webp" + imgQ(imgKey(c), c);
-export const fullUrl = (c: Card) => IMG + "f/" + encodeURIComponent(imgKey(c)) + ".webp" + imgQ(imgKey(c), c);
+// indirizzi in rete (per scaricarle in "Immagini offline")…
+export const NET = {
+  t: (c: Card) => IMG + "t/" + encodeURIComponent(imgKey(c)) + ".webp" + imgQ(imgKey(c), c),
+  f: (c: Card) => IMG + "f/" + encodeURIComponent(imgKey(c)) + ".webp" + imgQ(imgKey(c), c),
+  pre: (c: Card | string) => IMG + "pre/" + encodeURIComponent(typeof c === "string" ? c : imgKey(c)) + ".webp",
+  logo: (code: string) => {
+    const p = PRODUCTS[code];
+    return p && p.lg ? SITE + "prod/logo/" + p.k + ".webp" : null;
+  },
+  pack: (code: string) => {
+    const p = PRODUCTS[code];
+    return p && p.pk ? SITE + "prod/" + p.k + ".webp" : null;
+  },
+  banner: (code: string) => (BANNERS[code] ? SITE + "banners/" + code + ".webp" : null),
+};
+// …e da mostrare: il file salvato nel dispositivo se c'è (imgstore)
+export const thumbUrl = (c: Card) => shown(NET.t(c));
+export const fullUrl = (c: Card) => shown(NET.f(c));
 export const logoUrl = (code: string) => {
-  const p = PRODUCTS[code];
-  return p && p.lg ? SITE + "prod/logo/" + p.k + ".webp" : null;
+  const u = NET.logo(code);
+  return u && shown(u);
 };
 export const packUrl = (code: string) => {
-  const p = PRODUCTS[code];
-  return p && p.pk ? SITE + "prod/" + p.k + ".webp" : null;
+  const u = NET.pack(code);
+  return u && shown(u);
 };
 
 // ---- rarità ed etichette
@@ -266,7 +283,8 @@ export function searchCards(src: Card[], q: string) {
 export const hostSet = (c: Card) => (c.suf ? c.from || c.set : c.set);
 export const isAce = (c: Card) => /(^|\n)Effetto ACE:/.test(c.extra || "");
 export const hasErrata = (c: Card) => !!ERRATA[imgKey(c)];
-export const preUrl = (c: Card) => IMG + "pre/" + encodeURIComponent(imgKey(c)) + ".webp";
+export const errataKeys = () => Object.keys(ERRATA);
+export const preUrl = (c: Card) => shown(NET.pre(c));
 
 // versioni della carta: Regular, poi quelle del suo prodotto (★, ★★, SP), poi quelle uscite in altri prodotti (dalle più recenti)
 export function carVers(c: Card): Card[] {
@@ -347,7 +365,10 @@ export function maxCopies(c: Card) {
 // ---- banner dei prodotti e prossime uscite (come nell'app attuale: BANNERS, upSorted, upBadge, upWhen, recentSets)
 export const BANNERS: Record<string, 1> = {};
 ((raw as any).banners || []).forEach((c: string) => (BANNERS[c] = 1));
-export const bannerUrl = (code: string) => (BANNERS[code] ? SITE + "banners/" + code + ".webp" : null);
+export const bannerUrl = (code: string) => {
+  const u = NET.banner(code);
+  return u && shown(u);
+};
 export const numOf = (c: string) => {
   const m = c.match(/(\d+)/);
   return m ? +m[1] : 0;

@@ -15,6 +15,8 @@ import { loadThemePref, useTheme } from "../theme";
 import { FONTS } from "../Text";
 import { MoreSheet, TabBar, useTabPad } from "../chrome";
 import { Intro } from "../Intro";
+import { loadImages } from "../imgstore";
+import { startOffline } from "../offline";
 
 function Root() {
   const t = useTheme();
@@ -47,7 +49,10 @@ export default function RootLayout() {
   const [ready, setReady] = useState(false);
   const [fonts, fontErr] = useFonts(FONTS);
   useEffect(() => {
-    Promise.all([loadStore(), loadThemePref()]).finally(() => setReady(true));
+    Promise.all([loadStore(), loadThemePref(), loadImages()]).finally(() => {
+      setReady(true);
+      startOffline();
+    });
   }, []);
   if (!ready || (!fonts && !fontErr)) return <View style={{ flex: 1, backgroundColor: t.bg }} />;
   return (
