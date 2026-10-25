@@ -48,7 +48,9 @@ jobs:
           cp -r ../android-res/. android/app/src/main/res/
           cp ../android-keys/debug.keystore android/app/debug.keystore
           grep -n -A6 "signingConfigs" android/app/build.gradle
-          echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g" >> android/gradle.properties
+          # a capo prima: l'ultima riga del file non ne ha uno (altrimenti si attacca alla riga precedente)
+          printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g\n' >> android/gradle.properties
+          tail -4 android/gradle.properties
       - run: chmod +x gradlew && ./gradlew assembleRelease --no-daemon
         working-directory: rn/android
       - run: cp rn/android/app/build/outputs/apk/release/app-release.apk DigitalGate-prova.apk
