@@ -1,0 +1,140 @@
+{
+ "BT27-008": {
+  "world": null,
+  "en": null,
+  "taka": null,
+  "taka-sample": {
+   "wh": [
+    951,
+    1295
+   ],
+   "kb": 168.5
+  }
+ },
+ "BT27-009": {
+  "world": null,
+  "en": null,
+  "taka": null,
+  "taka-sample": {
+   "wh": [
+    951,
+    1295
+   ],
+   "kb": 155.5
+  }
+ },
+ "BT27-013": {
+  "world": null,
+  "en": null,
+  "taka": null,
+  "taka-sample": {
+   "wh": [
+    951,
+    1295
+   ],
+   "kb": 188.6
+  }
+ },
+ "BT27-015": {
+  "world": null,
+  "en": null,
+  "taka": null,
+  "taka-sample": {
+   "wh": [
+    951,
+    1295
+   ],
+   "kb": 191.0
+  }
+ },
+ "BT27-074": {
+  "world": null,
+  "en": null,
+  "taka": null,
+  "taka-sample": null
+ },
+ "BT27-078": {
+  "world": null,
+  "en": null,
+  "taka": null,
+  "taka-sample": null
+ },
+ "BT27-081": {
+  "world": null,
+  "en": null,
+  "taka": null,
+  "taka-sample": null
+ },
+ "BT27-083": {
+  "world": null,
+  "en": null,
+  "taka": null,
+  "taka-sample": null
+ },
+ "BT27-085": {
+  "world": null,
+  "en": null,
+  "taka": null,
+  "taka-sample": null
+ },
+ "BT27-087": {
+  "world": null,
+  "en": null,
+  "taka": null,
+  "taka-sample": {
+   "wh": [
+    951,
+    1295
+   ],
+   "kb": 130.6
+  }
+ },
+ "BT27-096": {
+  "world": null,
+  "en": null,
+  "taka": null,
+  "taka-sample": null
+ },
+ "BT27-097": {
+  "world": null,
+  "en": null,
+  "taka": null,
+  "taka-sample": {
+   "wh": [
+    951,
+    1295
+   ],
+   "kb": 116.5
+  }
+ },
+ "BT27-101": {
+  "world": null,
+  "en": null,
+  "taka": null,
+  "taka-sample": {
+   "wh": [
+    951,
+    1295
+   ],
+   "kb": 107.8
+  }
+ },
+ "BT27-015_P1": {
+  "world": null,
+  "en": null,
+  "taka": null,
+  "taka-sample": {
+   "wh": [
+    951,
+    1295
+   ],
+   "kb": 219.3
+  }
+ },
+ "BT27-035_P2": {
+  "world": null,
+  "en": null,
+  "taka": null,
+  "taka-sample": null
+ }
+}
