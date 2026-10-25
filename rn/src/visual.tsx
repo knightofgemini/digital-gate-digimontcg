@@ -128,7 +128,7 @@ export function ProgLine({ h, n, size = 11.8, style }: { h: number; n: number; s
 }
 
 // pulsante (.btn, .btn.pri)
-export function Btn({ label, pri, icon, onPress, style, height = 42 }: { label: string; pri?: boolean; icon?: string; onPress: () => void; style?: ViewStyle; height?: number }) {
+export function Btn({ label, pri, icon, onPress, style, height = 42, fs = 14.1 }: { label: string; pri?: boolean; icon?: string; onPress: () => void; style?: ViewStyle; height?: number; fs?: number }) {
   const t = useTheme();
   const ink = pri ? t.accentInk : t.ink;
   return (
@@ -138,7 +138,7 @@ export function Btn({ label, pri, icon, onPress, style, height = 42 }: { label: 
           <Path {...stroke(ink, 2.2)} d={icon} />
         </Svg>
       ) : null}
-      <Text style={{ color: ink, fontWeight: "600", fontSize: 14.1 }} numberOfLines={1}>
+      <Text style={{ color: ink, fontWeight: "600", fontSize: fs }} numberOfLines={1}>
         {label}
       </Text>
     </Pressable>

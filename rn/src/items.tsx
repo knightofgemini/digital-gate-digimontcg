@@ -25,7 +25,7 @@ const HOLD = 550;
 // −, numero e + in un unico riquadro (body.mob .qty); fill = su tutta la larghezza (griglia); big = barra della scheda carta
 // mazzo: plus = "dim" (+ spento: carta al massimo o altro limite, il tocco mostra il motivo con onBlocked), "max" (limitata già
 // nel mazzo: al posto del + la scritta MAX), "lock" (bandita: lucchetti, numero sostituito da numText in rosso)
-export function QtyControl({ c, value, onSet, plusOff, big, fill, plus, onBlocked, numText }: { c?: Card; value?: number; onSet?: (v: number) => void; plusOff?: boolean; big?: boolean; fill?: boolean; plus?: "dim" | "max" | "lock"; onBlocked?: () => void; numText?: string }) {
+export function QtyControl({ c, value, onSet, plusOff, big, fill, plus, onBlocked, numText, size }: { c?: Card; value?: number; onSet?: (v: number) => void; plusOff?: boolean; big?: boolean; fill?: boolean; plus?: "dim" | "max" | "lock"; onBlocked?: () => void; numText?: string; size?: number }) {
   const t = useTheme();
   useStore();
   const n = value != null ? value : c ? owned(c) : 0;
@@ -38,7 +38,7 @@ export function QtyControl({ c, value, onSet, plusOff, big, fill, plus, onBlocke
   const cur = useRef(n);
   cur.current = n;
   const tot = useRef(0);
-  const sz = big ? 42 : 40;
+  const sz = size || (big ? 42 : 40);
 
   function start(sign: number) {
     held.current = false;
@@ -83,7 +83,7 @@ export function QtyControl({ c, value, onSet, plusOff, big, fill, plus, onBlocke
         onPressOut={stop}
         disabled={full || lock}
         accessibilityLabel={lock ? "Carta bandita" : isPlus ? "Una in più (tieni premuto per aggiungerne 4)" : "Una in meno (tieni premuto per toglierne 4)"}
-        style={{ width: sz, height: sz, borderRadius: 11, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: on ? t.accent : t.line, backgroundColor: on ? t.accent : "transparent", opacity: lock ? 0.6 : dim ? 0.35 : 1 }}
+        style={{ width: sz, height: sz, borderRadius: sz < 38 ? 10 : 11, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: on ? t.accent : t.line, backgroundColor: on ? t.accent : "transparent", opacity: lock ? 0.6 : dim ? 0.35 : 1 }}
       >
         {lock ? lockIco : mode === "max" ? <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 9.6 }}>MAX</Text> : <Text style={{ color: on ? t.accentInk : t.ink, fontSize: 17.6, lineHeight: 20 }}>{label}</Text>}
       </Pressable>

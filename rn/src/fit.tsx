@@ -40,6 +40,7 @@ export function FitText({ text, size, minSize = 11, style, boxStyle, lines = 2, 
     <View style={[{ minWidth: 0 }, boxStyle]} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
       <Text style={[style, { fontSize: fs, lineHeight: Math.round(fs * 1.25) }]} numberOfLines={w ? n : lines}>
         {text.replace(/\//g, "/​")}
+        {ace ? " " : null}
         {ace ? (
           <Text style={{ fontFamily: DISPLAY, fontWeight: "700", fontStyle: "italic", fontSize: fs * 0.74, color: "#fff", backgroundColor: "#e0401f", letterSpacing: 0.3 }}>{" ACE "}</Text>
         ) : null}
