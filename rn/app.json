@@ -40,7 +40,8 @@
         {
           "photosPermission": "Digital Gate apre le foto che scegli per riconoscere le carte."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "build": 0

@@ -1,16 +1,17 @@
 // Informazioni: cos'è l'app, da dove arrivano i dati, dove resta la collezione.
-import { Linking, Pressable, ScrollView, Text, View } from "react-native";
+import { Linking, Pressable, ScrollView, View } from "react-native";
+import { Text } from "../Text";
 import { router } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../theme";
 import { PageTitle, common } from "../ui";
+import { Screen } from "../chrome";
 
 export default function Info() {
   const t = useTheme();
   const s = common(t);
   const P = ({ children }: { children: string }) => <Text style={{ color: t.ink, fontSize: 15, lineHeight: 22, marginBottom: 10 }}>{children}</Text>;
   return (
-    <SafeAreaView style={s.screen} edges={["top"]}>
+    <Screen>
       <ScrollView contentContainerStyle={s.pad}>
         <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} hitSlop={12} style={{ marginBottom: 12 }}>
           <Text style={{ color: t.accent, fontSize: 16, fontWeight: "600" }}>‹ Indietro</Text>
@@ -26,6 +27,6 @@ export default function Info() {
           </Pressable>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }

@@ -1,7 +1,8 @@
 // La mia collezione (come nell'app attuale): Tutte (riepilogo, avanzamento per prodotto, le tue carte), Preferite (con le liste
 // personali) e Wishlist (preferite che mancano, con quanto costa completarle). In fondo: backup per passare i dati tra app e telefoni.
 import { useMemo, useState } from "react";
-import { Modal, Pressable, ScrollView, Share, Text, TextInput, View } from "react-native";
+import { Modal, Pressable, ScrollView, Share, View } from "react-native";
+import { Text, TextInput } from "../../Text";
 import { router } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,6 +16,7 @@ import { S, exportText, favCards, favCount, importText, listById, listDelete, li
 import { SearchHead } from "../../SearchHead";
 import { useTheme } from "../../theme";
 import { Logo, common } from "../../ui";
+import { Screen } from "../../chrome";
 
 const FSORTS: [string, string][] = [
   ["recent", "Aggiunte di recente"],
@@ -119,11 +121,11 @@ export default function Collezione() {
   else empty = L0 ? "Questa lista è vuota: apri una carta, tocca le liste in alto e scegli dove salvarla." : "Nessuna preferita corrisponde ai filtri.";
 
   return (
-    <SafeAreaView style={s.screen} edges={["top"]}>
+    <Screen>
       <CardList list={list} header={header} empty={empty} />
       <FilterSheet visible={fOpen} f={f} setF={setF} onClose={() => setFOpen(false)} count={list.length} />
       <Backup visible={backup} onClose={() => setBackup(false)} />
-    </SafeAreaView>
+    </Screen>
   );
 }
 

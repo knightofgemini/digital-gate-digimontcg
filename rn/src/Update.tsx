@@ -2,7 +2,8 @@
 // (apre il download nel browser del telefono), come nell'app attuale. Numero di build in app.json → extra.build
 // (lo scrive la pubblicazione); in Expo Go e sul sito vale 0 e il controllo non parte.
 import { useEffect, useState } from "react";
-import { Linking, Modal, Platform, Pressable, Text, View } from "react-native";
+import { Linking, Modal, Platform, Pressable, View } from "react-native";
+import { Text } from "./Text";
 import Constants from "expo-constants";
 import { useTheme } from "./theme";
 

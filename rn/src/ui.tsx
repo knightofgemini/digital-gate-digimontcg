@@ -1,6 +1,7 @@
 // Piccoli componenti condivisi dalle schermate.
 import { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, TextStyle, View } from "react-native";
+import { Pressable, StyleSheet, TextStyle, View } from "react-native";
+import { DISPLAY, Text } from "./Text";
 import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path, Rect, Circle } from "react-native-svg";
@@ -113,9 +114,10 @@ export function CardCell({ c, width, onPress }: { c: Card; width: number; onPres
   );
 }
 
+// Titolo della pagina (.ptitle: Chakra Petch corsivo maiuscolo)
 export function PageTitle({ children }: { children: ReactNode }) {
   const t = useTheme();
-  return <Text style={{ color: t.ink, fontSize: 26, fontWeight: "800", marginBottom: 12 }}>{children}</Text>;
+  return <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontStyle: "italic", textTransform: "uppercase", fontSize: 23.2, lineHeight: 27, letterSpacing: -0.2, marginTop: 10, marginBottom: 10 }}>{children}</Text>;
 }
 
 export function SubHead({ children }: { children: ReactNode }) {

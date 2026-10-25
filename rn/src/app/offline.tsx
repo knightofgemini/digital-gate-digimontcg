@@ -1,14 +1,15 @@
 // Pagina "Immagini offline": miniature, tutto in HD o un prodotto alla volta, con dimensione stimata, avanzamento,
 // pausa/ripresa e svuotamento della memoria delle immagini.
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
+import { Text } from "../Text";
 import * as Network from "expo-network";
 import { router } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { SETS, TYPES, cardsOfSet, soonSet } from "../data";
 import { OFF, RUN, clearAll, items, label, mb, pause, progressOf, start, useOffline, weight } from "../offline";
 import { useTheme } from "../theme";
 import { Logo, PageTitle, common } from "../ui";
+import { Screen } from "../chrome";
 
 export default function Offline() {
   const t = useTheme();
@@ -56,7 +57,7 @@ export default function Offline() {
   };
 
   return (
-    <SafeAreaView style={s.screen} edges={["top"]}>
+    <Screen>
       <ScrollView contentContainerStyle={s.pad}>
         <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} hitSlop={12} style={{ marginBottom: 12 }}>
           <Text style={{ color: t.accent, fontSize: 16, fontWeight: "600" }}>‹ Indietro</Text>
@@ -117,7 +118,7 @@ export default function Offline() {
         </View>
         <Text style={{ color: t.ink2, fontSize: 12, marginTop: 12, lineHeight: 17 }}>Lo scaricamento continua finché l'app resta aperta, anche cambiando schermata.</Text>
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 

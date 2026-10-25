@@ -1,6 +1,7 @@
 // Importazione di un mazzo da una lista di testo (stesso formato dell'esportazione e dei siti di mazzi).
 import { useState } from "react";
-import { Modal, Pressable, Text, TextInput, View } from "react-native";
+import { Modal, Pressable, View } from "react-native";
+import { Text, TextInput } from "./Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { parseDeck } from "./decks";
 import { useTheme } from "./theme";

@@ -1,6 +1,7 @@
 // Foglio "Salva in…": preferite, liste personali e avviso di prezzo per una versione della carta (come nell'app attuale).
 import { useState } from "react";
-import { Modal, Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
+import { Modal, Pressable, ScrollView, Switch, View } from "react-native";
+import { Text, TextInput } from "./Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Card, SETBY, hostSet, verLabel } from "./data";
 import { Heart, ListsIcon } from "./items";

@@ -1,11 +1,12 @@
 // Home: prossime uscite e prodotti usciti di recente.
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
+import { Text } from "../../Text";
 import { router } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { SETS, TYPES, UPCOMING, cdText, monthLabel, soonSet, typeOf } from "../../data";
 import { openSet, openUpcoming } from "../../nav";
 import { useTheme } from "../../theme";
 import { Fit, Icon, Logo, PageTitle, SubHead, common } from "../../ui";
+import { Screen } from "../../chrome";
 
 
 export default function Home() {
@@ -18,7 +19,7 @@ export default function Home() {
     .slice(0, 8);
 
   return (
-    <SafeAreaView style={s.screen} edges={["top"]}>
+    <Screen>
       <ScrollView contentContainerStyle={s.pad}>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
           <PageTitle>
@@ -64,7 +65,7 @@ export default function Home() {
           ))}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 

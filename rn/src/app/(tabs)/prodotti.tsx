@@ -1,12 +1,13 @@
 // Prodotti: tutti i set usciti, raggruppati per tipo, dal più recente; ricerca per codice, nome o carta contenuta.
 import { useMemo, useState } from "react";
-import { Pressable, SectionList, Text, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Pressable, SectionList, View } from "react-native";
+import { Text, TextInput } from "../../Text";
 import { CardSet, SETS, TYPES, cardsOfSet, fold, normQ, soonSet } from "../../data";
 import { setStats, useStore } from "../../store";
 import { openSet } from "../../nav";
 import { useTheme } from "../../theme";
 import { Fit, Logo, PageTitle, common } from "../../ui";
+import { Screen } from "../../chrome";
 
 const CHIPS: [string, string][] = [["ALL", "Tutti"], ["BT", "Booster"], ["EX", "Extra"], ["ST", "Starter"], ["LM", "Limited"], ["PB", "Premium"], ["AL", "Altri"]];
 
@@ -35,7 +36,7 @@ export default function Prodotti() {
   }, [q, type]);
 
   return (
-    <SafeAreaView style={s.screen} edges={["top"]}>
+    <Screen>
       <SectionList
         sections={sections}
         keyExtractor={(x) => x.id}
@@ -63,7 +64,7 @@ export default function Prodotti() {
         )}
         renderItem={({ item, section }) => <SetRow x={item} hit={hits[item.id]} withLogo={section.type !== "PB"} />}
       />
-    </SafeAreaView>
+    </Screen>
   );
 }
 

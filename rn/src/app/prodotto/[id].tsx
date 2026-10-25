@@ -1,10 +1,10 @@
 // Pagina di un prodotto: scheda con i dati ufficiali e carte raggruppate (Regular, Alternative Art, Ristampe...).
 // "up-CODICE" = prodotto in arrivo senza carte: solo la scheda.
 import { ReactNode, useMemo, useState } from "react";
-import { Linking, Pressable, SectionList, Text, TextInput, View, useWindowDimensions } from "react-native";
+import { Linking, Pressable, SectionList, View, useWindowDimensions } from "react-native";
+import { Text, TextInput } from "../../Text";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Card, PRODUCTS, SETBY, TYPES, UPCOMING, cardsOfSet, cdText, itDate, monthLabel, normQ, packUrl, relevance, setGroups, soonSet, typeOf } from "../../data";
 import { ActiveChips, FilterSheet } from "../../FilterSheet";
 import { EMPTY, Filters, cardMatches, fl } from "../../filters";
@@ -13,6 +13,7 @@ import { usePrices } from "../../prices";
 import { S, setStats, useStore } from "../../store";
 import { useTheme } from "../../theme";
 import { Fit, Logo, common } from "../../ui";
+import { Screen } from "../../chrome";
 
 const REGIONS: Record<string, string> = { Europe: "Europa", "North America": "Nord America", "Latin America": "America Latina", Oceania: "Oceania", "United States": "Stati Uniti", "Other regions": "Altre regioni" };
 const UNITS: Record<string, string> = { pack: "a busta", deck: "a mazzo", box: "a box" };
@@ -110,7 +111,7 @@ export default function Prodotto() {
   );
 
   return (
-    <SafeAreaView style={s.screen} edges={["top"]}>
+    <Screen>
       <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderColor: t.line }}>
         <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/prodotti"))} hitSlop={12}>
           <Text style={{ color: t.accent, fontSize: 16, fontWeight: "600" }}>‹ Indietro</Text>
@@ -139,7 +140,7 @@ export default function Prodotto() {
         }
       />
       <FilterSheet visible={fOpen} f={f} setF={setF} onClose={() => setFOpen(false)} count={n} lockExp />
-    </SafeAreaView>
+    </Screen>
   );
 }
 

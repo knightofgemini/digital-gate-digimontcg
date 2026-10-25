@@ -1,8 +1,8 @@
 // Deckbuilding: i miei mazzi (copertina, colori, stato, avanzamento), nuovo mazzo e importazione da lista.
 import { useState } from "react";
-import { Linking, Pressable, ScrollView, Text, View } from "react-native";
+import { Linking, Pressable, ScrollView, View } from "react-native";
+import { Text } from "../../Text";
 import { Image } from "expo-image";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { fullUrl } from "../../data";
 import { banNote, banSource, deckColors, deckCover, deckState, deckStats, newDeck } from "../../decks";
 import { ImportDeck } from "../../ImportDeck";
@@ -10,6 +10,7 @@ import { openDeck } from "../../nav";
 import { S, useStore } from "../../store";
 import { useTheme } from "../../theme";
 import { PageTitle, common } from "../../ui";
+import { Screen } from "../../chrome";
 
 export default function Mazzi() {
   const t = useTheme();
@@ -18,7 +19,7 @@ export default function Mazzi() {
   const [imp, setImp] = useState(false);
   const decks = S.decks.slice().sort((a, b) => (b.upd || 0) - (a.upd || 0));
   return (
-    <SafeAreaView style={s.screen} edges={["top"]}>
+    <Screen>
       <ScrollView contentContainerStyle={s.pad}>
         <PageTitle>Deckbuilding</PageTitle>
         <View style={{ flexDirection: "row", gap: 8 }}>
@@ -79,6 +80,6 @@ export default function Mazzi() {
           openDeck(newDeck("Mazzo importato", cards).id);
         }}
       />
-    </SafeAreaView>
+    </Screen>
   );
 }

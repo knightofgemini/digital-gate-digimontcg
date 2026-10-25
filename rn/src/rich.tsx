@@ -2,7 +2,8 @@
 // e i colori scritti nel testo (Red, Blue...) come tag colorati. Il testo resta sempre in inglese come stampato.
 // Toccando una keyword (＜Raid＞, ＜Security A. +1＞...) si apre sotto il testo la spiegazione della regola.
 import { useState } from "react";
-import { Pressable, Text, TextStyle, View } from "react-native";
+import { Pressable, TextStyle, View } from "react-native";
+import { Text } from "./Text";
 import { kwInfo } from "./keywords";
 import { useTheme } from "./theme";
 

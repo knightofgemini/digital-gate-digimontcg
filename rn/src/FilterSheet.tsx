@@ -1,7 +1,8 @@
 // Foglio "Filtri" dal basso (telefono): tutte le tendine del sito in un'unica pagina, una sezione per filtro.
 // Colore, Attributo e Tipo a scelta multipla; gli altri a scelta singola. Le parole delle carte restano in inglese.
 import { useMemo, useState } from "react";
-import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Modal, Pressable, ScrollView, View } from "react-native";
+import { Text, TextInput } from "./Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { fold } from "./data";
 import { DDN, EMPTY, Filters, Kind, MULTI, anyFlt, ddFix, ddKinds, ddOptions, fl } from "./filters";

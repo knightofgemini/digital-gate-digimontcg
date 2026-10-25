@@ -1,6 +1,7 @@
 // Avviso breve in basso (come toast() dell'app attuale), es. "Massimo 4 copie per Agumon."
 import { useEffect, useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "./Text";
 import { useTheme } from "./theme";
 
 let show: ((m: string) => void) | null = null;

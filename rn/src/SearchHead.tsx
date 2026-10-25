@@ -1,5 +1,6 @@
 // Intestazione delle pagine di ricerca (Carte e Collezione).
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { Text, TextInput } from "./Text";
 import { router } from "expo-router";
 import Svg, { Circle, Path } from "react-native-svg";
 import { ActiveChips } from "./FilterSheet";

@@ -1,5 +1,6 @@
 // Copie nel mazzo: − numero + con le regole (bandita con lucchetto, limitata con MAX, + spento quando non si può aggiungere).
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "./Text";
 import Svg, { Path, Rect } from "react-native-svg";
 import { Card, PAIRS, maxCopies } from "./data";
 import { addError, codeTotal, deckAdd, deckSet, inDeck } from "./decks";

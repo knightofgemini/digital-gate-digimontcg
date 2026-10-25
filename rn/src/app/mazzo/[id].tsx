@@ -2,7 +2,8 @@
 // curva che porta al livello, stato (valido / bozza / problemi), il mazzo in pile per livello con "+ Aggiungi",
 // barra "Cerca e aggiungi carte…" che apre il foglio di ricerca, e la vista Statistiche.
 import { useCallback, useMemo, useRef, useState } from "react";
-import { Linking, Modal, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from "react-native";
+import { Linking, Modal, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { Text, TextInput } from "../../Text";
 import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -18,6 +19,7 @@ import { owned, saveDecks, useStore } from "../../store";
 import { useTheme } from "../../theme";
 import { toast } from "../../toast";
 import { ColorBand, common } from "../../ui";
+import { Screen } from "../../chrome";
 import { rarLine } from "../../items";
 
 const ORDER: Record<string, number> = {};
@@ -70,7 +72,7 @@ export default function Mazzo() {
   }
 
   return (
-    <SafeAreaView style={s.screen} edges={["top"]}>
+    <Screen>
       {/* intestazione: indietro, nome del mazzo, azioni */}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
         <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/mazzi"))} hitSlop={10}>
@@ -268,7 +270,7 @@ export default function Mazzo() {
         }}
       />
       <CoverPicker visible={cover} d={d} onClose={() => setCover(false)} />
-    </SafeAreaView>
+    </Screen>
   );
 }
 

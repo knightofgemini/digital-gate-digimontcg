@@ -1,6 +1,5 @@
 // Ricerca carte: ricerca (Tutto / Nome / Testo), foglio dei filtri, filtri attivi come etichette, carte a elenco o a immagini.
 import { useMemo, useState } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { CARDS, SETS, normQ, relevance } from "../../data";
 import { FilterSheet } from "../../FilterSheet";
 import { EMPTY, Filters, anyFlt, cardMatches, srcCards } from "../../filters";
@@ -8,6 +7,7 @@ import { CardList } from "../../items";
 import { SearchHead } from "../../SearchHead";
 import { useTheme } from "../../theme";
 import { common } from "../../ui";
+import { Screen } from "../../chrome";
 
 // dal prodotto più recente al più vecchio, dentro lo stesso prodotto in ordine di numero
 const ORDER: Record<string, number> = {};
@@ -32,10 +32,10 @@ export default function Carte() {
   }, [q, f]);
 
   return (
-    <SafeAreaView style={s.screen} edges={["top"]}>
+    <Screen>
       <SearchHead title="Ricerca carte" q={q} setQ={setQ} f={f} setF={setF} openF={() => setOpen(true)} n={list.length} />
       <CardList list={list} empty={q || anyFlt(f) ? "Nessuna carta corrisponde ai filtri." : ""} />
       <FilterSheet visible={open} f={f} setF={setF} onClose={() => setOpen(false)} count={list.length} />
-    </SafeAreaView>
+    </Screen>
   );
 }

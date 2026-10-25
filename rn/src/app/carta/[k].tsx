@@ -2,7 +2,8 @@
 // dell'elenco da cui è stata aperta; versioni come pulsanti; nome, codice e rarità; una riga di dati; tratti;
 // digievoluzioni ed effetti con le icone; prezzi; pre errata. Testi delle carte in inglese, etichette in italiano.
 import { useMemo, useState } from "react";
-import { FlatList, Linking, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import { FlatList, Linking, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { Text } from "../../Text";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";

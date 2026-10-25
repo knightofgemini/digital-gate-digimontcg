@@ -1,7 +1,8 @@
 // Elementi degli elenchi di carte (ricerca, prodotto, collezione): vista a elenco o a immagini, cuore delle preferite,
 // pulsanti − e + per le copie (tenendo premuto ±4, e altre 4 continuando a tenere; toccando il numero si scrive quante copie).
 import { useRef, useState } from "react";
-import { FlatList, Pressable, Text, TextInput, View, useWindowDimensions } from "react-native";
+import { FlatList, Pressable, View, useWindowDimensions } from "react-native";
+import { Text, TextInput } from "./Text";
 import Svg, { Path, Rect } from "react-native-svg";
 import { Image } from "expo-image";
 import { Card, thumbUrl } from "./data";
