@@ -519,11 +519,11 @@ function Stats({ d }: { d: any }) {
               <View key={x} style={{ flex: n / totc, minWidth: 3, backgroundColor: t.cards[x] }} />
             ))}
           </View>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", columnGap: 10, rowGap: 4 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", columnGap: 12, rowGap: 4 }}>
             {cols.map(([x, n]) => (
               <View key={x} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
                 <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: t.cards[x] }} />
-                <Text style={{ color: t.ink2, fontSize: 12.5 }}>{x + " " + n}</Text>
+                <Text style={{ color: t.ink2, fontSize: 12.8 }}>{x + " " + n}</Text>
               </View>
             ))}
           </View>
