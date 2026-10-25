@@ -45,6 +45,7 @@ jobs:
       - name: Icona Digital Gate (la stessa dell'APK attuale) e firma fissa
         working-directory: rn
         run: |
+          rm -f android/app/src/main/res/mipmap-*/ic_launcher*.webp   # icone generate da Expo: al loro posto quelle di Digital Gate
           cp -r ../android-res/. android/app/src/main/res/
           cp ../android-keys/debug.keystore android/app/debug.keystore
           grep -n -A6 "signingConfigs" android/app/build.gradle
