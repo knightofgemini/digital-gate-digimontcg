@@ -15,6 +15,7 @@ import { S, favSet, isFav, owned, setQty, setView, useStore } from "./store";
 import { useTheme } from "./theme";
 import { ColorBand } from "./ui";
 import { FitText } from "./fit";
+import { useBar } from "./chrome";
 import { CmMark, CtMark } from "./shops";
 import { BOTTOM_PAD } from "./BottomBar";
 import { favToast } from "./toast";
@@ -22,7 +23,9 @@ import { favToast } from "./toast";
 const HOLD = 550;
 
 // −, numero e + in un unico riquadro (body.mob .qty); fill = su tutta la larghezza (griglia); big = barra della scheda carta
-export function QtyControl({ c, value, onSet, plusOff, big, fill }: { c?: Card; value?: number; onSet?: (v: number) => void; plusOff?: boolean; big?: boolean; fill?: boolean }) {
+// mazzo: plus = "dim" (+ spento: carta al massimo o altro limite, il tocco mostra il motivo con onBlocked), "max" (limitata già
+// nel mazzo: al posto del + la scritta MAX), "lock" (bandita: lucchetti, numero sostituito da numText in rosso)
+export function QtyControl({ c, value, onSet, plusOff, big, fill, plus, onBlocked, numText }: { c?: Card; value?: number; onSet?: (v: number) => void; plusOff?: boolean; big?: boolean; fill?: boolean; plus?: "dim" | "max" | "lock"; onBlocked?: () => void; numText?: string }) {
   const t = useTheme();
   useStore();
   const n = value != null ? value : c ? owned(c) : 0;
@@ -55,28 +58,43 @@ export function QtyControl({ c, value, onSet, plusOff, big, fill }: { c?: Card; 
     clearTimeout(timer.current);
     if (held.current) setTimeout(() => setPop(null), 800);
   }
-  const btn = (label: string, plus: boolean, onPress: () => void, sign: number, full?: boolean) => (
-    <Pressable
-      onPress={() => {
-        if (held.current) {
-          held.current = false;
-          return;
-        }
-        onPress();
-      }}
-      onPressIn={() => !full && start(sign)}
-      onPressOut={stop}
-      disabled={full}
-      accessibilityLabel={plus ? "Una in più (tieni premuto per aggiungerne 4)" : "Una in meno (tieni premuto per toglierne 4)"}
-      style={{ width: sz, height: sz, borderRadius: 11, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: plus && !full ? t.accent : t.line, backgroundColor: plus && !full ? t.accent : "transparent", opacity: full ? 0.35 : 1 }}
-    >
-      <Text style={{ color: plus && !full ? t.accentInk : t.ink, fontSize: 17.6, lineHeight: 20 }}>{label}</Text>
-    </Pressable>
+  const lockIco = (
+    <Svg width={15} height={15} viewBox="0 0 24 24">
+      <Rect x={5} y={11} width={14} height={10} rx={2} stroke={t.ink2} strokeWidth={2.2} fill="none" />
+      <Path d="M8 11V8a4 4 0 0 1 8 0v3" stroke={t.ink2} strokeWidth={2.2} fill="none" strokeLinecap="round" />
+    </Svg>
   );
+  const btn = (label: string, isPlus: boolean, onPress: () => void, sign: number, full?: boolean, mode?: "dim" | "max" | "lock") => {
+    const lock = mode === "lock";
+    const dim = full || mode === "dim" || mode === "max";
+    const on = isPlus && !dim && !lock;
+    return (
+      <Pressable
+        onPress={() => {
+          if (held.current) {
+            held.current = false;
+            return;
+          }
+          if (lock) return;
+          if (isPlus && (mode === "dim" || mode === "max")) return onBlocked && onBlocked();
+          onPress();
+        }}
+        onPressIn={() => !full && !mode && start(sign)}
+        onPressOut={stop}
+        disabled={full || lock}
+        accessibilityLabel={lock ? "Carta bandita" : isPlus ? "Una in più (tieni premuto per aggiungerne 4)" : "Una in meno (tieni premuto per toglierne 4)"}
+        style={{ width: sz, height: sz, borderRadius: 11, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: on ? t.accent : t.line, backgroundColor: on ? t.accent : "transparent", opacity: lock ? 0.6 : dim ? 0.35 : 1 }}
+      >
+        {lock ? lockIco : mode === "max" ? <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 9.6 }}>MAX</Text> : <Text style={{ color: on ? t.accentInk : t.ink, fontSize: 17.6, lineHeight: 20 }}>{label}</Text>}
+      </Pressable>
+    );
+  };
   return (
     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: fill ? "space-between" : undefined, alignSelf: fill ? "stretch" : undefined, gap: 4, padding: big ? 4 : 3, borderRadius: 14, borderWidth: 1, borderColor: t.line, backgroundColor: t.bg }}>
-      {btn("−", false, () => n > 0 && set(n - 1), -1)}
-      {edit ? (
+      {btn("−", false, () => n > 0 && set(n - 1), -1, false, plus === "lock" && !n ? "lock" : undefined)}
+      {numText ? (
+        <Text style={{ color: "#ff5a5f", fontFamily: DISPLAY, fontWeight: "700", fontSize: 11.5, letterSpacing: 0.5, textTransform: "uppercase", paddingHorizontal: 2 }}>{numText}</Text>
+      ) : edit ? (
         <TextInput
           autoFocus
           value={txt}
@@ -105,7 +123,7 @@ export function QtyControl({ c, value, onSet, plusOff, big, fill }: { c?: Card; 
           <Text style={{ minWidth: 22, textAlign: "center", color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 15, fontVariant: ["tabular-nums"] }}>{n}</Text>
         </Pressable>
       )}
-      {btn("+", true, () => set(n + 1), 1, plusOff)}
+      {btn("+", true, () => set(n + 1), 1, plusOff, plus)}
       {pop ? (
         <View pointerEvents="none" style={{ position: "absolute", [pop.right ? "right" : "left"]: 3, top: -30, minWidth: sz, alignItems: "center", backgroundColor: t.ink, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
           <Text style={{ color: t.bg, fontFamily: DISPLAY, fontWeight: "700", fontSize: 13 }}>{pop.s}</Text>
@@ -258,10 +276,11 @@ export function PricePill({ c }: { c: Card }) {
 }
 
 // vista a elenco (.row.card.p1)
-export function ListRow({ c, list, extra, noPrice }: { c: Card; list: Card[]; extra?: ReactNode; noPrice?: boolean }) {
+// right: al posto delle copie della collezione (es. copie nel mazzo); deck: scheda aperta dall'editor del mazzo
+export function ListRow({ c, list, extra, noPrice, right, deck, onOpen }: { c: Card; list: Card[]; extra?: ReactNode; noPrice?: boolean; right?: ReactNode; deck?: string; onOpen?: () => void }) {
   const t = useTheme();
   return (
-    <Pressable onPress={() => openCard(c, list)} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, paddingLeft: 10, paddingRight: 12, backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 10 }}>
+    <Pressable onPress={() => (onOpen && onOpen(), openCard(c, list, deck))} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, paddingLeft: 10, paddingRight: 12, backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 10 }}>
       <View style={{ width: 46, gap: 4 }}>
         <Image source={thumbUrl(c)} style={{ width: 46, height: 64, borderRadius: 4, backgroundColor: t.surface2 }} contentFit="cover" cachePolicy="disk" recyclingKey={c.k} />
         <ColorBand colors={c.colors} height={4} />
@@ -269,7 +288,7 @@ export function ListRow({ c, list, extra, noPrice }: { c: Card; list: Card[]; ex
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
           <FitText text={c.name} size={15} boxStyle={{ flex: 1 }} style={{ color: t.ink, fontWeight: "500" }} ace={isAce(c)} />
-          <FavButton c={c} box />
+          {right ? null : <FavButton c={c} box />}
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
           <View style={{ flex: 1, minWidth: 0 }}>
@@ -277,7 +296,7 @@ export function ListRow({ c, list, extra, noPrice }: { c: Card; list: Card[]; ex
             {noPrice ? null : <PricePill c={c} />}
             {extra}
           </View>
-          <QtyControl c={c} />
+          {right ?? <QtyControl c={c} />}
         </View>
       </View>
     </Pressable>
@@ -285,37 +304,36 @@ export function ListRow({ c, list, extra, noPrice }: { c: Card; list: Card[]; ex
 }
 
 // vista a immagini (.tile)
-export function GridTile({ c, list, width, extra }: { c: Card; list: Card[]; width: number; extra?: ReactNode }) {
+export function GridTile({ c, list, width, extra, qty, deck, onOpen }: { c: Card; list: Card[]; width: number; extra?: ReactNode; qty?: ReactNode; deck?: string; onOpen?: () => void }) {
   const t = useTheme();
   return (
-    <Pressable onPress={() => openCard(c, list)} style={{ width, padding: 6, gap: 5, backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 11 }}>
+    <Pressable onPress={() => (onOpen && onOpen(), openCard(c, list, deck))} style={{ width, padding: 6, gap: 5, backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 11 }}>
       <Image source={fullUrl(c)} placeholder={thumbUrl(c)} placeholderContentFit="cover" style={{ width: "100%", aspectRatio: 5 / 7, borderRadius: 7, backgroundColor: t.surface2 }} contentFit="cover" cachePolicy="disk" transition={120} recyclingKey={c.k} />
       <ColorBand colors={c.colors} height={5} />
       <View style={{ flexDirection: "row", alignItems: "center", gap: 4, minWidth: 0 }}>
         <FitText text={c.name} size={14.7} boxStyle={{ flex: 1 }} style={{ color: t.ink, fontWeight: "600" }} ace={isAce(c)} />
-        <FavButton c={c} box />
+        {qty ? null : <FavButton c={c} box />}
       </View>
       <View>
         <ListLines c={c} />
       </View>
-      <View style={{ marginTop: "auto", paddingTop: 2 }}>
-        <QtyControl c={c} fill />
-      </View>
-      <PriceLines c={c} />
+      <View style={{ marginTop: "auto", paddingTop: 2, alignItems: "stretch" }}>{qty ?? <QtyControl c={c} fill />}</View>
+      {qty ? null : <PriceLines c={c} />}
       {extra}
     </Pressable>
   );
 }
 
 // interruttore elenco / immagini (.vbtns), salvato come nell'app attuale
-export function ViewToggle() {
+// value/onChange: vista separata (es. ricerca nel mazzo, "dg-dkview"); senza, quella di tutta l'app ("dgm-view")
+export function ViewToggle({ value, onChange }: { value?: "list" | "grid"; onChange?: (v: "list" | "grid") => void } = {}) {
   const t = useTheme();
   useStore();
   const b = (v: "list" | "grid", label: string) => {
-    const on = S.view === v;
+    const on = (value || S.view) === v;
     const col = on ? t.bg : t.ink2;
     return (
-      <Pressable onPress={() => setView(v)} accessibilityLabel={label} accessibilityState={{ selected: on }} style={{ width: 36, height: 32, borderRadius: 8, borderWidth: 1, borderColor: on ? t.ink : t.line, backgroundColor: on ? t.ink : t.surface, alignItems: "center", justifyContent: "center" }}>
+      <Pressable onPress={() => (onChange ? onChange(v) : setView(v))} accessibilityLabel={label} accessibilityState={{ selected: on }} style={{ width: 36, height: 32, borderRadius: 8, borderWidth: 1, borderColor: on ? t.ink : t.line, backgroundColor: on ? t.ink : t.surface, alignItems: "center", justifyContent: "center" }}>
         <Svg width={18} height={18} viewBox="0 0 24 24">
           {v === "list" ? (
             <Path d="M4 6h16M4 12h16M4 18h16" stroke={col} strokeWidth={2} strokeLinecap="round" />
@@ -354,6 +372,7 @@ export function CardList({ list, header, empty, extra, padBottom = BOTTOM_PAD }:
   useStore();
   usePrices();
   const { width } = useWindowDimensions();
+  const bar = useBar();
   const grid = S.view === "grid";
   const tw = Math.floor((width - 28 - 6) / 2);
   return (
@@ -367,7 +386,8 @@ export function CardList({ list, header, empty, extra, padBottom = BOTTOM_PAD }:
       ListHeaderComponent={header}
       columnWrapperStyle={grid ? { gap: 6 } : undefined}
       ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
-      contentContainerStyle={{ paddingHorizontal: 14, paddingBottom: padBottom }}
+      onScroll={bar.onScroll} scrollEventThrottle={16}
+      contentContainerStyle={{ paddingHorizontal: 14, paddingTop: bar.pad, paddingBottom: padBottom }}
       initialNumToRender={grid ? 8 : 10}
       windowSize={7}
       renderItem={({ item }) => (grid ? <GridTile c={item} list={list} width={tw} extra={extra && extra(item)} /> : <ListRow c={item} list={list} extra={extra && extra(item)} />)}

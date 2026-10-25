@@ -16,7 +16,7 @@ import { CountRow, GridTile, ListRow } from "../../items";
 import { usePrices } from "../../prices";
 import { S, setStats, useStore } from "../../store";
 import { useTheme } from "../../theme";
-import { Screen } from "../../chrome";
+import { Screen, useBarState } from "../../chrome";
 import { ProdVisual, Progress } from "../../visual";
 import { BOTTOM_PAD, BottomBar } from "../../BottomBar";
 
@@ -36,6 +36,7 @@ function BackLink({ label }: { label: string }) {
 export default function Prodotto() {
   const { id, from, q: q0, qm } = useLocalSearchParams<{ id: string; from?: string; q?: string; qm?: string }>();
   const t = useTheme();
+  const bar = useBarState();
   const { width } = useWindowDimensions();
   useStore();
   usePrices();
@@ -76,8 +77,8 @@ export default function Prodotto() {
 
   if (!set && !up)
     return (
-      <Screen>
-        <View style={{ paddingHorizontal: 14 }}>
+      <Screen bs={bar}>
+        <View style={{ paddingHorizontal: 14, paddingTop: bar.pad }}>
           <BackLink label="← Indietro" />
           <Text style={{ color: t.ink2, textAlign: "center", paddingVertical: 48 }}>Prodotto non trovato.</Text>
         </View>
@@ -87,11 +88,11 @@ export default function Prodotto() {
   // ---- prodotto in arrivo senza carte: solo la scheda
   if (up && !set)
     return (
-      <Screen>
+      <Screen bs={bar}>
         <SectionList
           sections={[]}
-          renderItem={() => null}
-          contentContainerStyle={{ paddingHorizontal: 14, paddingBottom: 28 }}
+          renderItem={() => null} onScroll={bar.onScroll} scrollEventThrottle={16}
+          contentContainerStyle={{ paddingHorizontal: 14, paddingTop: bar.pad, paddingBottom: 28 }}
           ListHeaderComponent={
             <View>
               <BackLink label={from === "home" ? "← Home" : "← Indietro"} />
@@ -163,7 +164,7 @@ export default function Prodotto() {
   );
 
   return (
-    <Screen>
+    <Screen bs={bar}>
       <SectionList
         sections={sections}
         keyExtractor={(row) => row[0].k}
@@ -182,7 +183,8 @@ export default function Prodotto() {
             )}
           </View>
         }
-        contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4, paddingBottom: BOTTOM_PAD + (nf ? 42 : 0) }}
+        onScroll={bar.onScroll} scrollEventThrottle={16}
+        contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: BOTTOM_PAD + (nf ? 42 : 0) }}
         initialNumToRender={6}
         renderSectionHeader={({ section }) =>
           section.title ? <Text style={{ color: t.accent, fontFamily: DISPLAY, fontWeight: "500", fontSize: 11.8, letterSpacing: 1.2, textTransform: "uppercase", marginTop: 18, marginBottom: 8 }}>{section.title}</Text> : null

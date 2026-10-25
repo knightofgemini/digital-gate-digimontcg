@@ -1,7 +1,7 @@
 // Cornice dell'app, come nell'app attuale sul telefono (body.mob): barra in alto con il marchio Digivice e il pulsante ⋯,
 // foglio "Altro" (Prossime uscite, Immagini offline, Informazioni, tema), barra di navigazione in basso.
-import { ReactNode, useState, useSyncExternalStore } from "react";
-import { Keyboard, Modal, Platform, Pressable, View } from "react-native";
+import { ReactNode, createContext, useContext, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { Animated, Easing, Keyboard, Modal, Platform, Pressable, View } from "react-native";
 import { router, usePathname, useGlobalSearchParams } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
@@ -133,12 +133,63 @@ export function AppBar({ children }: { children?: ReactNode }) {
 }
 
 // Schermata con la barra in alto; il contenuto lascia spazio alla barra in basso
-export function Screen({ children, bar }: { children: ReactNode; bar?: ReactNode }) {
+// La barra in alto si nasconde scorrendo verso il basso e ricompare risalendo (come .bar.hide nell'app attuale):
+// sta sopra il contenuto, e gli elenchi lasciano in cima il suo spazio (useBar().pad) e passano onScroll.
+type BarState = { pad: number; onScroll: (e: any) => void; y: Animated.Value; setH: (h: number) => void };
+const BarCtx = createContext<BarState | null>(null);
+// stato della barra di una pagina: la pagina lo crea (useBarState) e lo passa a <Screen bs={…}>; gli elenchi dentro la pagina
+// lo leggono con useBar()
+export function useBarState(): BarState {
+  const [h, setH] = useState(71);
+  const y = useRef(new Animated.Value(0)).current;
+  const st = useRef({ last: 0, up: 0, down: 0, hid: false, h: 71 });
+  st.current.h = h;
+  return useMemo(() => {
+    const show = (v: boolean) => {
+      if (st.current.hid === !v) return;
+      st.current.hid = !v;
+      Animated.timing(y, { toValue: v ? 0 : -(st.current.h + 2), duration: 220, easing: Easing.out(Easing.ease), useNativeDriver: Platform.OS !== "web" }).start();
+    };
+    return {
+      pad: h,
+      y,
+      setH,
+      onScroll: (e: any) => {
+        const cur = e.nativeEvent.contentOffset.y,
+          s0 = st.current,
+          dy = cur - s0.last;
+        s0.last = cur;
+        if (cur < 60) {
+          s0.up = s0.down = 0;
+          return show(true);
+        }
+        if (dy > 0) {
+          s0.down += dy;
+          s0.up = 0;
+          if (s0.down > 30) show(false);
+        } else if (dy < 0) {
+          s0.up -= dy;
+          s0.down = 0;
+          if (s0.up > 220) show(true);
+        }
+      },
+    };
+  }, [h]);
+}
+const NOBAR_STATE: BarState = { pad: 0, onScroll: () => {}, y: new Animated.Value(0), setH: () => {} };
+export const useBar = () => useContext(BarCtx) || NOBAR_STATE;
+export function Screen({ children, bar, bs }: { children: ReactNode; bar?: ReactNode; bs?: BarState }) {
   const t = useTheme();
+  const own = useBarState();
+  const st = bs || own;
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }} edges={["top"]}>
-      <AppBar>{bar}</AppBar>
-      <View style={{ flex: 1 }}>{children}</View>
+      <View style={{ flex: 1, overflow: "hidden" }}>
+        <BarCtx.Provider value={st}>{children}</BarCtx.Provider>
+        <Animated.View onLayout={(e) => st.setH(Math.round(e.nativeEvent.layout.height))} style={{ position: "absolute", top: 0, left: 0, right: 0, transform: [{ translateY: st.y }] }}>
+          <AppBar>{bar}</AppBar>
+        </Animated.View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -151,11 +202,20 @@ if (Platform.OS !== "web") {
   Keyboard.addListener("keyboardDidHide", () => ((KBD = false), kbdSubs.forEach((f) => f())));
 }
 export const useKbd = () => useSyncExternalStore((f) => (kbdSubs.add(f), () => kbdSubs.delete(f)), () => KBD, () => KBD);
+// barra in basso nascosta mentre è aperto il foglio di ricerca del mazzo (che la copre, come nell'app attuale)
+let TABHIDE = false;
+export function setTabHidden(v: boolean) {
+  if (TABHIDE === v) return;
+  TABHIDE = v;
+  kbdSubs.forEach((f) => f());
+}
+const useTabHide = () => useSyncExternalStore((f) => (kbdSubs.add(f), () => kbdSubs.delete(f)), () => TABHIDE, () => TABHIDE);
 
 // spazio da lasciare in fondo alle pagine per la barra di navigazione
 export function useTabPad() {
   const b = useSafeAreaInsets().bottom;
-  return useKbd() ? 0 : TABH + b;
+  const hide = useTabHide();
+  return useKbd() || hide ? 0 : TABH + b;
 }
 
 // ---- barra di navigazione in basso
@@ -192,8 +252,9 @@ export function TabBar() {
   const path = usePathname();
   const params = useGlobalSearchParams<{ from?: string }>();
   const kbd = useKbd();
+  const hide = useTabHide();
   useStore();
-  if (NOBAR.test(path) || kbd) return null;
+  if (NOBAR.test(path) || kbd || hide) return null;
   const cur = curTab(path, params.from);
   const todo = decksTodo();
   return (

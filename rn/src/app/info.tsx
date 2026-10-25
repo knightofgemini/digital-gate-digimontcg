@@ -10,7 +10,7 @@ import { fmtDate } from "../prices";
 import { exportText } from "../store";
 import { useTheme } from "../theme";
 import { PageTitle } from "../ui";
-import { Screen } from "../chrome";
+import { Screen, useBarState } from "../chrome";
 import { Btn } from "../visual";
 import { Backup } from "../Backup";
 import { toast } from "../toast";
@@ -33,6 +33,7 @@ function Sec({ title, text, open: o0 }: { title: string; text: string; open?: bo
 
 export default function Info() {
   const t = useTheme();
+  const bar = useBarState();
   const [imp, setImp] = useState(false);
   const secs: [string, string, boolean?][] = [
     ["Dove sono salvati i miei dati?", "Le copie della collezione e i mazzi restano salvati su questo dispositivo, nel browser o nell'app. Non c'è ancora una sincronizzazione tra dispositivi: cancellando i dati del browser o disinstallando l'app si perdono: per conservarli usa il Backup qui sopra.", true],
@@ -42,8 +43,8 @@ export default function Info() {
     ["Crediti e marchi", "Digimon e Digimon Card Game sono marchi di Bandai. ©Akiyoshi Hongo, Toei Animation. Questo progetto non è affiliato a Bandai."],
   ];
   return (
-    <Screen>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4, paddingBottom: 28 }}>
+    <Screen bs={bar}>
+      <ScrollView onScroll={bar.onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: 28 }}>
         <PageTitle>Informazioni</PageTitle>
         <View style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 14, padding: 14, marginBottom: 14 }}>
           <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.2, letterSpacing: 2, textTransform: "uppercase" }}>Backup dei tuoi dati</Text>

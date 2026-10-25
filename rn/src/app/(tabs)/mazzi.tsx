@@ -12,19 +12,20 @@ import { openDeck } from "../../nav";
 import { S, useStore } from "../../store";
 import { useTheme } from "../../theme";
 import { PageTitle } from "../../ui";
-import { Screen } from "../../chrome";
+import { Screen, useBarState } from "../../chrome";
 import { Btn, ICO_PLUS, Progress } from "../../visual";
 import { BanNote, DBadge, ImportPanel } from "../../deckui";
 
 export default function Mazzi() {
   const t = useTheme();
+  const bar = useBarState();
   useStore();
   const [imp, setImp] = useState(false);
   const decks = S.decks.slice().sort((a, b) => (b.upd || 0) - (a.upd || 0));
   const create = () => openDeck(newDeck("Nuovo mazzo " + (S.decks.length + 1)).id);
   return (
-    <Screen>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4, paddingBottom: 28 }}>
+    <Screen bs={bar}>
+      <ScrollView onScroll={bar.onScroll} scrollEventThrottle={16} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: 28 }}>
         <PageTitle>Deckbuilding</PageTitle>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
           <Btn label="Nuovo mazzo" pri icon={ICO_PLUS} onPress={create} />

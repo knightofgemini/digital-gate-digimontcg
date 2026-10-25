@@ -18,36 +18,29 @@ export function Lock({ color, size = 15 }: { color: string; size?: number }) {
   );
 }
 
-export function DeckQty({ d, c, big }: { d: Deck; c: Card; big?: boolean }) {
-  const t = useTheme();
+// copie nel mazzo (deckQty dell'app attuale): + arancione finché si può aggiungere, spento quando la carta ha le copie
+// massime (o per un altro limite: il tocco mostra il motivo), "MAX" per le limitate già nel mazzo, lucchetti per le bandite
+export function DeckQty({ d, c, big, fill, onChange }: { d: Deck; c: Card; big?: boolean; fill?: boolean; onChange?: (before: number, after: number) => void }) {
   useStore();
   const n = inDeck(d, c);
   const mx = maxCopies(c);
-  if (!mx)
-    return (
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#c0261e22", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 6 }}>
-        <Lock color="#e5484d" />
-        <Text style={{ color: "#e5484d", fontWeight: "800" }}>{n ? "Bandita (" + n + ")" : "Bandita"}</Text>
-      </View>
-    );
-  if (mx === 1 && codeTotal(d, c.code) >= 1 && !n)
-    return (
-      <View style={{ backgroundColor: t.surface2, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6 }}>
-        <Text style={{ color: t.ink2, fontWeight: "800" }}>MAX</Text>
-      </View>
-    );
   const err = addError(d, c);
+  const mode = !mx ? "lock" : mx === 1 && codeTotal(d, c.code) >= 1 ? "max" : err ? "dim" : undefined;
   return (
     <QtyControl
       value={n}
       big={big}
-      plusOff={!!err}
+      fill={fill}
+      plus={mode}
+      numText={!mx ? (n ? "Bandita (" + n + ")" : "Bandita") : undefined}
+      onBlocked={() => err && toast(err)}
       onSet={(v) => {
         if (v <= n) deckSet(d, c, v);
         else {
           const r = deckAdd(d, c, v - n);
           if (r.er && r.a < v - n) toast(r.er);
         }
+        onChange && onChange(n, inDeck(d, c));
       }}
     />
   );

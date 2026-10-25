@@ -1,7 +1,8 @@
 // Editor del mazzo (come sul telefono nell'app attuale): nome, azioni (esporta, importa, svuota, copertina, elimina), conteggi,
 // curva che porta al livello, stato (valido / bozza / problemi), il mazzo in pile per livello con "+ Aggiungi",
 // barra "Cerca e aggiungi carte…" che apre il foglio di ricerca, e la vista Statistiche.
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Linking, Modal, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
 import { DISPLAY, Text, TextInput } from "../../Text";
 import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
@@ -12,19 +13,19 @@ import { ConfirmBox, ImportPanel } from "../../deckui";
 import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { CARDS, Card, SETS, deckable, normQ, relevance, thumbUrl, verLabel } from "../../data";
 import { BanBadge, DeckQty } from "../../DeckQty";
 import { banEffective, banNote, banSource, deckColors, deckCover, deckCurve, deckGroups, deckById, deckStats, deckText, deleteDeck, dkGroups, isEgg } from "../../decks";
-import { ActiveChips, FilterSheet } from "../../FilterSheet";
-import { EMPTY, Filters, anyFlt, cardMatches, fl, srcCards } from "../../filters";
+import { ActiveChips, FilterSheet, fltCount } from "../../FilterSheet";
+import { EMPTY, Filters, anyFlt, cardMatches, qmHolder, srcCards } from "../../filters";
 import { openCard } from "../../nav";
 import { owned, saveDecks, useStore } from "../../store";
 import { useTheme } from "../../theme";
 import { toast } from "../../toast";
 import { ColorBand, common } from "../../ui";
-import { Screen, useKbd } from "../../chrome";
-import { rarLine } from "../../items";
+import { Screen, setTabHidden, useKbd, useBarState } from "../../chrome";
+import { GridTile, ListRow, ViewToggle } from "../../items";
 
 const ORDER: Record<string, number> = {};
 SETS.forEach((s, i) => (ORDER[s.id] = i));
@@ -34,6 +35,7 @@ export default function Mazzo() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const t = useTheme();
   const s = common(t);
+  const bar = useBarState();
   useStore();
   const d = deckById(id);
   const [acts, setActs] = useState(false);
@@ -47,6 +49,14 @@ export default function Mazzo() {
   const [nameFocus, setNameFocus] = useState(false);
   const [addF, setAddF] = useState(false);
   const kbd = useKbd();
+  const [dkNew, setDkNew] = useState<string | null>(null);
+  const { height: winH } = useWindowDimensions();
+  // aprendo la ricerca il mazzo torna alla prima carta, così le pile restano visibili sopra il foglio
+  useEffect(() => {
+    if (!add) return;
+    const g0 = d ? dkGroups(d)[0] : null;
+    setTimeout(() => g0 && pos.current[g0[0]] != null && scroll.current?.scrollTo({ y: yOf(g0[0]), animated: true }), 250);
+  }, [!!add]);
   // la scheda di una carta aperta dal foglio di ricerca va sopra: il foglio si nasconde e ricompare tornando qui
   const [away, setAway] = useState(false);
   useFocusEffect(useCallback(() => setAway(false), []));
@@ -64,7 +74,9 @@ export default function Mazzo() {
   const curve = deckCurve(d);
   const cmax = Math.max(1, ...curve.map((b) => b[1]));
   const others = st.problems.filter((x) => !/^Il mazzo principale deve avere esattamente 50 carte: ora ne mancano/.test(x));
-  const goTo = (g: string) => pos.current[g] != null && scroll.current?.scrollTo({ y: pos.current[g] - 10, animated: true });
+  // posizione di un gruppo nel mazzo (dentro il riquadro delle pile, che parte da __base)
+  const yOf = (g: string) => (pos.current.__base || 0) + pos.current[g] - 64;
+  const goTo = (g: string) => pos.current[g] != null && scroll.current?.scrollTo({ y: yOf(g), animated: true });
 
   // "+ Aggiungi" di un gruppo: ricerca già filtrata per quel tipo e livello
   function addTo(g: string) {
@@ -79,8 +91,8 @@ export default function Mazzo() {
   }
 
   return (
-    <Screen>
-      <ScrollView ref={scroll} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4, paddingBottom: view === "deck" ? 100 : 28 }}>
+    <Screen bs={bar}>
+      <ScrollView ref={scroll} onScroll={bar.onScroll} scrollEventThrottle={16} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: add ? winH * 0.64 : view === "deck" ? 100 : 28 }}>
         {/* intestazione (.mdkh): indietro, nome del mazzo, freccia che apre le azioni */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginHorizontal: -6, marginTop: 10, marginBottom: 8 }}>
           <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/mazzi"))} accessibilityLabel="I miei mazzi" style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
@@ -221,7 +233,7 @@ export default function Mazzo() {
         </View>
 
         {view === "deck" ? (
-          <View style={{ gap: 18, marginTop: 2 }}>
+          <View style={{ gap: 18, marginTop: 2 }} onLayout={(e) => (pos.current.__base = e.nativeEvent.layout.y)}>
             {groups.map(([g, cards]) => {
               const n = cards.reduce((m, c) => m + d.cards[c.k], 0);
               const selC = cards.find((c) => c.k === sel);
@@ -237,7 +249,7 @@ export default function Mazzo() {
                   </View>
                   <View style={{ flexDirection: "row", flexWrap: "wrap", columnGap: 10, rowGap: 12 }}>
                     {cards.map((c) => (
-                      <Pile key={c.k} c={c} q={d.cards[c.k]} on={sel === c.k} onPress={() => setSel(sel === c.k ? null : c.k)} />
+                      <Pile key={c.k} c={c} q={d.cards[c.k]} on={sel === c.k} isNew={dkNew === c.k} onPress={() => (setSel(sel === c.k ? null : c.k), setDkNew(null))} />
                     ))}
                   </View>
                   {selC ? (
@@ -276,7 +288,7 @@ export default function Mazzo() {
       </ScrollView>
 
       {/* barra "Cerca e aggiungi carte…" con Filtra (.dkbar) */}
-      {view === "deck" && !kbd ? (
+      {view === "deck" && !kbd && !add ? (
         <View pointerEvents="box-none" style={{ position: "absolute", left: 0, right: 0, bottom: 0, paddingTop: 12, paddingHorizontal: 14, paddingBottom: 8, flexDirection: "row", gap: 8, alignItems: "center" }}>
           <Svg pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 100">
             <Defs>
@@ -300,7 +312,11 @@ export default function Mazzo() {
         </View>
       ) : null}
 
-      {add && <AddSheet d={d} f0={add} openF={addF} hidden={away} onOpen={() => setAway(true)} onClose={() => (setAdd(null), setAddF(false))} />}
+      {add && <AddSheet d={d} f0={add} openF={addF} onOpen={() => setAway(true)} onClose={() => (setAdd(null), setAddF(false), setDkNew(null))} onAdded={(c) => {
+        setDkNew(c.k);
+        const g = dkGroups(d).find(([, cs]) => cs.some((x) => x.k === c.k));
+        setTimeout(() => g && pos.current[g[0]] != null && scroll.current?.scrollTo({ y: yOf(g[0]), animated: true }), 120);
+      }} />}
       <CoverPicker visible={cover} d={d} onClose={() => setCover(false)} />
       <ConfirmBox
         visible={cfm === "empty"}
@@ -330,11 +346,11 @@ export default function Mazzo() {
 }
 
 // pila di una carta (.dkpile): fino a 4 miniature affiancate e sovrapposte, il numero di copie in arancione
-function Pile({ c, q, on, onPress }: { c: Card; q: number; on: boolean; onPress: () => void }) {
+function Pile({ c, q, on, isNew, onPress }: { c: Card; q: number; on: boolean; isNew?: boolean; onPress: () => void }) {
   const t = useTheme();
   const n = Math.min(q, 4);
   return (
-    <Pressable onPress={onPress} accessibilityLabel={c.name + " " + c.code + ", " + q + (q === 1 ? " copia" : " copie")} accessibilityState={{ selected: on }} style={{ flexDirection: "row", borderRadius: 7, outlineWidth: on ? 2 : 0, outlineColor: t.accent, outlineOffset: 3, outlineStyle: "solid" } as any}>
+    <Pressable onPress={onPress} accessibilityLabel={c.name + " " + c.code + ", " + q + (q === 1 ? " copia" : " copie")} accessibilityState={{ selected: on }} style={{ flexDirection: "row", borderRadius: 7, outlineWidth: on || isNew ? 2 : 0, outlineColor: t.accent, outlineOffset: 3, outlineStyle: "solid" } as any}>
       {Array.from({ length: n }).map((_, i) => (
         <View key={i} style={{ width: 74, height: 103, marginLeft: i ? -58 : 0, borderRadius: 6, overflow: "hidden", borderWidth: 1, borderColor: t.line, backgroundColor: t.cards[c.colors[0]] || t.surface2, boxShadow: "-5px 0 10px rgba(0,0,0,.3)" }}>
           <Image source={thumbUrl(c)} style={{ width: "100%", height: "100%" }} contentFit="cover" cachePolicy="disk" />
@@ -343,25 +359,40 @@ function Pile({ c, q, on, onPress }: { c: Card; q: number; on: boolean; onPress:
       <View style={{ position: "absolute", right: 4, bottom: 4, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 5, backgroundColor: t.accent }}>
         <Text style={{ color: t.accentInk, fontFamily: DISPLAY, fontWeight: "700", fontSize: 11.8 }}>×{q}</Text>
       </View>
+      {isNew ? (
+        <View style={{ position: "absolute", left: 6, right: 6, top: "40%", paddingVertical: 2, borderRadius: 5, backgroundColor: t.accent, alignItems: "center" }}>
+          <Text style={{ color: t.accentInk, fontFamily: DISPLAY, fontWeight: "700", fontSize: 11.2 }}>Nuova</Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
 
-// foglio di ricerca dal basso: ricerca, filtri e risultati con le copie nel mazzo
-function AddSheet({ d, f0, openF, hidden, onOpen, onClose }: { d: any; f0: Filters; openF?: boolean; hidden: boolean; onOpen: () => void; onClose: () => void }) {
+// foglio di ricerca dal basso (.dksheet dell'app attuale): a metà schermo (la maniglia lo allarga o lo riduce), sopra resta
+// visibile il mazzo; campo di ricerca, Filtri e "Fine", etichette dei filtri attivi, risultati con le copie nel mazzo
+// (vista elenco/griglia separata, "dg-dkview"). La carta appena aggiunta si vede nella sua pila sopra il foglio.
+let DKVIEW: "list" | "grid" = "list";
+AsyncStorage.getItem("dg-dkview").then((v) => v === "grid" && (DKVIEW = "grid")).catch(() => {});
+function AddSheet({ d, f0, openF, onOpen, onClose, onAdded }: { d: any; f0: Filters; openF?: boolean; hidden?: boolean; onOpen: () => void; onClose: () => void; onAdded: (c: Card) => void }) {
   const t = useTheme();
-  const s = common(t);
   useStore();
-  const { height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
+  const ins = useSafeAreaInsets();
   const [q, setQ] = useState("");
   const [f, setF] = useState<Filters>(f0);
   const [fOpen, setFOpen] = useState(!!openF);
   const [shown, setShown] = useState(40);
+  const [full, setFull] = useState(false);
+  const [vw, setVw] = useState(DKVIEW);
+  useEffect(() => {
+    setTabHidden(true);
+    return () => setTabHidden(false);
+  }, []);
   const nq = normQ(q);
-  const filt = !!nq || anyFlt(f);
+  const filt = !!nq || anyFlt(f) || !!f.qm;
   const list = useMemo(() => {
     if (!filt) return [];
-    const l = srcCards(f, ALL).filter((c) => deckable(c) && cardMatches(c, nq, f));
+    const l = srcCards(f, CARDS).filter((c) => deckable(c) && cardMatches(c, nq, f));
     return nq && f.qm !== "text"
       ? l
           .map((c, j) => ({ c, j, r: relevance(c, nq) }))
@@ -369,60 +400,83 @@ function AddSheet({ d, f0, openF, hidden, onOpen, onClose }: { d: any; f0: Filte
           .map((o) => o.c)
       : l;
   }, [q, f]);
-  const nf = (Object.keys(f) as (keyof Filters)[]).reduce((m, k) => m + (k === "qm" || !f[k] ? 0 : fl(f, k).length), 0);
+  const nf = fltCount(f);
+  const pickVw = (v: "list" | "grid") => {
+    DKVIEW = v;
+    setVw(v);
+    AsyncStorage.setItem("dg-dkview", v).catch(() => {});
+  };
+  const tw = Math.floor((width - 28 - 6) / 2);
+  const qty = (c: Card) => (
+    <View style={{ alignItems: "flex-end", gap: 4 }}>
+      <DeckQty d={d} c={c} fill={vw === "grid"} onChange={(a, b) => b > a && onAdded(c)} />
+      <BanBadge c={c} d={d} />
+    </View>
+  );
+  const rows: Card[][] = [];
+  const sl = list.slice(0, shown);
+  for (let i = 0; i < sl.length; i += vw === "grid" ? 2 : 1) rows.push(sl.slice(i, i + (vw === "grid" ? 2 : 1)));
   return (
-    <Modal visible={!hidden} animationType="slide" transparent onRequestClose={onClose}>
-      <Pressable style={{ height: height * 0.18, backgroundColor: "rgba(0,0,0,.4)" }} onPress={onClose} />
-      <SafeAreaView edges={["bottom"]} style={{ flex: 1, backgroundColor: t.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18 }}>
-        <View style={{ flexDirection: "row", gap: 8, padding: 12, paddingBottom: 6 }}>
-          <TextInput value={q} onChangeText={setQ} autoFocus={!anyFlt(f0)} placeholder="Nome, codice o parola dell'effetto" placeholderTextColor={t.ink2} style={[s.search, { flex: 1 }]} autoCorrect={false} returnKeyType="search" />
-          <Pressable onPress={() => setFOpen(true)} style={{ paddingHorizontal: 12, justifyContent: "center", borderRadius: 10, borderWidth: 1, borderColor: nf ? t.accent : t.line, backgroundColor: nf ? t.accent : t.surface }}>
-            <Text style={{ color: nf ? t.accentInk : t.ink, fontWeight: "700" }}>Filtri{nf ? " · " + nf : ""}</Text>
-          </Pressable>
-          <Pressable onPress={onClose} style={{ paddingHorizontal: 12, justifyContent: "center" }}>
-            <Text style={{ color: t.accent, fontWeight: "800" }}>Fine</Text>
-          </Pressable>
+    <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, top: full ? 0 : undefined, height: full ? undefined : "62%", backgroundColor: t.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: t.line, boxShadow: "0 -14px 36px rgba(0,0,0,.35)", paddingHorizontal: 14 }}>
+      <Pressable onPress={() => setFull(!full)} accessibilityLabel="Ingrandisci o riduci la ricerca" style={{ height: 26, alignItems: "center", justifyContent: "center" }}>
+        <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: t.line }} />
+      </Pressable>
+      <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
+        <View style={{ flex: 1, minWidth: 0, height: 46, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, justifyContent: "center" }}>
+          <View pointerEvents="none" style={{ position: "absolute", left: 13 }}>
+            <SearchIcon color={t.accent} />
+          </View>
+          <TextInput value={q} onChangeText={setQ} autoFocus={!anyFlt(f0) && !openF} placeholder={qmHolder(f.qm)} placeholderTextColor={t.ink2} autoCorrect={false} returnKeyType="search" style={{ height: 44, paddingLeft: 42, paddingRight: 12, color: t.ink, fontSize: 16 }} />
         </View>
-        <View style={{ paddingHorizontal: 12 }}>
+        <SquareBtn size={46} shadow={false} onPress={() => setFOpen(true)} on={!!nf} badge={nf} label={"Filtri" + (nf ? ": " + nf + (nf === 1 ? " attivo" : " attivi") : "")}>
+          <FilterIcon color={t.ink} />
+        </SquareBtn>
+        <Pressable onPress={onClose} style={{ height: 46, justifyContent: "center", paddingRight: 4 }}>
+          <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16 }}>Fine</Text>
+        </Pressable>
+      </View>
+      {nf ? (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, alignItems: "center", marginTop: 8 }}>
           <ActiveChips f={f} setF={setF} />
-          <Text style={{ color: t.ink2, fontSize: 13, marginTop: 6 }}>{filt ? list.length + (list.length === 1 ? " carta trovata" : " carte trovate") : "Cerca una carta"}</Text>
         </View>
-        <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingBottom: 30 }}>
-          {!filt && <Text style={{ color: t.ink2, padding: 12 }}>Scrivi un nome, un codice o una parola dell'effetto, oppure utilizza i filtri.</Text>}
-          {filt && !list.length && <Text style={{ color: t.ink2, padding: 12 }}>Nessuna carta corrisponde alla ricerca.</Text>}
-          {list.slice(0, shown).map((c) => (
-            <Pressable
-              key={c.k}
-              onPress={() => {
-                onOpen();
-                openCard(c, list, d.id);
-              }} style={{ flexDirection: "row", gap: 10, paddingVertical: 8, paddingHorizontal: 12, borderBottomWidth: 1, borderColor: t.line, alignItems: "center" }}>
-              <View style={{ width: 46 }}>
-                <Image source={thumbUrl(c)} style={{ width: 46, height: 64, borderRadius: 4, backgroundColor: t.surface2 }} cachePolicy="disk" />
-                <View style={{ marginTop: 3 }}>
-                  <ColorBand colors={c.colors} height={3} />
-                </View>
+      ) : null}
+      <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 24, paddingBottom: 16 + ins.bottom }}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
+          <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.2, letterSpacing: 1.35, textTransform: "uppercase" }}>{!filt ? "Cerca una carta" : list.length + (list.length === 1 ? " carta trovata" : " carte trovate")}</Text>
+          {filt ? <ViewToggle value={vw} onChange={pickVw} /> : null}
+        </View>
+        {!filt ? (
+          <>
+            <Text style={{ color: t.ink2, fontSize: 12.8, marginTop: 18 }}>Scrivi un nome, un codice o una parola dell'effetto, oppure utilizza i filtri.</Text>
+            <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 10 }}>
+              <ViewToggle value={vw} onChange={pickVw} />
+            </View>
+          </>
+        ) : !list.length ? (
+          <Text style={{ color: t.ink2, textAlign: "center", paddingVertical: 48 }}>Nessuna carta corrisponde alla ricerca.</Text>
+        ) : (
+          rows.map((r) =>
+            vw === "grid" ? (
+              <View key={r[0].k} style={{ flexDirection: "row", gap: 6, marginBottom: 6 }}>
+                {r.map((c) => (
+                  <GridTile key={c.k} c={c} list={list} width={tw} deck={d.id} onOpen={onOpen} qty={qty(c)} />
+                ))}
               </View>
-              <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                <Text style={{ color: t.ink, fontWeight: "700" }} numberOfLines={1}>
-                  {c.name}
-                </Text>
-                <Text style={{ color: t.ink2, fontSize: 12 }}>{[c.ct, c.lv].filter(Boolean).join(" · ")}</Text>
-                <Text style={{ color: t.ink2, fontSize: 12 }}>{rarLine(c)}</Text>
-                <BanBadge c={c} d={d} />
+            ) : (
+              <View key={r[0].k} style={{ marginBottom: 6 }}>
+                <ListRow c={r[0]} list={list} noPrice deck={d.id} onOpen={onOpen} right={qty(r[0])} />
               </View>
-              <DeckQty d={d} c={c} />
-            </Pressable>
-          ))}
-          {list.length > shown && (
-            <Pressable onPress={() => setShown(shown + 40)} style={{ padding: 14, alignItems: "center" }}>
-              <Text style={{ color: t.accent, fontWeight: "800" }}>Mostra altre ({list.length - shown})</Text>
-            </Pressable>
-          )}
-        </ScrollView>
-        <FilterSheet visible={fOpen} f={f} setF={setF} onClose={() => setFOpen(false)} count={list.length} />
-      </SafeAreaView>
-    </Modal>
+            )
+          )
+        )}
+        {list.length > shown ? (
+          <Pressable onPress={() => setShown(shown + 40)} style={{ paddingTop: 14, paddingBottom: 18, alignItems: "center" }}>
+            <Text style={{ color: t.ink2, fontSize: 13.1 }}>Mostra altre ({list.length - shown})</Text>
+          </Pressable>
+        ) : null}
+      </ScrollView>
+      <FilterSheet visible={fOpen} f={f} setF={setF} onClose={() => setFOpen(false)} count={list.length} />
+    </View>
   );
 }
 

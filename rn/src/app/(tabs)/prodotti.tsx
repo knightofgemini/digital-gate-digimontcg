@@ -12,7 +12,7 @@ import { setStats, useStore } from "../../store";
 import { openUpcoming } from "../../nav";
 import { useTheme } from "../../theme";
 import { PageTitle } from "../../ui";
-import { Screen } from "../../chrome";
+import { Screen, useBarState } from "../../chrome";
 import { Badge, Grid2, ProdVisual, ProgLine } from "../../visual";
 import { BOTTOM_PAD, BottomBar, Chip } from "../../BottomBar";
 
@@ -156,6 +156,7 @@ function SoonList() {
 
 export default function Prodotti() {
   const t = useTheme();
+  const bar = useBarState();
   useStore();
   const params = useLocalSearchParams<{ seg?: string }>();
   const [seg, setSeg] = useState(params.seg === "soon" ? "soon" : "sets");
@@ -206,8 +207,8 @@ export default function Prodotti() {
   }, [q, type, pord]);
 
   return (
-    <Screen>
-      <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4, paddingBottom: seg === "sets" ? BOTTOM_PAD + (px ? 46 : 0) : 28 }}>
+    <Screen bs={bar}>
+      <ScrollView onScroll={bar.onScroll} scrollEventThrottle={16} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: seg === "sets" ? BOTTOM_PAD + (px ? 46 : 0) : 28 }}>
         <PageTitle>Prodotti</PageTitle>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2, marginBottom: 12 }}>
           <Seg active={seg} onPick={pickSeg} />

@@ -5,7 +5,7 @@ import { PRODUCTS, Upcoming, daysTo, monthLabel, recentSets, upBadge, upSorted, 
 import { openDeck, openSet, openSoon, openUpcoming } from "../../nav";
 import { useTheme } from "../../theme";
 import { PageTitle } from "../../ui";
-import { Screen, goTab } from "../../chrome";
+import { Screen, goTab, useBarState } from "../../chrome";
 import { Badge, Banner, Grid2, Btn, ICO_ARROW, ICO_PLUS, Panel, ProdVisual, ProgLine, Progress, SecHead } from "../../visual";
 import { S, setStats, useStore } from "../../store";
 import { deckStats, newDeck } from "../../decks";
@@ -62,14 +62,15 @@ function DeckResume() {
 
 export default function Home() {
   const t = useTheme();
+  const bar = useBarState();
   useStore();
   const ups = upSorted();
   const u0 = ups[0];
   const go0 = () => (u0 && PRODUCTS[u0.code] ? openUpcoming(u0.code, "home") : openSoon());
   const stats = setStats();
   return (
-    <Screen>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4, paddingBottom: 28 }}>
+    <Screen bs={bar}>
+      <ScrollView onScroll={bar.onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: 28 }}>
         <PageTitle>Home</PageTitle>
         {u0 ? (
           <View style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 16, overflow: "hidden" }}>
