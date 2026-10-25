@@ -1,11 +1,20 @@
 // Struttura dell'app: barra in basso (gruppo "(tabs)") e, sopra, le pagine di prodotto e carta.
+// All'avvio si leggono collezione, preferite e mazzi salvati nel dispositivo.
+import { useEffect, useState } from "react";
+import { View } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { loadStore } from "../store";
 import { useTheme } from "../theme";
 
 export default function RootLayout() {
   const t = useTheme();
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    loadStore().finally(() => setReady(true));
+  }, []);
+  if (!ready) return <View style={{ flex: 1, backgroundColor: t.bg }} />;
   return (
     <SafeAreaProvider>
       <StatusBar style="auto" />

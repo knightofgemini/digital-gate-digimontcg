@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Pressable, SectionList, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CardSet, SETS, TYPES, cardsOfSet, fold, normQ, soonSet } from "../../data";
+import { setStats, useStore } from "../../store";
 import { openSet } from "../../nav";
 import { useTheme } from "../../theme";
 import { Fit, Logo, PageTitle, common } from "../../ui";
@@ -69,7 +70,8 @@ export default function Prodotti() {
 function SetRow({ x, hit, withLogo }: { x: CardSet; hit?: number; withLogo: boolean }) {
   const t = useTheme();
   const s = common(t);
-  const n = cardsOfSet(x.id).length;
+  useStore();
+  const st = setStats()[x.id] || { n: 0, h: 0 };
   return (
     <Pressable onPress={() => openSet(x.id)} style={[s.panel, { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 10, marginBottom: 6, gap: 10 }]}>
       {withLogo && <Logo code={x.code} />}
@@ -80,7 +82,7 @@ function SetRow({ x, hit, withLogo }: { x: CardSet; hit?: number; withLogo: bool
         <Fit style={{ color: t.ink, fontWeight: "600" }}>{x.name}</Fit>
         {!!hit && <Text style={{ color: t.ink2, fontSize: 12 }}>{hit + (hit === 1 ? " carta trovata" : " carte trovate")}</Text>}
       </View>
-      <Text style={{ color: t.ink2, fontSize: 13 }}>{n || "—"}</Text>
+      <Text style={{ color: st.n && st.h === st.n ? "#46bd73" : t.ink2, fontSize: 13, fontWeight: st.h ? "700" : "400" }}>{st.n ? st.h + "/" + st.n : "—"}</Text>
     </Pressable>
   );
 }

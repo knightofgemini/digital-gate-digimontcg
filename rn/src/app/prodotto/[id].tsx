@@ -8,9 +8,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Card, PRODUCTS, SETBY, TYPES, UPCOMING, cardsOfSet, cdText, itDate, monthLabel, normQ, packUrl, relevance, setGroups, soonSet, typeOf } from "../../data";
 import { ActiveChips, FilterSheet } from "../../FilterSheet";
 import { EMPTY, Filters, cardMatches, fl } from "../../filters";
-import { openCard } from "../../nav";
+import { GridTile, ListRow, ViewToggle } from "../../items";
+import { usePrices } from "../../prices";
+import { S, setStats, useStore } from "../../store";
 import { useTheme } from "../../theme";
-import { CardCell, Fit, Logo, common } from "../../ui";
+import { Fit, Logo, common } from "../../ui";
 
 const REGIONS: Record<string, string> = { Europe: "Europa", "North America": "Nord America", "Latin America": "America Latina", Oceania: "Oceania", "United States": "Stati Uniti", "Other regions": "Altre regioni" };
 const UNITS: Record<string, string> = { pack: "a busta", deck: "a mazzo", box: "a box" };
@@ -20,7 +22,10 @@ export default function Prodotto() {
   const t = useTheme();
   const s = common(t);
   const { width } = useWindowDimensions();
-  const cols = Math.max(3, Math.floor(width / 130));
+  useStore();
+  usePrices();
+  const grid = S.view === "grid";
+  const cols = grid ? Math.max(2, Math.floor(width / 150)) : 1;
   const up = id.startsWith("up-") ? UPCOMING.find((u) => u.code === id.slice(3)) : undefined;
   const set = SETBY[id];
   const code = set ? set.code : up ? up.code : "";
@@ -52,6 +57,7 @@ export default function Prodotto() {
       });
     return { sections, flat, n: l.length };
   }, [set, cols, q, f]);
+  const stt = set ? setStats()[set.id] : null;
 
   const header = (
     <View style={{ paddingTop: 8 }}>
@@ -69,6 +75,18 @@ export default function Prodotto() {
           <Text style={{ color: t.ink, marginTop: 4, lineHeight: 20 }}>Spoiler: le carte svelate finora, con le immagini di anteprima ufficiali. Le altre arriveranno man mano che vengono annunciate.</Text>
         </View>
       )}
+      {stt && stt.n > 0 && stt.h > 0 && (
+        <View style={[s.panel, { padding: 12, marginTop: 6 }]}>
+          <Text style={{ color: t.ink2, fontSize: 12, fontWeight: "700" }}>LA TUA COLLEZIONE</Text>
+          <Text style={{ color: t.ink, fontSize: 22, fontWeight: "800", marginTop: 2 }}>
+            {stt.h} <Text style={{ color: t.ink2, fontSize: 15 }}>/ {stt.n}</Text>
+          </Text>
+          <View style={{ height: 6, borderRadius: 3, backgroundColor: t.surface2, marginTop: 6, overflow: "hidden" }}>
+            <View style={{ width: Math.min(100, (stt.h / stt.n) * 100) + "%", height: 6, backgroundColor: stt.h === stt.n ? "#46bd73" : t.accent }} />
+          </View>
+          <Text style={{ color: t.ink2, fontSize: 12, marginTop: 4 }}>Carte e illustrazioni possedute in questo prodotto</Text>
+        </View>
+      )}
       <ProductFacts code={code} kind={up ? up.kind : type === "AL" ? "" : TYPES[type]} fallback={set && set.date.charAt(0) !== "0" ? set.date.slice(0, 7) : null} />
       {up && up.note ? <Text style={{ color: t.ink2, marginTop: 10 }}>{up.note}</Text> : null}
       {up && <Text style={{ color: t.ink2, marginTop: 16 }}>Le carte saranno aggiunte al catalogo dopo l'uscita.</Text>}
@@ -82,6 +100,9 @@ export default function Prodotto() {
             </Pressable>
           </View>
           <ActiveChips f={f} setF={setF} lockExp />
+          <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 6 }}>
+            <ViewToggle />
+          </View>
           {!sections.length && <Text style={{ color: t.ink2, marginTop: 16 }}>Nessuna carta corrisponde ai filtri.</Text>}
         </View>
       )}
@@ -101,17 +122,21 @@ export default function Prodotto() {
         stickySectionHeadersEnabled={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
-        ListHeaderComponent={header}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 30 }}
+        ListHeaderComponent={<View style={{ paddingHorizontal: 16 }}>{header}</View>}
+        contentContainerStyle={{ paddingBottom: 30 }}
         initialNumToRender={8}
-        renderSectionHeader={({ section }) => <Text style={{ color: t.ink, fontSize: 16, fontWeight: "800", marginTop: 20, marginBottom: 6 }}>{section.title}</Text>}
-        renderItem={({ item }) => (
-          <View style={{ flexDirection: "row", marginHorizontal: -4 }}>
-            {item.map((c) => (
-              <CardCell key={c.k} c={c} width={(width - 24) / cols} onPress={() => openCard(c, flat)} />
-            ))}
-          </View>
-        )}
+        renderSectionHeader={({ section }) => <Text style={{ color: t.ink, fontSize: 16, fontWeight: "800", marginTop: 20, marginBottom: 6, paddingHorizontal: 16 }}>{section.title}</Text>}
+        renderItem={({ item }) =>
+          grid ? (
+            <View style={{ flexDirection: "row", paddingHorizontal: 6 }}>
+              {item.map((c) => (
+                <GridTile key={c.k} c={c} list={flat} width={(width - 12) / cols} />
+              ))}
+            </View>
+          ) : (
+            <ListRow c={item[0]} list={flat} />
+          )
+        }
       />
       <FilterSheet visible={fOpen} f={f} setF={setF} onClose={() => setFOpen(false)} count={n} lockExp />
     </SafeAreaView>

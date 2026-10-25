@@ -10,6 +10,9 @@ import { BYKEY, Card, PAIRS, BYCODE, RARITY, SETBY, carVers, deckable, fullUrl, 
 import { NAVLIST, openCard } from "../../nav";
 import { bestVal, cmCovered, cmDate, cmOf, cmUrl, cmVal, ctCovered, ctDate, ctOf, ctUrl, ctVal, eur, eurN, eurT, usePrices } from "../../prices";
 import { ICO, Rich, iconClass, kwJoin, kwNoRem } from "../../rich";
+import { FavSheet } from "../../FavSheet";
+import { FavButton, ListsIcon, QtyControl } from "../../items";
+import { owned, useStore } from "../../store";
 import { useTheme } from "../../theme";
 
 export default function Carta() {
@@ -51,6 +54,8 @@ function CardPage({ first, width }: { first: Card; width: number }) {
   const [c, setC] = useState(first);
   const [cmOpen, setCmOpen] = useState(false);
   const [ctOpen, setCtOpen] = useState(false);
+  const [favFor, setFavFor] = useState<Card | null>(null);
+  useStore();
   const vers = carVers(c);
   const hs = SETBY[hostSet(c)];
   const num = parseInt(c.code.split("-")[1] || "", 10);
@@ -100,6 +105,7 @@ function CardPage({ first, width }: { first: Card; width: number }) {
     tv = ctVal(c);
   const low = cv != null && tv != null && cv !== tv ? (cv < tv ? "cm" : "ct") : "";
   const colBg = t.cards[c.colors[0]] || t.surface2;
+  const copies = vers.reduce((n, a) => n + owned(a), 0);
 
   return (
     <SafeAreaView style={{ width, flex: 1, backgroundColor: t.bg }} edges={["top"]}>
@@ -108,11 +114,18 @@ function CardPage({ first, width }: { first: Card; width: number }) {
         <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/carte"))} hitSlop={12} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: t.surface2, alignItems: "center", justifyContent: "center" }}>
           <Text style={{ color: t.ink, fontSize: 18, fontWeight: "700" }}>✕</Text>
         </Pressable>
-        <View style={{ flex: 1, alignItems: "center", marginRight: 48 }}>
+        <View style={{ flex: 1, alignItems: "center" }}>
           <Text style={{ color: t.ink, fontWeight: "800" }} numberOfLines={1}>
             {hs ? hs.name : ""}
           </Text>
           {hs && hs.n && num && c.code.split("-")[0] === hs.code && num <= hs.n ? <Text style={{ color: t.ink2, fontSize: 12 }}>{"Carta " + num + " di " + hs.n}</Text> : null}
+        </View>
+        {/* cuore e liste */}
+        <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}>
+          <FavButton c={c} size={24} />
+          <Pressable onPress={() => setFavFor(c)} hitSlop={8} accessibilityLabel="Liste e avviso di prezzo">
+            <ListsIcon color={t.ink2} size={24} />
+          </Pressable>
         </View>
       </View>
       <ScrollView contentContainerStyle={{ paddingBottom: 40, width: maxW, alignSelf: "center" }} nestedScrollEnabled>
@@ -158,6 +171,7 @@ function CardPage({ first, width }: { first: Card; width: number }) {
                   <Text style={/foil/i.test(vp) ? { color: "#c77dff", fontWeight: "700" } : undefined}>{vp}</Text>
                 </Text>
               ))}
+              {vers.length > 1 ? " · " + (copies === 1 ? "1 copia in tutto" : copies + " copie in tutto") : ""}
             </Text>
             {isAce(c) && <Text style={{ color: t.ink2, fontSize: 12, marginTop: 6, textAlign: "center" }}>* ACE è il simbolo stampato accanto al nome delle carte Digimon ACE: non fa parte del nome della carta.</Text>}
           </View>
@@ -269,6 +283,15 @@ function CardPage({ first, width }: { first: Card; width: number }) {
           )}
         </View>
       </ScrollView>
+      {/* barra fissa in basso: copie possedute della versione aperta */}
+      <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderColor: t.line, backgroundColor: t.surface }}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: t.ink, fontWeight: "800" }}>Copie possedute</Text>
+          <Text style={{ color: t.ink2, fontSize: 12 }}>{verName(c)}</Text>
+        </View>
+        <QtyControl c={c} big />
+      </View>
+      <FavSheet c={favFor} onClose={() => setFavFor(null)} />
     </SafeAreaView>
   );
 }
