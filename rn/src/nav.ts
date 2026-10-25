@@ -6,9 +6,14 @@ import { Card, spoilerSet } from "./data";
 export let NAVLIST: Card[] = [];
 
 // Prodotto in arrivo: pagina degli spoiler se ci sono carte svelate, altrimenti la sola scheda
-export function openUpcoming(code: string) {
+export function openUpcoming(code: string, from?: string) {
   const sp = spoilerSet(code);
-  router.push({ pathname: "/prodotto/[id]", params: { id: sp ? sp.id : "up-" + code } });
+  router.push({ pathname: "/prodotto/[id]", params: from ? { id: sp ? sp.id : "up-" + code, from } : { id: sp ? sp.id : "up-" + code } });
+}
+// Prossime uscite: scheda "In arrivo" della pagina Prodotti
+export function openSoon() {
+  if (router.canDismiss()) router.dismissAll();
+  router.navigate({ pathname: "/prodotti", params: { seg: "soon" } });
 }
 export function openSet(id: string) {
   router.push({ pathname: "/prodotto/[id]", params: { id } });

@@ -8,6 +8,7 @@ import Svg, { Circle, Path, Rect } from "react-native-svg";
 import { Text, DISPLAY } from "./Text";
 import { CARDS, UPCOMING } from "./data";
 import { decksTodo } from "./decks";
+import { openSoon } from "./nav";
 import { owned, useStore } from "./store";
 import { setThemePref, useTheme } from "./theme";
 import { Icon } from "./ui";
@@ -79,7 +80,7 @@ export function MoreSheet() {
         <Row
           icon={<Icon name="soon" color={t.ink2} size={20} />}
           label="Prossime uscite"
-          onPress={() => go({ pathname: "/prodotti", params: { seg: "soon" } })}
+          onPress={() => (setOpen(false), openSoon())}
           right={
             UPCOMING.length ? (
               <View style={{ backgroundColor: t.cyanSoft, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 2 }}>
@@ -109,7 +110,7 @@ export function MoreSheet() {
 export function AppBar({ children }: { children?: ReactNode }) {
   const t = useTheme();
   return (
-    <View style={{ backgroundColor: t.bg, borderBottomWidth: 1, borderBottomColor: t.line, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 10 }}>
+    <View style={{ backgroundColor: t.bg, borderBottomWidth: 1, borderBottomColor: t.line, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 18 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
         <Pressable onPress={() => goTab("home")} accessibilityLabel="Digital Gate - Digimon TCG, vai alla Home" style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 9, paddingVertical: 4, paddingHorizontal: 2 }}>
           <DgMark />

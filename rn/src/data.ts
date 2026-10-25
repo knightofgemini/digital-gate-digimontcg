@@ -343,3 +343,58 @@ export const deckable = (c: Card) => /^(Digi-Egg|Digimon|Tamer|Option|Digimon\/O
 export function maxCopies(c: Card) {
   return BANNED[c.code] ? 0 : RESTR[c.code] ? 1 : /up to 50 copies/.test(c.extra || "") ? 50 : 4;
 }
+
+// ---- banner dei prodotti e prossime uscite (come nell'app attuale: BANNERS, upSorted, upBadge, upWhen, recentSets)
+export const BANNERS: Record<string, 1> = {};
+((raw as any).banners || []).forEach((c: string) => (BANNERS[c] = 1));
+export const bannerUrl = (code: string) => (BANNERS[code] ? SITE + "banners/" + code + ".webp" : null);
+export const numOf = (c: string) => {
+  const m = c.match(/(\d+)/);
+  return m ? +m[1] : 0;
+};
+const IMP: Record<string, number> = { BT: 0, EX: 1, ST: 2, LM: 3, PB: 4, AL: 5 };
+export function upSorted() {
+  return UPCOMING.slice().sort((a, b) => {
+    const an = a.prec === "none",
+      bn = b.prec === "none";
+    if (an !== bn) return an ? 1 : -1;
+    return (a.from || "") < (b.from || "") ? -1 : (a.from || "") > (b.from || "") ? 1 : IMP[typeOf(a.code)] - IMP[typeOf(b.code)] || numOf(a.code) - numOf(b.code);
+  });
+}
+export function monthsTo(u: Upcoming) {
+  if (u.prec === "none") return null;
+  const t = new Date(),
+    d = parseDay(u.from);
+  return (d.getFullYear() - t.getFullYear()) * 12 + (d.getMonth() - t.getMonth());
+}
+// conto alla rovescia diviso in parti (cdText del sito): { big: "2", unit: "mesi", month: "dicembre 2026" }
+export function cdParts(u: Upcoming) {
+  const m = monthsTo(u);
+  if (m === null) return { big: "", unit: "Data da annunciare", month: "", now: false };
+  const d = parseDay(u.from),
+    month = MONTHS[d.getMonth()] + " " + d.getFullYear();
+  if (m < 0) return { big: "", unit: "Uscito", month, now: false };
+  if (m === 0) return { big: "", unit: "Questo mese", month, now: true };
+  return { big: String(m), unit: m === 1 ? "mese" : "mesi", month, now: false };
+}
+export function upBadge(u: Upcoming) {
+  if (u.prec === "none") return "Data da definire";
+  if (u.prec === "day") {
+    const dd = daysTo(u.from);
+    if (dd <= 60) return dd <= 0 ? "Oggi" : dd + (dd === 1 ? " giorno" : " gg");
+  }
+  const cd = cdParts(u);
+  return cd.big ? cd.big + " " + cd.unit : cd.unit;
+}
+export function upWhen(u: Upcoming) {
+  if (u.prec === "none") return "Data da annunciare";
+  const d = parseDay(u.from);
+  const t = (u.prec === "day" ? d.getDate() + " " : "") + MONTHS[d.getMonth()] + " " + d.getFullYear();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+export function recentSets(n: number) {
+  return SETS.filter((x) => x.date && x.date.charAt(0) !== "0" && BANNERS[x.code] && !soonSet(x))
+    .slice()
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : IMP[a.type] - IMP[b.type] || numOf(b.code) - numOf(a.code)))
+    .slice(0, n);
+}
