@@ -24,7 +24,23 @@
     },
     "plugins": [
       "expo-image",
-      "expo-router"
-    ]
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Digital Gate usa la fotocamera per riconoscere le carte che inquadri.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Digital Gate apre le foto che scegli per riconoscere le carte."
+        }
+      ]
+    ],
+    "extra": {
+      "build": 0
+    }
   }
 }

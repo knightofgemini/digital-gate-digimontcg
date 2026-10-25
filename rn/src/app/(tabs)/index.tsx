@@ -24,9 +24,14 @@ export default function Home() {
           <PageTitle>
             Digital Gate <Text style={{ color: t.accent }}>TCG</Text>
           </PageTitle>
-          <Pressable onPress={() => router.push("/info")} hitSlop={10}>
-            <Icon name="info" color={t.ink2} />
-          </Pressable>
+          <View style={{ flexDirection: "row", gap: 16 }}>
+            <Pressable onPress={() => router.push("/offline")} hitSlop={10} accessibilityLabel="Immagini offline">
+              <Icon name="offline" color={t.ink2} />
+            </Pressable>
+            <Pressable onPress={() => router.push("/info")} hitSlop={10} accessibilityLabel="Informazioni">
+              <Icon name="info" color={t.ink2} />
+            </Pressable>
+          </View>
         </View>
 
         <SubHead>Prossime uscite</SubHead>

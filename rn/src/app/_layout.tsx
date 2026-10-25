@@ -7,6 +7,7 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { loadStore } from "../store";
 import { ToastHost } from "../toast";
+import { UpdateCheck } from "../Update";
 import { useTheme } from "../theme";
 
 export default function RootLayout() {
@@ -24,8 +25,11 @@ export default function RootLayout() {
         <Stack.Screen name="prodotto/[id]" />
         <Stack.Screen name="carta/[k]" options={{ animation: "slide_from_bottom" }} />
         <Stack.Screen name="mazzo/[id]" />
+        <Stack.Screen name="scansiona" options={{ animation: "fade", presentation: "fullScreenModal" }} />
+        <Stack.Screen name="offline" />
       </Stack>
       <ToastHost />
+      <UpdateCheck />
     </SafeAreaProvider>
   );
 }

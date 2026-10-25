@@ -46,6 +46,12 @@ export function Icon({ name, color, size = 24 }: { name: string; color: string; 
           <Path {...p} d="M12 9v4l2.5 2M9 2h6" />
         </>
       )}
+      {name === "offline" && (
+        <>
+          <Path {...p} d="M12 4v11M7 10l5 5 5-5" />
+          <Path {...p} d="M5 20h14" />
+        </>
+      )}
       {name === "info" && (
         <>
           <Circle {...p} cx={12} cy={12} r={9} />

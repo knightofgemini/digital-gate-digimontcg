@@ -1,5 +1,7 @@
 // Intestazione delle pagine di ricerca (Carte e Collezione).
 import { Pressable, Text, TextInput, View } from "react-native";
+import { router } from "expo-router";
+import Svg, { Circle, Path } from "react-native-svg";
 import { ActiveChips } from "./FilterSheet";
 import { Filters, fl } from "./filters";
 import { ViewToggle } from "./items";
@@ -19,6 +21,12 @@ export function SearchHead({ title, q, setQ, f, setF, openF, n, children }: { ti
         <TextInput value={q} onChangeText={setQ} placeholder={f.qm === "text" ? "Cerca nel testo (es. Blocker)" : "Nome o codice (es. Agumon, BT27-001)"} placeholderTextColor={t.ink2} style={[s.search, { flex: 1 }]} autoCorrect={false} returnKeyType="search" />
         <Pressable onPress={openF} style={{ paddingHorizontal: 14, justifyContent: "center", borderRadius: 10, borderWidth: 1, borderColor: nf ? t.accent : t.line, backgroundColor: nf ? t.accent : t.surface }}>
           <Text style={{ color: nf ? t.accentInk : t.ink, fontWeight: "700" }}>Filtri{nf ? " · " + nf : ""}</Text>
+        </Pressable>
+        <Pressable onPress={() => router.push("/scansiona")} accessibilityLabel="Scansiona una carta con la fotocamera" style={{ width: 46, alignItems: "center", justifyContent: "center", borderRadius: 10, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface }}>
+          <Svg width={22} height={22} viewBox="0 0 24 24">
+            <Path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" stroke={t.ink} strokeWidth={2} fill="none" strokeLinejoin="round" />
+            <Circle cx={12} cy={13.5} r={3.6} stroke={t.ink} strokeWidth={2} fill="none" />
+          </Svg>
         </Pressable>
       </View>
       <View style={{ flexDirection: "row", gap: 6, marginTop: 8, alignItems: "center" }}>
