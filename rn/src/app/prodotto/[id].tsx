@@ -1,0 +1,152 @@
+// Pagina di un prodotto: scheda con i dati ufficiali e carte raggruppate (Regular, Alternative Art, Ristampe...).
+// "up-CODICE" = prodotto in arrivo senza carte: solo la scheda.
+import { ReactNode, useMemo, useState } from "react";
+import { Linking, Pressable, SectionList, Text, View, useWindowDimensions } from "react-native";
+import { Image } from "expo-image";
+import { router, useLocalSearchParams } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Card, PRODUCTS, SETBY, TYPES, UPCOMING, cardsOfSet, cdText, itDate, monthLabel, packUrl, setGroups, soonSet, typeOf } from "../../data";
+import { openCard } from "../../nav";
+import { useTheme } from "../../theme";
+import { CardCell, Fit, Logo, common } from "../../ui";
+
+const REGIONS: Record<string, string> = { Europe: "Europa", "North America": "Nord America", "Latin America": "America Latina", Oceania: "Oceania", "United States": "Stati Uniti", "Other regions": "Altre regioni" };
+const UNITS: Record<string, string> = { pack: "a busta", deck: "a mazzo", box: "a box" };
+
+export default function Prodotto() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const t = useTheme();
+  const s = common(t);
+  const { width } = useWindowDimensions();
+  const cols = Math.max(3, Math.floor(width / 130));
+  const up = id.startsWith("up-") ? UPCOMING.find((u) => u.code === id.slice(3)) : undefined;
+  const set = SETBY[id];
+  const code = set ? set.code : up ? up.code : "";
+  const name = set ? set.name : up ? up.name : "Prodotto non trovato";
+  const type = typeOf(code);
+
+  const sections = useMemo(() => {
+    if (!set) return [];
+    return setGroups(set.id, cardsOfSet(set.id))
+      .filter(([, l]) => l.length)
+      .map(([title, l]) => {
+        const rows: Card[][] = [];
+        for (let i = 0; i < l.length; i += cols) rows.push(l.slice(i, i + cols));
+        return { title: title + " (" + l.length + ")", data: rows };
+      });
+  }, [set, cols]);
+
+  const header = (
+    <View style={{ paddingTop: 8 }}>
+      <View style={{ alignItems: "center", marginVertical: 8 }}>
+        <Logo code={code} big />
+      </View>
+      <Text style={{ color: t.accent, fontWeight: "700", fontSize: 13 }}>
+        {(type === "AL" ? "" : TYPES[type] + " · ") + code}
+      </Text>
+      <Text style={{ color: t.ink, fontSize: 24, fontWeight: "800", marginBottom: 6 }}>{name}</Text>
+      {up && <Text style={{ color: t.ink2, marginBottom: 6 }}>In arrivo · {cdText(up)}</Text>}
+      {set && soonSet(set) && (
+        <View style={[s.panel, { padding: 12, marginVertical: 8, borderColor: t.accent }]}>
+          <Text style={{ color: t.accent, fontWeight: "700" }}>In arrivo · {monthLabel(set.date)}</Text>
+          <Text style={{ color: t.ink, marginTop: 4, lineHeight: 20 }}>Spoiler: le carte svelate finora, con le immagini di anteprima ufficiali. Le altre arriveranno man mano che vengono annunciate.</Text>
+        </View>
+      )}
+      <ProductFacts code={code} kind={up ? up.kind : type === "AL" ? "" : TYPES[type]} fallback={set && set.date.charAt(0) !== "0" ? set.date.slice(0, 7) : null} />
+      {up && up.note ? <Text style={{ color: t.ink2, marginTop: 10 }}>{up.note}</Text> : null}
+      {up && <Text style={{ color: t.ink2, marginTop: 16 }}>Le carte saranno aggiunte al catalogo dopo l'uscita.</Text>}
+      {set && !sections.length && <Text style={{ color: t.ink2, marginTop: 16 }}>Questo prodotto non contiene carte: solo accessori (playmat, bustine, box).</Text>}
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={s.screen} edges={["top"]}>
+      <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderColor: t.line }}>
+        <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/prodotti"))} hitSlop={12}>
+          <Text style={{ color: t.accent, fontSize: 16, fontWeight: "600" }}>‹ Indietro</Text>
+        </Pressable>
+      </View>
+      <SectionList
+        sections={sections}
+        keyExtractor={(row) => row[0].k}
+        stickySectionHeadersEnabled={false}
+        ListHeaderComponent={header}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 30 }}
+        initialNumToRender={8}
+        renderSectionHeader={({ section }) => <Text style={{ color: t.ink, fontSize: 16, fontWeight: "800", marginTop: 20, marginBottom: 6 }}>{section.title}</Text>}
+        renderItem={({ item }) => (
+          <View style={{ flexDirection: "row", marginHorizontal: -4 }}>
+            {item.map((c) => (
+              <CardCell key={c.k} c={c} width={(width - 24) / cols} onPress={() => openCard(c)} />
+            ))}
+          </View>
+        )}
+      />
+    </SafeAreaView>
+  );
+}
+
+// Scheda prodotto: caratteristiche dal sito ufficiale Bandai (src/products.json), etichette in italiano, contenuto e rarità in inglese
+function ProductFacts({ code, kind, fallback }: { code: string; kind?: string; fallback: string | null }) {
+  const t = useTheme();
+  const s = common(t);
+  const [open, setOpen] = useState(true);
+  const p = PRODUCTS[code];
+  if (!p) return null;
+  const rows: [string, ReactNode][] = [];
+  if (kind) rows.push(["Tipo", kind]);
+  const rel = p.rel && p.rel.length ? p.rel : fallback ? [["", fallback] as [string, string]] : [];
+  if (rel.length === 1 && !rel[0][0]) rows.push(["Uscita", itDate(rel[0][1])]);
+  else if (rel.length) rows.push(["Uscita", rel.map((x) => itDate(x[1]) + (x[0] ? " (" + x[0].split("/").map((r) => REGIONS[r] || r).join(", ") + ")" : "")).join("\n")]);
+  if (p.pre) rows.push(["Pre-release", itDate(p.pre)]);
+  if (p.price) {
+    const booster = (p.cont || []).some((x) => /^1 Booster Pack contains/i.test(x));
+    const pr = p.price;
+    const u = pr[2] ? UNITS[pr[2]] : typeOf(code) === "ST" ? UNITS.deck : booster ? UNITS.pack : "";
+    rows.push(["Prezzo", pr[1].replace(".", ",") + (pr[0] === "USD" ? " $" : " ¥") + (u ? " " + u : "")]);
+  }
+  if (p.types) {
+    const tm = p.types.match(/^([\d+]+) types?(?: in total)? ?(\+ ?\d+)?(?: types?)?$/);
+    rows.push(["Carte", tm ? tm[1] + (tm[2] ? " " + tm[2].replace(" ", "") : "") + " diverse" : p.types]);
+  }
+  if (p.cont)
+    rows.push([
+      "Contenuto",
+      p.cont
+        .map((x) => {
+          let m = x.match(/^1 Booster Pack contains (\d+) cards/i);
+          if (m) return m[1] + " carte per busta";
+          m = x.match(/^1 Box contains (\d+) Booster Packs/i);
+          if (m) return m[1] + " buste per box";
+          return x;
+        })
+        .join("\n"),
+    ]);
+  if (p.rar) rows.push(["Rarità", p.rar.map((x) => x[0] + " " + x[1]).join(" · ")]);
+  const pk = packUrl(code);
+  return (
+    <View style={[s.panel, { marginTop: 10, overflow: "hidden" }]}>
+      <Pressable onPress={() => setOpen(!open)} style={{ padding: 12, flexDirection: "row", justifyContent: "space-between" }}>
+        <Text style={{ color: t.ink, fontWeight: "700" }}>Dettagli del prodotto e rarità</Text>
+        <Text style={{ color: t.ink2 }}>{open ? "▲" : "▼"}</Text>
+      </Pressable>
+      {open && (
+        <View style={{ paddingHorizontal: 12, paddingBottom: 12 }}>
+          {pk && <Image source={pk} style={{ width: "100%", height: 160, marginBottom: 10 }} contentFit="contain" cachePolicy="disk" />}
+          {rows.map(([k, v]) => (
+            <View key={k} style={{ flexDirection: "row", paddingVertical: 6, borderTopWidth: 1, borderColor: t.line }}>
+              <Text style={{ color: t.ink2, width: 96 }}>{k}</Text>
+              <Text style={{ color: t.ink, flex: 1, lineHeight: 20 }}>{v}</Text>
+            </View>
+          ))}
+          <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8 }}>
+            <Fit style={{ color: t.ink2, fontSize: 12, flex: 1 }}>{p.price && p.price[0] === "USD" ? "Dati ufficiali Bandai · prezzo consigliato USA" : "Dati ufficiali Bandai"}</Fit>
+            <Pressable onPress={() => Linking.openURL(p.url)}>
+              <Text style={{ color: t.accent, fontWeight: "700", fontSize: 13 }}>Pagina ufficiale ↗</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}

@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
+    "scheme": "digitalgate",
     "ios": {
       "supportsTablet": true
     },
@@ -22,7 +23,8 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-image"
+      "expo-image",
+      "expo-router"
     ]
   }
 }
