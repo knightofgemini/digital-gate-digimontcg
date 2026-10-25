@@ -1,19 +1,24 @@
 // Scheda carta (proposta "C - Carosello" dell'app attuale): con il dito a destra/sinistra la carta precedente/successiva
 // dell'elenco da cui è stata aperta; versioni come pulsanti; nome, codice e rarità; una riga di dati; tratti;
 // digievoluzioni ed effetti con le icone; prezzi; pre errata. Testi delle carte in inglese, etichette in italiano.
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { FlatList, Linking, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
-import { Text } from "../../Text";
+import { DISPLAY, Text } from "../../Text";
+import Svg, { Path } from "react-native-svg";
+import { FitText } from "../../fit";
+import { CmMark, CtMark } from "../../shops";
+import { Chevron } from "../../BottomBar";
+import { favToast } from "../../toast";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { BYKEY, Card, PAIRS, BYCODE, RARITY, SETBY, carVers, deckable, fullUrl, hasErrata, hostSet, isAce, maxCopies, preUrl, splitExtra, thumbUrl } from "../../data";
 import { NAVLIST, openCard } from "../../nav";
 import { bestVal, cmCovered, cmDate, cmOf, cmUrl, cmVal, ctCovered, ctDate, ctOf, ctUrl, ctVal, eur, eurN, eurT, usePrices } from "../../prices";
 import { ICO, Rich, iconClass, kwJoin, kwNoRem } from "../../rich";
 import { FavSheet } from "../../FavSheet";
-import { FavButton, ListsIcon, QtyControl } from "../../items";
-import { owned, useStore } from "../../store";
+import { Heart, ListsIcon, QtyControl } from "../../items";
+import { favSet, isFav, owned, useStore } from "../../store";
 import { deckById } from "../../decks";
 import { DeckQty, Lock } from "../../DeckQty";
 import { useTheme } from "../../theme";
@@ -36,9 +41,12 @@ export default function Carta() {
     0,
     list.findIndex((x) => x === c0 || carVers(c0).indexOf(x) >= 0)
   );
+  const ref = useRef<any>(null);
   if (!c0) return null;
+  const goTo = (i: number) => ref.current && ref.current.scrollToIndex({ index: i, animated: true });
   return (
     <FlatList
+      ref={ref}
       data={list}
       onLayout={(e) => setH(e.nativeEvent.layout.height)}
       style={{ flex: 1 }}
@@ -51,12 +59,12 @@ export default function Carta() {
       windowSize={3}
       initialNumToRender={1}
       maxToRenderPerBatch={2}
-      renderItem={({ item, index }) => <CardPage first={index === start ? c0 : item} width={width} height={h} deck={deck} />}
+      renderItem={({ item, index }) => <CardPage first={index === start ? c0 : item} width={width} height={h} deck={deck} prev={list[index - 1]} next={list[index + 1]} onNav={(d) => goTo(index + d)} />}
     />
   );
 }
 
-function CardPage({ first, width, height, deck }: { first: Card; width: number; height: number; deck?: string }) {
+function CardPage({ first, width, height, deck, prev, next, onNav }: { first: Card; width: number; height: number; deck?: string; prev?: Card; next?: Card; onNav: (d: number) => void }) {
   const t = useTheme();
   const [c, setC] = useState(first);
   const [cmOpen, setCmOpen] = useState(false);
@@ -113,48 +121,62 @@ function CardPage({ first, width, height, deck }: { first: Card; width: number; 
   const cv = cmVal(c),
     tv = ctVal(c);
   const low = cv != null && tv != null && cv !== tv ? (cv < tv ? "cm" : "ct") : "";
-  const colBg = t.cards[c.colors[0]] || t.surface2;
+  const cw = Math.min(290, maxW - 84);
+  const insB = useSafeAreaInsets().bottom;
   const copies = vers.reduce((n, a) => n + owned(a), 0);
 
   return (
     <SafeAreaView style={{ width, height, backgroundColor: t.bg }} edges={["top"]}>
-      {/* intestazione: chiusura, nome del prodotto con "Carta N di M" */}
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingVertical: 8 }}>
-        <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/carte"))} hitSlop={12} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: t.surface2, alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ color: t.ink, fontSize: 18, fontWeight: "700" }}>✕</Text>
+      {/* intestazione (.chead): chiusura, nome del prodotto con "Carta N di M", cuore e liste */}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 14, paddingRight: 8, paddingTop: 10, paddingBottom: 10, borderBottomWidth: 1, borderColor: t.line, backgroundColor: t.bg }}>
+        <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/carte"))} accessibilityLabel="Chiudi" style={headBtn(t)}>
+          <Svg width={20} height={20} viewBox="0 0 24 24">
+            <Path d="M6 6l12 12M18 6L6 18" stroke={t.ink} strokeWidth={2} strokeLinecap="round" />
+          </Svg>
         </Pressable>
-        <View style={{ flex: 1, alignItems: "center" }}>
-          <Text style={{ color: t.ink, fontWeight: "800" }} numberOfLines={1}>
+        <View style={{ flex: 1, minWidth: 0, alignItems: "center" }}>
+          <Text style={{ color: t.ink, fontWeight: "600", fontSize: 15.2, lineHeight: 18 }} numberOfLines={1}>
             {hs ? hs.name : ""}
           </Text>
-          {hs && hs.n && num && c.code.split("-")[0] === hs.code && num <= hs.n ? <Text style={{ color: t.ink2, fontSize: 12 }}>{"Carta " + num + " di " + hs.n}</Text> : null}
+          {hs && hs.n && num && c.code.split("-")[0] === hs.code && num <= hs.n ? <Text style={{ color: t.ink2, fontSize: 12.5, lineHeight: 15 }}>{"Carta " + num + " di " + hs.n}</Text> : null}
         </View>
-        {/* cuore e liste */}
-        <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}>
-          <FavButton c={c} size={24} />
-          <Pressable onPress={() => setFavFor(c)} hitSlop={8} accessibilityLabel="Liste e avviso di prezzo">
-            <ListsIcon color={t.ink2} size={24} />
+        <View style={{ flexDirection: "row", gap: 6 }}>
+          <FavBig c={c} />
+          <Pressable onPress={() => setFavFor(c)} accessibilityLabel="Liste e avviso di prezzo" style={headBtn(t)}>
+            <ListsIcon color={t.ink} size={20} />
           </Pressable>
         </View>
       </View>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40, width: maxW, alignSelf: "center" }} nestedScrollEnabled>
-        {/* carta grande sul colore della carta */}
-        <View style={{ marginHorizontal: 16, borderRadius: 18, paddingVertical: 18, alignItems: "center", backgroundColor: colBg + "33" }}>
-          <Image source={fullUrl(c)} placeholder={thumbUrl(c)} placeholderContentFit="contain" style={{ width: "72%", aspectRatio: 0.716, borderRadius: 12 }} contentFit="contain" cachePolicy="disk" transition={150} recyclingKey={c.k} />
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 14, width: maxW, alignSelf: "center" }} nestedScrollEnabled>
+        <View style={{ marginTop: 4, marginBottom: 4, paddingTop: 14, paddingBottom: 6, alignItems: "center", overflow: "hidden" }}>
+          {vers.length > 1 ? <View style={{ position: "absolute", top: 8, bottom: 30, width: cw - 36, borderRadius: 12, backgroundColor: t.surface2, borderWidth: 1, borderColor: t.line }} /> : null}
+          {prev ? (
+            <Pressable onPress={() => onNav(-1)} accessibilityLabel={"Carta precedente: " + prev.name + " (" + prev.code + ")"} style={{ position: "absolute", top: 14 + (cw * 1.4) / 2 - cw * 0.56, right: maxW / 2 + cw / 2 + 12, width: cw * 0.8, aspectRatio: 5 / 7, borderRadius: 10, overflow: "hidden", backgroundColor: t.surface2, opacity: 0.5 }}>
+              <Image source={fullUrl(prev)} placeholder={thumbUrl(prev)} style={{ width: "100%", height: "100%" }} contentFit="contain" cachePolicy="disk" />
+            </Pressable>
+          ) : null}
+          {next ? (
+            <Pressable onPress={() => onNav(1)} accessibilityLabel={"Carta successiva: " + next.name + " (" + next.code + ")"} style={{ position: "absolute", top: 14 + (cw * 1.4) / 2 - cw * 0.56, left: maxW / 2 + cw / 2 + 12, width: cw * 0.8, aspectRatio: 5 / 7, borderRadius: 10, overflow: "hidden", backgroundColor: t.surface2, opacity: 0.5 }}>
+              <Image source={fullUrl(next)} placeholder={thumbUrl(next)} style={{ width: "100%", height: "100%" }} contentFit="contain" cachePolicy="disk" />
+            </Pressable>
+          ) : null}
+          <View style={{ width: cw, aspectRatio: 5 / 7, borderRadius: 12, overflow: "hidden", backgroundColor: t.surface2, boxShadow: t.dark ? "0 2px 6px rgba(0,0,0,.30), 0 10px 22px -6px rgba(0,0,0,.50)" : "0 1px 3px rgba(15,26,46,.10), 0 6px 16px -2px rgba(15,26,46,.16)" }}>
+            <Image source={fullUrl(c)} placeholder={thumbUrl(c)} placeholderContentFit="contain" style={{ width: "100%", height: "100%" }} contentFit="contain" cachePolicy="disk" transition={150} recyclingKey={c.k} />
+          </View>
         </View>
 
         {/* versioni */}
         {vers.length > 1 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingTop: 12 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }} contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: 14, paddingVertical: 2, gap: 8 }}>
             {vers.map((a) => {
               const on = a.k === c.k;
               const bv = bestVal(a);
               return (
-                <Pressable key={a.k} onPress={() => setC(a)} style={{ flexDirection: "row", alignItems: "center", gap: 8, padding: 6, paddingRight: 12, borderRadius: 12, borderWidth: on ? 2 : 1, borderColor: on ? t.accent : t.line, backgroundColor: t.surface }}>
-                  <Image source={thumbUrl(a)} style={{ width: 30, height: 42, borderRadius: 3 }} cachePolicy="disk" />
+                <Pressable key={a.k} onPress={() => setC(a)} accessibilityState={{ selected: on }} style={{ flexDirection: "row", alignItems: "center", gap: 8, height: 52, paddingVertical: on ? 4 : 5, paddingLeft: on ? 4 : 5, paddingRight: on ? 11 : 12, borderRadius: 12, borderWidth: on ? 2 : 1, borderColor: on ? t.accent : t.line, backgroundColor: t.surface }}>
+                  <Image source={thumbUrl(a)} style={{ width: 29, height: 40, borderRadius: 4, backgroundColor: t.surface2 }} contentFit="contain" cachePolicy="disk" />
                   <View>
-                    <Text style={{ color: t.ink, fontWeight: "700", fontSize: 13 }}>{verName(a)}</Text>
-                    <Text style={{ color: t.ink2, fontSize: 12 }}>{bv == null ? "N/D" : eurT(bv)}</Text>
+                    <Text style={{ color: t.ink, fontWeight: "700", fontSize: 14.1, lineHeight: 17 }}>{verName(a)}</Text>
+                    <Text style={{ color: t.ink2, fontSize: 12.2, lineHeight: 15 }}>{bv == null ? "N/D" : eurT(bv)}</Text>
                   </View>
                 </Pressable>
               );
@@ -162,18 +184,15 @@ function CardPage({ first, width, height, deck }: { first: Card; width: number; 
           </ScrollView>
         )}
 
-        <View style={{ paddingHorizontal: 16 }}>
+        <View style={{ paddingHorizontal: 14 }}>
           {/* nome, codice, rarità e versione */}
-          <View style={{ alignItems: "center", marginTop: 14 }}>
-            <Text style={{ color: t.ink, fontSize: 24, fontWeight: "800", textAlign: "center" }} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.55}>
-              {c.name}
-              {isAce(c) ? <Text style={{ color: t.accent }}> ACE*</Text> : null}
-            </Text>
-            <Text style={{ color: t.ink2, marginTop: 4, textAlign: "center" }}>
+          <View style={{ alignItems: "center", marginBottom: 12 }}>
+            <FitText text={c.name + (isAce(c) ? "" : "")} size={25.6} minSize={16} display ace={isAce(c)} boxStyle={{ alignSelf: "stretch" }} style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", textAlign: "center" }} />
+            <Text style={{ color: t.ink2, marginTop: 4, textAlign: "center", fontSize: 14.4 }}>
               {c.code}
               {rr ? " · " : ""}
               {markIcon(c, t)}
-              {rr ? <Text style={{ color: t.ink, fontWeight: "700" }}>{RARITY[rr] || rr}</Text> : null}
+              {rr ? <Text style={{ color: RARCOL[rr] || t.ink, fontWeight: "700" }}>{RARITY[rr] || rr}</Text> : null}
               {verParts(c).map((vp) => (
                 <Text key={vp}>
                   {" · "}
@@ -182,11 +201,11 @@ function CardPage({ first, width, height, deck }: { first: Card; width: number; 
               ))}
               {vers.length > 1 ? " · " + (copies === 1 ? "1 copia in tutto" : copies + " copie in tutto") : ""}
             </Text>
-            {isAce(c) && <Text style={{ color: t.ink2, fontSize: 12, marginTop: 6, textAlign: "center" }}>* ACE è il simbolo stampato accanto al nome delle carte Digimon ACE: non fa parte del nome della carta.</Text>}
+            {isAce(c) && <Text style={{ color: t.ink2, fontSize: 11.8, marginTop: 6, textAlign: "center" }}>* ACE è il simbolo stampato accanto al nome delle carte Digimon ACE: non fa parte del nome della carta.</Text>}
           </View>
 
           {/* una riga di dati */}
-          <View style={{ flexDirection: "row", marginTop: 14, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, overflow: "hidden" }}>
+          <View style={{ flexDirection: "row", marginBottom: 10, borderRadius: 14, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, overflow: "hidden" }}>
             {(
               [
                 ["Tipo", c.ct],
@@ -200,13 +219,13 @@ function CardPage({ first, width, height, deck }: { first: Card; width: number; 
                 <DataCell key={l} label={l} value={v} />
               ))}
             {c.colors.length > 0 && (
-              <View style={{ flex: 1, padding: 8, alignItems: "center", borderLeftWidth: 1, borderColor: t.line }}>
-                <Text style={{ color: t.ink2, fontSize: 11 }}>Colore</Text>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 3, marginTop: 4 }}>
+              <View style={{ flex: 1, paddingVertical: 8, paddingHorizontal: 4, gap: 2, alignItems: "center", borderLeftWidth: 1, borderColor: t.line }}>
+                <Text style={CDL(t)}>Colore</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, minHeight: 22 }}>
                   {c.colors.map((x) => (
-                    <View key={x} style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: t.cards[x] }} />
+                    <View key={x} style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: t.cards[x] }} />
                   ))}
-                  {c.colors.length === 1 && <Text style={{ color: t.ink, fontWeight: "700", fontSize: 13 }}>{c.colors[0]}</Text>}
+                  {c.colors.length === 1 && <Text style={{ color: t.ink, fontWeight: "600", fontSize: 15.2 }}>{c.colors[0]}</Text>}
                 </View>
               </View>
             )}
@@ -214,13 +233,13 @@ function CardPage({ first, width, height, deck }: { first: Card; width: number; 
 
           {/* forma | attribute | trait come sulla carta stampata */}
           {idGroups.length > 0 && (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 12, justifyContent: "center" }}>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, marginBottom: 10, justifyContent: "center" }}>
               {idGroups.map((g, gi) => (
                 <View key={gi} style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
-                  {gi > 0 && <View style={{ width: 1, height: 16, backgroundColor: t.line }} />}
+                  {gi > 0 && <View style={{ width: 2, height: 18, borderRadius: 1, marginHorizontal: 2, backgroundColor: t.ink2, opacity: 0.55 }} />}
                   {g.map((v) => (
-                    <View key={v} style={{ backgroundColor: t.surface2, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                      <Text style={{ color: t.ink, fontWeight: "700", fontSize: 12 }}>{v}</Text>
+                    <View key={v} style={{ backgroundColor: t.surface2, borderRadius: 4.5, paddingHorizontal: 10, paddingVertical: 3 }}>
+                      <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 12.8, lineHeight: 17 }}>{v}</Text>
                     </View>
                   ))}
                 </View>
@@ -230,7 +249,7 @@ function CardPage({ first, width, height, deck }: { first: Card; width: number; 
 
           {/* lista ban */}
           {deckable(c) && (mx < 4 || pairs) && (
-            <View style={{ marginTop: 12, flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, justifyContent: "center" }}>
+            <View style={{ marginBottom: 12, flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
               <View style={{ backgroundColor: mx === 0 ? "#c0261e" : mx === 1 ? "#c77a0a" : "#7a3fb0", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
                 <Text style={{ color: "#fff", fontWeight: "800", fontSize: 12 }}>{mx === 0 ? "Bandita" : mx === 1 ? "Limitata" : "Coppia vietata con"}</Text>
               </View>
@@ -246,9 +265,13 @@ function CardPage({ first, width, height, deck }: { first: Card; width: number; 
           )}
 
           {/* digievoluzioni */}
-          {evo.length > 0 && <Box title="Digievoluzione" text={evo.join(" • ")} />}
-          {ex.alt.length > 0 && <Box title="Altra Digievoluzione" text={ex.alt.join(" • ")} />}
-          {ex.spec.length > 0 && <Box title="Digievoluzione speciale" text={ex.spec.join(" • ")} />}
+          {evo.length > 0 || ex.alt.length > 0 || ex.spec.length > 0 ? (
+            <View style={{ gap: 8, marginBottom: 12 }}>
+              {evo.length > 0 && <Evo title="Digievoluzione" text={evo.join(" • ")} />}
+              {ex.alt.length > 0 && <Evo title="Altra Digievoluzione" text={ex.alt.join(" • ")} />}
+              {ex.spec.length > 0 && <Evo title="Digievoluzione speciale" text={ex.spec.join(" • ")} />}
+            </View>
+          ) : null}
 
           {/* effetti e regole */}
           {fx
@@ -259,14 +282,15 @@ function CardPage({ first, width, height, deck }: { first: Card; width: number; 
 
           {/* prezzi affiancati: il valore apre il negozio, il resto apre/chiude i dettagli */}
           {(cmCovered(c) || ctCovered(c)) && (
-            <View style={{ marginTop: 14 }}>
-              <Text style={{ color: t.accent, fontWeight: "800", marginBottom: 8 }}>Prezzi</Text>
+            <View style={{ marginTop: 4, marginBottom: 12 }}>
+              <Text style={H3(t)}>Prezzi</Text>
               <View style={{ flexDirection: "row", gap: 8 }}>
-                {cmCovered(c) && <PriceBox name="Cardmarket" val={cv} tag={cmOf(c) && cmOf(c)![1] == null && cmOf(c)![0] != null ? "Trend" : "Minimo"} url={cmUrl(c)} low={low === "cm"} open={cmOpen} toggle={() => setCmOpen(!cmOpen)} />}
-                {ctCovered(c) && <PriceBox name="CardTrader" val={tv} tag="Minimo" url={ctUrl(c)} low={low === "ct"} open={ctOpen} toggle={() => setCtOpen(!ctOpen)} />}
+                {cmCovered(c) && <PriceBox shop="cm" name="Cardmarket" val={cv} tag={cmOf(c) && cmOf(c)![1] == null && cmOf(c)![0] != null ? "Trend" : "Minimo"} url={cmUrl(c)} low={low === "cm"} open={cmOpen} toggle={() => setCmOpen(!cmOpen)} />}
+                {ctCovered(c) && <PriceBox shop="ct" name="CardTrader" val={tv} tag="Minimo" url={ctUrl(c)} low={low === "ct"} open={ctOpen} toggle={() => setCtOpen(!ctOpen)} />}
               </View>
               {cmOpen && cmCovered(c) && (
                 <PriceDetails
+                  shop="cm"
                   title="Cardmarket"
                   rows={cmOf(c) ? [["Trend", eur(cmOf(c)![0])], ["Media 1 g", eur(cmOf(c)![2])], ["Media 7 g", eur(cmOf(c)![3])], ["Media 30 g", eur(cmOf(c)![4])]] : []}
                   note={cmOf(c) ? "Prezzi aggiornati al: " + cmDate() + ".\nSi intendono dati medi di tutte le vendite, che non distinguono lingua o condizioni della carta." : "Questa versione non è stata abbinata con certezza al prodotto giusto su Cardmarket."}
@@ -274,6 +298,7 @@ function CardPage({ first, width, height, deck }: { first: Card; width: number; 
               )}
               {ctOpen && ctCovered(c) && (
                 <PriceDetails
+                  shop="ct"
                   title="CardTrader"
                   rows={[["Lingua", "Inglese"], ["Condizione", "Near Mint"]].concat(ctOf(c) && ctOf(c)![0] != null && ctOf(c)!.length > 3 ? [["Venditore", countryName(ctOf(c)![3])], ["CardTrader Zero", ctOf(c)![4] ? "Sì" : "No"]] : [])}
                   note={(ctVal(c) == null ? "Al momento su CardTrader non c'è nessuna offerta per questa carta in inglese in condizione Near Mint.\n" : "") + "Prezzi aggiornati al: " + ctDate() + "."}
@@ -284,8 +309,8 @@ function CardPage({ first, width, height, deck }: { first: Card; width: number; 
 
           {/* pre errata */}
           {hasErrata(c) && (
-            <View style={{ marginTop: 14 }}>
-              <Text style={{ color: t.accent, fontWeight: "800", marginBottom: 8 }}>Pre errata</Text>
+            <View style={{ marginTop: 26 }}>
+              <Text style={H3(t)}>Pre errata</Text>
               <Text style={{ color: t.ink2, fontSize: 13, marginBottom: 8 }}>Versione stampata prima dell'errata ufficiale</Text>
               <Image source={preUrl(c)} style={{ width: "60%", aspectRatio: 0.716, borderRadius: 10 }} contentFit="contain" cachePolicy="disk" />
             </View>
@@ -294,20 +319,20 @@ function CardPage({ first, width, height, deck }: { first: Card; width: number; 
       </ScrollView>
       {/* barra fissa in basso: copie nel mazzo (se aperta dall'editor) e copie possedute della versione aperta */}
       {dk && deckable(c) && (
-        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderColor: t.line, backgroundColor: t.surface }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: t.ink, fontWeight: "800" }}>Copie nel mazzo</Text>
-            <Text style={{ color: t.ink2, fontSize: 12 }} numberOfLines={1}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingTop: 10, borderTopWidth: 1, borderColor: t.line, backgroundColor: t.surface }}>
+          <View style={{ flex: 1, paddingLeft: 2 }}>
+            <Text style={{ color: t.ink, fontWeight: "600", lineHeight: 19 }}>Copie nel mazzo</Text>
+            <Text style={{ color: t.ink2, fontSize: 12.8, lineHeight: 16 }} numberOfLines={1}>
               {dk.name}
             </Text>
           </View>
           <DeckQty d={dk} c={c} big />
         </View>
       )}
-      <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: dk ? 0 : 1, borderColor: t.line, backgroundColor: t.surface }}>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: t.ink, fontWeight: "800" }}>Copie possedute</Text>
-          <Text style={{ color: t.ink2, fontSize: 12 }}>{verName(c)}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingTop: dk ? 8 : 10, paddingBottom: 10 + insB, borderTopWidth: dk ? 0 : 1, borderColor: t.line, backgroundColor: t.surface }}>
+        <View style={{ flex: 1, paddingLeft: 2 }}>
+          <Text style={{ color: t.ink, fontWeight: "600", lineHeight: 19 }}>Copie possedute</Text>
+          <Text style={{ color: t.ink2, fontSize: 12.8, lineHeight: 16 }}>{verName(c)}</Text>
         </View>
         {dk && !unlocked ? (
           <Pressable onPress={() => setUnlocked(true)} style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16, backgroundColor: t.surface2 }} accessibilityLabel="Sblocca la modifica della collezione">
@@ -365,14 +390,52 @@ function countryName(cc?: string) {
   }
 }
 
+const RARCOL: Record<string, string> = { C: "#9aa4b6", U: "#3fbf75", R: "#4c8dff", SR: "#b06bff", SEC: "#f2b230", UR: "#ff5470", P: "#2fc6c0" };
+const headBtn = (t: any) => ({ width: 44, height: 44, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, alignItems: "center" as const, justifyContent: "center" as const });
+// titoletto delle sezioni (.fx h3)
+const H3 = (t: any) => ({ color: t.ink2, fontFamily: DISPLAY, fontWeight: "500" as const, fontSize: 12, letterSpacing: 1.2, textTransform: "uppercase" as const, marginBottom: 4 });
+// etichetta della riga di dati (.cdc > span)
+const CDL = (t: any) => ({ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600" as const, fontSize: 10.6, letterSpacing: 0.85, textTransform: "uppercase" as const });
+
+// cuore nel riquadro (.favb.big): arancione con lo sfondo tenue se preferita
+function FavBig({ c }: { c: Card }) {
+  const t = useTheme();
+  useStore();
+  const on = isFav(c);
+  return (
+    <Pressable
+      onPress={() => {
+        favSet(c, !on);
+        favToast(c, !on);
+      }}
+      accessibilityLabel={on ? "Togli dalle preferite" : "Aggiungi alle preferite"}
+      accessibilityState={{ selected: on }}
+      style={[headBtn(t), on ? { borderColor: t.accent, backgroundColor: t.accentSoft } : null]}
+    >
+      <Heart on={on} size={20} color={on ? t.accent : t.ink} />
+    </Pressable>
+  );
+}
+
 function DataCell({ label, value }: { label: string; value: string }) {
   const t = useTheme();
   return (
-    <View style={{ flex: label === "Tipo" && value.length > 6 ? (value.length > 8 ? 2.1 : 1.6) : 1, padding: 8, alignItems: "center", borderLeftWidth: label === "Tipo" ? 0 : 1, borderColor: t.line }}>
-      <Text style={{ color: t.ink2, fontSize: 11 }}>{label}</Text>
-      <Text style={{ color: t.ink, fontWeight: "800", fontSize: 15, marginTop: 2 }} numberOfLines={1} adjustsFontSizeToFit>
+    <View style={{ flex: label === "Tipo" && value.length > 8 ? 2 : 1, minWidth: 0, paddingVertical: 8, paddingHorizontal: 4, gap: 2, alignItems: "center", borderLeftWidth: label === "Tipo" ? 0 : 1, borderColor: t.line }}>
+      <Text style={CDL(t)}>{label}</Text>
+      <Text style={{ color: t.ink, fontWeight: "600", fontSize: 15.2, lineHeight: 22 }} numberOfLines={1}>
         {value}
       </Text>
+    </View>
+  );
+}
+
+// digievoluzione (.stat.wide.evo): etichetta e righe con le icone
+function Evo({ title, text }: { title: string; text: string }) {
+  const t = useTheme();
+  return (
+    <View style={{ backgroundColor: t.surface, borderColor: t.line, borderWidth: 1, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10 }}>
+      <Text style={{ color: t.ink2, fontSize: 11.2, letterSpacing: 0.9, textTransform: "uppercase", lineHeight: 16 }}>{title}</Text>
+      <Rich text={text} style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 15, lineHeight: 22 }} />
     </View>
   );
 }
@@ -380,8 +443,9 @@ function DataCell({ label, value }: { label: string; value: string }) {
 function Box({ title, text, side, ldp }: { title: string; text: string; side?: any; ldp?: string }) {
   const t = useTheme();
   return (
-    <View style={{ backgroundColor: t.surface, borderColor: t.line, borderWidth: 1, borderRadius: 12, padding: 12, marginTop: 10 }}>
-      <Text style={{ color: t.accent, fontWeight: "800", marginBottom: 6 }}>{title}</Text>
+    <View style={{ marginBottom: 10 }}>
+      <Text style={H3(t)}>{title}</Text>
+      <View style={{ backgroundColor: t.surface, borderColor: t.line, borderWidth: 1, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 }}>
       {side && (
         <View style={{ flexDirection: "row", gap: 4, marginBottom: 6 }}>
           {side.c ? (
@@ -399,48 +463,72 @@ function Box({ title, text, side, ldp }: { title: string; text: string; side?: a
             ))}
         </View>
       )}
-      <Rich text={text} style={{ color: t.ink, fontSize: 14, lineHeight: 22 }} />
+      <Rich text={text} style={{ color: t.ink, fontSize: 15, lineHeight: 22 }} />
       {!!ldp && (
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8 }}>
-          <Text style={{ color: t.ink2, fontSize: 12 }}>Link DP</Text>
-          <Text style={{ color: t.ink, fontWeight: "800" }}>{ldp}</Text>
+          <View style={{ backgroundColor: ICO.grn[0], borderRadius: 5, paddingHorizontal: 7, paddingVertical: 1 }}>
+            <Text style={{ color: "#fff", fontFamily: DISPLAY, fontWeight: "700", fontSize: 12 }}>LINK DP</Text>
+          </View>
+          <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700" }}>{ldp}</Text>
         </View>
       )}
+      </View>
     </View>
   );
 }
 
-function PriceBox({ name, val, tag, url, low, open, toggle }: { name: string; val: number | null; tag: string; url: string | null; low: boolean; open: boolean; toggle: () => void }) {
+function PriceBox({ shop, name, val, tag, url, low, open, toggle }: { shop: "cm" | "ct"; name: string; val: number | null; tag: string; url: string | null; low: boolean; open: boolean; toggle: () => void }) {
   const t = useTheme();
   return (
-    <Pressable onPress={toggle} style={{ flex: 1, backgroundColor: t.surface, borderColor: open ? t.accent : t.line, borderWidth: 1, borderRadius: 12, padding: 12 }}>
-      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-        <Text style={{ color: t.ink2, fontSize: 12, fontWeight: "700" }}>{name}</Text>
-        <Text style={{ color: t.ink2, fontSize: 12 }}>{open ? "▴" : "▾"}</Text>
+    <Pressable onPress={toggle} accessibilityState={{ expanded: open }} accessibilityLabel={"Dettagli prezzo " + name} style={{ flex: 1, minWidth: 0, gap: 2, backgroundColor: t.surface, borderColor: open ? t.ink2 : t.line, borderWidth: 1, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 12 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        {shop === "cm" ? <CmMark size={18} /> : <CtMark size={18} />}
+        <Text style={{ color: t.ink2, fontSize: 13.6, fontWeight: "600", flexShrink: 1 }} numberOfLines={1}>
+          {name}
+        </Text>
+        <View style={{ marginLeft: "auto" }}>
+          <Chevron color={t.ink2} up={open} size={16} />
+        </View>
       </View>
-      <Text onPress={url && val != null ? () => Linking.openURL(url) : undefined} style={{ color: val == null ? t.ink2 : t.ink, fontSize: 20, fontWeight: "800", marginTop: 4, textDecorationLine: url && val != null ? "underline" : "none" }}>
+      <Text onPress={url && val != null ? () => Linking.openURL(url) : undefined} style={{ color: val == null ? t.ink2 : t.ink, fontFamily: DISPLAY, fontWeight: val == null ? "500" : "700", fontSize: 21.6, lineHeight: 27, fontVariant: ["tabular-nums"] }}>
         {val == null ? "N/D" : eurN(val) + " €"}
       </Text>
-      <Text style={{ color: t.ink2, fontSize: 12, marginTop: 2 }}>
+      <Text style={{ color: t.ink2, fontSize: 11.8, lineHeight: 15 }}>
         {val == null ? "Non disponibile" : tag}
-        {low ? <Text style={{ color: "#46bd73", fontWeight: "700" }}> · più basso</Text> : null}
+        {low ? (
+          <Text style={{ color: t.ok, fontWeight: "600" }}>
+            {" · "}
+            più basso
+          </Text>
+        ) : null}
       </Text>
     </Pressable>
   );
 }
 
-function PriceDetails({ title, rows, note }: { title: string; rows: string[][]; note: string }) {
+function PriceDetails({ shop, title, rows, note }: { shop: "cm" | "ct"; title: string; rows: string[][]; note: string }) {
   const t = useTheme();
   return (
-    <View style={{ marginTop: 8, backgroundColor: t.surface, borderColor: t.line, borderWidth: 1, borderRadius: 12, padding: 12 }}>
-      <Text style={{ color: t.ink, fontWeight: "800", marginBottom: 6 }}>{title}</Text>
-      {rows.map(([a, b]) => (
-        <View key={a} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 4 }}>
-          <Text style={{ color: t.ink2 }}>{a}</Text>
-          <Text style={{ color: t.ink, fontWeight: "700" }}>{b}</Text>
-        </View>
+    <View style={{ marginTop: 8, backgroundColor: t.surface, borderColor: t.line, borderWidth: 1, borderRadius: 14, paddingTop: 10 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingBottom: 8 }}>
+        {shop === "cm" ? <CmMark size={18} /> : <CtMark size={18} />}
+        <Text style={{ color: t.ink, fontWeight: "600", fontSize: 14.1 }}>{title}</Text>
+      </View>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, paddingHorizontal: 12 }}>
+        {rows.map(([a, b]) => (
+          <View key={a} style={{ width: "48.5%", flexGrow: 1, flexDirection: "row", justifyContent: "space-between", gap: 8, paddingVertical: 6, paddingHorizontal: 8, borderRadius: 8, backgroundColor: t.surface2 }}>
+            <Text style={{ color: t.ink2, fontSize: 12.5 }}>{a}</Text>
+            <Text style={{ color: t.ink, fontWeight: "600", fontSize: 12.5, flexShrink: 1 }} numberOfLines={1}>
+              {b}
+            </Text>
+          </View>
+        ))}
+      </View>
+      {note.split("\n").map((n, i) => (
+        <Text key={i} style={{ color: t.ink2, fontSize: 11.5, lineHeight: 16, paddingHorizontal: 12, paddingTop: i ? 0 : 6, paddingBottom: 10 }}>
+          {n}
+        </Text>
       ))}
-      <Text style={{ color: t.ink2, fontSize: 12, marginTop: 6, lineHeight: 17 }}>{note}</Text>
     </View>
   );
 }

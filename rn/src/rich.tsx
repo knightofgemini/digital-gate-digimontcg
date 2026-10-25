@@ -3,7 +3,7 @@
 // Toccando una keyword (＜Raid＞, ＜Security A. +1＞...) si apre sotto il testo la spiegazione della regola.
 import { useState } from "react";
 import { Pressable, TextStyle, View } from "react-native";
-import { Text } from "./Text";
+import { DISPLAY, Text } from "./Text";
 import { kwInfo } from "./keywords";
 import { useTheme } from "./theme";
 
@@ -60,12 +60,14 @@ export function kwJoin(text: string) {
 // la spiegazione tra parentesi dopo ＜Alliance＞ non si mostra: si legge toccandola
 export const kwNoRem = (text: string) => String(text).replace(/(＜Alliance＞)[ \t]*\((?:[^()\n]|\([^()\n]*\))*\)/g, "$1");
 
+// riquadri verdi (DigiXros, Assembly, Link, Arts Digivolve)
+const GKW = /^(Arts Digivolve|DigiXros\s*-\d+|Assembly\s*-\d+|Link)$/;
 const COLRE = /(^|[^\w-])(Red|Blue|Yellow|Green|Black|Purple|White)(?![\w-])/g;
 
 function Ico({ text, cls, fs, onPress, open }: { text: string; cls: string; fs: number; onPress?: () => void; open?: boolean }) {
   const [bg, ink] = ICO[cls];
   return (
-    <Text onPress={onPress} suppressHighlighting style={{ backgroundColor: bg, color: ink, fontWeight: "700", fontSize: fs * 0.86 }}>
+    <Text onPress={onPress} suppressHighlighting style={{ backgroundColor: bg, color: ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: fs * 0.78 }}>
       {" " + text + (onPress ? (open ? " ▴" : " ▾") : "") + " "}
     </Text>
   );
@@ -89,7 +91,7 @@ export function Rich({ text, style, noKw }: { text: string; style?: TextStyle; n
         if (st > last) nodes.push(part.slice(last, st));
         const w = m[2];
         nodes.push(
-          <Text key={i + "c" + st} style={{ backgroundColor: t.cards[w], color: w === "White" || w === "Yellow" ? "#111" : "#fff", fontWeight: "700", fontSize: fs * 0.86 }}>
+          <Text key={i + "c" + st} style={{ backgroundColor: t.cards[w], color: w === "White" ? "#111" : "#fff", fontFamily: DISPLAY, fontWeight: "700", fontSize: fs * 0.78 }}>
             {" " + w + " "}
           </Text>
         );
@@ -108,9 +110,9 @@ export function Rich({ text, style, noKw }: { text: string; style?: TextStyle; n
     <View>
       <Text style={style}>{nodes}</Text>
       {open.map((k) => (
-        <Pressable key={k} onPress={() => setOpen(open.filter((x) => x !== k))} style={{ marginTop: 8, padding: 10, borderRadius: 8, borderLeftWidth: 3, borderLeftColor: ICO.kw[0], backgroundColor: t.surface2 }}>
-          <Text style={{ color: t.ink, fontWeight: "800", marginBottom: 4 }}>{/^-\d+$/.test(k) ? "Overflow " + k : k.length > 24 ? k.replace(/\s*\(.*$/, "") : k}</Text>
-          <Rich text={kwInfo(k) || ""} style={{ color: t.ink, fontSize: 13, lineHeight: 19 }} noKw />
+        <Pressable key={k} onPress={() => setOpen(open.filter((x) => x !== k))} style={{ marginTop: 6, marginBottom: 8, paddingTop: 8, paddingHorizontal: 11, paddingBottom: 9, borderRadius: 10, borderLeftWidth: 3, borderLeftColor: GKW.test(k) ? "#0a7a6a" : "#d8661f", backgroundColor: t.surface2 }}>
+          <Text style={{ color: GKW.test(k) ? "#0f9a85" : t.accent, fontFamily: DISPLAY, fontWeight: "700", fontSize: 12.2, letterSpacing: 0.25, marginBottom: 2 }}>{/^-\d+$/.test(k) ? "Overflow " + k : k.length > 24 ? k.replace(/\s*\(.*$/, "") : k}</Text>
+          <Rich text={kwInfo(k) || ""} style={{ color: t.ink, fontSize: 14.4, lineHeight: 21.6 }} noKw />
         </Pressable>
       ))}
     </View>
