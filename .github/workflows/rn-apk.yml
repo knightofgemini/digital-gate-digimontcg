@@ -32,7 +32,7 @@ jobs:
         working-directory: rn
         run: |
           LATEST=$(gh release view latest --json name -q .name | grep -oE '[0-9]+$' || echo 0)
-          VC=$((LATEST + 1))
+          export VC=$((LATEST + 1))
           echo "VC=$VC" >> $GITHUB_ENV
           node -e '
             const fs = require("fs"), j = JSON.parse(fs.readFileSync("app.json", "utf8"));
