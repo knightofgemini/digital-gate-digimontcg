@@ -1,12 +1,11 @@
 name: Nuova app (React Native) - foto su emulatore
 # Anteprima senza pubblicare: compila l'APK della nuova app (solo x86_64, per l'emulatore), lo avvia su un emulatore
 # Android 14 e fotografa le schede carta indicate. Le foto vanno nel ramo "rn-shots"; nessuna release viene toccata.
+# Si avvia a ogni invio sul ramo rn-tag (le carte da fotografare sono in tools/rn_shots.txt).
 on:
-  workflow_dispatch:
-    inputs:
-      carte:
-        description: "chiavi delle carte separate da virgola (chiave@keyword per toccare una keyword)"
-        required: true
+  push:
+    branches: [rn-tag]
+    paths: ["rn/**", "tools/rn_shots*", ".github/workflows/rn-shot.yml"]
 permissions:
   contents: write
 concurrency:
@@ -56,7 +55,7 @@ jobs:
           profile: pixel_6
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: adb install -r prova.apk && python3 tools/rn_shots.py foto "${{ inputs.carte }}"
+          script: adb install -r prova.apk && python3 tools/rn_shots.py foto "$(cat tools/rn_shots.txt)"
       - name: Foto nel ramo rn-shots
         if: always()
         run: |
