@@ -9,6 +9,8 @@ type Native = {
   stop(): void;
   battery(): boolean;
   askBattery(): void;
+  sleep(ms: number): Promise<void>;
+  clearOldImages(): boolean;
 };
 const M = Platform.OS === "android" ? requireOptionalNativeModule<Native>("BgDownload") : null;
 
@@ -44,6 +46,21 @@ export const BGD = M
         try {
           M.askBattery();
         } catch (e) {}
+      },
+      // attesa fatta da Android: continua anche in sottofondo a schermo spento
+      sleep(ms: number): Promise<void> {
+        try {
+          return M.sleep(ms);
+        } catch (e) {
+          return new Promise((r) => setTimeout(r, ms));
+        }
+      },
+      clearOldImages() {
+        try {
+          return !!M.clearOldImages();
+        } catch (e) {
+          return false;
+        }
       },
     }
   : null;

@@ -65,10 +65,14 @@ export default function Prodotto() {
   const { sections, flat, n } = useMemo(() => {
     if (!set) return { sections: [], flat: [] as Card[], n: 0 };
     const nq = normQ(q);
-    const l = all.filter((c) => cardMatches(c, nq, f));
-    const groups: [string, Card[]][] = nq
-      ? [["", l.map((c, j) => ({ c, j, r: f.qm === "text" ? 0 : relevance(c, nq) })).sort((a, b) => a.r - b.r || a.j - b.j).map((o) => o.c)]]
-      : setGroups(set.id, l);
+    let l = all.filter((c) => cardMatches(c, nq, f));
+    // cercando restano le sezioni (Regular, Alternative Art, Ristampe…), ognuna in ordine di rilevanza (come nell'app attuale)
+    if (nq && f.qm !== "text")
+      l = l
+        .map((c, j) => ({ c, j, r: relevance(c, nq) }))
+        .sort((a, b) => a.r - b.r || a.j - b.j)
+        .map((o) => o.c);
+    const groups: [string, Card[]][] = setGroups(set.id, l, !nq);
     const flat: Card[] = [];
     const sections = groups
       .filter(([, g]) => g.length)

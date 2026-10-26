@@ -2,6 +2,8 @@
 // Cardmarket per versione [trend, più basso, media 1 g, 7 g, 30 g, idProduct]; CardTrader [più basso EN Near Mint, n. offerte, blueprint, paese, Zero].
 // All'avvio si scaricano quelli del giorno dal ramo "prezzi", così non serve una nuova versione dell'app.
 import { useEffect, useState } from "react";
+import { AppState, Platform } from "react-native";
+import { documentDirectory, readAsStringAsync, writeAsStringAsync } from "expo-file-system/legacy";
 import raw from "../data/prices.json";
 import { Card, MONTHS } from "./data";
 
@@ -24,27 +26,60 @@ const stamp = (o: Prices) => (o && o.p ? (o.d || "") + "|" + ((o.ct && o.ct.d) |
 let version = 0;
 const subs = new Set<(n: number) => void>();
 let started = false;
-// i componenti che mostrano prezzi si ridisegnano quando arrivano quelli nuovi
+function bump() {
+  version++;
+  subs.forEach((f) => f(version));
+}
+// i componenti che mostrano prezzi si ridisegnano quando arrivano quelli nuovi; restituisce un numero che cambia con i prezzi
 export function usePrices() {
-  const [, setV] = useState(version);
+  const [v, setV] = useState(version);
   useEffect(() => {
     subs.add(setV);
-    if (!started) {
-      started = true;
-      fetch(URL + "?d=" + new Date().toISOString().slice(0, 10), { cache: "no-store" })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((o) => {
-          if (!o || !o.p || stamp(o) <= stamp(PRICES)) return;
-          setPrices(o);
-          version++;
-          subs.forEach((f) => f(version));
-        })
-        .catch(() => {});
-    }
+    refreshPrices();
     return () => {
       subs.delete(setV);
     };
   }, []);
+  return v;
+}
+
+// Ultimi prezzi scaricati salvati in un file (come "dg-prices" dell'app attuale): senza internet si usano quelli,
+// se sono più recenti di quelli inclusi nell'app. Lo scaricamento parte all'avvio e, se non riesce, si riprova
+// tornando nell'app (al massimo una volta ogni 10 minuti).
+const FILE = Platform.OS !== "web" && documentDirectory ? documentDirectory + "prices.json" : "";
+export async function loadSavedPrices() {
+  if (!FILE) return;
+  try {
+    const o = JSON.parse(await readAsStringAsync(FILE));
+    if (o && o.p && stamp(o) > stamp(PRICES)) {
+      setPrices(o);
+      bump();
+    }
+  } catch (e) {}
+}
+let lastTry = 0,
+  gotToday = "";
+export function refreshPrices() {
+  const day = new Date().toISOString().slice(0, 10);
+  if (gotToday === day || Date.now() - lastTry < 10 * 60 * 1000) return;
+  lastTry = Date.now();
+  if (!started) {
+    started = true;
+    AppState.addEventListener("change", (st) => st === "active" && refreshPrices());
+  }
+  fetch(URL + "?d=" + day, { cache: "no-store" })
+    .then((r) => (r.ok ? r.text() : null))
+    .then((txt) => {
+      if (!txt) return;
+      const o = JSON.parse(txt);
+      if (!o || !o.p) return;
+      gotToday = day;
+      if (stamp(o) <= stamp(PRICES)) return;
+      setPrices(o);
+      bump();
+      if (FILE) writeAsStringAsync(FILE, txt).catch(() => {});
+    })
+    .catch(() => {});
 }
 
 const hostSet = (c: Card) => (c.suf ? c.from || c.set : c.set);

@@ -1,5 +1,5 @@
 // Foglio "Salva in…": preferite, liste personali e avviso di prezzo per una versione della carta (come nell'app attuale).
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, Switch, View } from "react-native";
 import { Sheet } from "./Sheet";
 import { DISPLAY, Text, TextInput } from "./Text";
@@ -31,7 +31,26 @@ export function FavSheet({ c: cOpen, onClose }: { c: Card | null; onClose: () =>
   const [nw, setNw] = useState<string | null>(null);
   const [eurTxt, setEurTxt] = useState<string | null>(null);
   const insB = useSafeAreaInsets().bottom;
+  // aprendo il foglio per un'altra carta i campi ripartono vuoti (prima restavano soglia e nome della lista di prima)
+  useEffect(() => {
+    setNw(null);
+    setEurTxt(null);
+  }, [cOpen && cOpen.k]);
   if (!c) return null;
+  // soglia scritta: si salva anche toccando "Fine", fuori dal foglio o indietro (prima andava persa).
+  // Con la virgola i punti sono separatori delle migliaia ("1.250,50"); senza virgola il punto è il decimale
+  // (la tastiera numerica di Android ha solo il punto: "1.50" non deve diventare 150 €)
+  const commitEur = () => {
+    if (eurTxt == null) return;
+    const s0 = eurTxt.trim();
+    const v = parseFloat(s0.indexOf(",") >= 0 ? s0.replace(/\./g, "").replace(",", ".") : s0);
+    if (v > 0) setAlert(c, Math.round(v * 100) / 100);
+    setEurTxt(null);
+  };
+  const close = () => {
+    commitEur();
+    onClose();
+  };
   const vk = SETBY[hostSet(c)];
   const alertOn = S.fav.a[c.k] != null;
 
@@ -59,7 +78,7 @@ export function FavSheet({ c: cOpen, onClose }: { c: Card | null; onClose: () =>
   const on = alertOn;
 
   return (
-    <Sheet visible={!!cOpen} onClose={onClose} maxH={0.88} scrim="rgba(4,8,18,.6)" style={{ backgroundColor: t.surface, borderTopWidth: 1, borderColor: t.line, borderTopLeftRadius: 22, borderTopRightRadius: 22, boxShadow: "0 -12px 32px rgba(0,0,0,.35)" }}>
+    <Sheet visible={!!cOpen} onClose={close} maxH={0.88} scrim="rgba(4,8,18,.6)" style={{ backgroundColor: t.surface, borderTopWidth: 1, borderColor: t.line, borderTopLeftRadius: 22, borderTopRightRadius: 22, boxShadow: "0 -12px 32px rgba(0,0,0,.35)" }}>
         <ScrollView contentContainerStyle={{ paddingTop: 8, paddingHorizontal: 16, paddingBottom: 18 + insB, gap: 12 }} keyboardShouldPersistTaps="handled">
           <View style={{ alignSelf: "center", width: 40, height: 5, borderRadius: 3, backgroundColor: t.line }} />
           <View>
@@ -119,11 +138,8 @@ export function FavSheet({ c: cOpen, onClose }: { c: Card | null; onClose: () =>
                     onChangeText={setEurTxt}
                     keyboardType="decimal-pad"
                     accessibilityLabel="Soglia di prezzo in euro"
-                    onEndEditing={() => {
-                      const v = parseFloat(String(eurTxt || "").replace(/\./g, "").replace(",", "."));
-                      if (v > 0) setAlert(c, Math.round(v * 100) / 100);
-                      setEurTxt(null);
-                    }}
+                    onEndEditing={commitEur}
+                    onSubmitEditing={commitEur}
                     style={{ flex: 1, minWidth: 0, color: t.ink, fontWeight: "600", fontSize: 16 }}
                   />
                 </View>
@@ -144,7 +160,7 @@ export function FavSheet({ c: cOpen, onClose }: { c: Card | null; onClose: () =>
               </View>
             </View>
           </View>
-          <Pressable onPress={onClose} style={{ minHeight: 50, borderRadius: 14, backgroundColor: t.accent, alignItems: "center", justifyContent: "center" }}>
+          <Pressable onPress={close} style={{ minHeight: 50, borderRadius: 14, backgroundColor: t.accent, alignItems: "center", justifyContent: "center" }}>
             <Text style={{ color: t.accentInk, fontWeight: "600", fontSize: 16 }}>Fine</Text>
           </Pressable>
         </ScrollView>

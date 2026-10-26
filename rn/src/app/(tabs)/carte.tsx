@@ -1,13 +1,13 @@
 // Ricerca carte (come l'app attuale sul telefono): titolo, "N carte" con la vista elenco/immagini, carte nell'ordine
 // dei dati (dalle più recenti svelate); ricerca, fotocamera e Filtri nella barra in basso, filtri attivi come etichette.
-import { useEffect, useMemo, useState } from "react";
-import { router, useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { CARDS, normQ, relevance } from "../../data";
 import { ActiveChips, FilterSheet, fltCount } from "../../FilterSheet";
 import { EMPTY, Filters, anyFlt, cardMatches, qmHolder, srcCards } from "../../filters";
 import { CardList, CountRow } from "../../items";
 import { PageTitle } from "../../ui";
-import { Screen } from "../../chrome";
+import { Screen, TABNAV } from "../../chrome";
 import { BOTTOM_PAD, BottomBar } from "../../BottomBar";
 import { View } from "react-native";
 
@@ -18,6 +18,16 @@ export default function Carte() {
   const nf = fltCount(f);
   // arrivando da "Tutte le espansioni" nei Filtri di un prodotto: stessa ricerca e stessi filtri, Filtri aperto
   const p = useLocalSearchParams<{ q?: string; flt?: string; fo?: string; t?: string }>();
+  // arrivando da Prodotti testo e filtri si azzerano (non con "Tutte le espansioni", che li porta con sé)
+  useFocusEffect(
+    useCallback(() => {
+      if (/^\/prodott/.test(TABNAV.from) && p.flt == null) {
+        setQ("");
+        setF(EMPTY);
+      }
+      TABNAV.from = "";
+    }, [p.flt])
+  );
   useEffect(() => {
     if (p.flt == null) return;
     try {

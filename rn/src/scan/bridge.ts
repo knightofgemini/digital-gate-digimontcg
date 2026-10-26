@@ -36,12 +36,31 @@ export function engineMessage(data: string) {
   if (m.err) p.rej(new Error(m.err));
   else p.res(m);
 }
-export function ask(msg: any): Promise<any> {
+// ogni richiesta ha un tempo massimo (la prima volta il motore scarica ~15 MB: tempo largo), così non resta mai sospesa
+export function ask(msg: any, timeoutMs = 120000): Promise<any> {
   const id = "m" + ++seq;
   const s = JSON.stringify({ ...msg, id });
   return new Promise((res, rej) => {
-    pending[id] = { res, rej };
+    const tm = setTimeout(() => {
+      if (!pending[id]) return;
+      delete pending[id];
+      rej(new Error("tempo scaduto"));
+    }, timeoutMs);
+    pending[id] = {
+      res: (v) => (clearTimeout(tm), res(v)),
+      rej: (e) => (clearTimeout(tm), rej(e)),
+    };
     if (post && ready) post(s);
     else queue.push(s);
+  });
+}
+// il motore si è chiuso (es. memoria finita): le richieste in attesa falliscono subito, il motore viene ricreato
+export function engineGone() {
+  ready = false;
+  queue.length = 0;
+  Object.keys(pending).forEach((id) => {
+    const p = pending[id];
+    delete pending[id];
+    p.rej(new Error("motore chiuso"));
   });
 }

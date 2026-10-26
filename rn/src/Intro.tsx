@@ -6,6 +6,7 @@ import { AccessibilityInfo, Animated, Easing, Platform, Pressable, View, useWind
 import Svg, { Circle, Defs, Path, RadialGradient, Rect, Stop } from "react-native-svg";
 import { DISPLAY, Text } from "./Text";
 import { DgMark } from "./chrome";
+import { StatusBar } from "expo-status-bar";
 
 const ND = Platform.OS !== "web";
 const PIX: [number, number, number][] = [
@@ -89,6 +90,8 @@ export function Intro() {
   });
   return (
     <Pressable onPress={finish} accessibilityLabel="Avvio di Digital Gate. Tocca per entrare." style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000 }}>
+      {/* sfondo blu notte anche nel tema chiaro: ora e batteria chiare finché l'intro è visibile */}
+      <StatusBar style="light" />
       <Animated.View style={{ flex: 1, backgroundColor: "#0b1120", alignItems: "center", justifyContent: "center", opacity: k([1066, 1235], [1, 0]) }}>
         <Svg style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100">
           <Defs>

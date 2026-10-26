@@ -15,8 +15,9 @@ export function openSoon() {
   if (router.canDismiss()) router.dismissAll();
   router.navigate({ pathname: "/prodotti", params: { seg: "soon" } });
 }
-export function openSet(id: string) {
-  router.push({ pathname: "/prodotto/[id]", params: { id } });
+// from "home": aperto dalla Home ("← Home")
+export function openSet(id: string, from?: string) {
+  router.push({ pathname: "/prodotto/[id]", params: from ? { id, from } : { id } });
 }
 // deck: scheda aperta dall'editor di un mazzo (mostra anche le copie nel mazzo)
 export function openCard(c: Card, list?: Card[], deck?: string) {

@@ -8,7 +8,8 @@ export default function TabsLayout() {
   const t = useTheme();
   const pad = useTabPad();
   return (
-    <Tabs tabBar={() => null} screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: t.bg, paddingBottom: pad } }}>
+    // indietro tra le schede: alla scheda precedente (come nell'app attuale), non sempre alla Home
+    <Tabs backBehavior="history" tabBar={() => null} screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: t.bg, paddingBottom: pad } }}>
       <Tabs.Screen name="index" />
       <Tabs.Screen name="prodotti" />
       <Tabs.Screen name="carte" />

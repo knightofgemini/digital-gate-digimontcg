@@ -169,6 +169,8 @@ export function parseDeck(txt: string) {
         cards[b.k] = (cards[b.k] || 0) + (cnt && codes.length === 1 ? +cnt[1] : 1);
       });
     });
+  // righe come "0 BT1-010": niente pile vuote
+  Object.keys(cards).forEach((k) => cards[k] > 0 || delete cards[k]);
   return { cards, unknown };
 }
 

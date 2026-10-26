@@ -13,8 +13,24 @@ export const S = {
   qty: {} as Record<string, number>,
   fav: { f: {}, l: [], a: {} } as Fav,
   decks: [] as Deck[],
-  view: "list" as "list" | "grid",
+  view: "grid" as "list" | "grid",
 };
+// se la lettura dei dati salvati fallisce non si salva nulla, così i dati nel telefono non vengono sovrascritti con quelli vuoti
+let LOAD_FAILED = false;
+const okDeck = (d: any) => !!(d && typeof d === "object" && d.id && d.cards && typeof d.cards === "object" && !Array.isArray(d.cards));
+const okNum = (o: any) => {
+  const r: Record<string, number> = {};
+  if (o && typeof o === "object" && !Array.isArray(o)) Object.keys(o).forEach((k) => {
+      const n = typeof o[k] === "number" ? o[k] : typeof o[k] === "string" && o[k].trim() ? Number(o[k]) : NaN;
+      if (isFinite(n)) r[k] = n;
+    });
+  return r;
+};
+function okFav(fv: any): Fav {
+  const f = fv && typeof fv === "object" ? fv : {};
+  const l = Array.isArray(f.l) ? f.l.filter((L: any) => L && typeof L === "object" && L.id).map((L: any) => ({ id: String(L.id), n: String(L.n || "Lista"), k: okNum(L.k) })) : [];
+  return { f: okNum(f.f), l, a: okNum(f.a) };
+}
 
 let ver = 0;
 const subs = new Set<(n: number) => void>();
@@ -35,6 +51,20 @@ export function useStore() {
   return ver;
 }
 
+// solo la vista elenco/griglia (gli elenchi non si ridisegnano a ogni copia aggiunta)
+export function useView() {
+  const [v, set] = useState(S.view);
+  useEffect(() => {
+    const f = () => set(S.view);
+    subs.add(f);
+    f();
+    return () => {
+      subs.delete(f);
+    };
+  }, []);
+  return v;
+}
+
 function parse(s: string | null, d: any) {
   try {
     const v = JSON.parse(s || "null");
@@ -48,18 +78,22 @@ export async function loadStore() {
     const r = await AsyncStorage.multiGet(["dgm-qty", "dg-fav", "dgm-decks", "dgm-view"]);
     const m: Record<string, string | null> = {};
     r.forEach(([k, v]) => (m[k] = v));
-    S.qty = parse(m["dgm-qty"], {});
-    const fv = parse(m["dg-fav"], {});
-    S.fav = { f: fv.f || {}, l: fv.l || [], a: fv.a || {} };
-    S.decks = Array.isArray(parse(m["dgm-decks"], [])) ? parse(m["dgm-decks"], []) : [];
-    S.view = m["dgm-view"] === "grid" ? "grid" : "list";
-  } catch (e) {}
+    S.qty = okNum(parse(m["dgm-qty"], {}));
+    S.fav = okFav(parse(m["dg-fav"], {}));
+    const dk = parse(m["dgm-decks"], []);
+    S.decks = Array.isArray(dk) ? dk.filter(okDeck) : [];
+    // come nell'app attuale: griglia finché l'utente non sceglie l'elenco
+    S.view = m["dgm-view"] === "list" ? "list" : "grid";
+    LOAD_FAILED = false;
+  } catch (e) {
+    LOAD_FAILED = true;
+  }
   changed();
 }
-const saveQty = () => AsyncStorage.setItem("dgm-qty", JSON.stringify(S.qty)).catch(() => {});
-const saveFav = () => AsyncStorage.setItem("dg-fav", JSON.stringify(S.fav)).catch(() => {});
+const saveQty = () => !LOAD_FAILED && AsyncStorage.setItem("dgm-qty", JSON.stringify(S.qty)).catch(() => {});
+const saveFav = () => !LOAD_FAILED && AsyncStorage.setItem("dg-fav", JSON.stringify(S.fav)).catch(() => {});
 export const saveDecks = () => {
-  AsyncStorage.setItem("dgm-decks", JSON.stringify(S.decks)).catch(() => {});
+  if (!LOAD_FAILED) AsyncStorage.setItem("dgm-decks", JSON.stringify(S.decks)).catch(() => {});
   changed();
 };
 export function setView(v: "list" | "grid") {
@@ -152,43 +186,56 @@ export function setStats() {
 export function exportText() {
   return JSON.stringify({ app: "digital-gate", v: 1, data: new Date().toISOString().slice(0, 10), qty: S.qty, fav: S.fav, decks: S.decks });
 }
-// unisce alla collezione già presente (per ogni versione tiene il numero di copie più alto) oppure sostituisce tutto
+// unisce alla collezione già presente (per ogni versione tiene il numero di copie più alto) oppure sostituisce tutto.
+// Il testo viene controllato tutto prima di toccare i dati: un backup rovinato non cancella niente.
 export function importText(txt: string, replace: boolean): { ok: boolean; msg: string } {
+  const BAD = { ok: false, msg: "Il testo incollato non è un backup di Digital Gate." };
   let o: any;
   try {
     o = JSON.parse(txt.trim());
   } catch (e) {
-    return { ok: false, msg: "Il testo incollato non è un backup di Digital Gate." };
+    return BAD;
   }
-  if (!o || typeof o !== "object" || (!o.qty && !o.fav && !o.decks)) return { ok: false, msg: "Il testo incollato non è un backup di Digital Gate." };
-  const q = o.qty && typeof o.qty === "object" ? o.qty : {};
-  const fv = o.fav && typeof o.fav === "object" ? o.fav : {};
-  const dk = Array.isArray(o.decks) ? o.decks : [];
-  if (replace) {
-    S.qty = {};
-    S.fav = { f: {}, l: [], a: {} };
-    S.decks = [];
+  if (!o || typeof o !== "object" || (!o.qty && !o.fav && !o.decks)) return BAD;
+  try {
+    const q: Record<string, number> = {};
+    if (o.qty && typeof o.qty === "object")
+      Object.keys(o.qty).forEach((k) => {
+        const n = parseInt(o.qty[k], 10);
+        if (n > 0) q[k] = Math.min(999, n);
+      });
+    const fv = okFav(o.fav);
+    const dk: Deck[] = (Array.isArray(o.decks) ? o.decks : []).filter(okDeck);
+    // risultato costruito su una copia e assegnato solo alla fine
+    const qty: Record<string, number> = replace ? {} : { ...S.qty };
+    const fav: Fav = replace ? { f: {}, l: [], a: {} } : { f: { ...S.fav.f }, l: S.fav.l.map((L) => ({ ...L, k: { ...L.k } })), a: { ...S.fav.a } };
+    const decks: Deck[] = replace ? [] : S.decks.slice();
+    Object.keys(q).forEach((k) => (qty[k] = replace ? q[k] : Math.max(qty[k] || 0, q[k])));
+    Object.keys(fv.f).forEach((k) => (fav.f[k] = fav.f[k] || fv.f[k]));
+    Object.keys(fv.a).forEach((k) => (fav.a[k] = fv.a[k]));
+    fv.l.forEach((L) => {
+      const ex = fav.l.find((x) => x.id === L.id);
+      if (ex) Object.assign(ex.k, L.k);
+      else fav.l.push(L);
+    });
+    let nd = 0;
+    dk.forEach((d) => {
+      if (!decks.some((x) => x.id === d.id)) {
+        decks.push(d);
+        nd++;
+      }
+    });
+    S.qty = qty;
+    S.fav = fav;
+    S.decks = decks;
+    LOAD_FAILED = false;
+    saveQty();
+    saveFav();
+    saveDecks();
+    const nq = Object.keys(q).length,
+      nf = Object.keys(fv.f).length;
+    return { ok: true, msg: "Importate " + nq + (nq === 1 ? " voce" : " voci") + " della collezione, " + nf + (nf === 1 ? " preferita" : " preferite") + " e " + nd + (nd === 1 ? " mazzo." : " mazzi.") };
+  } catch (e) {
+    return BAD;
   }
-  let nq = 0;
-  Object.keys(q).forEach((k) => {
-    const n = parseInt(q[k], 10);
-    if (n > 0) {
-      S.qty[k] = replace ? n : Math.max(S.qty[k] || 0, n);
-      nq++;
-    }
-  });
-  Object.keys(fv.f || {}).forEach((k) => (S.fav.f[k] = S.fav.f[k] || fv.f[k]));
-  Object.keys(fv.a || {}).forEach((k) => (S.fav.a[k] = fv.a[k]));
-  (fv.l || []).forEach((L: FavList) => {
-    const ex = S.fav.l.find((x) => x.id === L.id);
-    if (ex) Object.assign(ex.k, L.k);
-    else S.fav.l.push({ id: L.id, n: L.n, k: { ...L.k } });
-  });
-  dk.forEach((d: Deck) => {
-    if (d && d.id && !S.decks.some((x) => x.id === d.id)) S.decks.push(d);
-  });
-  saveQty();
-  saveFav();
-  saveDecks();
-  return { ok: true, msg: "Importate " + nq + (nq === 1 ? " voce" : " voci") + " della collezione, " + Object.keys(fv.f || {}).length + " preferite e " + dk.length + (dk.length === 1 ? " mazzo." : " mazzi.") };
 }

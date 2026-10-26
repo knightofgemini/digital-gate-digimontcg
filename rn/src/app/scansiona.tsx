@@ -7,6 +7,7 @@ import Svg, { Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { DISPLAY, Text } from "../Text";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
+import { deleteAsync } from "expo-file-system/legacy";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -37,6 +38,19 @@ export default function Scansiona() {
   const { width, height } = useWindowDimensions();
   const [perm, askPerm] = useCameraPermissions();
   const cam = useRef<CameraView>(null);
+  // scatti più piccoli (circa 1280×960 invece della piena risoluzione): lettura più veloce e meno memoria
+  const [picSize, setPicSize] = useState<string | undefined>(undefined);
+  async function pickSize() {
+    try {
+      const l: string[] = (await (cam.current as any)?.getAvailablePictureSizesAsync()) || [];
+      const px = (x: string) => {
+        const m = x.match(/(\d+)x(\d+)/);
+        return m ? +m[1] * +m[2] : 0;
+      };
+      const ok = l.filter((x) => px(x) >= 900000 && px(x) <= 2100000).sort((a, b) => px(a) - px(b));
+      if (ok.length) setPicSize(ok[0]);
+    } catch (e) {}
+  }
   const [status, setStatus] = useState("Avvio la fotocamera…");
   const [warn, setWarn] = useState(false);
   const [ready, setReady] = useState(false); // riconoscimento pronto
@@ -116,12 +130,16 @@ export default function Scansiona() {
     if (!ready || !camOk || res || hist) return;
     let stop = false;
     const loop = async () => {
-      if (stop || !live.current || busy.current) return;
+      if (stop || !live.current) return;
+      // una lettura ancora in corso (es. tornando dalla cronologia): si riprova poco dopo invece di fermare il giro
+      if (busy.current) return void setTimeout(loop, 250);
       setStatus(tries.current >= 4 ? "Avvicina la carta, tienila ferma e con buona luce" : "Inquadra la carta dentro la cornice");
       setWarn(tries.current >= 4);
       busy.current = true;
       try {
         const p = await cam.current?.takePictureAsync({ base64: true, quality: 0.5, shutterSound: false });
+        // Android salva ogni scatto nella cache: si cancella subito (prima si accumulavano decine di MB al minuto)
+        if (p && p.uri && !p.uri.startsWith("data:")) deleteAsync(p.uri, { idempotent: true }).catch(() => {});
         if (stop || !p || !p.base64) throw new Error("foto");
         const img = p.uri && p.uri.startsWith("data:") ? p.uri : "data:image/jpeg;base64," + p.base64;
         const r = await readPhoto(img, { vw: view.w, vh: view.h, fx, fy, fw, fh }, 0.5);
@@ -213,7 +231,7 @@ export default function Scansiona() {
   return (
     <View style={{ flex: 1, backgroundColor: "#000" }} onLayout={(e) => setV({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
       <Engine />
-      {perm?.granted && <CameraView ref={cam} style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }} facing="back" enableTorch={torch} onCameraReady={() => setCamOk(true)} onMountError={() => setCamOk(false)} animateShutter={false} />}
+      {perm?.granted && <CameraView ref={cam} style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }} facing="back" enableTorch={torch} pictureSize={picSize} onCameraReady={() => (setCamOk(true), pickSize())} onMountError={() => setCamOk(false)} animateShutter={false} />}
       {/* fuori dalla cornice tutto scurito; angoli arancioni (verdi a carta trovata) e riga che scorre */}
       <View pointerEvents="none" style={{ position: "absolute", left: fx - 1000, top: fy - 1000, width: fw + 2000, height: fh + 2000, borderWidth: 1000, borderRadius: 1018, borderColor: "rgba(5,8,15,.62)" }} />
       <View pointerEvents="none" style={{ position: "absolute", left: fx, top: fy, width: fw, height: fh }}>

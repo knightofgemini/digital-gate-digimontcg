@@ -5,7 +5,7 @@ import { Pressable, View, ViewStyle } from "react-native";
 import { Image } from "expo-image";
 import Svg, { Circle, Defs, Path, RadialGradient, LinearGradient, Rect, Stop } from "react-native-svg";
 import { DISPLAY, Text } from "./Text";
-import { PRODUCTS, SITE, bannerUrl } from "./data";
+import { PRODUCTS, SITE, bannerUrl, logoUrl, packUrl } from "./data";
 import { useTheme } from "./theme";
 
 const stroke = (color: string, w = 2) => ({ stroke: color, strokeWidth: w, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, fill: "none" });
@@ -87,8 +87,9 @@ export function Banner({ code, name, ratio = 16 / 9, radius = 12, ring = true, c
 export function ProdVisual({ code, radius = 0, codeSize = 32, children }: { code: string; radius?: number; codeSize?: number; children?: ReactNode }) {
   const p = PRODUCTS[code];
   const b = bannerUrl(code);
-  const lg = !b && p && p.lg ? SITE + "prod/logo/" + p.k + ".webp" : null;
-  const pk = !b && !lg && p && p.pk ? SITE + "prod/" + p.k + ".webp" : null;
+  // dalle funzioni dei dati: così valgono le immagini salvate (Immagini offline) e le versioni aggiornate
+  const lg = !b ? logoUrl(code) : null;
+  const pk = !b && !lg ? packUrl(code) : null;
   return (
     <View style={{ width: "100%", aspectRatio: 16 / 9, borderRadius: radius, overflow: "hidden", alignItems: "center", justifyContent: "center" }}>
       <Glow id={"pv" + code} kind="pv" />

@@ -35,12 +35,14 @@ export function DeckQty({ d, c, big, fill, onChange }: { d: Deck; c: Card; big?:
       numText={!mx ? (n ? "Bandita (" + n + ")" : "Bandita") : undefined}
       onBlocked={() => err && toast(err)}
       onSet={(v) => {
-        if (v <= n) deckSet(d, c, v);
+        // copie lette al momento: tenendo premuto il valore cambia tra una chiamata e l'altra
+        const now = inDeck(d, c);
+        if (v <= now) deckSet(d, c, v);
         else {
-          const r = deckAdd(d, c, v - n);
-          if (r.er && r.a < v - n) toast(r.er);
+          const r = deckAdd(d, c, v - now);
+          if (r.er && r.a < v - now) toast(r.er);
         }
-        onChange && onChange(n, inDeck(d, c));
+        onChange && onChange(now, inDeck(d, c));
       }}
     />
   );

@@ -7,6 +7,7 @@ import { router } from "expo-router";
 import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { DISPLAY, Text, TextInput } from "./Text";
 import { useTheme } from "./theme";
+import { useKbH } from "./chrome";
 
 const SHADOW = "0 8px 22px rgba(0,0,0,.22)";
 // spazio in fondo agli elenchi per non finire sotto la ricerca (main 28 px + body.hasmbot 138 px − barra in basso 66 px)
@@ -84,8 +85,10 @@ export function BottomBar({ q, setQ, placeholder, chips, cam, filter, x, below }
   below?: ReactNode;
 }) {
   const t = useTheme();
+  // con la tastiera aperta la barra sta subito sopra la tastiera (come --kb nell'app attuale)
+  const kbH = useKbH();
   return (
-    <View pointerEvents="box-none" style={{ position: "absolute", left: 0, right: 0, bottom: 0, paddingTop: 18, paddingHorizontal: 14, paddingBottom: 8, gap: 8 }}>
+    <View pointerEvents="box-none" style={{ position: "absolute", left: 0, right: 0, bottom: kbH, paddingTop: 18, paddingHorizontal: 14, paddingBottom: 8, gap: 8 }}>
       <Svg pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 100">
         <Defs>
           <LinearGradient id="mbotfade" x1="0" y1="0" x2="0" y2="1">

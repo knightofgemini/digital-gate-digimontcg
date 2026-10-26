@@ -1,11 +1,11 @@
 // La mia collezione (come l'app attuale sul telefono): Tutte (riepilogo a quattro riquadri, avanzamento per prodotto,
 // le tue carte), Preferite (con le liste personali) e Wishlist (preferite che mancano, con quanto costa completarle).
 // Ricerca, fotocamera e Filtri nella barra in basso. Il backup sta in Informazioni, come nell'app attuale.
-import { ReactNode, useMemo, useState } from "react";
+import { ReactNode, useCallback, useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
 import { DISPLAY, Text, TextInput } from "../../Text";
-import { router } from "expo-router";
-import { CARDS, Card, SETS, monthLabel, normQ, relevance } from "../../data";
+import { router, useFocusEffect } from "expo-router";
+import { CARDS, Card, SETBY, SETS, cardsOfSet, hostSet, monthLabel, normQ, relevance } from "../../data";
 import { ActiveChips, FilterSheet, fltCount } from "../../FilterSheet";
 import { EMPTY, Filters, allVers, cardMatches } from "../../filters";
 import { CardList, CountRow, Heart, ViewToggle } from "../../items";
@@ -13,7 +13,7 @@ import { bestVal, cmVal, ctVal, eurN, eurT, usePrices } from "../../prices";
 import { S, favCards, favCount, listById, listDelete, listNew, owned, setStats, useStore } from "../../store";
 import { useTheme } from "../../theme";
 import { Logo, PageTitle } from "../../ui";
-import { Screen, goTab } from "../../chrome";
+import { Screen, TABNAV, goTab } from "../../chrome";
 import { Btn, ProgLine, SecHead } from "../../visual";
 import { BOTTOM_PAD, BottomBar } from "../../BottomBar";
 import { CmMark, CtMark } from "../../shops";
@@ -68,7 +68,7 @@ function Empty({ eyebrow, title, text, heart, children }: { eyebrow: string; tit
 export default function Collezione() {
   const t = useTheme();
   const sv = useStore();
-  usePrices();
+  const pv = usePrices();
   const [view, setView0] = useState<"all" | "fav" | "wish">("all");
   const [q, setQ] = useState("");
   const [f, setF] = useState<Filters>(EMPTY);
@@ -77,6 +77,16 @@ export default function Collezione() {
   const [fsort, setFsort] = useState("");
   const [allSets, setAllSets] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
+  // arrivando da Prodotti testo e filtri si azzerano (come nell'app attuale)
+  useFocusEffect(
+    useCallback(() => {
+      if (/^\/prodott/.test(TABNAV.from)) {
+        setQ("");
+        setF(EMPTY);
+      }
+      TABNAV.from = "";
+    }, [])
+  );
   const nf = fltCount(f);
   const setView = (v: "all" | "fav" | "wish") => {
     setView0(v);
@@ -91,10 +101,11 @@ export default function Collezione() {
   const { list, scope } = useMemo(() => {
     const nq = normQ(q);
     let src: Card[];
+    // filtro Espansione (come nell'app attuale: per le preferite il prodotto della versione o della carta)
     if (fav) {
-      src = favCards().filter((c) => (L0 ? !!L0.k[c.k] : true));
+      src = favCards().filter((c) => (L0 ? !!L0.k[c.k] : true) && (!f.exp || hostSet(c) === f.exp || c.set === f.exp));
       if (wish) src = src.filter((c) => !owned(c));
-    } else src = allVers().filter((c) => owned(c) > 0);
+    } else src = (f.exp && SETBY[f.exp] ? cardsOfSet(f.exp) : allVers()).filter((c) => owned(c) > 0);
     let l = src.filter((c) => cardMatches(c, nq, f));
     if (nq && f.qm !== "text")
       l = l
@@ -112,7 +123,8 @@ export default function Collezione() {
       l = l.slice().sort((a, b) => by[sort](a, b) || (a.k < b.k ? -1 : 1));
     }
     return { list: l, scope: src };
-  }, [q, f, view, flist, sort, sv]);
+  }, [q, f, view, flist, sort, sv, pv]);
+  const favExtra = useCallback((c: Card) => <AlertBadge c={c} />, []);
 
   const miss = favCards().filter((c) => !owned(c)).length;
   const anyQty = Object.keys(S.qty).length > 0;
@@ -174,7 +186,7 @@ export default function Collezione() {
       <CardList
         list={noList ? [] : list}
         padBottom={BOTTOM_PAD + (nf ? 42 : 0)}
-        extra={fav ? (c) => <AlertBadge c={c} /> : undefined}
+        extra={fav ? favExtra : undefined}
         header={
           <View style={{ paddingTop: 4 }}>
             <PageTitle>La mia collezione</PageTitle>

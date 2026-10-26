@@ -17,7 +17,13 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "app.digimon.settracker",
-      "versionCode": 1
+      "versionCode": 1,
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -38,7 +44,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Digital Gate apre le foto che scegli per riconoscere le carte."
+          "photosPermission": "Digital Gate apre le foto che scegli per riconoscere le carte.",
+          "microphonePermission": false
         }
       ],
       "expo-font",
@@ -53,7 +60,8 @@
             "image": "./assets/splash-empty.png"
           }
         }
-      ]
+      ],
+      "./plugins/withBackupRules"
     ],
     "extra": {
       "build": 0

@@ -130,7 +130,30 @@ export const PAGE = { open: false }; // pagina "Immagini offline" aperta (niente
 // scaricamento in corso (uno alla volta)
 export type Run = { scope: string; total: number; done: number; fail: number; row: number; stop: boolean; end: boolean; quiet: boolean; err?: string; newN?: number; wait?: boolean; bg?: boolean };
 export let RUN: Run | null = null;
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// Attesa tra un tentativo e l'altro. Con il servizio nativo attivo l'attesa la fa Android (i timer di JavaScript si fermano
+// con l'app in sottofondo e lo schermo spento); le attese lunghe finiscono subito quando torna la connessione.
+function sleep(ms: number) {
+  return new Promise<void>((res) => {
+    let done = false,
+      sub: any = null;
+    const end = () => {
+      if (done) return;
+      done = true;
+      try {
+        sub && sub.remove();
+      } catch (e) {}
+      res();
+    };
+    if (BGD && RUN && RUN.bg) BGD.sleep(ms).then(end, end);
+    setTimeout(end, ms);
+    if (ms >= 5000)
+      try {
+        sub = Network.addNetworkStateListener((st) => {
+          if (st.isConnected && st.isInternetReachable !== false) end();
+        });
+      } catch (e) {}
+  });
+}
 // notifica dell'avanzamento del servizio nativo (APK): al massimo ogni 1,5 secondi
 let notT = 0;
 function notify(R: Run, force?: boolean, msg?: string) {
@@ -142,12 +165,12 @@ function notify(R: Run, force?: boolean, msg?: string) {
   BGD.update("Scaricamento immagini · " + label(R.scope), (msg ? msg + " · " : "") + R.done.toLocaleString("it-IT") + " di " + R.total.toLocaleString("it-IT") + " · " + pc + "%", R.done, R.total);
 }
 
-export async function start(scope: string, quiet = false) {
+export async function start(scope: string, quiet = false, newN?: number) {
   if (RUN && !RUN.end) return;
   await load();
   if (scope === "upd") delete LISTS.upd;
   const list = items(scope);
-  const R: Run = (RUN = { scope, total: list.length, done: 0, fail: 0, row: 0, stop: false, end: false, quiet });
+  const R: Run = (RUN = { scope, total: list.length, done: 0, fail: 0, row: 0, stop: false, end: false, quiet, newN });
   if (scope === "t" || scope === "hd") {
     OFF.paused = false;
     save();
@@ -323,8 +346,7 @@ export async function auto(startUp: boolean) {
   const w = todo.reduce((a, x) => a + x.w, 0);
   if (mob && w > 10 * 1048576) return;
   const newN = todo.filter((x) => !miss[x.u]).length;
-  start("upd", true);
-  if (RUN) RUN.newN = newN;
+  start("upd", true, newN);
 }
 export function setAuto(v: boolean) {
   OFF.auto = v;

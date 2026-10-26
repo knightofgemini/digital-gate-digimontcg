@@ -13,10 +13,12 @@ import { FavSheetHost } from "../FavSheet";
 import { UpdateCheck } from "../Update";
 import { loadThemePref, useTheme } from "../theme";
 import { FONTS } from "../Text";
-import { MoreSheet, TabBar, useTabPad } from "../chrome";
+import { KbProbe, MoreSheet, TabBar, useTabPad } from "../chrome";
 import { Intro } from "../Intro";
 import { loadImages } from "../imgstore";
 import { startOffline } from "../offline";
+import { Migrate, needMigration } from "../Migrate";
+import { loadSavedPrices, refreshPrices } from "../prices";
 
 function Root() {
   const t = useTheme();
@@ -24,6 +26,7 @@ function Root() {
   const withBar = { backgroundColor: t.bg, paddingBottom: pad };
   return (
     <>
+      <KbProbe />
       <StatusBar style={t.dark ? "light" : "dark"} />
       <Stack screenOptions={{ headerShown: false, contentStyle: withBar, animation: "slide_from_right" }}>
         <Stack.Screen name="(tabs)" options={{ contentStyle: { backgroundColor: t.bg } }} />
@@ -48,16 +51,29 @@ export default function RootLayout() {
   const t = useTheme();
   const [ready, setReady] = useState(false);
   const [fonts, fontErr] = useFonts(FONTS);
+  const [migr, setMigr] = useState(false);
   useEffect(() => {
-    Promise.all([loadStore(), loadThemePref(), loadImages()]).finally(() => {
+    Promise.all([loadStore(), loadThemePref(), loadImages(), loadSavedPrices()]).finally(async () => {
+      // prima volta dopo l'installazione sopra l'app attuale: si recuperano i suoi dati prima di scaricare qualunque cosa
+      const m = await needMigration();
+      setMigr(m);
       setReady(true);
-      startOffline();
+      if (!m) startOffline();
+      refreshPrices();
     });
   }, []);
   if (!ready || (!fonts && !fontErr)) return <View style={{ flex: 1, backgroundColor: t.bg }} />;
   return (
     <SafeAreaProvider>
       <Root />
+      {migr && (
+        <Migrate
+          onDone={() => {
+            setMigr(false);
+            startOffline();
+          }}
+        />
+      )}
     </SafeAreaProvider>
   );
 }

@@ -13,6 +13,7 @@ import { openSoon } from "./nav";
 import { owned, useStore } from "./store";
 import { setThemePref, useTheme } from "./theme";
 import { Icon } from "./ui";
+import { RUN, useOffline } from "./offline";
 
 export const TABH = 64; // altezza della barra in basso (senza il bordo inferiore del telefono)
 
@@ -59,6 +60,8 @@ export function MoreSheet() {
   const [open, setOpen] = useState(false);
   useStore();
   openMore = setOpen;
+  useOffline();
+  const offRun = RUN;
   // contato solo con il menu aperto; in chiusura resta l'ultimo valore mentre il foglio scende
   const uq = useRef(0);
   if (open) {
@@ -67,9 +70,10 @@ export function MoreSheet() {
     uq.current = n;
   }
   const uniq = uq.current;
+  // navigate: se la pagina è già aperta ci si torna invece di aprirne una seconda copia
   const go = (href: any) => {
     setOpen(false);
-    router.push(href);
+    router.navigate(href);
   };
   const Row = ({ icon, label, onPress, right }: { icon: ReactNode; label: string; onPress: () => void; right?: ReactNode }) => (
     <Pressable onPress={onPress} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 52, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: t.line }}>
@@ -94,7 +98,19 @@ export function MoreSheet() {
             ) : null
           }
         />
-        <Row icon={<Icon name="offline" color={t.ink2} size={20} />} label="Immagini offline" onPress={() => go("/offline")} />
+        <Row
+          icon={<Icon name="offline" color={t.ink2} size={20} />}
+          label="Immagini offline"
+          onPress={() => go("/offline")}
+          right={
+            // percentuale dello scaricamento in corso (come nel menu dell'app attuale)
+            offRun && !offRun.end && !offRun.quiet && offRun.total ? (
+              <View style={{ backgroundColor: t.cyanSoft, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 2 }}>
+                <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "700", fontSize: 11.5 }}>{Math.floor((offRun.done / offRun.total) * 100) + "%"}</Text>
+              </View>
+            ) : null
+          }
+        />
         <Row icon={<Icon name="info" color={t.ink2} size={20} />} label="Informazioni" onPress={() => go("/info")} />
         <Row icon={<ThemeIcon dark={t.dark} color={t.ink2} />} label={t.dark ? "Tema chiaro" : "Tema scuro"} onPress={() => setThemePref(t.dark ? "light" : "dark")} />
         <Text style={{ color: t.ink2, fontSize: 11.8, marginTop: 14, lineHeight: 17 }}>Digital Gate - Digimon TCG · catalogo non ufficiale. Immagini e marchi © Bandai, Akiyoshi Hongo, Toei Animation.</Text>
@@ -200,12 +216,45 @@ export function Screen({ children, bar, bs }: { children: ReactNode; bar?: React
 
 // tastiera aperta: la barra in basso si nasconde (come body.kbd nel sito)
 let KBD = false;
+// quanto la tastiera copre lo schermo dell'app (come --kb del sito). Con l'app a tutto schermo (Android 15+) la finestra
+// non si accorcia più da sola: si confronta il bordo superiore della tastiera con il fondo reale della schermata,
+// misurato da KbProbe, così se invece il telefono accorcia la finestra il valore resta 0 e niente si sposta due volte.
+let KBH = 0;
+let kbTop = 0;
+const probe: { current: any } = { current: null };
 const kbdSubs = new Set<() => void>();
+const kbEmit = () => kbdSubs.forEach((f) => f());
+function kbMeasure() {
+  if (!KBD || !probe.current) return;
+  probe.current.measureInWindow((_x: number, y: number, _w: number, h: number) => {
+    const v = KBD ? Math.max(0, Math.round(y + h - kbTop)) : 0;
+    if (v !== KBH) {
+      KBH = v;
+      kbEmit();
+    }
+  });
+}
 if (Platform.OS !== "web") {
-  Keyboard.addListener("keyboardDidShow", () => ((KBD = true), kbdSubs.forEach((f) => f())));
-  Keyboard.addListener("keyboardDidHide", () => ((KBD = false), kbdSubs.forEach((f) => f())));
+  Keyboard.addListener("keyboardDidShow", (e) => {
+    KBD = true;
+    kbTop = e.endCoordinates.screenY;
+    kbEmit();
+    // la finestra potrebbe accorciarsi subito dopo: si misura dopo il ridisegno
+    setTimeout(kbMeasure, 30);
+    setTimeout(kbMeasure, 250);
+  });
+  Keyboard.addListener("keyboardDidHide", () => {
+    KBD = false;
+    KBH = 0;
+    kbEmit();
+  });
 }
 export const useKbd = () => useSyncExternalStore((f) => (kbdSubs.add(f), () => kbdSubs.delete(f)), () => KBD, () => KBD);
+export const useKbH = () => useSyncExternalStore((f) => (kbdSubs.add(f), () => kbdSubs.delete(f)), () => KBH, () => KBH);
+// riquadro invisibile a tutto schermo che misura il fondo reale della schermata (va messo una volta nel layout principale)
+export function KbProbe() {
+  return <View ref={(r) => void (probe.current = r)} onLayout={() => setTimeout(kbMeasure, 0)} pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />;
+}
 // barra in basso nascosta mentre è aperto il foglio di ricerca del mazzo (che la copre, come nell'app attuale)
 let TABHIDE = false;
 export function setTabHidden(v: boolean) {
@@ -235,8 +284,13 @@ const TABROOTS = TABS.map((x) => x[3]);
 // Pagine senza barra in basso: scheda carta e scansione (a tutto schermo)
 const NOBAR = /^\/(carta|scansiona)/;
 
+// pagina da cui si arriva cambiando scheda: passando da Prodotti a Carte o Collezione ricerca e filtri si azzerano
+// (come nell'app attuale)
+let LASTPATH = "";
+export const TABNAV = { from: "" };
 export function goTab(id: TabId) {
   const href = TABS.find((x) => x[0] === id)![3];
+  TABNAV.from = LASTPATH;
   if (router.canDismiss()) router.dismissAll();
   router.navigate((id === "sets" ? { pathname: href, params: { seg: "sets" } } : href) as any);
 }
@@ -254,6 +308,7 @@ export function TabBar() {
   const t = useTheme();
   const ins = useSafeAreaInsets();
   const path = usePathname();
+  LASTPATH = path;
   const params = useGlobalSearchParams<{ from?: string }>();
   const kbd = useKbd();
   const hide = useTabHide();

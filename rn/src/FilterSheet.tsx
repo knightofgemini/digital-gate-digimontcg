@@ -11,7 +11,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { DISPLAY, Text, TextInput } from "./Text";
 import { COLORS, SETBY, fold } from "./data";
-import { DDN, EMPTY, Filters, Kind, MARKV, MULTI, ddFix, ddKinds, ddOptions, ddShown, fl } from "./filters";
+import { DDN, EMPTY, Filters, Kind, MARKV, MULTI, ddFix, ddKinds, ddOptions, ddShown, ddValues, fl } from "./filters";
+import { useKbH } from "./chrome";
 import { useTheme } from "./theme";
 import { Chevron, FltChip } from "./BottomBar";
 
@@ -101,6 +102,8 @@ export function FilterSheet({ visible, f: f0, setF: setF0, onClose, count, lockE
   const ins = useSafeAreaInsets();
   const { width: vw, height: vh } = useWindowDimensions();
   const [dd, setDd] = useState<{ kind: Kind; r: Rect } | null>(null);
+  // altezza vera della finestra del foglio (su alcuni telefoni diversa da quella dello schermo)
+  const [mh, setMh] = useState(0);
   const refs = useRef<Record<string, any>>({});
   const kinds = ddKinds(f).filter((k) => !(lockExp && k === "exp" && !onExp));
 
@@ -115,6 +118,9 @@ export function FilterSheet({ visible, f: f0, setF: setF0, onClose, count, lockE
     const i = a.indexOf(v);
     if (i >= 0) a.splice(i, 1);
     else a.push(v);
+    // stesso ordine dell'app attuale (colori come nell'elenco dei colori, attributi e tipi come nella tendina)
+    const ord = kind === "color" ? Object.keys(COLORS) : ddValues(kind, f);
+    a.sort((x, y) => ord.indexOf(x) - ord.indexOf(y));
     setK(kind, a.join("|"));
   }
   function open(kind: Kind) {
@@ -132,12 +138,15 @@ export function FilterSheet({ visible, f: f0, setF: setF0, onClose, count, lockE
       onBack={close}
       maxH={0.82}
       overlay={
-        dd ? (
+        <>
+          <View pointerEvents="none" onLayout={(e) => setMh(Math.round(e.nativeEvent.layout.height))} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />
+          {dd ? (
           <>
             <Pressable style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} onPress={() => setDd(null)} />
-            <DDPop kind={dd.kind} r={dd.r} f={f} vw={vw} vh={vh} pick={(v) => (MULTI[dd.kind] ? toggle(dd.kind, v) : dd.kind === "exp" && onExp ? (setDd(null), v !== f.exp && onExp(v)) : (setK(dd.kind, v), setDd(null)))} />
+            <DDPop kind={dd.kind} r={dd.r} f={f} vw={vw} vh={mh || vh} pick={(v) => (MULTI[dd.kind] ? toggle(dd.kind, v) : dd.kind === "exp" && onExp ? (setDd(null), v !== f.exp && onExp(v)) : (setK(dd.kind, v), setDd(null)))} />
           </>
-        ) : null
+        ) : null}
+        </>
       }
       style={{ backgroundColor: t.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: t.line, boxShadow: "0 -14px 36px rgba(0,0,0,.35)", paddingHorizontal: 14, paddingBottom: 14 + ins.bottom }}
     >
@@ -210,7 +219,11 @@ function DDPop({ kind, r, f, vw, vh, pick }: { kind: Kind; r: Rect; f: Filters; 
     below = vh - (r.y + r.h) - 12,
     above = r.y - 12;
   const up = (kind === "qm" && above >= Math.min(ph, 140)) || (ph > below && above > below);
-  const pos = up ? { bottom: vh - (r.y - 6), maxHeight: Math.max(120, Math.min(cap, above)) } : { top: r.y + r.h + 6, maxHeight: Math.min(cap, Math.max(160, below)) };
+  const pos0 = up ? { bottom: vh - (r.y - 6), maxHeight: Math.max(120, Math.min(cap, above)) } : { top: r.y + r.h + 6, maxHeight: Math.min(cap, Math.max(160, below)) };
+  // Tipo con il campo di ricerca: con la tastiera aperta la tendina sale sopra la tastiera (come nell'app attuale)
+  const kb = useKbH();
+  const insTop = useSafeAreaInsets().top;
+  const pos = kind === "sp" && kb > 0 ? { bottom: kb + 8, maxHeight: Math.max(120, Math.min(cap, vh - kb - insTop - 24)) } : pos0;
   const isOn = (v: string) => (multi ? (v === "" ? !f[kind] : fl(f, kind).indexOf(v) >= 0) : (f[kind] || "") === v);
   const ff = fold(find);
   const first = kind === "rar" ? opts.find((o) => o[0] && MARKV[o[0]] != null)?.[0] : null;
@@ -245,7 +258,7 @@ function DDPop({ kind, r, f, vw, vh, pick }: { kind: Kind; r: Rect; f: Filters; 
         {kind === "rar" && MARKV[v] != null ? (
           <RarLab v={v} size={14.1} color={on ? t.cyan : t.ink} />
         ) : (
-          <Text style={{ color: on ? t.cyan : t.ink, fontWeight: on ? "700" : "500", fontSize: grid ? 14.1 : 15.2, lineHeight: 20, flexShrink: 1 }} numberOfLines={1}>
+          <Text style={{ color: on ? t.cyan : t.ink, fontWeight: on ? "700" : "500", fontSize: grid ? 14.1 : 15.2, lineHeight: 20, flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit={grid} minimumFontScale={0.75}>
             {o[1]}
           </Text>
         )}

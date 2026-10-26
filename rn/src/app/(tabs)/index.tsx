@@ -110,7 +110,7 @@ export default function Home() {
             const s = stats[x.id];
             return (
               <View key={x.id} style={{ width: w }}>
-                <Banner code={x.code} name={x.name} onPress={() => openSet(x.id)}>
+                <Banner code={x.code} name={x.name} onPress={() => openSet(x.id, "home")}>
                   {isNew ? <Badge icon="spark" text="Nuovo" isNew /> : null}
                 </Banner>
                 <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.2, letterSpacing: 0.7, marginTop: 7 }}>

@@ -1,8 +1,8 @@
 // Scheda carta (proposta "C - Carosello" dell'app attuale): con il dito a destra/sinistra la carta precedente/successiva
 // dell'elenco da cui è stata aperta; versioni come pulsanti; nome, codice e rarità; una riga di dati; tratti;
 // digievoluzioni ed effetti con le icone; prezzi; pre errata. Testi delle carte in inglese, etichette in italiano.
-import { ReactNode, createContext, memo, useContext, useMemo, useRef, useState } from "react";
-import { Animated, Linking, PanResponder, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { ReactNode, createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { Animated, Linking, PanResponder, PixelRatio, Platform, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
 import { DISPLAY, Text } from "../../Text";
 import Svg, { Path } from "react-native-svg";
 import { FitText } from "../../fit";
@@ -25,7 +25,9 @@ import { useTheme } from "../../theme";
 
 export default function Carta() {
   const { k, deck } = useLocalSearchParams<{ k: string; deck?: string }>();
-  const c0 = BYKEY[k];
+  // la carta dell'elenco da cui si è aperta la scheda (le alternative presenti in due prodotti hanno la stessa chiave:
+  // quella dell'elenco ha il prodotto giusto)
+  const c0 = useMemo(() => NAVLIST.find((x) => x.k === k) || BYKEY[k], [k]);
   const { width } = useWindowDimensions();
   usePrices();
   // elenco per scorrere: quello da cui si è aperta la scheda (anche se si apre una sua versione)
@@ -34,20 +36,32 @@ export default function Carta() {
     if (NAVLIST.indexOf(c0) >= 0) return NAVLIST;
     const vs = carVers(c0);
     return NAVLIST.some((x) => vs.indexOf(x) >= 0) ? NAVLIST : [c0];
-  }, [k]);
-  const start = Math.max(
-    0,
-    list.findIndex((x) => x === c0 || carVers(c0).indexOf(x) >= 0)
-  );
+  }, [c0]);
+  // prima la carta esatta, poi una sua versione (un'alternative art non deve partire dalla posizione della Regular)
+  const start = useMemo(() => {
+    if (!c0) return 0;
+    const i = list.indexOf(c0);
+    if (i >= 0) return i;
+    const vs = carVers(c0);
+    return Math.max(0, list.findIndex((x) => vs.indexOf(x) >= 0));
+  }, [list, c0]);
   const [cur, setCur] = useState(start);
-  // versione scelta con i pulsanti per la carta al centro (resta sulla sua carta anche mentre scorre via)
-  const [ver, setVer] = useState<{ i: number; c: Card } | null>(null);
-  const scrollX = useRef(new Animated.Value(0)).current;
-  const go = useRef<(i: number) => void>(() => {});
+  // versioni scelte con i pulsanti, una per carta (restano tornando su quella carta)
+  const [vers, setVers] = useState<Record<number, Card>>({});
   const maxW = Math.min(width, 560);
   const cw = Math.min(290, maxW - 84);
-  // distanza tra le carte della fila: le vicine spuntano ai lati senza coprire quella al centro
-  const S = Math.round(cw * 0.93 + 14);
+  // distanza tra le carte della fila: le vicine spuntano ai lati senza coprire quella al centro.
+  // Numero intero di pixel del telefono: Android arrotonda lo scatto ai pixel e con una distanza non intera, carta dopo carta,
+  // la fila usciva dal centro (e i dettagli restavano sbiaditi)
+  const dpr = PixelRatio.get();
+  const S = Math.round((cw * 0.93 + 14) * dpr) / dpr;
+  const scrollX = useRef(new Animated.Value(start * S)).current;
+  const go = useRef<(i: number) => void>(() => {});
+  // tornando su un'altra carta la pagina torna in cima (dove si vedono carta e nome)
+  const sv = useRef<any>(null);
+  useEffect(() => {
+    sv.current && sv.current.scrollTo({ y: 0, animated: true });
+  }, [cur]);
   const n = list.length;
   // dettagli (versioni, nome, effetti, prezzi) in dissolvenza: spariscono a metà strada e ricompaiono con la carta nuova
   const fade = useMemo(() => {
@@ -73,7 +87,7 @@ export default function Carta() {
     [n]
   );
   if (!c0) return null;
-  const at = (i: number) => (ver && ver.i === i ? ver.c : i === start ? c0 : list[i]);
+  const at = (i: number) => vers[i] || (i === start ? c0 : list[i]);
   const c = at(cur);
   const strip = (
     <Fan
@@ -81,7 +95,9 @@ export default function Carta() {
       start={start}
       cur={cur}
       at={at}
-      sel={ver ? ver.i + ":" + ver.c.k : ""}
+      sel={Object.keys(vers)
+        .map((i) => i + ":" + vers[+i].k)
+        .join(",")}
       width={maxW}
       cw={cw}
       S={S}
@@ -90,7 +106,7 @@ export default function Carta() {
       onIndex={setCur}
     />
   );
-  return <CardPage c={c} setC={(a) => setVer({ i: cur, c: a })} width={width} deck={deck} strip={strip} fade={fade} pan={pan.panHandlers} />;
+  return <CardPage c={c} setC={(a) => setVers((v) => ({ ...v, [cur]: a }))} width={width} deck={deck} strip={strip} fade={fade} pan={pan.panHandlers} sv={sv} />;
 }
 
 // Fila delle carte "a ventaglio": la carta al centro è dritta e grande, le vicine spuntano ai lati più piccole,
@@ -101,6 +117,14 @@ function Fan({ list, start, cur, at, sel, width, cw, S, x, go, onIndex }: { list
   const last = useRef(start);
   const pad = Math.max(0, (width - S) / 2);
   go.current = (i: number) => ref.current && ref.current.scrollToOffset({ offset: i * S, animated: true });
+  // se cambia la larghezza (pieghevoli, schermo diviso) la carta scelta torna al centro
+  const firstS = useRef(S);
+  useEffect(() => {
+    if (firstS.current === S) return;
+    firstS.current = S;
+    ref.current && ref.current.scrollToOffset({ offset: last.current * S, animated: false });
+  }, [S]);
+  const press = useCallback((i: number) => i !== last.current && go.current(i), []);
   const onScroll = useMemo(
     () =>
       Animated.event([{ nativeEvent: { contentOffset: { x } } }], {
@@ -122,7 +146,7 @@ function Fan({ list, start, cur, at, sel, width, cw, S, x, go, onIndex }: { list
       data={list}
       horizontal
       showsHorizontalScrollIndicator={false}
-      snapToInterval={S}
+      snapToInterval={Platform.OS === "android" ? S + 0.5 / PixelRatio.get() : S}
       decelerationRate="fast"
       disableIntervalMomentum
       // la carta i è al centro quando lo scorrimento vale i × S (il margine iniziale centra la prima)
@@ -138,7 +162,7 @@ function Fan({ list, start, cur, at, sel, width, cw, S, x, go, onIndex }: { list
       keyExtractor={(c: Card) => c.k}
       extraData={sel}
       CellRendererComponent={FanCell}
-      renderItem={({ index }: { item: Card; index: number }) => <FanCard c={at(index)} i={index} S={S} cw={cw} x={x} onPress={() => index !== last.current && go.current(index)} />}
+      renderItem={({ index }: { item: Card; index: number }) => <FanCard c={at(index)} i={index} S={S} cw={cw} x={x} onPress={press} />}
     />
     </CurCtx.Provider>
   );
@@ -151,12 +175,14 @@ function FanCell({ index, style, ...props }: any) {
   return <View style={[style, { zIndex: index === cur ? 3 : 1 }]} {...props} />;
 }
 
-const FanCard = memo(function FanCard({ c, i, S, cw, x, onPress }: { c: Card; i: number; S: number; cw: number; x: Animated.Value; onPress: () => void }) {
+const FanCard = memo(function FanCard({ c, i, S, cw, x, onPress }: { c: Card; i: number; S: number; cw: number; x: Animated.Value; onPress: (i: number) => void }) {
   const t = useTheme();
   // posizione della carta rispetto al centro: -1 = una a sinistra, 0 = al centro, +1 = una a destra
+  // (calcolata una volta sola: ricrearla a ogni ridisegno faceva sfarfallare la carta per un fotogramma)
+  const style = useMemo(() => {
   const r = [S * (i - 1), S * i, S * (i + 1)];
   const it = (o: (number | string)[]) => x.interpolate({ inputRange: r, outputRange: o as any, extrapolate: "clamp" });
-  const style = {
+  return {
     opacity: it([0.55, 1, 0.55]),
     transform: [
       { perspective: 900 },
@@ -167,10 +193,11 @@ const FanCard = memo(function FanCard({ c, i, S, cw, x, onPress }: { c: Card; i:
       { scale: it([0.86, 1, 0.86]) },
     ],
   };
+  }, [x, S, i]);
   return (
     <View style={{ width: S, alignItems: "center" }}>
       <Animated.View style={style}>
-        <Pressable onPress={onPress} accessibilityLabel={c.name + " (" + c.code + ")"} style={{ width: cw, aspectRatio: 5 / 7, borderRadius: 12, overflow: "hidden", backgroundColor: t.surface2, boxShadow: t.dark ? "0 2px 6px rgba(0,0,0,.30), 0 10px 22px -6px rgba(0,0,0,.50)" : "0 1px 3px rgba(15,26,46,.10), 0 6px 16px -2px rgba(15,26,46,.16)" }}>
+        <Pressable onPress={() => onPress(i)} accessibilityLabel={c.name + " (" + c.code + ")"} style={{ width: cw, aspectRatio: 5 / 7, borderRadius: 12, overflow: "hidden", backgroundColor: t.surface2, boxShadow: t.dark ? "0 2px 6px rgba(0,0,0,.30), 0 10px 22px -6px rgba(0,0,0,.50)" : "0 1px 3px rgba(15,26,46,.10), 0 6px 16px -2px rgba(15,26,46,.16)" }}>
           <Image source={fullUrl(c)} placeholder={thumbUrl(c)} placeholderContentFit="contain" style={{ width: "100%", height: "100%" }} contentFit="contain" cachePolicy="disk" transition={150} recyclingKey={c.k} />
         </Pressable>
       </Animated.View>
@@ -178,7 +205,7 @@ const FanCard = memo(function FanCard({ c, i, S, cw, x, onPress }: { c: Card; i:
   );
 });
 
-function CardPage({ c, setC, width, deck, strip, fade, pan }: { c: Card; setC: (c: Card) => void; width: number; deck?: string; strip: ReactNode; fade: any; pan: any }) {
+function CardPage({ c, setC, width, deck, strip, fade, pan, sv }: { c: Card; setC: (c: Card) => void; width: number; deck?: string; strip: ReactNode; fade: any; pan: any; sv: { current: any } }) {
   const t = useTheme();
   const [cmOpen, setCmOpen] = useState(false);
   const [ctOpen, setCtOpen] = useState(false);
@@ -260,7 +287,7 @@ function CardPage({ c, setC, width, deck, strip, fade, pan }: { c: Card; setC: (
           </Pressable>
         </View>
       </View>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 14, width: maxW, alignSelf: "center" }} nestedScrollEnabled>
+      <ScrollView ref={sv} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 14, width: maxW, alignSelf: "center" }} nestedScrollEnabled>
         {/* fila delle carte a ventaglio (precedente e successiva ai lati) */}
         {strip}
 
@@ -367,9 +394,9 @@ function CardPage({ c, setC, width, deck, strip, fade, pan }: { c: Card; setC: (
           {/* digievoluzioni */}
           {evo.length > 0 || ex.alt.length > 0 || ex.spec.length > 0 ? (
             <View style={{ gap: 8, marginBottom: 12 }}>
-              {evo.length > 0 && <Evo title="Digievoluzione" text={evo.join(" • ")} />}
-              {ex.alt.length > 0 && <Evo title="Altra Digievoluzione" text={ex.alt.join(" • ")} />}
-              {ex.spec.length > 0 && <Evo title="Digievoluzione speciale" text={ex.spec.join(" • ")} />}
+              {evo.length > 0 && <Evo key={c.k + "e1"} title="Digievoluzione" text={evo.join(" • ")} />}
+              {ex.alt.length > 0 && <Evo key={c.k + "e2"} title="Altra Digievoluzione" text={ex.alt.join(" • ")} />}
+              {ex.spec.length > 0 && <Evo key={c.k + "e3"} title="Digievoluzione speciale" text={ex.spec.join(" • ")} />}
             </View>
           ) : null}
 
@@ -377,7 +404,7 @@ function CardPage({ c, setC, width, deck, strip, fade, pan }: { c: Card; setC: (
           {fx
             .filter(([, v]) => v)
             .map(([title, v, sd]) => (
-              <Box key={title} title={title} text={kwJoin(kwNoRem(v))} side={sd} ldp={title === "Regole Link" ? ex.ldp : ""} />
+              <Box key={c.k + "|" + title} title={title} text={kwJoin(kwNoRem(v))} side={sd} ldp={title === "Regole Link" ? ex.ldp : ""} />
             ))}
 
           {/* prezzi affiancati: il valore apre il negozio, il resto apre/chiude i dettagli */}
@@ -427,7 +454,7 @@ function CardPage({ c, setC, width, deck, strip, fade, pan }: { c: Card; setC: (
               {dk.name}
             </Text>
           </View>
-          <DeckQty d={dk} c={c} big />
+          <DeckQty key={c.k} d={dk} c={c} big />
         </View>
       )}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingTop: dk ? 8 : 10, paddingBottom: 10 + insB, borderTopWidth: dk ? 0 : 1, borderColor: t.line, backgroundColor: t.surface }}>
@@ -441,7 +468,7 @@ function CardPage({ c, setC, width, deck, strip, fade, pan }: { c: Card; setC: (
             <Text style={{ color: t.ink, fontWeight: "800" }}>{owned(c)}</Text>
           </Pressable>
         ) : (
-          <QtyControl c={c} big />
+          <QtyControl key={c.k} c={c} big />
         )}
       </View>
       <FavSheet c={favFor} onClose={() => setFavFor(null)} />
@@ -476,6 +503,14 @@ function markIcon(c: Card, t: any) {
     );
   return <Text style={{ color: "#f0c43a", fontWeight: "800" }}>{(c.mark === 2 ? "★★" : "★") + " "}</Text>;
 }
+// nazioni dei venditori CardTrader (il motore JavaScript di Android non ha i nomi delle nazioni: si usa questa tabella)
+const NAZ: Record<string, string> = {
+  IT: "Italia", DE: "Germania", FR: "Francia", ES: "Spagna", NL: "Paesi Bassi", BE: "Belgio", AT: "Austria", PT: "Portogallo", GB: "Regno Unito", UK: "Regno Unito", IE: "Irlanda",
+  US: "Stati Uniti", CA: "Canada", JP: "Giappone", PL: "Polonia", CH: "Svizzera", LU: "Lussemburgo", DK: "Danimarca", SE: "Svezia", FI: "Finlandia", NO: "Norvegia",
+  CZ: "Repubblica Ceca", SK: "Slovacchia", SI: "Slovenia", HR: "Croazia", HU: "Ungheria", RO: "Romania", BG: "Bulgaria", GR: "Grecia", CY: "Cipro", MT: "Malta",
+  EE: "Estonia", LV: "Lettonia", LT: "Lituania", SG: "Singapore", HK: "Hong Kong", KR: "Corea del Sud", TW: "Taiwan", CN: "Cina", AU: "Australia", NZ: "Nuova Zelanda",
+  MX: "Messico", BR: "Brasile", SM: "San Marino", MC: "Monaco", LI: "Liechtenstein", IS: "Islanda", TH: "Thailandia", MY: "Malesia", PH: "Filippine", ID: "Indonesia",
+};
 let REGN: any = null;
 try {
   REGN = new (Intl as any).DisplayNames(["it"], { type: "region" });
@@ -485,7 +520,8 @@ try {
 function countryName(cc?: string) {
   if (!cc) return "—";
   try {
-    return REGN ? REGN.of(cc.toUpperCase()) : cc;
+    const u = cc.toUpperCase();
+    return NAZ[u] || (REGN ? REGN.of(u) : u);
   } catch (e) {
     return cc;
   }

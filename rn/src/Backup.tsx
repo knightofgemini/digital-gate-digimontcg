@@ -31,8 +31,12 @@ export function Backup({ visible, onClose }: { visible: boolean; onClose: () => 
           <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
             <Pressable
               onPress={async () => {
-                await Clipboard.setStringAsync(exportText());
-                setMsg("Backup copiato: incollalo dove vuoi conservarlo.");
+                try {
+                  await Clipboard.setStringAsync(exportText());
+                  setMsg("Backup copiato: incollalo dove vuoi conservarlo.");
+                } catch (e) {
+                  setMsg("Non è stato possibile copiare il backup: prova con Condividi.");
+                }
               }}
               style={{ flex: 1, alignItems: "center", paddingVertical: 12, borderRadius: 10, backgroundColor: t.accent }}
             >
@@ -59,8 +63,13 @@ export function Backup({ visible, onClose }: { visible: boolean; onClose: () => 
           <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
             <Pressable
               onPress={async () => {
-                const v = await Clipboard.getStringAsync();
-                if (v) setTxt(v);
+                try {
+                  const v = await Clipboard.getStringAsync();
+                  if (v) setTxt(v);
+                  else setMsg("Negli appunti non c'è nessun testo.");
+                } catch (e) {
+                  setMsg("Non è stato possibile leggere gli appunti: incolla il testo nel riquadro.");
+                }
               }}
               style={{ alignItems: "center", paddingVertical: 12, paddingHorizontal: 14, borderRadius: 10, backgroundColor: t.surface2 }}
             >

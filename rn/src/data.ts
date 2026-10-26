@@ -33,6 +33,7 @@ export type Card = {
   set: string;
   x: any;
   nb: string; // codice + nome normalizzati per la ricerca
+  nf: string; // nome normalizzato
   // solo per le versioni alternative
   suf?: string;
   img?: string;
@@ -103,7 +104,10 @@ export const CARDS: Card[] = ((raw as any).cards as RawCard[]).map((a, i) => ({
   rar: a[15],
   set: a[16],
   x: (a as any)[17] || null,
-  nb: " " + fold(a[0] + " " + a[1]) + " ",
+  // testo cercabile: codice e nome (con " ACE" per le Digimon ACE, come nell'app attuale)
+  nb: " " + fold(a[0] + " " + a[1] + (/(^|\n)Effetto ACE:/.test(a[14] || "") ? " ACE" : "")) + " ",
+  // nome normalizzato calcolato una volta sola (ordinamento per rilevanza a ogni lettera digitata)
+  nf: fold(a[1]),
 }));
 const seen: Record<string, number> = {};
 CARDS.forEach((c) => {
@@ -238,18 +242,27 @@ export function markText(c: Card) {
 }
 
 // Sezioni di un prodotto (Regular, Alternative Art, Ristampe...): come renderCards() del sito
-export function setGroups(sid: string, list: Card[]): [string, Card[]][] {
+// ordine delle carte di AD1 senza ricerca (setOrder dell'app attuale): Digi-Egg, Digimon, Tamer, Option, poi prodotto e numero
+const SETRANK: Record<string, number> = {};
+SETS.forEach((x, i) => (SETRANK[x.id] = i));
+const ctRank = (c: Card) => (/^Digi-Egg/.test(c.ct || "") ? 0 : /^Digimon/.test(c.ct || "") ? 1 : /^Tamer/.test(c.ct || "") ? 2 : /^Option/.test(c.ct || "") ? 3 : 4);
+export const setOrder = (a: Card, b: Card) => ctRank(a) - ctRank(b) || (SETRANK[a.set] || 0) - (SETRANK[b.set] || 0) || a.i - b.i || ((a.suf || "") < (b.suf || "") ? -1 : (a.suf || "") > (b.suf || "") ? 1 : 0);
+// sorted: senza ricerca (con la ricerca l'ordine è quello della rilevanza)
+export function setGroups(sid: string, list: Card[], sorted = true): [string, Card[]][] {
   const own = (c: Card) => c.set === sid;
   const alt = (c: Card) => !!c.suf;
   if (SETBY[sid].type === "PB") return [["Ristampe · Alternative Art", list]];
-  if (sid === "ad1")
-    return [
+  if (sid === "ad1") {
+    const g: [string, Card[]][] = [
       ["Regular", list.filter((c) => own(c) && !alt(c))],
       ["Alternative Art", list.filter((c) => own(c) && alt(c))],
       ["Ristampe", list.filter((c) => !own(c) && c.cls !== "n" && c.cls !== "g")],
       ["Ristampe · Alternative Art", list.filter((c) => !own(c) && c.cls === "n")],
       ["Ristampe · Gold Border", list.filter((c) => !own(c) && c.cls === "g")],
     ];
+    if (sorted) g.forEach((x) => (x[1] = x[1].slice().sort(setOrder)));
+    return g;
+  }
   return [
     ["Regular", list.filter((c) => own(c) && !alt(c))],
     ["Alternative Art", list.filter((c) => own(c) && alt(c))],
@@ -260,7 +273,7 @@ export function setGroups(sid: string, list: Card[]): [string, Card[]][] {
 
 // Rilevanza nella ricerca (più basso = più in alto), come relevance() del sito
 export function relevance(c: Card, q: string) {
-  const n = fold(c.name);
+  const n = c.nf != null ? c.nf : fold(c.name);
   if (n === q) return 0;
   if (n.indexOf(q + " ") === 0) return 1;
   if ((" " + n + " ").indexOf(" " + q + " ") >= 0) return 2;

@@ -1,6 +1,7 @@
 name: Nuova app (React Native) - APK di prova
 # APK di prova della nuova app (cartella rn/, ramo react-native). Stesso nome del pacchetto e stessa chiave dell'APK attuale,
-# così si installa sopra; versionCode = build attuale + 1. Pubblicato solo nella release "rn-prova" (pre-release):
+# così si installa sopra; versionCode = stesso numero della build attuale (Android accetta l'installazione nei due sensi:
+# si può tornare all'APK attuale senza disinstallare). Pubblicato solo nella release "rn-prova" (pre-release):
 # la release "latest", il sito e l'APK attuale non vengono toccati.
 on:
   push:
@@ -26,13 +27,19 @@ jobs:
       - run: git fetch -q --depth=1 origin prezzi && git show FETCH_HEAD:prices.json > /tmp/p.json && mv /tmp/p.json src/prices.json || echo "ramo prezzi non disponibile"
       - run: npm ci
         working-directory: rn
+      # controllo dei tipi: il risultato va nel ramo "rn-check" (leggibile anche da fuori), non ferma la build
+      - name: Controllo dei tipi (TypeScript)
+        working-directory: rn
+        run: |
+          if npx tsc --noEmit > /tmp/tsc.txt 2>&1; then echo "TSC OK" >> /tmp/tsc.txt; else echo "TSC ERRORI" >> /tmp/tsc.txt; fi
+          tail -40 /tmp/tsc.txt
       - run: node scripts/sync-data.js
         working-directory: rn
       - name: Numero di versione (sopra l'APK pubblicato) e build 0 (niente avviso di aggiornamento nella prova)
         working-directory: rn
         run: |
           LATEST=$(gh release view latest --json name -q .name | grep -oE '[0-9]+$' || echo 0)
-          export VC=$((LATEST + 1))
+          export VC=$((LATEST > 0 ? LATEST : 1))
           echo "VC=$VC" >> $GITHUB_ENV
           node -e '
             const fs = require("fs"), j = JSON.parse(fs.readFileSync("app.json", "utf8"));
@@ -51,10 +58,22 @@ jobs:
           grep -n -A6 "signingConfigs" android/app/build.gradle
           # a capo prima: l'ultima riga del file non ne ha uno (altrimenti si attacca alla riga precedente)
           printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g\n' >> android/gradle.properties
+          # solo le architetture dei telefoni (x86 e x86_64 servono agli emulatori: ~65 MB in meno)
+          printf 'reactNativeArchitectures=arm64-v8a,armeabi-v7a\n' >> android/gradle.properties
           tail -4 android/gradle.properties
-      - run: chmod +x gradlew && ./gradlew assembleRelease --no-daemon
+      - name: Build APK
         working-directory: rn/android
+        run: |
+          set -o pipefail
+          chmod +x gradlew && ./gradlew assembleRelease --no-daemon 2>&1 | tee /tmp/gradle.txt
       - run: cp rn/android/app/build/outputs/apk/release/app-release.apk DigitalGate-prova.apk
+      # il servizio di scaricamento in sottofondo deve esserci davvero (prima mancava senza che la build se ne accorgesse)
+      - name: Controllo modulo nativo BgDownload
+        run: |
+          BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+          unzip -p DigitalGate-prova.apk 'classes*.dex' | grep -a -q "expo/modules/bgdownload/BgDownloadService" || { echo "BgDownloadService non trovato nell'APK" | tee -a /tmp/gradle.txt; exit 1; }
+          $BT/aapt dump xmltree DigitalGate-prova.apk AndroidManifest.xml | grep -q "FOREGROUND_SERVICE_DATA_SYNC" || { echo "permessi del servizio mancanti" | tee -a /tmp/gradle.txt; exit 1; }
+          ls -la DigitalGate-prova.apk
       - name: Controllo firma (deve essere la stessa chiave dell'APK attuale)
         run: |
           BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
@@ -67,7 +86,17 @@ jobs:
         run: |
           gh release delete rn-prova --yes --cleanup-tag || true
           sleep 3
-          gh release create rn-prova DigitalGate-prova.apk --prerelease --latest=false --title "Nuova app (prova) · versione ${{ env.VC }}" --notes "APK di prova della nuova app React Native. Prima di installarlo copia il backup dall'app attuale (Informazioni → Backup dei tuoi dati)." --target "${{ github.sha }}"
+          gh release create rn-prova DigitalGate-prova.apk --prerelease --latest=false --title "Nuova app (prova) · versione ${{ env.VC }}" --notes "APK di prova della nuova app React Native. Al primo avvio recupera da sola collezione, preferite e mazzi dell'app attuale; per sicurezza conviene comunque copiare prima il backup (Informazioni → Backup dei tuoi dati)." --target "${{ github.sha }}"
           sleep 3
           gh release edit rn-prova --draft=false --prerelease || true
           gh release view rn-prova --json isDraft,isPrerelease,name
+      # esito del controllo dei tipi e (se fallisce) la fine del log della build nel ramo "rn-check"
+      - name: Esito nel ramo rn-check
+        if: always()
+        run: |
+          mkdir -p /tmp/chk && cd /tmp/chk && git init -q
+          cp /tmp/tsc.txt . 2>/dev/null || echo "tsc non eseguito" > tsc.txt
+          tail -300 /tmp/gradle.txt > gradle.txt 2>/dev/null || echo "build non eseguita" > gradle.txt
+          echo "${{ github.sha }} ${{ job.status }}" > esito.txt
+          git add -A && git -c user.name=Claude -c user.email=noreply@anthropic.com commit -qm "controllo ${{ github.sha }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/rn-check || true

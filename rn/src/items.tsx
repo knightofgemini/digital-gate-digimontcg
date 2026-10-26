@@ -3,7 +3,7 @@
 // e vista a elenco (.row.card.p1: miniatura con la barretta, nome su tutta la riga con il cuore, righe brevi, pastiglia
 // dei prezzi e −/+). Pulsanti − e + nel riquadro unico: tenendo premuto ±4 (e altre 4 continuando a tenere);
 // toccando il numero si scrive quante copie.
-import { ReactNode, useRef, useState } from "react";
+import { ReactNode, memo, useCallback, useEffect, useRef, useState } from "react";
 import { FlatList, Linking, Pressable, View, useWindowDimensions } from "react-native";
 import { DISPLAY, Text, TextInput } from "./Text";
 import Svg, { Path, Rect } from "react-native-svg";
@@ -11,7 +11,7 @@ import { Image } from "expo-image";
 import { Card, fullUrl, isAce, thumbUrl } from "./data";
 import { openCard } from "./nav";
 import { cmCovered, cmOf, cmUrl, ctCovered, ctOf, ctUrl, eurN, usePrices } from "./prices";
-import { S, favSet, isFav, owned, setQty, setView, useStore } from "./store";
+import { S, favSet, isFav, owned, setQty, setView, useStore, useView } from "./store";
 import { useTheme } from "./theme";
 import { ColorBand } from "./ui";
 import { FitText } from "./fit";
@@ -30,6 +30,9 @@ export function QtyControl({ c, value, onSet, plusOff, big, fill, plus, onBlocke
   useStore();
   const n = value != null ? value : c ? owned(c) : 0;
   const set = onSet || ((v: number) => c && setQty(c, v));
+  // sempre la versione aggiornata (il timer del "tieni premuto" altrimenti userebbe quella di quando si è iniziato a premere)
+  const setRef = useRef(set);
+  setRef.current = set;
   const [edit, setEdit] = useState(false);
   const [txt, setTxt] = useState("");
   const [pop, setPop] = useState<{ s: string; right: boolean } | null>(null);
@@ -39,24 +42,44 @@ export function QtyControl({ c, value, onSet, plusOff, big, fill, plus, onBlocke
   cur.current = n;
   const tot = useRef(0);
   const sz = size || (big ? 42 : 40);
+  // se il contatore sparisce mentre si preme (es. la carta esce dalla Wishlist appena posseduta) il timer si ferma:
+  // prima continuava da solo aggiungendo copie fino a 999
+  const alive = useRef(true);
+  useEffect(
+    () => () => {
+      alive.current = false;
+      clearTimeout(timer.current);
+    },
+    []
+  );
+  const committed = useRef(false);
+  function commit() {
+    if (committed.current) return;
+    committed.current = true;
+    const v = parseInt(txt, 10);
+    if (!isNaN(v) && v !== n) set(Math.max(0, Math.min(999, v)));
+    setEdit(false);
+  }
 
   function start(sign: number) {
+    clearTimeout(timer.current);
     held.current = false;
     tot.current = 0;
     timer.current = setTimeout(function tick() {
+      if (!alive.current) return;
       held.current = true;
       const k = sign > 0 ? 4 : Math.min(4, cur.current);
       if (!k) return;
       tot.current += k;
       cur.current = cur.current + sign * k;
-      set(cur.current);
+      setRef.current(cur.current);
       setPop({ s: (sign > 0 ? "+" : "−") + tot.current, right: sign > 0 });
       timer.current = setTimeout(tick, HOLD / 2);
     }, HOLD);
   }
   function stop() {
     clearTimeout(timer.current);
-    if (held.current) setTimeout(() => setPop(null), 800);
+    if (held.current) setTimeout(() => alive.current && setPop(null), 800);
   }
   const lockIco = (
     <Svg width={15} height={15} viewBox="0 0 24 24">
@@ -71,6 +94,7 @@ export function QtyControl({ c, value, onSet, plusOff, big, fill, plus, onBlocke
     return (
       <Pressable
         onPress={() => {
+          clearTimeout(timer.current);
           if (held.current) {
             held.current = false;
             return;
@@ -102,18 +126,15 @@ export function QtyControl({ c, value, onSet, plusOff, big, fill, plus, onBlocke
           keyboardType="number-pad"
           maxLength={3}
           selectTextOnFocus
-          onBlur={() => {
-            const v = parseInt(txt, 10);
-            if (!isNaN(v) && v !== n) set(Math.max(0, Math.min(999, v)));
-            setEdit(false);
-          }}
-          onSubmitEditing={() => setEdit(false)}
+          onBlur={commit}
+          onSubmitEditing={commit}
           style={{ width: 34, textAlign: "center", color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 15, borderBottomWidth: 2, borderColor: t.accent, paddingVertical: 2 }}
         />
       ) : (
         <Pressable
           onPress={() => {
             if (plusOff) return;
+            committed.current = false;
             setTxt(String(n));
             setEdit(true);
           }}
@@ -239,6 +260,7 @@ function PLine({ shop, c }: { shop: "cm" | "ct"; c: Card }) {
   );
 }
 export function PriceLines({ c }: { c: Card }) {
+  usePrices();
   const cm = cmCovered(c),
     ct = ctCovered(c);
   if (!cm && !ct) return null;
@@ -253,6 +275,7 @@ export function PriceLines({ c }: { c: Card }) {
 // pastiglia con i due prezzi (.ppill): Cardmarket | CardTrader, ogni metà apre il suo negozio
 export function PricePill({ c }: { c: Card }) {
   const t = useTheme();
+  usePrices();
   const cm = cmCovered(c),
     ct = ctCovered(c);
   if (!cm && !ct) return null;
@@ -277,7 +300,7 @@ export function PricePill({ c }: { c: Card }) {
 
 // vista a elenco (.row.card.p1)
 // right: al posto delle copie della collezione (es. copie nel mazzo); deck: scheda aperta dall'editor del mazzo
-export function ListRow({ c, list, extra, noPrice, right, deck, onOpen }: { c: Card; list: Card[]; extra?: ReactNode; noPrice?: boolean; right?: ReactNode; deck?: string; onOpen?: () => void }) {
+export const ListRow = memo(function ListRow({ c, list, extra, noPrice, right, deck, onOpen }: { c: Card; list: Card[]; extra?: ReactNode; noPrice?: boolean; right?: ReactNode; deck?: string; onOpen?: () => void }) {
   const t = useTheme();
   return (
     <Pressable onPress={() => (onOpen && onOpen(), openCard(c, list, deck))} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, paddingLeft: 10, paddingRight: 12, backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 10 }}>
@@ -301,10 +324,10 @@ export function ListRow({ c, list, extra, noPrice, right, deck, onOpen }: { c: C
       </View>
     </Pressable>
   );
-}
+});
 
 // vista a immagini (.tile)
-export function GridTile({ c, list, width, extra, qty, deck, onOpen }: { c: Card; list: Card[]; width: number; extra?: ReactNode; qty?: ReactNode; deck?: string; onOpen?: () => void }) {
+export const GridTile = memo(function GridTile({ c, list, width, extra, qty, deck, onOpen }: { c: Card; list: Card[]; width: number; extra?: ReactNode; qty?: ReactNode; deck?: string; onOpen?: () => void }) {
   const t = useTheme();
   return (
     <Pressable onPress={() => (onOpen && onOpen(), openCard(c, list, deck))} style={{ width, padding: 6, gap: 5, backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 11 }}>
@@ -322,7 +345,7 @@ export function GridTile({ c, list, width, extra, qty, deck, onOpen }: { c: Card
       {extra}
     </Pressable>
   );
-}
+});
 
 // interruttore elenco / immagini (.vbtns), salvato come nell'app attuale
 // value/onChange: vista separata (es. ricerca nel mazzo, "dg-dkview"); senza, quella di tutta l'app ("dgm-view")
@@ -366,15 +389,21 @@ export function CountRow({ n, top = 14 }: { n: number; top?: number }) {
   );
 }
 
+const Sep = () => <View style={{ height: 6 }} />;
 // elenco di carte già filtrato, nella vista scelta (griglia a due colonne o elenco)
 export function CardList({ list, header, empty, extra, padBottom = BOTTOM_PAD }: { list: Card[]; header?: React.ReactElement; empty?: string; extra?: (c: Card) => ReactNode; padBottom?: number }) {
   const t = useTheme();
-  useStore();
-  usePrices();
+  // l'elenco si ridisegna solo cambiando vista: contatori, cuori e prezzi delle carte si aggiornano da soli
+  // (prima ogni tocco su + ridisegnava tutte le carte già caricate)
+  const view = useView();
   const { width } = useWindowDimensions();
   const bar = useBar();
-  const grid = S.view === "grid";
+  const grid = view === "grid";
   const tw = Math.floor((width - 28 - 6) / 2);
+  const renderItem = useCallback(
+    ({ item }: { item: Card }) => (grid ? <GridTile c={item} list={list} width={tw} extra={extra && extra(item)} /> : <ListRow c={item} list={list} extra={extra && extra(item)} />),
+    [grid, list, tw, extra]
+  );
   return (
     <FlatList
       key={grid ? "g" : "l"}
@@ -385,12 +414,12 @@ export function CardList({ list, header, empty, extra, padBottom = BOTTOM_PAD }:
       keyboardDismissMode="on-drag"
       ListHeaderComponent={header}
       columnWrapperStyle={grid ? { gap: 6 } : undefined}
-      ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
+      ItemSeparatorComponent={Sep}
       onScroll={bar.onScroll} scrollEventThrottle={16}
       contentContainerStyle={{ paddingHorizontal: 14, paddingTop: bar.pad, paddingBottom: padBottom }}
       initialNumToRender={grid ? 8 : 10}
       windowSize={7}
-      renderItem={({ item }) => (grid ? <GridTile c={item} list={list} width={tw} extra={extra && extra(item)} /> : <ListRow c={item} list={list} extra={extra && extra(item)} />)}
+      renderItem={renderItem}
       ListEmptyComponent={empty ? <Text style={{ color: t.ink2, textAlign: "center", paddingVertical: 30 }}>{empty}</Text> : undefined}
     />
   );
