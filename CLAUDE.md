@@ -124,3 +124,8 @@ Esiste come **sito** (GitHub Pages) e come **APK Android** (Capacitor). Ogni mod
 - Backup/ripristino di collezione e mazzi (proposto).
 - Banner mancanti o provvisori per PB24, EX14, BT28.
 - Spostare la chiave di firma APK nei segreti GitHub (opzionale).
+
+## Nuova app React Native (ramo `react-native`, cartella `rn/`)
+
+- **Tag come l'app attuale (26 ottobre 2026)**: `rn/src/rich.tsx` → `Chip` disegna le icone di `[ ]`, `＜ ＞`, `⟦ ⟧` e i colori nel testo come `.ico` del sito: riquadri dentro il testo con sfumatura (SVG), bordino interno, angoli .35em, keyword esagonali in tre pezzi (punte + centro, senza misure: `onLayout` non arriva ai riquadri dentro un testo), Overflow metallizzato; `ICO_DY` = spostamento verticale. La spiegazione di una keyword si apre subito dopo la sua riga. Nella scheda carta (`rn/src/app/carta/[k].tsx`): "Altra Digievoluzione" rimpicciolita su una riga (`Evo one`), tratti che vanno a capo uno per uno, Use + colori, LINK DP con fondo, badge della lista ban (colori e "Coppia vietata con" del sito), ★/★★ sfalsate/SP (`Mark`, `VerName`) anche nei pulsanti delle versioni e nella barra in basso.
+- **Anteprima con foto su emulatore**: `.github/workflows/rn-shot.yml` parte a ogni invio sul ramo `rn-tag` (riutilizzabile come ramo di prova): APK solo x86_64, emulatore Android 14 (pixel_6), `tools/rn_shots.py` apre le carte di `tools/rn_shots.txt` (`chiave@keyword`, chiave = `set|codice[~_P1]`) con `digitalgate://carta/…`, scorre, tocca la keyword e fotografa (anche tema chiaro). Foto nel ramo `rn-shots`. Le foto di confronto della vecchia app si fanno in locale con Playwright sul `www/index.html` di `main`.
