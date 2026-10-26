@@ -1,6 +1,7 @@
 // Foglio "Salva in…": preferite, liste personali e avviso di prezzo per una versione della carta (come nell'app attuale).
-import { useState } from "react";
-import { Modal, Pressable, ScrollView, Switch, View } from "react-native";
+import { useRef, useState } from "react";
+import { Pressable, ScrollView, Switch, View } from "react-native";
+import { Sheet } from "./Sheet";
 import { DISPLAY, Text, TextInput } from "./Text";
 import Svg, { Path } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,7 +21,11 @@ export function FavSheetHost() {
   return <FavSheet c={c} onClose={() => setC(null)} />;
 }
 
-export function FavSheet({ c, onClose }: { c: Card | null; onClose: () => void }) {
+export function FavSheet({ c: cOpen, onClose }: { c: Card | null; onClose: () => void }) {
+  // l'ultima carta resta disegnata mentre il foglio scende in chiusura
+  const last = useRef<Card | null>(null);
+  if (cOpen) last.current = cOpen;
+  const c = cOpen || last.current;
   const t = useTheme();
   useStore();
   const [nw, setNw] = useState<string | null>(null);
@@ -54,9 +59,7 @@ export function FavSheet({ c, onClose }: { c: Card | null; onClose: () => void }
   const on = alertOn;
 
   return (
-    <Modal visible animationType="slide" transparent onRequestClose={onClose} statusBarTranslucent>
-      <Pressable style={{ flex: 1, backgroundColor: "rgba(4,8,18,.6)" }} onPress={onClose} />
-      <View style={{ maxHeight: "88%", backgroundColor: t.surface, borderTopWidth: 1, borderColor: t.line, borderTopLeftRadius: 22, borderTopRightRadius: 22, boxShadow: "0 -12px 32px rgba(0,0,0,.35)" }}>
+    <Sheet visible={!!cOpen} onClose={onClose} maxH={0.88} scrim="rgba(4,8,18,.6)" style={{ backgroundColor: t.surface, borderTopWidth: 1, borderColor: t.line, borderTopLeftRadius: 22, borderTopRightRadius: 22, boxShadow: "0 -12px 32px rgba(0,0,0,.35)" }}>
         <ScrollView contentContainerStyle={{ paddingTop: 8, paddingHorizontal: 16, paddingBottom: 18 + insB, gap: 12 }} keyboardShouldPersistTaps="handled">
           <View style={{ alignSelf: "center", width: 40, height: 5, borderRadius: 3, backgroundColor: t.line }} />
           <View>
@@ -145,7 +148,6 @@ export function FavSheet({ c, onClose }: { c: Card | null; onClose: () => void }
             <Text style={{ color: t.accentInk, fontWeight: "600", fontSize: 16 }}>Fine</Text>
           </Pressable>
         </ScrollView>
-      </View>
-    </Modal>
+    </Sheet>
   );
 }

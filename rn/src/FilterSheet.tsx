@@ -5,7 +5,8 @@
 // singola; Livello, Costo, Rarità ed Espansione a griglia; Tipo con il campo per cercare in fondo.
 // Le parole delle carte restano in inglese.
 import { useMemo, useRef, useState } from "react";
-import { Modal, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { Sheet } from "./Sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { DISPLAY, Text, TextInput } from "./Text";
@@ -125,9 +126,21 @@ export function FilterSheet({ visible, f: f0, setF: setF0, onClose, count, lockE
   const close = () => (dd ? setDd(null) : onClose());
 
   return (
-    <Modal visible={visible} animationType="slide" transparent statusBarTranslucent onRequestClose={close}>
-      <Pressable style={{ flex: 1, backgroundColor: t.scrim }} onPress={onClose} />
-      <View style={{ maxHeight: "82%", backgroundColor: t.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: t.line, boxShadow: "0 -14px 36px rgba(0,0,0,.35)", paddingHorizontal: 14, paddingBottom: 14 + ins.bottom }}>
+    <Sheet
+      visible={visible}
+      onClose={onClose}
+      onBack={close}
+      maxH={0.82}
+      overlay={
+        dd ? (
+          <>
+            <Pressable style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} onPress={() => setDd(null)} />
+            <DDPop kind={dd.kind} r={dd.r} f={f} vw={vw} vh={vh} pick={(v) => (MULTI[dd.kind] ? toggle(dd.kind, v) : dd.kind === "exp" && onExp ? (setDd(null), v !== f.exp && onExp(v)) : (setK(dd.kind, v), setDd(null)))} />
+          </>
+        ) : null
+      }
+      style={{ backgroundColor: t.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: t.line, boxShadow: "0 -14px 36px rgba(0,0,0,.35)", paddingHorizontal: 14, paddingBottom: 14 + ins.bottom }}
+    >
         <Pressable onPress={onClose} accessibilityLabel="Chiudi i filtri" style={{ height: 26, alignItems: "center", justifyContent: "center" }}>
           <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: t.line }} />
         </Pressable>
@@ -177,14 +190,7 @@ export function FilterSheet({ visible, f: f0, setF: setF0, onClose, count, lockE
         <Pressable onPress={onClose} style={{ marginTop: 14, height: 52, borderRadius: 14, backgroundColor: t.accent, alignItems: "center", justifyContent: "center" }}>
           <Text style={{ color: t.accentInk, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16 }}>Mostra {count + (count === 1 ? " carta" : " carte")}</Text>
         </Pressable>
-      </View>
-      {dd ? (
-        <>
-          <Pressable style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} onPress={() => setDd(null)} />
-          <DDPop kind={dd.kind} r={dd.r} f={f} vw={vw} vh={vh} pick={(v) => (MULTI[dd.kind] ? toggle(dd.kind, v) : dd.kind === "exp" && onExp ? (setDd(null), v !== f.exp && onExp(v)) : (setK(dd.kind, v), setDd(null)))} />
-        </>
-      ) : null}
-    </Modal>
+    </Sheet>
   );
 }
 

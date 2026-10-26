@@ -1,7 +1,8 @@
 // Backup di collezione, preferite e mazzi: esporta (copia o condividi il testo) e importa (incolla il testo, unendo o
 // sostituendo). Lo stesso testo di "Copia backup" dell'app attuale (Informazioni → Backup dei tuoi dati).
 import { useState } from "react";
-import { Modal, Pressable, ScrollView, Share, View } from "react-native";
+import { Pressable, ScrollView, Share, View } from "react-native";
+import { Sheet } from "./Sheet";
 import { Text, TextInput } from "./Text";
 import * as Clipboard from "expo-clipboard";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -20,9 +21,8 @@ export function Backup({ visible, onClose }: { visible: boolean; onClose: () => 
     setConfirm(false);
   }
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,.55)" }} onPress={onClose} />
-      <SafeAreaView edges={["bottom"]} style={{ backgroundColor: t.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, maxHeight: "90%" }}>
+    <Sheet visible={visible} onClose={onClose} maxH={0.90} scrim="rgba(0,0,0,.55)">
+      <SafeAreaView edges={["bottom"]} style={{ backgroundColor: t.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, flexShrink: 1 }}>
         <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
           <Text style={{ color: t.ink, fontSize: 20, fontWeight: "800" }}>Backup</Text>
           <Text style={{ color: t.ink2, marginTop: 4, lineHeight: 20 }}>Collezione, preferite, liste e mazzi in un testo da conservare o da incollare su un altro telefono (anche dall'app attuale di Digital Gate).</Text>
@@ -84,6 +84,6 @@ export function Backup({ visible, onClose }: { visible: boolean; onClose: () => 
           <Text style={{ color: t.ink, fontWeight: "800", fontSize: 16 }}>Chiudi</Text>
         </Pressable>
       </SafeAreaView>
-    </Modal>
+    </Sheet>
   );
 }

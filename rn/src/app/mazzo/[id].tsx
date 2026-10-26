@@ -3,7 +3,8 @@
 // barra "Cerca e aggiungi carte…" che apre il foglio di ricerca, e la vista Statistiche.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Linking, Modal, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { Linking, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { Sheet } from "../../Sheet";
 import { DISPLAY, Text, TextInput } from "../../Text";
 import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { Chevron, FilterIcon, SearchIcon, SquareBtn } from "../../BottomBar";
@@ -565,9 +566,8 @@ function CoverPicker({ visible, d, onClose }: { visible: boolean; d: any; onClos
     </Pressable>
   );
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,.55)" }} onPress={onClose} />
-      <SafeAreaView edges={["bottom"]} style={{ backgroundColor: t.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, maxHeight: "80%" }}>
+    <Sheet visible={visible} onClose={onClose} maxH={0.80} scrim="rgba(0,0,0,.55)">
+      <SafeAreaView edges={["bottom"]} style={{ backgroundColor: t.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, flexShrink: 1 }}>
         <ScrollView contentContainerStyle={{ padding: 16 }}>
           <Text style={{ color: t.ink, fontSize: 20, fontWeight: "800" }}>Modifica copertina mazzo</Text>
           <Text style={{ color: t.ink2, marginTop: 4, marginBottom: 12 }}>{seen.length ? "Tocca la carta da usare come copertina del mazzo." : "Il mazzo è vuoto: aggiungi delle carte per sceglierne una come copertina."}</Text>
@@ -579,6 +579,6 @@ function CoverPicker({ visible, d, onClose }: { visible: boolean; d: any; onClos
           </View>
         </ScrollView>
       </SafeAreaView>
-    </Modal>
+    </Sheet>
   );
 }

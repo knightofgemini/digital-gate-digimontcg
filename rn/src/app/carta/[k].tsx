@@ -1,8 +1,8 @@
 // Scheda carta (proposta "C - Carosello" dell'app attuale): con il dito a destra/sinistra la carta precedente/successiva
 // dell'elenco da cui è stata aperta; versioni come pulsanti; nome, codice e rarità; una riga di dati; tratti;
 // digievoluzioni ed effetti con le icone; prezzi; pre errata. Testi delle carte in inglese, etichette in italiano.
-import { useMemo, useRef, useState } from "react";
-import { FlatList, Linking, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { ReactNode, createContext, memo, useContext, useMemo, useRef, useState } from "react";
+import { Animated, Linking, PanResponder, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
 import { DISPLAY, Text } from "../../Text";
 import Svg, { Path } from "react-native-svg";
 import { FitText } from "../../fit";
@@ -26,9 +26,7 @@ import { useTheme } from "../../theme";
 export default function Carta() {
   const { k, deck } = useLocalSearchParams<{ k: string; deck?: string }>();
   const c0 = BYKEY[k];
-  const { width, height } = useWindowDimensions();
-  // altezza reale dello spazio della scheda: ogni pagina del carosello la riempie (barre delle copie fisse in basso)
-  const [h, setH] = useState(height);
+  const { width } = useWindowDimensions();
   usePrices();
   // elenco per scorrere: quello da cui si è aperta la scheda (anche se si apre una sua versione)
   const list = useMemo(() => {
@@ -41,32 +39,147 @@ export default function Carta() {
     0,
     list.findIndex((x) => x === c0 || carVers(c0).indexOf(x) >= 0)
   );
-  const ref = useRef<any>(null);
+  const [cur, setCur] = useState(start);
+  // versione scelta con i pulsanti per la carta al centro (resta sulla sua carta anche mentre scorre via)
+  const [ver, setVer] = useState<{ i: number; c: Card } | null>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const go = useRef<(i: number) => void>(() => {});
+  const maxW = Math.min(width, 560);
+  const cw = Math.min(290, maxW - 84);
+  // distanza tra le carte della fila: le vicine spuntano ai lati senza coprire quella al centro
+  const S = Math.round(cw * 0.93 + 14);
+  const n = list.length;
+  // dettagli (versioni, nome, effetti, prezzi) in dissolvenza: spariscono a metà strada e ricompaiono con la carta nuova
+  const fade = useMemo(() => {
+    const top = Math.max(1, S * (n - 1));
+    const m = Animated.modulo(scrollX.interpolate({ inputRange: [0, top], outputRange: [0, top], extrapolate: "clamp" }), S);
+    return {
+      opacity: m.interpolate({ inputRange: [0, S * 0.32, S * 0.68, S], outputRange: [1, 0, 0, 1] }),
+      transform: [{ translateY: m.interpolate({ inputRange: [0, S * 0.5, S], outputRange: [0, 12, 0] }) }],
+    };
+  }, [S, n]);
+  // scorrendo con il dito anche sul testo si passa alla carta precedente/successiva (con la stessa animazione)
+  const curRef = useRef(cur);
+  curRef.current = cur;
+  const pan = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 18 && Math.abs(g.dx) > Math.abs(g.dy) * 1.6,
+        onPanResponderTerminationRequest: () => true,
+        onPanResponderRelease: (_, g) => {
+          if (Math.abs(g.dx) > 50 || Math.abs(g.vx) > 0.35) go.current(Math.max(0, Math.min(n - 1, curRef.current + (g.dx < 0 ? 1 : -1))));
+        },
+      }),
+    [n]
+  );
   if (!c0) return null;
-  const goTo = (i: number) => ref.current && ref.current.scrollToIndex({ index: i, animated: true });
+  const at = (i: number) => (ver && ver.i === i ? ver.c : i === start ? c0 : list[i]);
+  const c = at(cur);
+  const strip = (
+    <Fan
+      list={list}
+      start={start}
+      cur={cur}
+      at={at}
+      sel={ver ? ver.i + ":" + ver.c.k : ""}
+      width={maxW}
+      cw={cw}
+      S={S}
+      x={scrollX}
+      go={go}
+      onIndex={setCur}
+    />
+  );
+  return <CardPage c={c} setC={(a) => setVer({ i: cur, c: a })} width={width} deck={deck} strip={strip} fade={fade} pan={pan.panHandlers} />;
+}
+
+// Fila delle carte "a ventaglio": la carta al centro è dritta e grande, le vicine spuntano ai lati più piccole,
+// inclinate e ruotate come carte tenute in mano. Trascinando, la vicina arriva al centro raddrizzandosi.
+// Tutte le trasformazioni sono calcolate sul thread nativo dalla posizione di scorrimento (nessun lavoro in JS).
+function Fan({ list, start, cur, at, sel, width, cw, S, x, go, onIndex }: { list: Card[]; start: number; cur: number; at: (i: number) => Card; sel: string; width: number; cw: number; S: number; x: Animated.Value; go: { current: (i: number) => void }; onIndex: (i: number) => void }) {
+  const ref = useRef<any>(null);
+  const last = useRef(start);
+  const pad = Math.max(0, (width - S) / 2);
+  go.current = (i: number) => ref.current && ref.current.scrollToOffset({ offset: i * S, animated: true });
+  const onScroll = useMemo(
+    () =>
+      Animated.event([{ nativeEvent: { contentOffset: { x } } }], {
+        useNativeDriver: true,
+        listener: (e: any) => {
+          const i = Math.max(0, Math.min(list.length - 1, Math.round(e.nativeEvent.contentOffset.x / S)));
+          if (i !== last.current) {
+            last.current = i;
+            onIndex(i);
+          }
+        },
+      }),
+    [S, list]
+  );
   return (
-    <FlatList
+    <CurCtx.Provider value={cur}>
+    <Animated.FlatList
       ref={ref}
       data={list}
-      onLayout={(e) => setH(e.nativeEvent.layout.height)}
-      style={{ flex: 1 }}
       horizontal
-      pagingEnabled
-      initialScrollIndex={start}
-      getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
-      keyExtractor={(x) => x.k}
       showsHorizontalScrollIndicator={false}
-      windowSize={3}
-      initialNumToRender={1}
-      maxToRenderPerBatch={2}
-      renderItem={({ item, index }) => <CardPage first={index === start ? c0 : item} width={width} height={h} deck={deck} prev={list[index - 1]} next={list[index + 1]} onNav={(d) => goTo(index + d)} />}
+      snapToInterval={S}
+      decelerationRate="fast"
+      disableIntervalMomentum
+      // la carta i è al centro quando lo scorrimento vale i × S (il margine iniziale centra la prima)
+      getItemLayout={(_, i) => ({ length: S, offset: S * i, index: i })}
+      initialScrollIndex={start}
+      contentContainerStyle={{ paddingHorizontal: pad, paddingTop: 18, paddingBottom: 26 }}
+      style={{ flexGrow: 0 }}
+      windowSize={5}
+      initialNumToRender={3}
+      maxToRenderPerBatch={3}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
+      keyExtractor={(c: Card) => c.k}
+      extraData={sel}
+      CellRendererComponent={FanCell}
+      renderItem={({ index }: { item: Card; index: number }) => <FanCard c={at(index)} i={index} S={S} cw={cw} x={x} onPress={() => index !== last.current && go.current(index)} />}
     />
+    </CurCtx.Provider>
   );
 }
 
-function CardPage({ first, width, height, deck, prev, next, onNav }: { first: Card; width: number; height: number; deck?: string; prev?: Card; next?: Card; onNav: (d: number) => void }) {
+// la carta al centro sta sopra le vicine (le vicine inclinate altrimenti la coprirebbero un poco)
+const CurCtx = createContext(0);
+function FanCell({ index, style, ...props }: any) {
+  const cur = useContext(CurCtx);
+  return <View style={[style, { zIndex: index === cur ? 3 : 1 }]} {...props} />;
+}
+
+const FanCard = memo(function FanCard({ c, i, S, cw, x, onPress }: { c: Card; i: number; S: number; cw: number; x: Animated.Value; onPress: () => void }) {
   const t = useTheme();
-  const [c, setC] = useState(first);
+  // posizione della carta rispetto al centro: -1 = una a sinistra, 0 = al centro, +1 = una a destra
+  const r = [S * (i - 1), S * i, S * (i + 1)];
+  const it = (o: (number | string)[]) => x.interpolate({ inputRange: r, outputRange: o as any, extrapolate: "clamp" });
+  const style = {
+    opacity: it([0.55, 1, 0.55]),
+    transform: [
+      { perspective: 900 },
+      { translateX: it([-S * 0.06, 0, S * 0.06]) },
+      { translateY: it([18, 0, 18]) },
+      { rotateY: it(["-28deg", "0deg", "28deg"]) },
+      { rotateZ: it(["7deg", "0deg", "-7deg"]) },
+      { scale: it([0.86, 1, 0.86]) },
+    ],
+  };
+  return (
+    <View style={{ width: S, alignItems: "center" }}>
+      <Animated.View style={style}>
+        <Pressable onPress={onPress} accessibilityLabel={c.name + " (" + c.code + ")"} style={{ width: cw, aspectRatio: 5 / 7, borderRadius: 12, overflow: "hidden", backgroundColor: t.surface2, boxShadow: t.dark ? "0 2px 6px rgba(0,0,0,.30), 0 10px 22px -6px rgba(0,0,0,.50)" : "0 1px 3px rgba(15,26,46,.10), 0 6px 16px -2px rgba(15,26,46,.16)" }}>
+          <Image source={fullUrl(c)} placeholder={thumbUrl(c)} placeholderContentFit="contain" style={{ width: "100%", height: "100%" }} contentFit="contain" cachePolicy="disk" transition={150} recyclingKey={c.k} />
+        </Pressable>
+      </Animated.View>
+    </View>
+  );
+});
+
+function CardPage({ c, setC, width, deck, strip, fade, pan }: { c: Card; setC: (c: Card) => void; width: number; deck?: string; strip: ReactNode; fade: any; pan: any }) {
+  const t = useTheme();
   const [cmOpen, setCmOpen] = useState(false);
   const [ctOpen, setCtOpen] = useState(false);
   const [favFor, setFavFor] = useState<Card | null>(null);
@@ -126,7 +239,7 @@ function CardPage({ first, width, height, deck, prev, next, onNav }: { first: Ca
   const copies = vers.reduce((n, a) => n + owned(a), 0);
 
   return (
-    <SafeAreaView style={{ width, height, backgroundColor: t.bg }} edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }} edges={["top"]}>
       {/* intestazione (.chead): chiusura, nome del prodotto con "Carta N di M", cuore e liste */}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 14, paddingRight: 8, paddingTop: 10, paddingBottom: 10, borderBottomWidth: 1, borderColor: t.line, backgroundColor: t.bg }}>
         <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/carte"))} accessibilityLabel="Chiudi" style={headBtn(t)}>
@@ -148,23 +261,10 @@ function CardPage({ first, width, height, deck, prev, next, onNav }: { first: Ca
         </View>
       </View>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 14, width: maxW, alignSelf: "center" }} nestedScrollEnabled>
-        <View style={{ marginTop: 4, marginBottom: 4, paddingTop: 14, paddingBottom: 6, alignItems: "center", overflow: "hidden" }}>
-          {vers.length > 1 ? <View style={{ position: "absolute", top: 8, bottom: 30, width: cw - 36, borderRadius: 12, backgroundColor: t.surface2, borderWidth: 1, borderColor: t.line }} /> : null}
-          {prev ? (
-            <Pressable onPress={() => onNav(-1)} accessibilityLabel={"Carta precedente: " + prev.name + " (" + prev.code + ")"} style={{ position: "absolute", top: 14 + (cw * 1.4) / 2 - cw * 0.56, right: maxW / 2 + cw / 2 + 12, width: cw * 0.8, aspectRatio: 5 / 7, borderRadius: 10, overflow: "hidden", backgroundColor: t.surface2, opacity: 0.5 }}>
-              <Image source={fullUrl(prev)} placeholder={thumbUrl(prev)} style={{ width: "100%", height: "100%" }} contentFit="contain" cachePolicy="disk" />
-            </Pressable>
-          ) : null}
-          {next ? (
-            <Pressable onPress={() => onNav(1)} accessibilityLabel={"Carta successiva: " + next.name + " (" + next.code + ")"} style={{ position: "absolute", top: 14 + (cw * 1.4) / 2 - cw * 0.56, left: maxW / 2 + cw / 2 + 12, width: cw * 0.8, aspectRatio: 5 / 7, borderRadius: 10, overflow: "hidden", backgroundColor: t.surface2, opacity: 0.5 }}>
-              <Image source={fullUrl(next)} placeholder={thumbUrl(next)} style={{ width: "100%", height: "100%" }} contentFit="contain" cachePolicy="disk" />
-            </Pressable>
-          ) : null}
-          <View style={{ width: cw, aspectRatio: 5 / 7, borderRadius: 12, overflow: "hidden", backgroundColor: t.surface2, boxShadow: t.dark ? "0 2px 6px rgba(0,0,0,.30), 0 10px 22px -6px rgba(0,0,0,.50)" : "0 1px 3px rgba(15,26,46,.10), 0 6px 16px -2px rgba(15,26,46,.16)" }}>
-            <Image source={fullUrl(c)} placeholder={thumbUrl(c)} placeholderContentFit="contain" style={{ width: "100%", height: "100%" }} contentFit="contain" cachePolicy="disk" transition={150} recyclingKey={c.k} />
-          </View>
-        </View>
+        {/* fila delle carte a ventaglio (precedente e successiva ai lati) */}
+        {strip}
 
+        <Animated.View style={fade} {...pan}>
         {/* versioni */}
         {vers.length > 1 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }} contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: 14, paddingVertical: 2, gap: 8 }}>
@@ -316,6 +416,7 @@ function CardPage({ first, width, height, deck, prev, next, onNav }: { first: Ca
             </View>
           )}
         </View>
+        </Animated.View>
       </ScrollView>
       {/* barra fissa in basso: copie nel mazzo (se aperta dall'editor) e copie possedute della versione aperta */}
       {dk && deckable(c) && (

@@ -1,6 +1,7 @@
 // Importazione di un mazzo da una lista di testo (stesso formato dell'esportazione e dei siti di mazzi).
 import { useState } from "react";
-import { Modal, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { Sheet } from "./Sheet";
 import { Text, TextInput } from "./Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { parseDeck } from "./decks";
@@ -12,9 +13,8 @@ export function ImportDeck({ visible, label, onClose, onDone }: { visible: boole
   const t = useTheme();
   const [txt, setTxt] = useState("");
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,.55)" }} onPress={onClose} />
-      <SafeAreaView edges={["bottom"]} style={{ backgroundColor: t.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 16, maxHeight: "85%" }}>
+    <Sheet visible={visible} onClose={onClose} maxH={0.85} scrim="rgba(0,0,0,.55)">
+      <SafeAreaView edges={["bottom"]} style={{ backgroundColor: t.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 16, flexShrink: 1 }}>
         <Text style={{ color: t.ink, fontSize: 20, fontWeight: "800" }}>Importa una lista</Text>
         <TextInput
           value={txt}
@@ -45,6 +45,6 @@ export function ImportDeck({ visible, label, onClose, onDone }: { visible: boole
           </Pressable>
         </View>
       </SafeAreaView>
-    </Modal>
+    </Sheet>
   );
 }

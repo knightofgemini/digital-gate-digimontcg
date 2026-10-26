@@ -1,7 +1,8 @@
 // Cornice dell'app, come nell'app attuale sul telefono (body.mob): barra in alto con il marchio Digivice e il pulsante ⋯,
 // foglio "Altro" (Prossime uscite, Immagini offline, Informazioni, tema), barra di navigazione in basso.
 import { ReactNode, createContext, useContext, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { Animated, Easing, Keyboard, Modal, Platform, Pressable, View } from "react-native";
+import { Animated, Easing, Keyboard, Platform, Pressable, View } from "react-native";
+import { Sheet } from "./Sheet";
 import { router, usePathname, useGlobalSearchParams } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
@@ -58,8 +59,14 @@ export function MoreSheet() {
   const [open, setOpen] = useState(false);
   useStore();
   openMore = setOpen;
-  let uniq = 0;
-  if (open) CARDS.forEach((c) => owned(c) && uniq++);
+  // contato solo con il menu aperto; in chiusura resta l'ultimo valore mentre il foglio scende
+  const uq = useRef(0);
+  if (open) {
+    let n = 0;
+    CARDS.forEach((c) => owned(c) && n++);
+    uq.current = n;
+  }
+  const uniq = uq.current;
   const go = (href: any) => {
     setOpen(false);
     router.push(href);
@@ -72,9 +79,7 @@ export function MoreSheet() {
     </Pressable>
   );
   return (
-    <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)} statusBarTranslucent>
-      <Pressable style={{ flex: 1, backgroundColor: t.scrim }} onPress={() => setOpen(false)} />
-      <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, maxHeight: "82%", backgroundColor: t.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 18 + ins.bottom, boxShadow: "0 -10px 40px rgba(0,0,0,.25)" }}>
+    <Sheet visible={open} onClose={() => setOpen(false)} maxH={0.82} style={{ backgroundColor: t.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 18 + ins.bottom, boxShadow: "0 -10px 40px rgba(0,0,0,.25)" }}>
         <View style={{ alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: t.line }} />
         <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 18.4, marginTop: 6, marginBottom: 8 }}>Altro</Text>
         <Row
@@ -101,8 +106,7 @@ export function MoreSheet() {
             <View style={{ height: "100%", width: `${(uniq / CARDS.length) * 100}%`, backgroundColor: t.accent }} />
           </View>
         </View>
-      </View>
-    </Modal>
+    </Sheet>
   );
 }
 
