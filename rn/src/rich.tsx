@@ -46,7 +46,6 @@ export function Chip({ text, cls, fs, bg, ink, line, onPress, open, maxW, dy }: 
   const fc = fs * 0.78;
   const hex = cls === "kw";
   const g = GRAD[cls];
-  const [sz, setSz] = useState<{ w: number; h: number } | null>(null);
   const fill = bg || (ICO[cls] ? ICO[cls][0] : "#888");
   const color = ink || (ICO[cls] ? ICO[cls][1] : "#fff");
   const id = "ico" + cls;
@@ -58,17 +57,30 @@ export function Chip({ text, cls, fs, bg, ink, line, onPress, open, maxW, dy }: 
     </Text>
   );
   const st: any = { marginHorizontal: fc * 0.1, transform: [{ translateY: (dy == null ? ICO_DY : dy) * fc }], maxWidth: maxW };
+  // esagono in tre pezzi (punta sinistra, centro, punta destra) che si allungano da soli con il riquadro
+  const grad = (
+    <Defs>
+      <LinearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+        {g ? g.s.map(([o, c]) => <Stop key={o} offset={o} stopColor={c} />) : null}
+      </LinearGradient>
+    </Defs>
+  );
+  const tip = fc * 0.45;
   const bgEl = hex ? (
-    sz ? (
-      <Svg style={StyleSheet.absoluteFill} width={sz.w} height={sz.h} pointerEvents="none">
-        <Defs>
-          <LinearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-            {g.s.map(([o, c]) => <Stop key={o} offset={o} stopColor={c} />)}
-          </LinearGradient>
-        </Defs>
-        <Polygon points={[[fc * 0.45, 0], [sz.w - fc * 0.45, 0], [sz.w, sz.h / 2], [sz.w - fc * 0.45, sz.h], [fc * 0.45, sz.h], [0, sz.h / 2]].map((p) => p.join(",")).join(" ")} fill={"url(#" + id + ")"} />
+    <View style={[StyleSheet.absoluteFill, { flexDirection: "row" }]} pointerEvents="none">
+      <Svg width={tip} height="100%" viewBox="0 0 1 1" preserveAspectRatio="none">
+        {grad}
+        <Polygon points="1,0 0,0.5 1,1" fill={"url(#" + id + ")"} />
       </Svg>
-    ) : null
+      <Svg style={{ flex: 1, marginHorizontal: -0.5 }} height="100%" viewBox="0 0 1 1" preserveAspectRatio="none">
+        {grad}
+        <Rect x="0" y="0" width="1" height="1" fill={"url(#" + id + ")"} />
+      </Svg>
+      <Svg width={tip} height="100%" viewBox="0 0 1 1" preserveAspectRatio="none">
+        {grad}
+        <Polygon points="0,0 1,0.5 0,1" fill={"url(#" + id + ")"} />
+      </Svg>
+    </View>
   ) : g ? (
     <View style={[StyleSheet.absoluteFill, { borderRadius: r, overflow: "hidden" }]} pointerEvents="none">
       <Svg width="100%" height="100%">
@@ -84,14 +96,13 @@ export function Chip({ text, cls, fs, bg, ink, line, onPress, open, maxW, dy }: 
   ) : (
     <View style={[StyleSheet.absoluteFill, { borderRadius: r, backgroundColor: fill, borderWidth: line ? 1 : 0, borderColor: line }]} pointerEvents="none" />
   );
-  const lay = hex ? (e: any) => setSz({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height }) : undefined;
   return onPress ? (
-    <Pressable onPress={onPress} onLayout={lay} style={st} hitSlop={4}>
+    <Pressable onPress={onPress} style={st} hitSlop={4}>
       {bgEl}
       {body}
     </Pressable>
   ) : (
-    <View onLayout={lay} style={st}>
+    <View style={st}>
       {bgEl}
       {body}
     </View>

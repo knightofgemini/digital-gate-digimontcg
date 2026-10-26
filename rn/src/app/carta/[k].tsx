@@ -302,7 +302,7 @@ function CardPage({ c, setC, width, deck, strip, fade, pan, sv }: { c: Card; set
                 <Pressable key={a.k} onPress={() => setC(a)} accessibilityState={{ selected: on }} style={{ flexDirection: "row", alignItems: "center", gap: 8, height: 52, paddingVertical: on ? 4 : 5, paddingLeft: on ? 4 : 5, paddingRight: on ? 11 : 12, borderRadius: 12, borderWidth: on ? 2 : 1, borderColor: on ? t.accent : t.line, backgroundColor: t.surface }}>
                   <Image source={thumbUrl(a)} style={{ width: 29, height: 40, borderRadius: 4, backgroundColor: t.surface2 }} contentFit="contain" cachePolicy="disk" />
                   <View>
-                    <Text style={{ color: t.ink, fontWeight: "700", fontSize: 14.1, lineHeight: 17 }}>{verName(a)}</Text>
+                    <VerName a={a} fs={14.1} style={{ color: t.ink, fontWeight: "700", fontSize: 14.1, lineHeight: 17 }} />
                     <Text style={{ color: t.ink2, fontSize: 12.2, lineHeight: 15 }}>{bv == null ? "N/D" : eurT(bv)}</Text>
                   </View>
                 </Pressable>
@@ -361,16 +361,15 @@ function CardPage({ c, setC, width, deck, strip, fade, pan, sv }: { c: Card; set
           {/* forma | attribute | trait come sulla carta stampata */}
           {idGroups.length > 0 && (
             <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, marginBottom: 10, justifyContent: "center" }}>
-              {idGroups.map((g, gi) => (
-                <View key={gi} style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
-                  {gi > 0 && <View style={{ width: 2, height: 18, borderRadius: 1, marginHorizontal: 2, backgroundColor: t.ink2, opacity: 0.55 }} />}
-                  {g.map((v) => (
-                    <View key={v} style={{ backgroundColor: t.surface2, borderRadius: 4.5, paddingHorizontal: 10, paddingVertical: 3 }}>
-                      <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 12.8, lineHeight: 17 }}>{v}</Text>
-                    </View>
-                  ))}
-                </View>
-              ))}
+              {/* come .tags.idrow del sito: ogni tag va a capo da solo, le barrette restano tra un gruppo e l'altro */}
+              {idGroups.flatMap((g, gi) => [
+                gi > 0 ? <View key={"s" + gi} style={{ width: 2, height: 18, borderRadius: 1, marginHorizontal: 2, backgroundColor: t.ink2, opacity: 0.55 }} /> : null,
+                ...g.map((v) => (
+                  <View key={gi + v} style={{ backgroundColor: t.surface2, borderRadius: 4.5, paddingHorizontal: 10, paddingVertical: 3 }}>
+                    <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 12.8, lineHeight: 17 }}>{v}</Text>
+                  </View>
+                )),
+              ])}
             </View>
           )}
 
@@ -463,7 +462,7 @@ function CardPage({ c, setC, width, deck, strip, fade, pan, sv }: { c: Card; set
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingTop: dk ? 8 : 10, paddingBottom: 10 + insB, borderTopWidth: dk ? 0 : 1, borderColor: t.line, backgroundColor: t.surface }}>
         <View style={{ flex: 1, paddingLeft: 2 }}>
           <Text style={{ color: t.ink, fontWeight: "600", lineHeight: 19 }}>Copie possedute</Text>
-          <Text style={{ color: t.ink2, fontSize: 12.8, lineHeight: 16 }}>{verName(c)}</Text>
+          <VerName a={c} fs={12.8} style={{ color: t.ink2, fontSize: 12.8, lineHeight: 16 }} />
         </View>
         {dk && !unlocked ? (
           <Pressable onPress={() => setUnlocked(true)} style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16, backgroundColor: t.surface2 }} accessibilityLabel="Sblocca la modifica della collezione">
@@ -496,25 +495,49 @@ function verParts(c: Card) {
   if (!c.suf || !c.ver || c.ver === "Normal") return [];
   return c.ver.split(/\s*-\s*/).filter((vp) => !RN[vp.toLowerCase()] && !/^(promo|rare|alternative art)$/i.test(vp));
 }
-// ★, ★★ (sfalsate) e SP davanti alla rarità, come .st1/.st2/.spb del sito: stelle del colore della rarità, SP su fondo grigio
+// ★, ★★ (sfalsate) e SP come .st1/.st2/.spb del sito. em = grandezza di riferimento, sp = grandezza della SP in em.
+// Dentro un testo un riquadro ignora i margini: lo spazio dopo lo mette chi lo usa.
+function Mark({ mark, em, color, sp }: { mark: any; em: number; color: string; sp: number }) {
+  const t = useTheme();
+  if (mark === "SP") {
+    const f = sp * em;
+    return (
+      <View style={{ transform: [{ translateY: -0.12 * f }], borderRadius: 0.28 * f, backgroundColor: t.ink2, paddingHorizontal: 0.24 * f, paddingTop: 0.16 * f, paddingBottom: 0.1 * f }}>
+        <Text style={{ color: t.dark ? "#0b1120" : "#ffffff", fontWeight: "700", fontSize: f, lineHeight: f }}>SP</Text>
+      </View>
+    );
+  }
+  if (mark === 2) {
+    const f = 0.74 * em;
+    return (
+      <View style={{ flexDirection: "row", alignItems: "center", height: em, transform: [{ translateY: 0.2 * em }] }}>
+        <Text style={{ color, fontWeight: "700", fontSize: f, lineHeight: f * 1.1, transform: [{ translateY: -0.32 * f }] }}>★</Text>
+        <Text style={{ color, fontWeight: "700", fontSize: f, lineHeight: f * 1.1, marginLeft: -0.05 * f, transform: [{ translateY: 0.28 * f }] }}>★</Text>
+      </View>
+    );
+  }
+  return <Text style={{ color, fontWeight: "700", fontSize: 0.8 * em }}>★</Text>;
+}
 function markIcon(c: Card, t: any) {
   if (!c.suf || !c.mark) return null;
-  const col = RARCOL[(c.rar || "").trim()] || t.ink;
-  const f = 14.4;
-  if (c.mark === "SP")
-    return (
-      <View style={{ marginRight: 5, transform: [{ translateY: -0.05 * f }], borderRadius: 0.6 * f * 0.28, backgroundColor: t.ink2, paddingHorizontal: 0.6 * f * 0.24, paddingVertical: 0.6 * f * 0.12 }}>
-        <Text style={{ color: t.dark ? "#0b1120" : "#ffffff", fontWeight: "700", fontSize: 0.6 * f, lineHeight: 0.6 * f * 1.05 }}>SP</Text>
-      </View>
-    );
-  if (c.mark === 2)
-    return (
-      <View style={{ flexDirection: "row", marginRight: 5, transform: [{ translateY: 0.18 * f }] }}>
-        <Text style={{ color: col, fontWeight: "700", fontSize: 0.74 * f, lineHeight: 0.74 * f, transform: [{ translateY: -0.32 * 0.74 * f }] }}>★</Text>
-        <Text style={{ color: col, fontWeight: "700", fontSize: 0.74 * f, lineHeight: 0.74 * f, marginLeft: -0.05 * 0.74 * f, transform: [{ translateY: 0.28 * 0.74 * f }] }}>★</Text>
-      </View>
-    );
-  return <Text style={{ color: col, fontWeight: "700", fontSize: 0.8 * f }}>{"★ "}</Text>;
+  return (
+    <>
+      <Mark mark={c.mark} em={14.4} sp={0.6} color={RARCOL[(c.rar || "").trim()] || t.ink} />
+      {" "}
+    </>
+  );
+}
+// nome della versione con ★/★★/SP disegnate come nel sito (rarLabel: 1,15 em)
+function VerName({ a, fs, style }: { a: Card; fs: number; style: any }) {
+  const n = verName(a);
+  const m = n.match(/^(.*Alt-Art) (★★|★|SP)$/);
+  if (!m) return <Text style={style}>{n}</Text>;
+  return (
+    <Text style={style}>
+      {m[1] + " "}
+      <Mark mark={m[2] === "★★" ? 2 : m[2] === "★" ? 1 : "SP"} em={fs * 1.15} sp={0.62} color={(style && style.color) || "#fff"} />
+    </Text>
+  );
 }
 // nazioni dei venditori CardTrader (il motore JavaScript di Android non ha i nomi delle nazioni: si usa questa tabella)
 const NAZ: Record<string, string> = {
@@ -627,7 +650,8 @@ function Box({ title, text, side, ldp }: { title: string; text: string; side?: a
       {!!ldp && (
         <View style={{ flexDirection: "row", alignSelf: "flex-start", alignItems: "center", gap: 8, marginTop: 4, paddingVertical: 3, paddingLeft: 4, paddingRight: 10, borderRadius: 8, backgroundColor: t.surface2 }}>
           <View style={{ borderRadius: 6, overflow: "hidden", paddingHorizontal: 11.5 * 0.55, paddingVertical: 11.5 * 0.15 }}>
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+            <View style={StyleSheet.absoluteFill} pointerEvents="none">
+            <Svg width="100%" height="100%">
               <Defs>
                 <LinearGradient id="ldpg" x1="0" y1="0" x2="0" y2="1">
                   <Stop offset={0} stopColor="#14ad96" />
@@ -636,6 +660,7 @@ function Box({ title, text, side, ldp }: { title: string; text: string; side?: a
               </Defs>
               <Rect x="0" y="0" width="100%" height="100%" fill="url(#ldpg)" />
             </Svg>
+            </View>
             <Text style={{ color: "#fff", fontFamily: DISPLAY, fontWeight: "700", fontSize: 11.5, letterSpacing: 0.7, lineHeight: 15 }}>LINK DP</Text>
           </View>
           <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16 }}>{ldp}</Text>
