@@ -1,0 +1,66 @@
+name: Nuova app (React Native) - foto su emulatore
+# Anteprima senza pubblicare: compila l'APK della nuova app (solo x86_64, per l'emulatore), lo avvia su un emulatore
+# Android 14 e fotografa le schede carta indicate. Le foto vanno nel ramo "rn-shots"; nessuna release viene toccata.
+on:
+  workflow_dispatch:
+    inputs:
+      carte:
+        description: "chiavi delle carte separate da virgola (chiave@keyword per toccare una keyword)"
+        required: true
+permissions:
+  contents: write
+concurrency:
+  group: rn-shot-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  shots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: rn/package-lock.json }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - run: npm ci
+        working-directory: rn
+      - name: Controllo dei tipi (TypeScript)
+        working-directory: rn
+        run: |
+          if npx tsc --noEmit > /tmp/tsc.txt 2>&1; then echo "TSC OK" >> /tmp/tsc.txt; else echo "TSC ERRORI" >> /tmp/tsc.txt; fi
+          tail -40 /tmp/tsc.txt
+      - run: node scripts/sync-data.js
+        working-directory: rn
+      - run: npx expo prebuild --platform android --clean --no-install
+        working-directory: rn
+      - name: Firma e architettura dell'emulatore
+        working-directory: rn
+        run: |
+          cp ../android-keys/debug.keystore android/app/debug.keystore
+          printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g\nreactNativeArchitectures=x86_64\n' >> android/gradle.properties
+      - name: Build APK
+        working-directory: rn/android
+        run: |
+          set -o pipefail
+          chmod +x gradlew && ./gradlew assembleRelease --no-daemon 2>&1 | tail -40 | tee /tmp/gradle.txt
+      - run: cp rn/android/app/build/outputs/apk/release/app-release.apk prova.apk
+      - name: KVM per l'emulatore
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: adb install -r prova.apk && python3 tools/rn_shots.py foto "${{ inputs.carte }}"
+      - name: Foto nel ramo rn-shots
+        if: always()
+        run: |
+          mkdir -p foto && cp /tmp/tsc.txt foto/ 2>/dev/null || true; cp /tmp/gradle.txt foto/ 2>/dev/null || true
+          echo "${{ github.sha }}" > foto/sha.txt
+          cd foto && git init -q && git add -A && git -c user.name=Claude -c user.email=noreply@anthropic.com commit -qm "foto ${{ github.sha }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/rn-shots

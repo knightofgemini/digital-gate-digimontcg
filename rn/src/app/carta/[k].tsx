@@ -2,9 +2,9 @@
 // dell'elenco da cui è stata aperta; versioni come pulsanti; nome, codice e rarità; una riga di dati; tratti;
 // digievoluzioni ed effetti con le icone; prezzi; pre errata. Testi delle carte in inglese, etichette in italiano.
 import { ReactNode, createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Linking, PanResponder, PixelRatio, Platform, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { Animated, Linking, PanResponder, PixelRatio, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from "react-native";
 import { DISPLAY, Text } from "../../Text";
-import Svg, { Path } from "react-native-svg";
+import Svg, { Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { FitText } from "../../fit";
 import { CmMark, CtMark } from "../../shops";
 import { Chevron } from "../../BottomBar";
@@ -15,7 +15,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { BYKEY, Card, PAIRS, BYCODE, RARITY, SETBY, carVers, deckable, fullUrl, hasErrata, hostSet, isAce, maxCopies, preUrl, splitExtra, thumbUrl } from "../../data";
 import { NAVLIST, openCard } from "../../nav";
 import { bestVal, cmCovered, cmDate, cmOf, cmUrl, cmVal, ctCovered, ctDate, ctOf, ctUrl, ctVal, eur, eurN, eurT, usePrices } from "../../prices";
-import { ICO, Rich, iconClass, kwJoin, kwNoRem } from "../../rich";
+import { Chip, Rich, RichInline, iconClass, kwJoin, kwNoRem } from "../../rich";
 import { FavSheet } from "../../FavSheet";
 import { Heart, ListsIcon, QtyControl } from "../../items";
 import { favSet, isFav, owned, useStore } from "../../store";
@@ -375,19 +375,22 @@ function CardPage({ c, setC, width, deck, strip, fade, pan, sv }: { c: Card; set
           )}
 
           {/* lista ban */}
-          {deckable(c) && (mx < 4 || pairs) && (
-            <View style={{ marginBottom: 12, flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-              <View style={{ backgroundColor: mx === 0 ? "#c0261e" : mx === 1 ? "#c77a0a" : "#7a3fb0", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                <Text style={{ color: "#fff", fontWeight: "800", fontSize: 12 }}>{mx === 0 ? "Bandita" : mx === 1 ? "Limitata" : "Coppia vietata con"}</Text>
+          {deckable(c) && (mx < 2 || pairs) && (
+            <View style={{ marginTop: -4, marginBottom: 12, flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+              <View style={{ backgroundColor: mx === 0 ? "#c8102e" : mx === 1 ? "#d9661f" : "#8a4bd8", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, maxWidth: "100%" }}>
+                <Text style={{ color: "#fff", fontFamily: DISPLAY, fontWeight: "700", fontSize: 11.2, letterSpacing: 0.45, lineHeight: mx > 1 ? 18 : 15 }}>
+                  {mx === 0 ? "Bandita" : mx === 1 ? "Limitata" : "Coppia vietata con "}
+                  {mx > 1 &&
+                    pairs!.map((o, i) => (
+                      <Text key={o}>
+                        {i ? " o " : ""}
+                        <Text onPress={() => BYCODE[o] && openCard(BYCODE[o][0])} suppressHighlighting style={{ textDecorationLine: "underline" }}>
+                          {o + " " + (BYCODE[o] ? BYCODE[o][0].name : "")}
+                        </Text>
+                      </Text>
+                    ))}
+                </Text>
               </View>
-              {mx > 1 &&
-                pairs!.map((o) => (
-                  <Pressable key={o} onPress={() => BYCODE[o] && openCard(BYCODE[o][0])}>
-                    <Text style={{ color: t.accent, fontWeight: "700", textDecorationLine: "underline" }}>
-                      {o} {BYCODE[o] ? BYCODE[o][0].name : ""}
-                    </Text>
-                  </Pressable>
-                ))}
             </View>
           )}
 
@@ -395,7 +398,7 @@ function CardPage({ c, setC, width, deck, strip, fade, pan, sv }: { c: Card; set
           {evo.length > 0 || ex.alt.length > 0 || ex.spec.length > 0 ? (
             <View style={{ gap: 8, marginBottom: 12 }}>
               {evo.length > 0 && <Evo key={c.k + "e1"} title="Digievoluzione" text={evo.join(" • ")} />}
-              {ex.alt.length > 0 && <Evo key={c.k + "e2"} title="Altra Digievoluzione" text={ex.alt.join(" • ")} />}
+              {ex.alt.length > 0 && <Evo key={c.k + "e2"} title="Altra Digievoluzione" text={ex.alt.join(" • ")} one />}
               {ex.spec.length > 0 && <Evo key={c.k + "e3"} title="Digievoluzione speciale" text={ex.spec.join(" • ")} />}
             </View>
           ) : null}
@@ -493,15 +496,25 @@ function verParts(c: Card) {
   if (!c.suf || !c.ver || c.ver === "Normal") return [];
   return c.ver.split(/\s*-\s*/).filter((vp) => !RN[vp.toLowerCase()] && !/^(promo|rare|alternative art)$/i.test(vp));
 }
+// ★, ★★ (sfalsate) e SP davanti alla rarità, come .st1/.st2/.spb del sito: stelle del colore della rarità, SP su fondo grigio
 function markIcon(c: Card, t: any) {
   if (!c.suf || !c.mark) return null;
+  const col = RARCOL[(c.rar || "").trim()] || t.ink;
+  const f = 14.4;
   if (c.mark === "SP")
     return (
-      <Text style={{ backgroundColor: "#d4a017", color: "#111", fontWeight: "800" }}>
-        {" SP "}
-      </Text>
+      <View style={{ marginRight: 5, transform: [{ translateY: -0.05 * f }], borderRadius: 0.6 * f * 0.28, backgroundColor: t.ink2, paddingHorizontal: 0.6 * f * 0.24, paddingVertical: 0.6 * f * 0.12 }}>
+        <Text style={{ color: t.dark ? "#0b1120" : "#ffffff", fontWeight: "700", fontSize: 0.6 * f, lineHeight: 0.6 * f * 1.05 }}>SP</Text>
+      </View>
     );
-  return <Text style={{ color: "#f0c43a", fontWeight: "800" }}>{(c.mark === 2 ? "★★" : "★") + " "}</Text>;
+  if (c.mark === 2)
+    return (
+      <View style={{ flexDirection: "row", marginRight: 5, transform: [{ translateY: 0.18 * f }] }}>
+        <Text style={{ color: col, fontWeight: "700", fontSize: 0.74 * f, lineHeight: 0.74 * f, transform: [{ translateY: -0.32 * 0.74 * f }] }}>★</Text>
+        <Text style={{ color: col, fontWeight: "700", fontSize: 0.74 * f, lineHeight: 0.74 * f, marginLeft: -0.05 * 0.74 * f, transform: [{ translateY: 0.28 * 0.74 * f }] }}>★</Text>
+      </View>
+    );
+  return <Text style={{ color: col, fontWeight: "700", fontSize: 0.8 * f }}>{"★ "}</Text>;
 }
 // nazioni dei venditori CardTrader (il motore JavaScript di Android non ha i nomi delle nazioni: si usa questa tabella)
 const NAZ: Record<string, string> = {
@@ -566,13 +579,29 @@ function DataCell({ label, value }: { label: string; value: string }) {
   );
 }
 
-// digievoluzione (.stat.wide.evo): etichetta e righe con le icone
-function Evo({ title, text }: { title: string; text: string }) {
+// digievoluzione (.stat.wide.evo): etichetta e righe con le icone.
+// one = "Altra Digievoluzione" (.l.fit.one del sito): si rimpicciolisce per stare su una riga (min 8 px), altrimenti va a capo
+function Evo({ title, text, one }: { title: string; text: string; one?: boolean }) {
   const t = useTheme();
+  const [avail, setAvail] = useState(0);
+  const [nat, setNat] = useState(0);
+  const fs = one && avail && nat > avail + 0.5 ? Math.max(8, Math.floor(((15 * avail) / nat) * 2) / 2) : 15;
+  const st = { color: t.ink, fontFamily: DISPLAY, fontWeight: "600" as const, fontSize: fs, lineHeight: fs * 1.5 };
   return (
     <View style={{ backgroundColor: t.surface, borderColor: t.line, borderWidth: 1, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10 }}>
       <Text style={{ color: t.ink2, fontSize: 11.2, letterSpacing: 0.9, textTransform: "uppercase", lineHeight: 16 }}>{title}</Text>
-      <Rich text={text} style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 15, lineHeight: 22 }} />
+      <View onLayout={one ? (e) => setAvail(e.nativeEvent.layout.width) : undefined}>
+        {one && (
+          <View style={{ position: "absolute", left: 0, top: 0, width: 4000, opacity: 0, flexDirection: "row" }} pointerEvents="none">
+            <View onLayout={(e) => setNat(e.nativeEvent.layout.width)}>
+              <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 15, lineHeight: 22.5 }}>
+                <RichInline text={text} fs={15} />
+              </Text>
+            </View>
+          </View>
+        )}
+        <Rich text={text} style={st} />
+      </View>
     </View>
   );
 }
@@ -583,30 +612,33 @@ function Box({ title, text, side, ldp }: { title: string; text: string; side?: a
     <View style={{ marginBottom: 10 }}>
       <Text style={H3(t)}>{title}</Text>
       <View style={{ backgroundColor: t.surface, borderColor: t.line, borderWidth: 1, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 }}>
-      {side && (
-        <View style={{ flexDirection: "row", gap: 4, marginBottom: 6 }}>
-          {side.c ? (
-            <Text style={{ backgroundColor: ICO.tim[0], color: "#fff", fontWeight: "700", fontSize: 12 }}>
-              {" Use " + side.c + " "}
-            </Text>
-          ) : null}
+      {side && (side.c || side.col) ? (
+        <Text style={{ color: t.ink, fontSize: 15, lineHeight: 22 }}>
+          {side.c ? <Chip text={"Use " + side.c} cls="tim" fs={15} /> : null}
           {(side.col || "")
             .split("/")
             .filter(Boolean)
             .map((x: string) => (
-              <Text key={x} style={{ backgroundColor: t.cards[x], color: x === "White" || x === "Yellow" ? "#111" : "#fff", fontWeight: "700", fontSize: 12 }}>
-                {" " + x + " "}
-              </Text>
+              <Chip key={x} text={x} cls="col" fs={15} bg={t.cards[x]} ink={x === "White" ? "#111" : "#fff"} />
             ))}
-        </View>
-      )}
+        </Text>
+      ) : null}
       <Rich text={text} style={{ color: t.ink, fontSize: 15, lineHeight: 22 }} />
       {!!ldp && (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8 }}>
-          <View style={{ backgroundColor: ICO.grn[0], borderRadius: 5, paddingHorizontal: 7, paddingVertical: 1 }}>
-            <Text style={{ color: "#fff", fontFamily: DISPLAY, fontWeight: "700", fontSize: 12 }}>LINK DP</Text>
+        <View style={{ flexDirection: "row", alignSelf: "flex-start", alignItems: "center", gap: 8, marginTop: 4, paddingVertical: 3, paddingLeft: 4, paddingRight: 10, borderRadius: 8, backgroundColor: t.surface2 }}>
+          <View style={{ borderRadius: 6, overflow: "hidden", paddingHorizontal: 11.5 * 0.55, paddingVertical: 11.5 * 0.15 }}>
+            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+              <Defs>
+                <LinearGradient id="ldpg" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset={0} stopColor="#14ad96" />
+                  <Stop offset={1} stopColor="#0a7a6a" />
+                </LinearGradient>
+              </Defs>
+              <Rect x="0" y="0" width="100%" height="100%" fill="url(#ldpg)" />
+            </Svg>
+            <Text style={{ color: "#fff", fontFamily: DISPLAY, fontWeight: "700", fontSize: 11.5, letterSpacing: 0.7, lineHeight: 15 }}>LINK DP</Text>
           </View>
-          <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700" }}>{ldp}</Text>
+          <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16 }}>{ldp}</Text>
         </View>
       )}
       </View>
