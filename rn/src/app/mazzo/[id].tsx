@@ -3,8 +3,8 @@
 // barra "Cerca e aggiungi carte…" che apre il foglio di ricerca, e la vista Statistiche.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { BackHandler, Linking, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
-import { Sheet } from "../../Sheet";
+import { Animated, BackHandler, Easing, Linking, PanResponder, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { Sheet, SheetScrollView } from "../../Sheet";
 import { DISPLAY, Text, TextInput } from "../../Text";
 import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { Chevron, FilterIcon, SearchIcon, SquareBtn } from "../../BottomBar";
@@ -85,6 +85,19 @@ export default function Mazzo() {
   }, [add]);
   const scroll = useRef<any>(null);
   const pos = useRef<Record<string, number>>({});
+  // pila scelta e barra con −/+ sotto il gruppo: se escono dallo schermo la pagina scorre per mostrarle (dkFrame)
+  const scrollY = useRef(0);
+  const viewH = useRef(0);
+  const pileY = useRef<Record<string, { y: number; h: number }>>({});
+  const frame = (g: string, k: string, barY: number, barH: number) => {
+    const p = pileY.current[k];
+    if (!p) return;
+    const gy = (pos.current.__base || 0) + (pos.current[g] || 0);
+    const top = gy + (pos.current["w|" + g] || 0) + p.y,
+      bot = gy + barY + barH;
+    const free = scrollY.current + viewH.current - (add ? winH * 0.64 : 100) - 8;
+    if (top < scrollY.current + 64 || bot > free) scroll.current?.scrollTo({ y: Math.max(0, top - 70), animated: true });
+  };
   if (!d)
     return (
       <SafeAreaView style={s.screen}>
@@ -117,7 +130,7 @@ export default function Mazzo() {
 
   return (
     <Screen bs={bar}>
-      <ScrollView ref={scroll} onScroll={bar.onScroll} scrollEventThrottle={16} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: add ? winH * 0.64 : view === "deck" ? 100 : 28 }}>
+      <ScrollView ref={scroll} onLayout={(e) => void (viewH.current = e.nativeEvent.layout.height)} onScroll={(e) => ((scrollY.current = e.nativeEvent.contentOffset.y), bar.onScroll(e))} scrollEventThrottle={16} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: add ? winH * 0.64 : view === "deck" ? 100 : 28 }}>
         {/* intestazione (.mdkh): indietro, nome del mazzo, freccia che apre le azioni */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginHorizontal: -6, marginTop: 10, marginBottom: 8 }}>
           <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/mazzi"))} accessibilityLabel="I miei mazzi" style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
@@ -271,13 +284,13 @@ export default function Mazzo() {
                       <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 13.6 }}>Aggiungi</Text>
                     </Pressable>
                   </View>
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", columnGap: 10, rowGap: 12 }}>
+                  <View onLayout={(e) => (pos.current["w|" + g] = e.nativeEvent.layout.y)} style={{ flexDirection: "row", flexWrap: "wrap", columnGap: 10, rowGap: 12 }}>
                     {cards.map((c) => (
-                      <Pile key={c.k} c={c} q={d.cards[c.k]} on={sel === c.k} isNew={dkNew === c.k} onPress={() => (setSel(sel === c.k ? null : c.k), setDkNew(null))} />
+                      <Pile key={c.k} onLayout={(e: any) => (pileY.current[c.k] = { y: e.nativeEvent.layout.y, h: e.nativeEvent.layout.height })} c={c} q={d.cards[c.k]} on={sel === c.k} isNew={dkNew === c.k} onPress={() => (setSel(sel === c.k ? null : c.k), setDkNew(null))} />
                     ))}
                   </View>
                   {selC ? (
-                    <View style={{ marginTop: 12, paddingVertical: 8, paddingLeft: 12, paddingRight: 6, borderRadius: 12, borderWidth: 1, borderColor: t.accent, backgroundColor: t.surface, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <View key={"sel" + selC.k} onLayout={(e) => frame(g, selC.k, e.nativeEvent.layout.y, e.nativeEvent.layout.height)} style={{ marginTop: 12, paddingVertical: 8, paddingLeft: 12, paddingRight: 6, borderRadius: 12, borderWidth: 1, borderColor: t.accent, backgroundColor: t.surface, flexDirection: "row", alignItems: "center", gap: 8 }}>
                       <View style={{ flex: 1, minWidth: 0 }}>
                         <FitText text={selC.name} size={15} style={{ color: t.ink, fontWeight: "600" }} />
                         <Text style={{ color: t.ink2, fontSize: 12.8, lineHeight: 18 }} numberOfLines={1}>
@@ -370,11 +383,11 @@ export default function Mazzo() {
 }
 
 // pila di una carta (.dkpile): fino a 4 miniature affiancate e sovrapposte, il numero di copie in arancione
-function Pile({ c, q, on, isNew, onPress }: { c: Card; q: number; on: boolean; isNew?: boolean; onPress: () => void }) {
+function Pile({ c, q, on, isNew, onPress, onLayout }: { c: Card; q: number; on: boolean; isNew?: boolean; onPress: () => void; onLayout?: (e: any) => void }) {
   const t = useTheme();
   const n = Math.min(q, 4);
   return (
-    <Pressable onPress={onPress} accessibilityLabel={c.name + " " + c.code + ", " + q + (q === 1 ? " copia" : " copie")} accessibilityState={{ selected: on }} style={{ flexDirection: "row", borderRadius: 7, outlineWidth: on || isNew ? 2 : 0, outlineColor: t.accent, outlineOffset: 3, outlineStyle: "solid" } as any}>
+    <Pressable onLayout={onLayout} onPress={onPress} accessibilityLabel={c.name + " " + c.code + ", " + q + (q === 1 ? " copia" : " copie")} accessibilityState={{ selected: on }} style={{ flexDirection: "row", borderRadius: 7, outlineWidth: on || isNew ? 2 : 0, outlineColor: t.accent, outlineOffset: 3, outlineStyle: "solid" } as any}>
       {Array.from({ length: n }).map((_, i) => (
         <View key={i} style={{ width: 74, height: 103, marginLeft: i ? -58 : 0, borderRadius: 6, overflow: "hidden", borderWidth: 1, borderColor: t.line, backgroundColor: t.cards[c.colors[0]] || t.surface2, boxShadow: "-5px 0 10px rgba(0,0,0,.3)" }}>
           <Image source={thumbUrl(c)} style={{ width: "100%", height: "100%" }} contentFit="cover" cachePolicy="disk" />
@@ -409,6 +422,80 @@ function AddSheet({ d, f0, openF, onF, onClose, onAdded }: { d: any; f0: Filters
   const [shown, setShown] = useState(40);
   const [full, setFull] = useState(false);
   const [vw, setVw] = useState(DKVIEW);
+  // altezza del foglio che segue il dito (come dkDrag dell'app attuale): trascinando maniglia, intestazione, etichette dei
+  // filtri (o l'elenco già in cima, solo verso il basso) cambia altezza tra metà e alto; sotto la metà scende.
+  // Al rilascio va alla posizione più vicina tenendo conto della velocità: alto, metà o chiuso.
+  // I cambi dovuti alla tastiera restano immediati (animandoli il mazzo non tornava alla prima carta).
+  const half = Math.round(Math.min(winH * 0.62, winH - kb - ins.top - 8));
+  const tall = Math.max(half + 2, winH - kb - ins.top);
+  const hp = useRef(new Animated.Value(0)).current;
+  const cur = useRef(0);
+  useEffect(() => {
+    const id = hp.addListener(({ value }) => void (cur.current = value));
+    return () => hp.removeListener(id);
+  }, []);
+  const dragging = useRef(false);
+  const fullRef = useRef(full);
+  fullRef.current = full;
+  const sz = useRef({ half, tall });
+  sz.current = { half, tall };
+  const opened = useRef(false);
+  useEffect(() => {
+    if (dragging.current) return;
+    if (!opened.current) {
+      opened.current = true;
+      Animated.timing(hp, { toValue: half, duration: 380, easing: Easing.bezier(0.32, 0.72, 0, 1), useNativeDriver: false }).start();
+      return;
+    }
+    hp.stopAnimation();
+    hp.setValue(full ? tall : half);
+  }, [half, tall]);
+  const closing = useRef(false);
+  const shut = () => {
+    if (closing.current) return;
+    closing.current = true;
+    Animated.timing(hp, { toValue: 0, duration: 240, easing: Easing.in(Easing.cubic), useNativeDriver: false }).start(() => onClose());
+  };
+  const shutRef = useRef(shut);
+  shutRef.current = shut;
+  const snap = (to: "half" | "full", ms = 320) => {
+    setFull(to === "full");
+    Animated.timing(hp, { toValue: to === "full" ? sz.current.tall : sz.current.half, duration: ms, easing: Easing.bezier(0.32, 0.72, 0, 1), useNativeDriver: false }).start();
+  };
+  const snapRef = useRef(snap);
+  snapRef.current = snap;
+  const mkPan = (fromList: boolean) =>
+    PanResponder.create({
+      onMoveShouldSetPanResponderCapture: (_, g) => (!fromList || (listY.current <= 0 && g.dy > 0)) && Math.abs(g.dy) > 8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.3,
+      onPanResponderGrant: () => {
+        dragging.current = true;
+        hp.stopAnimation();
+        base.current = cur.current;
+      },
+      onPanResponderMove: (_, g) => {
+        const { tall: T } = sz.current;
+        let v = base.current - g.dy;
+        if (v > T) v = T + (v - T) / 4; // oltre l'alto resiste
+        hp.setValue(Math.max(0, v));
+      },
+      onPanResponderRelease: (_, g) => {
+        dragging.current = false;
+        const { half: Hh, tall: T } = sz.current;
+        const proj = cur.current - g.vy * 200;
+        const opts: [number, string][] = [[0, "x"], [Hh, "half"], [T, "full"]];
+        const best = opts.reduce((a, b) => (Math.abs(b[0] - proj) < Math.abs(a[0] - proj) ? b : a));
+        if (best[1] === "x") shutRef.current();
+        else snapRef.current(best[1] as any, 260);
+      },
+      onPanResponderTerminate: () => {
+        dragging.current = false;
+        snapRef.current(fullRef.current ? "full" : "half", 200);
+      },
+    });
+  const base = useRef(0);
+  const listY = useRef(0);
+  const gripPan = useRef(mkPan(false)).current;
+  const listPan = useRef(mkPan(true)).current;
   useEffect(() => {
     setTabHidden(true);
     return () => setTabHidden(false);
@@ -423,11 +510,11 @@ function AddSheet({ d, f0, openF, onF, onClose, onAdded }: { d: any; f0: Filters
     useCallback(() => {
       const sub = BackHandler.addEventListener("hardwareBackPress", () => {
         if (fOpen) return false;
-        onClose();
+        shutRef.current();
         return true;
       });
       return () => sub.remove();
-    }, [fOpen, onClose])
+    }, [fOpen])
   );
   const nq = normQ(q);
   const filt = !!nq || anyFlt(f) || !!f.qm;
@@ -458,8 +545,9 @@ function AddSheet({ d, f0, openF, onF, onClose, onAdded }: { d: any; f0: Filters
   const sl = list.slice(0, shown);
   for (let i = 0; i < sl.length; i += vw === "grid" ? 2 : 1) rows.push(sl.slice(i, i + (vw === "grid" ? 2 : 1)));
   return (
-    <View style={{ position: "absolute", left: 0, right: 0, bottom: kb, top: full ? ins.top : undefined, height: full ? undefined : Math.round(Math.min(winH * 0.62, winH - kb - ins.top - 8)), backgroundColor: t.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: t.line, boxShadow: "0 -14px 36px rgba(0,0,0,.35)", paddingHorizontal: 14 }}>
-      <Pressable onPress={() => setFull(!full)} accessibilityLabel="Ingrandisci o riduci la ricerca" style={{ height: 26, alignItems: "center", justifyContent: "center" }}>
+    <Animated.View style={{ position: "absolute", left: 0, right: 0, bottom: kb, height: hp.interpolate({ inputRange: [0, half, tall], outputRange: [half, half, tall], extrapolate: "clamp" }), transform: [{ translateY: hp.interpolate({ inputRange: [0, half, tall], outputRange: [half + 40, 0, 0], extrapolate: "clamp" }) }], backgroundColor: t.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: t.line, boxShadow: "0 -14px 36px rgba(0,0,0,.35)", paddingHorizontal: 14 }}>
+      <View {...gripPan.panHandlers}>
+      <Pressable onPress={() => snap(full ? "half" : "full")} accessibilityLabel="Ingrandisci o riduci la ricerca" style={{ height: 26, alignItems: "center", justifyContent: "center" }}>
         <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: t.line }} />
       </Pressable>
       <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
@@ -472,7 +560,7 @@ function AddSheet({ d, f0, openF, onF, onClose, onAdded }: { d: any; f0: Filters
         <SquareBtn size={46} shadow={false} onPress={() => setFOpen(true)} on={!!nf} badge={nf} label={"Filtri" + (nf ? ": " + nf + (nf === 1 ? " attivo" : " attivi") : "")}>
           <FilterIcon color={t.ink} />
         </SquareBtn>
-        <Pressable onPress={onClose} style={{ height: 46, justifyContent: "center", paddingRight: 4 }}>
+        <Pressable onPress={shut} style={{ height: 46, justifyContent: "center", paddingRight: 4 }}>
           <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16 }}>Fine</Text>
         </Pressable>
       </View>
@@ -481,12 +569,15 @@ function AddSheet({ d, f0, openF, onF, onClose, onAdded }: { d: any; f0: Filters
           <ActiveChips f={f} setF={setF} />
         </View>
       ) : null}
+      </View>
+      <View style={{ flex: 1 }} {...listPan.panHandlers}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
-        scrollEventThrottle={100}
+        scrollEventThrottle={16}
         onScroll={(e) => {
           const { contentOffset: o, contentSize: cs, layoutMeasurement: lm } = e.nativeEvent;
+          listY.current = o.y;
           if (list.length > shown && o.y + lm.height > cs.height - 900) setShown((n) => Math.min(list.length, n + 40));
         }}
         style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 24, paddingBottom: 16 + ins.bottom }}>
@@ -524,8 +615,9 @@ function AddSheet({ d, f0, openF, onF, onClose, onAdded }: { d: any; f0: Filters
           </Pressable>
         ) : null}
       </ScrollView>
+      </View>
       <FilterSheet visible={fOpen} f={f} setF={setF} onClose={() => setFOpen(false)} count={list.length} />
-    </View>
+    </Animated.View>
   );
 }
 
@@ -616,7 +708,7 @@ function CoverPicker({ visible, d, onClose }: { visible: boolean; d: any; onClos
   return (
     <Sheet visible={visible} onClose={onClose} maxH={0.80} scrim="rgba(0,0,0,.55)">
       <SafeAreaView edges={["bottom"]} style={{ backgroundColor: t.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, flexShrink: 1 }}>
-        <ScrollView contentContainerStyle={{ padding: 16 }}>
+        <SheetScrollView contentContainerStyle={{ padding: 16 }}>
           <Text style={{ color: t.ink, fontSize: 20, fontWeight: "800" }}>Modifica copertina mazzo</Text>
           <Text style={{ color: t.ink2, marginTop: 4, marginBottom: 12 }}>{seen.length ? "Tocca la carta da usare come copertina del mazzo." : "Il mazzo è vuoto: aggiungi delle carte per sceglierne una come copertina."}</Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
@@ -625,7 +717,7 @@ function CoverPicker({ visible, d, onClose }: { visible: boolean; d: any; onClos
               <Item key={c.k} c={c} label={c.code} on={!auto && d.cover === c.k} onPress={() => pick(c.k)} />
             ))}
           </View>
-        </ScrollView>
+        </SheetScrollView>
       </SafeAreaView>
     </Sheet>
   );

@@ -2,7 +2,7 @@
 // dell'elenco da cui è stata aperta; versioni come pulsanti; nome, codice e rarità; una riga di dati; tratti;
 // digievoluzioni ed effetti con le icone; prezzi; pre errata. Testi delle carte in inglese, etichette in italiano.
 import { ReactNode, createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Linking, PanResponder, PixelRatio, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from "react-native";
+import { Animated, BackHandler, Easing, Linking, PanResponder, PixelRatio, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from "react-native";
 import { DISPLAY, Text } from "../../Text";
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { FitText } from "../../fit";
@@ -10,7 +10,7 @@ import { CmMark, CtMark } from "../../shops";
 import { Chevron } from "../../BottomBar";
 import { favToast } from "../../toast";
 import { Image } from "expo-image";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams, useNavigation } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { BYKEY, Card, PAIRS, BYCODE, RARITY, SETBY, carVers, deckable, fullUrl, hasErrata, hostSet, isAce, maxCopies, preUrl, splitExtra, thumbUrl } from "../../data";
 import { NAVLIST, openCard } from "../../nav";
@@ -106,7 +106,9 @@ export default function Carta() {
       onIndex={setCur}
     />
   );
-  return <CardPage c={c} setC={(a) => setVers((v) => ({ ...v, [cur]: a }))} width={width} deck={deck} strip={strip} fade={fade} pan={pan.panHandlers} sv={sv} />;
+  // versione scelta con i pulsanti (non dall'editor del mazzo): uscendo si va al suo prodotto, come nell'app attuale
+  const exitTo = !deck && vers[cur] ? hostSet(vers[cur]) : "";
+  return <CardPage c={c} setC={(a) => setVers((v) => ({ ...v, [cur]: a }))} width={width} deck={deck} strip={strip} fade={fade} pan={pan.panHandlers} sv={sv} exitTo={exitTo} />;
 }
 
 // Fila delle carte "a ventaglio": la carta al centro è dritta e grande, le vicine spuntano ai lati più piccole,
@@ -205,8 +207,80 @@ const FanCard = memo(function FanCard({ c, i, S, cw, x, onPress }: { c: Card; i:
   );
 });
 
-function CardPage({ c, setC, width, deck, strip, fade, pan, sv }: { c: Card; setC: (c: Card) => void; width: number; deck?: string; strip: ReactNode; fade: any; pan: any; sv: { current: any } }) {
+function CardPage({ c, setC, width, deck, strip, fade, pan, sv, exitTo }: { c: Card; setC: (c: Card) => void; width: number; deck?: string; strip: ReactNode; fade: any; pan: any; sv: { current: any }; exitTo: string }) {
   const t = useTheme();
+  const nav = useNavigation();
+  const { height: winH } = useWindowDimensions();
+  // chiusura: se si è scelta una versione di un altro prodotto si apre la pagina di quel prodotto (se non è già quella
+  // sotto la scheda), altrimenti si torna indietro
+  const exitRef = useRef(exitTo);
+  exitRef.current = exitTo;
+  const closing = useRef(false);
+  const close = () => {
+    if (closing.current) return;
+    closing.current = true;
+    const to = exitRef.current;
+    if (to && SETBY[to]) {
+      const st: any = nav.getState();
+      const prev = st && st.routes ? st.routes[st.index - 1] : null;
+      if (!(prev && /^prodotto/.test(prev.name) && prev.params && prev.params.id === to)) {
+        router.replace({ pathname: "/prodotto/[id]", params: { id: to } });
+        return;
+      }
+    }
+    router.canGoBack() ? router.back() : router.replace("/carte");
+  };
+  const closeRef = useRef(close);
+  closeRef.current = close;
+  useFocusEffect(
+    useCallback(() => {
+      closing.current = false;
+      const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+        closeRef.current();
+        return true;
+      });
+      return () => sub.remove();
+    }, [])
+  );
+  // tirando giù la scheda (dall'intestazione, o da qualsiasi punto se è in cima) la scheda segue il dito e sotto si vede
+  // la pagina da cui è stata aperta; rilasciando oltre 1/4 dello schermo o con un colpo veloce si chiude, altrimenti
+  // torna su (come dragDown dell'app attuale)
+  const dragY = useRef(new Animated.Value(0)).current;
+  const topY = useRef(0);
+  const headH = useRef(64);
+  const startIn = useRef(false);
+  const scY = useRef(0);
+  const hRef = useRef(winH);
+  hRef.current = winH;
+  const down = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponderCapture: (e) => {
+        startIn.current = e.nativeEvent.pageY - topY.current < headH.current;
+        return false;
+      },
+      onMoveShouldSetPanResponderCapture: (_, g) => (startIn.current || scY.current <= 0) && g.dy > 10 && Math.abs(g.dy) > Math.abs(g.dx) * 1.5,
+      onPanResponderMove: (_, g) => dragY.setValue(Math.max(0, g.dy)),
+      onPanResponderRelease: (_, g) => {
+        if (g.dy > hRef.current * 0.25 || g.vy > 0.8)
+          Animated.timing(dragY, { toValue: hRef.current, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => closeRef.current());
+        else Animated.spring(dragY, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start();
+      },
+      onPanResponderTerminate: () => Animated.spring(dragY, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start(),
+    })
+  ).current;
+  // fila delle versioni: la versione scelta resta in vista (al centro, se la fila scorre)
+  const vsv = useRef<any>(null);
+  const vx = useRef<Record<string, { x: number; w: number }>>({});
+  const vw = useRef(0);
+  const centerVer = (animated: boolean) => {
+    const b = vx.current[c.k];
+    if (!b || !vw.current || !vsv.current) return;
+    vsv.current.scrollTo({ x: Math.max(0, b.x - (vw.current - b.w) / 2), animated });
+  };
+  useEffect(() => {
+    const id = setTimeout(() => centerVer(true), 60);
+    return () => clearTimeout(id);
+  }, [c.k]);
   const [cmOpen, setCmOpen] = useState(false);
   const [ctOpen, setCtOpen] = useState(false);
   const [favFor, setFavFor] = useState<Card | null>(null);
@@ -266,10 +340,13 @@ function CardPage({ c, setC, width, deck, strip, fade, pan, sv }: { c: Card; set
   const copies = vers.reduce((n, a) => n + owned(a), 0);
 
   return (
+    <View style={{ flex: 1 }}>
+    <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: "#000", opacity: dragY.interpolate({ inputRange: [0, winH], outputRange: [0.35, 0], extrapolate: "clamp" }) }]} />
+    <Animated.View {...down.panHandlers} onLayout={(e) => void (topY.current = e.nativeEvent.layout.y)} style={{ flex: 1, transform: [{ translateY: dragY }] }}>
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }} edges={["top"]}>
       {/* intestazione (.chead): chiusura, nome del prodotto con "Carta N di M", cuore e liste */}
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 14, paddingRight: 8, paddingTop: 10, paddingBottom: 10, borderBottomWidth: 1, borderColor: t.line, backgroundColor: t.bg }}>
-        <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/carte"))} accessibilityLabel="Chiudi" style={headBtn(t)}>
+      <View onLayout={(e) => void (headH.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height)} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 14, paddingRight: 8, paddingTop: 10, paddingBottom: 10, borderBottomWidth: 1, borderColor: t.line, backgroundColor: t.bg }}>
+        <Pressable onPress={close} accessibilityLabel="Chiudi" style={headBtn(t)}>
           <Svg width={20} height={20} viewBox="0 0 24 24">
             <Path d="M6 6l12 12M18 6L6 18" stroke={t.ink} strokeWidth={2} strokeLinecap="round" />
           </Svg>
@@ -287,19 +364,22 @@ function CardPage({ c, setC, width, deck, strip, fade, pan, sv }: { c: Card; set
           </Pressable>
         </View>
       </View>
-      <ScrollView ref={sv} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 14, width: maxW, alignSelf: "center" }} nestedScrollEnabled>
+      <ScrollView ref={sv} onScroll={(e) => void (scY.current = e.nativeEvent.contentOffset.y)} scrollEventThrottle={16} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 14, width: maxW, alignSelf: "center" }} nestedScrollEnabled>
         {/* fila delle carte a ventaglio (precedente e successiva ai lati) */}
         {strip}
 
         <Animated.View style={fade} {...pan}>
         {/* versioni */}
         {vers.length > 1 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }} contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: 14, paddingVertical: 2, gap: 8 }}>
+          <ScrollView ref={vsv} onLayout={(e) => ((vw.current = e.nativeEvent.layout.width), centerVer(false))} horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }} contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: 14, paddingVertical: 2, gap: 8 }}>
             {vers.map((a) => {
               const on = a.k === c.k;
               const bv = bestVal(a);
               return (
-                <Pressable key={a.k} onPress={() => setC(a)} accessibilityState={{ selected: on }} style={{ flexDirection: "row", alignItems: "center", gap: 8, height: 52, paddingVertical: on ? 4 : 5, paddingLeft: on ? 4 : 5, paddingRight: on ? 11 : 12, borderRadius: 12, borderWidth: on ? 2 : 1, borderColor: on ? t.accent : t.line, backgroundColor: t.surface }}>
+                <Pressable key={a.k} onLayout={(e) => {
+                  vx.current[a.k] = { x: e.nativeEvent.layout.x, w: e.nativeEvent.layout.width };
+                  if (a.k === c.k) centerVer(false);
+                }} onPress={() => setC(a)} accessibilityState={{ selected: on }} style={{ flexDirection: "row", alignItems: "center", gap: 8, height: 52, paddingVertical: on ? 4 : 5, paddingLeft: on ? 4 : 5, paddingRight: on ? 11 : 12, borderRadius: 12, borderWidth: on ? 2 : 1, borderColor: on ? t.accent : t.line, backgroundColor: t.surface }}>
                   <Image source={thumbUrl(a)} style={{ width: 29, height: 40, borderRadius: 4, backgroundColor: t.surface2 }} contentFit="contain" cachePolicy="disk" />
                   <View>
                     <VerName a={a} fs={14.1} style={{ color: t.ink, fontWeight: "700", fontSize: 14.1, lineHeight: 17 }} />
@@ -475,6 +555,8 @@ function CardPage({ c, setC, width, deck, strip, fade, pan, sv }: { c: Card; set
       </View>
       <FavSheet c={favFor} onClose={() => setFavFor(null)} />
     </SafeAreaView>
+    </Animated.View>
+    </View>
   );
 }
 

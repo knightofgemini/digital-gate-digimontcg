@@ -55,7 +55,7 @@ jobs:
           profile: pixel_6
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: adb install -r prova.apk && python3 tools/rn_shots.py foto "$(cat tools/rn_shots.txt)"
+          script: adb install -r prova.apk && python3 tools/rn_shots.py foto "$(cat tools/rn_shots.txt)" && python3 tools/rn_gestures.py foto
       - name: Foto nel ramo rn-shots
         if: always()
         run: |

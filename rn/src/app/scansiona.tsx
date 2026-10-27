@@ -2,7 +2,7 @@
 // (o il nome) e propone le versioni ordinate per somiglianza; si segnano le copie e la scansione resta in cronologia.
 // Anche da una foto della galleria. Nessuna foto viene inviata o salvata.
 import { useEffect, useRef, useState } from "react";
-import { Animated, BackHandler, Easing, Platform, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { Animated, BackHandler, Easing, PanResponder, Platform, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { DISPLAY, Text } from "../Text";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -346,18 +346,49 @@ function ScPill({ icon, label, onPress, big, badge }: { icon: string; label: str
 }
 
 
-// foglio dal basso del risultato e della cronologia (.scres): maniglia, angoli arrotondati, ombra
-function Sheet({ children, tall }: { children: React.ReactNode; tall?: boolean }) {
+// foglio dal basso del risultato e della cronologia (.scres): maniglia, angoli arrotondati, ombra.
+// Si chiude tirandolo giù dalla maniglia, o da qualsiasi punto se l'elenco è in cima (come dragDown dell'app attuale):
+// il foglio segue il dito; rilasciando oltre 1/4 dell'altezza o con un colpo veloce si chiude, altrimenti torna su.
+function Sheet({ children, tall, onClose }: { children: React.ReactNode; tall?: boolean; onClose: () => void }) {
   const t = useTheme();
   const ins = useSafeAreaInsets();
   const { height } = useWindowDimensions();
+  const dy = useRef(new Animated.Value(0)).current;
+  const sy = useRef(0);
+  const h = useRef(400);
+  const top = useRef(0);
+  const startIn = useRef(false);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const pan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponderCapture: (e) => {
+        startIn.current = e.nativeEvent.pageY - top.current < 48;
+        return false;
+      },
+      onMoveShouldSetPanResponderCapture: (_, g) => (startIn.current || sy.current <= 0) && g.dy > 8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.3,
+      onPanResponderMove: (_, g) => dy.setValue(Math.max(0, g.dy)),
+      onPanResponderRelease: (_, g) => {
+        if (g.dy > h.current * 0.25 || g.vy > 0.8) Animated.timing(dy, { toValue: h.current + 40, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => closeRef.current());
+        else Animated.spring(dy, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start();
+      },
+      onPanResponderTerminate: () => Animated.spring(dy, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start(),
+    })
+  ).current;
   return (
-    <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, maxHeight: height * (tall ? 0.86 : 0.76), minHeight: tall ? height * 0.5 : undefined, backgroundColor: t.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, boxShadow: "0 -14px 40px rgba(0,0,0,.5)" }}>
-      <ScrollView contentContainerStyle={{ paddingTop: 8, paddingHorizontal: 16, paddingBottom: 16 + ins.bottom }}>
+    <Animated.View
+      {...pan.panHandlers}
+      onLayout={(e) => {
+        h.current = e.nativeEvent.layout.height;
+        top.current = e.nativeEvent.layout.y;
+      }}
+      style={{ position: "absolute", left: 0, right: 0, bottom: 0, maxHeight: height * (tall ? 0.86 : 0.76), minHeight: tall ? height * 0.5 : undefined, backgroundColor: t.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, boxShadow: "0 -14px 40px rgba(0,0,0,.5)", transform: [{ translateY: dy }] }}
+    >
+      <ScrollView onScroll={(e) => void (sy.current = e.nativeEvent.contentOffset.y)} scrollEventThrottle={16} contentContainerStyle={{ paddingTop: 8, paddingHorizontal: 16, paddingBottom: 16 + ins.bottom }}>
         <View style={{ alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: t.line, marginTop: 2, marginBottom: 12 }} />
         {children}
       </ScrollView>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -410,7 +441,7 @@ function Result({ r, cur, preK, fromHist, again, toHist }: { r: ScanResult; cur:
   const s = sel ? SETBY[hostSet(sel)] : null;
   const okc = r.sure ? t.ok : t.accent;
   return (
-    <Sheet>
+    <Sheet onClose={fromHist ? toHist : again}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
         <ScIco name={r.sure ? "ok" : "q"} color={okc} size={18} />
         <Text style={{ flex: 1, minWidth: 0, color: okc, fontFamily: DISPLAY, fontWeight: "700", fontSize: 11.8, letterSpacing: 1.2, textTransform: "uppercase" }}>
@@ -540,7 +571,7 @@ function History({ close, open }: { close: () => void; open: (it: ScanItem) => v
   };
   let day = "";
   return (
-    <Sheet tall>
+    <Sheet tall onClose={close}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <ScIco name="hist" color={t.accent} size={22} />

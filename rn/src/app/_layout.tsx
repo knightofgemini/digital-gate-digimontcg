@@ -31,7 +31,8 @@ function Root() {
       <Stack screenOptions={{ headerShown: false, contentStyle: withBar, animation: "slide_from_right" }}>
         <Stack.Screen name="(tabs)" options={{ contentStyle: { backgroundColor: t.bg } }} />
         <Stack.Screen name="prodotto/[id]" />
-        <Stack.Screen name="carta/[k]" options={{ animation: "slide_from_bottom", contentStyle: { backgroundColor: t.bg } }} />
+        {/* sopra la pagina da cui si apre (che resta visibile tirando giù la scheda per chiuderla) */}
+        <Stack.Screen name="carta/[k]" options={{ presentation: "transparentModal", animation: "slide_from_bottom", contentStyle: { backgroundColor: "transparent" } }} />
         <Stack.Screen name="mazzo/[id]" />
         <Stack.Screen name="scansiona" options={{ animation: "fade", presentation: "fullScreenModal", contentStyle: { backgroundColor: "#000" } }} />
         <Stack.Screen name="offline" />

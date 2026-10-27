@@ -5,8 +5,8 @@
 // singola; Livello, Costo, Rarità ed Espansione a griglia; Tipo con il campo per cercare in fondo.
 // Le parole delle carte restano in inglese.
 import { useMemo, useRef, useState } from "react";
-import { Pressable, ScrollView, View, useWindowDimensions } from "react-native";
-import { Sheet } from "./Sheet";
+import { Animated, PanResponder, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { Sheet, SheetScrollView } from "./Sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { DISPLAY, Text, TextInput } from "./Text";
@@ -143,7 +143,7 @@ export function FilterSheet({ visible, f: f0, setF: setF0, onClose, count, lockE
           {dd ? (
           <>
             <Pressable style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} onPress={() => setDd(null)} />
-            <DDPop kind={dd.kind} r={dd.r} f={f} vw={vw} vh={mh || vh} pick={(v) => (MULTI[dd.kind] ? toggle(dd.kind, v) : dd.kind === "exp" && onExp ? (setDd(null), v !== f.exp && onExp(v)) : (setK(dd.kind, v), setDd(null)))} />
+            <DDPop key={dd.kind} kind={dd.kind} r={dd.r} f={f} vw={vw} vh={mh || vh} onClose={() => setDd(null)} pick={(v) => (MULTI[dd.kind] ? toggle(dd.kind, v) : dd.kind === "exp" && onExp ? (setDd(null), v !== f.exp && onExp(v)) : (setK(dd.kind, v), setDd(null)))} />
           </>
         ) : null}
         </>
@@ -159,7 +159,7 @@ export function FilterSheet({ visible, f: f0, setF: setF0, onClose, count, lockE
             <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "700", fontSize: 15.2 }}>Azzera</Text>
           </Pressable>
         </View>
-        <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ paddingVertical: 6, flexDirection: "row", flexWrap: "wrap", gap: 6 }} keyboardShouldPersistTaps="handled" onScrollBeginDrag={() => setDd(null)}>
+        <SheetScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ paddingVertical: 6, flexDirection: "row", flexWrap: "wrap", gap: 6 }} keyboardShouldPersistTaps="handled" onScrollBeginDrag={() => setDd(null)}>
           {kinds.map((kind) => {
             const on = !!f0[kind]; // nella pagina di un prodotto l'Espansione mostra il prodotto ma non è un filtro attivo
             const exp = dd && dd.kind === kind;
@@ -195,7 +195,7 @@ export function FilterSheet({ visible, f: f0, setF: setF0, onClose, count, lockE
               </Pressable>
             );
           })}
-        </ScrollView>
+        </SheetScrollView>
         <Pressable onPress={onClose} style={{ marginTop: 14, height: 52, borderRadius: 14, backgroundColor: t.accent, alignItems: "center", justifyContent: "center" }}>
           <Text style={{ color: t.accentInk, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16 }}>Mostra {count + (count === 1 ? " carta" : " carte")}</Text>
         </Pressable>
@@ -204,8 +204,26 @@ export function FilterSheet({ visible, f: f0, setF: setF0, onClose, count, lockE
 }
 
 // elenco di una tendina (.ddpop.boxed)
-function DDPop({ kind, r, f, vw, vh, pick }: { kind: Kind; r: Rect; f: Filters; vw: number; vh: number; pick: (v: string) => void }) {
+function DDPop({ kind, r, f, vw, vh, pick, onClose }: { kind: Kind; r: Rect; f: Filters; vw: number; vh: number; pick: (v: string) => void; onClose: () => void }) {
   const t = useTheme();
+  // tirando giù l'elenco già in cima la tendina segue il dito, sfuma e si chiude (come ddDrag dell'app attuale);
+  // con un piccolo trascinamento torna al suo posto
+  const dy = useRef(new Animated.Value(0)).current;
+  const sy = useRef(0);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const pan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponderCapture: (_, g) => sy.current <= 0 && g.dy > 8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.2,
+      onPanResponderMove: (_, g) => dy.setValue(Math.max(0, g.dy - 8)),
+      onPanResponderRelease: (_, g) => {
+        const d = Math.max(0, g.dy - 8);
+        if (d > 70 || (g.vy > 0.45 && d > 16)) Animated.timing(dy, { toValue: d + 60, duration: 170, useNativeDriver: true }).start(() => closeRef.current());
+        else Animated.spring(dy, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start();
+      },
+      onPanResponderTerminate: () => Animated.spring(dy, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start(),
+    })
+  ).current;
   const [find, setFind] = useState("");
   const opts = useMemo(() => ddOptions(kind, f), [kind, f.ct]);
   const multi = !!MULTI[kind];
@@ -277,13 +295,13 @@ function DDPop({ kind, r, f, vw, vh, pick }: { kind: Kind; r: Rect; f: Filters; 
     );
   });
   return (
-    <View style={{ position: "absolute", left, width: w, ...pos, borderRadius: 14, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, boxShadow: "0 14px 40px rgba(0,0,0,.25)", overflow: "hidden" }}>
-      <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={[{ paddingVertical: 8, paddingHorizontal: 6, gap: grid ? 6 : 2 }, grid ? { flexDirection: "row", flexWrap: "wrap" } : null]} keyboardShouldPersistTaps="handled">
+    <Animated.View {...pan.panHandlers} style={{ position: "absolute", left, width: w, ...pos, borderRadius: 14, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, boxShadow: "0 14px 40px rgba(0,0,0,.25)", overflow: "hidden", opacity: dy.interpolate({ inputRange: [0, 187], outputRange: [1, 0.15], extrapolate: "clamp" }), transform: [{ translateY: dy }] }}>
+      <ScrollView style={{ flexShrink: 1 }} onScroll={(e) => void (sy.current = e.nativeEvent.contentOffset.y)} scrollEventThrottle={16} contentContainerStyle={[{ paddingVertical: 8, paddingHorizontal: 6, gap: grid ? 6 : 2 }, grid ? { flexDirection: "row", flexWrap: "wrap" } : null]} keyboardShouldPersistTaps="handled">
         {items}
       </ScrollView>
       {kind === "sp" ? (
         <TextInput value={find} onChangeText={setFind} placeholder="Cerca un tipo, es. Dragonkin" placeholderTextColor={t.ink2} autoCorrect={false} returnKeyType="done" style={{ height: 48, paddingHorizontal: 12, borderTopWidth: 1, borderColor: t.line, backgroundColor: t.surface2, color: t.ink, fontSize: 16 }} />
       ) : null}
-    </View>
+    </Animated.View>
   );
 }

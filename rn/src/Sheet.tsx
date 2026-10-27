@@ -1,13 +1,37 @@
 // Foglio dal basso con il velo scuro separato: il velo compare e sparisce in dissolvenza, mentre il foglio sale e scende
 // per conto suo. Prima si usava Modal con animationType="slide", che faceva scorrere giù anche il velo (effetto di
 // opacità che scendeva dall'alto in chiusura). Animazioni sul thread nativo (useNativeDriver).
-import { ReactNode, useEffect, useRef, useState } from "react";
-import { Animated, Easing, Modal, PanResponder, Platform, Pressable, StyleProp, StyleSheet, ViewStyle, useWindowDimensions } from "react-native";
+import { ReactNode, createContext, useContext, useEffect, useRef, useState } from "react";
+import { Animated, Easing, Modal, PanResponder, Platform, Pressable, ScrollView, ScrollViewProps, StyleProp, StyleSheet, ViewStyle, useWindowDimensions } from "react-native";
 import { useTheme } from "./theme";
 import { useKbH } from "./chrome";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const EASE = Easing.bezier(0.32, 0.72, 0, 1);
+
+// posizione di scorrimento dell'elenco dentro il foglio: se è in cima il foglio si trascina giù da qualsiasi punto
+// (come dragDown dell'app attuale); gli elenchi del foglio passano onScroll={useSheetScroll()}
+const ScrollCtx = createContext<{ current: number } | null>(null);
+// elenco che scorre dentro un foglio (al posto di ScrollView)
+export function SheetScrollView(p: ScrollViewProps & { children?: ReactNode }) {
+  const on = useSheetScroll();
+  return (
+    <ScrollView
+      scrollEventThrottle={16}
+      {...p}
+      onScroll={(e) => {
+        on(e);
+        p.onScroll && p.onScroll(e);
+      }}
+    />
+  );
+}
+export function useSheetScroll() {
+  const r = useContext(ScrollCtx);
+  return (e: any) => {
+    if (r) r.current = e.nativeEvent.contentOffset.y;
+  };
+}
 const NATIVE = Platform.OS !== "web";
 
 export function Sheet({
@@ -47,6 +71,7 @@ export function Sheet({
   const hRef = useRef(0);
   hRef.current = h;
   const startIn = useRef(false);
+  const scrollY = useRef(0);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   const pan = useRef(
@@ -55,7 +80,7 @@ export function Sheet({
         startIn.current = e.nativeEvent.pageY - topY.current < 64;
         return false;
       },
-      onMoveShouldSetPanResponderCapture: (_, g) => startIn.current && g.dy > 8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.3,
+      onMoveShouldSetPanResponderCapture: (_, g) => (startIn.current || scrollY.current <= 0) && g.dy > 8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.3,
       onPanResponderMove: (_, g) => drag.setValue(Math.max(0, g.dy)),
       onPanResponderRelease: (_, g) => {
         if (g.dy > (hRef.current || 400) * 0.25 || g.vy > 0.8) closeRef.current();
@@ -73,6 +98,7 @@ export function Sheet({
           setShown(false);
           setH(0);
           drag.setValue(0);
+          scrollY.current = 0;
         }
       });
     }
@@ -109,7 +135,7 @@ export function Sheet({
           },
         ]}
       >
-        {children}
+        <ScrollCtx.Provider value={scrollY}>{children}</ScrollCtx.Provider>
       </Animated.View>
       {overlay}
     </Modal>

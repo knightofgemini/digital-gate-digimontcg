@@ -1,7 +1,7 @@
 // Foglio "Salva in…": preferite, liste personali e avviso di prezzo per una versione della carta (come nell'app attuale).
 import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, Switch, View } from "react-native";
-import { Sheet } from "./Sheet";
+import { Sheet, SheetScrollView } from "./Sheet";
 import { DISPLAY, Text, TextInput } from "./Text";
 import Svg, { Path } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -79,7 +79,7 @@ export function FavSheet({ c: cOpen, onClose }: { c: Card | null; onClose: () =>
 
   return (
     <Sheet visible={!!cOpen} onClose={close} maxH={0.88} scrim="rgba(4,8,18,.6)" style={{ backgroundColor: t.surface, borderTopWidth: 1, borderColor: t.line, borderTopLeftRadius: 22, borderTopRightRadius: 22, boxShadow: "0 -12px 32px rgba(0,0,0,.35)" }}>
-        <ScrollView contentContainerStyle={{ paddingTop: 8, paddingHorizontal: 16, paddingBottom: 18 + insB, gap: 12 }} keyboardShouldPersistTaps="handled">
+        <SheetScrollView contentContainerStyle={{ paddingTop: 8, paddingHorizontal: 16, paddingBottom: 18 + insB, gap: 12 }} keyboardShouldPersistTaps="handled">
           <View style={{ alignSelf: "center", width: 40, height: 5, borderRadius: 3, backgroundColor: t.line }} />
           <View>
             <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 19.2 }}>Salva in…</Text>
@@ -163,7 +163,7 @@ export function FavSheet({ c: cOpen, onClose }: { c: Card | null; onClose: () =>
           <Pressable onPress={close} style={{ minHeight: 50, borderRadius: 14, backgroundColor: t.accent, alignItems: "center", justifyContent: "center" }}>
             <Text style={{ color: t.accentInk, fontWeight: "600", fontSize: 16 }}>Fine</Text>
           </Pressable>
-        </ScrollView>
+        </SheetScrollView>
     </Sheet>
   );
 }
