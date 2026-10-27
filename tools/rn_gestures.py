@@ -95,6 +95,19 @@ adb("shell", "cmd", "uimode", "night", "yes")
 time.sleep(2)
 tabs()
 
+# --- 6) Salva in… (preferite) tirato giù dal contenuto
+card("bt5|BT5-109")
+adb("logcat", "-c")
+tap("Liste e avviso di prezzo", wait=3.5)
+shot("g18b_salva_in")
+for n in nodes():
+    if "Salva" in n[0] or "Preferite" in n[0]:
+        print("nodo", n, flush=True)
+open(os.path.join(OUT, "logcat.txt"), "w").write(adb("logcat", "-d", "-s", "ReactNativeJS:V"))
+hold_drag(W // 2, int(H * 0.75), int(H * 0.97), steps=8)
+shot("g18c_salva_in_chiuso")
+tabs()
+
 # --- 1) scheda carta tirata giù: sotto si vede Ricerca carte
 tap("^Carte$")
 card("bt5|BT5-109")
@@ -193,14 +206,6 @@ if p:
 # foglio Filtri tirato giù dal centro
 hold_drag(W // 2, int(H * 0.6), int(H * 0.95), steps=8)
 shot("g18_filtri_chiusi")
-
-# --- 6) Salva in… (preferite) tirato giù dal contenuto
-card("bt5|BT5-109")
-tap("Liste e avviso di prezzo", wait=2)
-shot("g18b_salva_in")
-hold_drag(W // 2, int(H * 0.75), int(H * 0.97), steps=8)
-shot("g18c_salva_in_chiuso")
-tabs()
 
 # --- 7) cronologia della scansione tirata giù
 adb("shell", "pm", "grant", PKG, "android.permission.CAMERA")
