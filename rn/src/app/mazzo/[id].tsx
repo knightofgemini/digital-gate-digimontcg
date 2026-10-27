@@ -10,6 +10,7 @@ import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from "react-nativ
 import { Chevron, FilterIcon, SearchIcon, SquareBtn } from "../../BottomBar";
 import { Btn, ICO_PLUS, Panel, Progress } from "../../visual";
 import { FitText } from "../../fit";
+import { PULL_S, usePull } from "../../pull";
 import { BanNote, ConfirmBox, ImportPanel } from "../../deckui";
 import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
@@ -464,9 +465,9 @@ function AddSheet({ d, f0, openF, onF, onClose, onAdded }: { d: any; f0: Filters
   };
   const snapRef = useRef(snap);
   snapRef.current = snap;
-  const mkPan = (fromList: boolean) =>
+  const mkPan = (_fromList: boolean) =>
     PanResponder.create({
-      onMoveShouldSetPanResponderCapture: (_, g) => (!fromList || (listY.current <= 0 && g.dy > 0)) && Math.abs(g.dy) > 8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.3,
+      onMoveShouldSetPanResponderCapture: (_, g) => Math.abs(g.dy) > 8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.3,
       onPanResponderGrant: () => {
         dragging.current = true;
         hp.stopAnimation();
@@ -493,9 +494,21 @@ function AddSheet({ d, f0, openF, onF, onClose, onAdded }: { d: any; f0: Filters
       },
     });
   const base = useRef(0);
-  const listY = useRef(0);
   const gripPan = useRef(mkPan(false)).current;
-  const listPan = useRef(mkPan(true)).current;
+  // elenco dei risultati già in cima tirato giù: il foglio scende con il dito (è l'elenco a tirare, vedi pull.tsx);
+  // rilasciando oltre 1/4 si riduce a metà (se era alto) o si chiude
+  const pull = usePull(
+    PULL_S,
+    () => cur.current * 0.25,
+    () => {
+      if (fullRef.current) {
+        const d = Math.max(0, -pull.offset());
+        hp.setValue(Math.max(sz.current.half, cur.current - d));
+        pull.reset();
+        snapRef.current("half", 260);
+      } else shutRef.current();
+    }
+  );
   useEffect(() => {
     setTabHidden(true);
     return () => setTabHidden(false);
@@ -545,7 +558,8 @@ function AddSheet({ d, f0, openF, onF, onClose, onAdded }: { d: any; f0: Filters
   const sl = list.slice(0, shown);
   for (let i = 0; i < sl.length; i += vw === "grid" ? 2 : 1) rows.push(sl.slice(i, i + (vw === "grid" ? 2 : 1)));
   return (
-    <Animated.View style={{ position: "absolute", left: 0, right: 0, bottom: kb, height: hp.interpolate({ inputRange: [0, half, tall], outputRange: [half, half, tall], extrapolate: "clamp" }), transform: [{ translateY: hp.interpolate({ inputRange: [0, half, tall], outputRange: [half + 40, 0, 0], extrapolate: "clamp" }) }], backgroundColor: t.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: t.line, boxShadow: "0 -14px 36px rgba(0,0,0,.35)", paddingHorizontal: 14 }}>
+    <Animated.View style={{ position: "absolute", left: 0, right: 0, bottom: kb, height: hp.interpolate({ inputRange: [0, half, tall], outputRange: [half, half, tall], extrapolate: "clamp" }), transform: [{ translateY: hp.interpolate({ inputRange: [0, half, tall], outputRange: [half + 40, 0, 0], extrapolate: "clamp" }) }] }}>
+      <Animated.View style={{ flex: 1, transform: [{ translateY: pull.d }], backgroundColor: t.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: t.line, boxShadow: "0 -14px 36px rgba(0,0,0,.35)", paddingHorizontal: 14 }}>
       <View {...gripPan.panHandlers}>
       <Pressable onPress={() => snap(full ? "half" : "full")} accessibilityLabel="Ingrandisci o riduci la ricerca" style={{ height: 26, alignItems: "center", justifyContent: "center" }}>
         <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: t.line }} />
@@ -570,17 +584,20 @@ function AddSheet({ d, f0, openF, onF, onClose, onAdded }: { d: any; f0: Filters
         </View>
       ) : null}
       </View>
-      <View style={{ flex: 1 }} {...listPan.panHandlers}>
-      <ScrollView
+      <Animated.ScrollView
+        {...pull.scroll}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
-        scrollEventThrottle={16}
-        onScroll={(e) => {
+        onMomentumScrollEnd={(e: any) => {
           const { contentOffset: o, contentSize: cs, layoutMeasurement: lm } = e.nativeEvent;
-          listY.current = o.y;
           if (list.length > shown && o.y + lm.height > cs.height - 900) setShown((n) => Math.min(list.length, n + 40));
         }}
-        style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 24, paddingBottom: 16 + ins.bottom }}>
+        onScrollEndDrag={(e: any) => {
+          pull.scroll.onScrollEndDrag(e);
+          const { contentOffset: o, contentSize: cs, layoutMeasurement: lm } = e.nativeEvent;
+          if (list.length > shown && o.y + lm.height > cs.height - 900) setShown((n) => Math.min(list.length, n + 40));
+        }}
+        style={{ flex: 1, transform: [{ translateY: pull.neg }] }} contentContainerStyle={[pull.pad, { paddingTop: PULL_S + 24, paddingBottom: 16 + ins.bottom }]}>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
           <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.2, letterSpacing: 1.35, textTransform: "uppercase" }}>{!filt ? "Cerca una carta" : list.length + (list.length === 1 ? " carta trovata" : " carte trovate")}</Text>
           {filt ? <ViewToggle value={vw} onChange={pickVw} /> : null}
@@ -614,9 +631,9 @@ function AddSheet({ d, f0, openF, onF, onClose, onAdded }: { d: any; f0: Filters
             <Text style={{ color: t.ink2, fontSize: 13.1 }}>Caricamento di altre carte…</Text>
           </Pressable>
         ) : null}
-      </ScrollView>
-      </View>
+      </Animated.ScrollView>
       <FilterSheet visible={fOpen} f={f} setF={setF} onClose={() => setFOpen(false)} count={list.length} />
+      </Animated.View>
     </Animated.View>
   );
 }

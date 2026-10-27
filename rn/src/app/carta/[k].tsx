@@ -17,6 +17,7 @@ import { NAVLIST, openCard } from "../../nav";
 import { bestVal, cmCovered, cmDate, cmOf, cmUrl, cmVal, ctCovered, ctDate, ctOf, ctUrl, ctVal, eur, eurN, eurT, usePrices } from "../../prices";
 import { Chip, Rich, RichInline, iconClass, kwJoin, kwNoRem } from "../../rich";
 import { FavSheet } from "../../FavSheet";
+import { PULL_S, usePull } from "../../pull";
 import { Heart, ListsIcon, QtyControl } from "../../items";
 import { favSet, isFav, owned, useStore } from "../../store";
 import { deckById } from "../../decks";
@@ -249,7 +250,6 @@ function CardPage({ c, setC, width, deck, strip, fade, pan, sv, exitTo }: { c: C
   const topY = useRef(0);
   const headH = useRef(64);
   const startIn = useRef(false);
-  const scY = useRef(0);
   const hRef = useRef(winH);
   hRef.current = winH;
   const down = useRef(
@@ -258,7 +258,7 @@ function CardPage({ c, setC, width, deck, strip, fade, pan, sv, exitTo }: { c: C
         startIn.current = e.nativeEvent.pageY - topY.current < headH.current;
         return false;
       },
-      onMoveShouldSetPanResponderCapture: (_, g) => (startIn.current || scY.current <= 0) && g.dy > 10 && Math.abs(g.dy) > Math.abs(g.dx) * 1.5,
+      onMoveShouldSetPanResponderCapture: (_, g) => startIn.current && g.dy > 10 && Math.abs(g.dy) > Math.abs(g.dx) * 1.5,
       onPanResponderMove: (_, g) => dragY.setValue(Math.max(0, g.dy)),
       onPanResponderRelease: (_, g) => {
         if (g.dy > hRef.current * 0.25 || g.vy > 0.8)
@@ -268,6 +268,15 @@ function CardPage({ c, setC, width, deck, strip, fade, pan, sv, exitTo }: { c: C
       onPanResponderTerminate: () => Animated.spring(dragY, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start(),
     })
   ).current;
+  // dal contenuto già in cima: è l'elenco stesso a tirare (vedi pull.tsx)
+  const pull = usePull(
+    PULL_S,
+    () => hRef.current * 0.25,
+    () => Animated.timing(dragY, { toValue: hRef.current, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => closeRef.current())
+  );
+  sv.current = { scrollTo: (o: { y: number; animated?: boolean }) => pull.scrollTo(o.y, !!o.animated) };
+  const moved = Animated.add(dragY, pull.d);
+  const [footH, setFootH] = useState(0);
   // fila delle versioni: la versione scelta resta in vista (al centro, se la fila scorre)
   const vsv = useRef<any>(null);
   const vx = useRef<Record<string, { x: number; w: number }>>({});
@@ -341,8 +350,8 @@ function CardPage({ c, setC, width, deck, strip, fade, pan, sv, exitTo }: { c: C
 
   return (
     <View style={{ flex: 1 }}>
-    <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: "#000", opacity: dragY.interpolate({ inputRange: [0, winH], outputRange: [0.35, 0], extrapolate: "clamp" }) }]} />
-    <Animated.View {...down.panHandlers} onLayout={(e) => void (topY.current = e.nativeEvent.layout.y)} style={{ flex: 1, transform: [{ translateY: dragY }] }}>
+    <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: "#000", opacity: moved.interpolate({ inputRange: [0, winH], outputRange: [0.35, 0], extrapolate: "clamp" }) }]} />
+    <Animated.View {...down.panHandlers} onLayout={(e) => void (topY.current = e.nativeEvent.layout.y)} style={{ flex: 1, transform: [{ translateY: moved }] }}>
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }} edges={["top"]}>
       {/* intestazione (.chead): chiusura, nome del prodotto con "Carta N di M", cuore e liste */}
       <View onLayout={(e) => void (headH.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height)} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 14, paddingRight: 8, paddingTop: 10, paddingBottom: 10, borderBottomWidth: 1, borderColor: t.line, backgroundColor: t.bg }}>
@@ -364,7 +373,7 @@ function CardPage({ c, setC, width, deck, strip, fade, pan, sv, exitTo }: { c: C
           </Pressable>
         </View>
       </View>
-      <ScrollView ref={sv} onScroll={(e) => void (scY.current = e.nativeEvent.contentOffset.y)} scrollEventThrottle={16} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 14, width: maxW, alignSelf: "center" }} nestedScrollEnabled>
+      <Animated.ScrollView {...pull.scroll} style={{ flex: 1, transform: [{ translateY: pull.neg }] }} contentContainerStyle={[pull.pad, { paddingBottom: 14 + footH, width: maxW, alignSelf: "center" }]} nestedScrollEnabled>
         {/* fila delle carte a ventaglio (precedente e successiva ai lati) */}
         {strip}
 
@@ -526,8 +535,10 @@ function CardPage({ c, setC, width, deck, strip, fade, pan, sv, exitTo }: { c: C
           )}
         </View>
         </Animated.View>
-      </ScrollView>
-      {/* barra fissa in basso: copie nel mazzo (se aperta dall'editor) e copie possedute della versione aperta */}
+      </Animated.ScrollView>
+      {/* barra fissa in basso: copie nel mazzo (se aperta dall'editor) e copie possedute della versione aperta.
+          Sta sopra l'elenco (che arriva fino in fondo), così tirando giù la scheda scende insieme al resto */}
+      <View onLayout={(e) => setFootH(Math.round(e.nativeEvent.layout.height))} style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}>
       {dk && deckable(c) && (
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingTop: 10, borderTopWidth: 1, borderColor: t.line, backgroundColor: t.surface }}>
           <View style={{ flex: 1, paddingLeft: 2 }}>
@@ -552,6 +563,7 @@ function CardPage({ c, setC, width, deck, strip, fade, pan, sv, exitTo }: { c: C
         ) : (
           <QtyControl key={c.k} c={c} big />
         )}
+      </View>
       </View>
       <FavSheet c={favFor} onClose={() => setFavFor(null)} />
     </SafeAreaView>

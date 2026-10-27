@@ -2,7 +2,7 @@
 // (o il nome) e propone le versioni ordinate per somiglianza; si segnano le copie e la scansione resta in cronologia.
 // Anche da una foto della galleria. Nessuna foto viene inviata o salvata.
 import { useEffect, useRef, useState } from "react";
-import { Animated, BackHandler, Easing, PanResponder, Platform, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { Animated, BackHandler, Easing, Platform, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { DISPLAY, Text } from "../Text";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -11,6 +11,7 @@ import { deleteAsync } from "expo-file-system/legacy";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { PULL_S, usePull } from "../pull";
 import { Card, SETBY, fullUrl, hostSet, isAce, thumbUrl, verLabel } from "../data";
 import { ConfirmBox } from "../deckui";
 import { FitText } from "../fit";
@@ -347,47 +348,30 @@ function ScPill({ icon, label, onPress, big, badge }: { icon: string; label: str
 
 
 // foglio dal basso del risultato e della cronologia (.scres): maniglia, angoli arrotondati, ombra.
-// Si chiude tirandolo giù dalla maniglia, o da qualsiasi punto se l'elenco è in cima (come dragDown dell'app attuale):
-// il foglio segue il dito; rilasciando oltre 1/4 dell'altezza o con un colpo veloce si chiude, altrimenti torna su.
+// Tirandolo giù (dalla maniglia o da qualsiasi punto, se l'elenco è in cima) il foglio segue il dito; rilasciando oltre
+// 1/4 dell'altezza o con un colpo veloce si chiude, altrimenti torna su (come dragDown dell'app attuale; vedi pull.tsx)
 function Sheet({ children, tall, onClose }: { children: React.ReactNode; tall?: boolean; onClose: () => void }) {
   const t = useTheme();
   const ins = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  const dy = useRef(new Animated.Value(0)).current;
-  const sy = useRef(0);
+  const out = useRef(new Animated.Value(0)).current;
   const h = useRef(400);
-  const top = useRef(0);
-  const startIn = useRef(false);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
-  const pan = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponderCapture: (e) => {
-        startIn.current = e.nativeEvent.pageY - top.current < 48;
-        return false;
-      },
-      onMoveShouldSetPanResponderCapture: (_, g) => (startIn.current || sy.current <= 0) && g.dy > 8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.3,
-      onPanResponderMove: (_, g) => dy.setValue(Math.max(0, g.dy)),
-      onPanResponderRelease: (_, g) => {
-        if (g.dy > h.current * 0.25 || g.vy > 0.8) Animated.timing(dy, { toValue: h.current + 40, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => closeRef.current());
-        else Animated.spring(dy, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start();
-      },
-      onPanResponderTerminate: () => Animated.spring(dy, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start(),
-    })
-  ).current;
+  const pull = usePull(
+    PULL_S,
+    () => h.current * 0.25,
+    () => Animated.timing(out, { toValue: h.current + 40, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => closeRef.current())
+  );
   return (
     <Animated.View
-      {...pan.panHandlers}
-      onLayout={(e) => {
-        h.current = e.nativeEvent.layout.height;
-        top.current = e.nativeEvent.layout.y;
-      }}
-      style={{ position: "absolute", left: 0, right: 0, bottom: 0, maxHeight: height * (tall ? 0.86 : 0.76), minHeight: tall ? height * 0.5 : undefined, backgroundColor: t.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, boxShadow: "0 -14px 40px rgba(0,0,0,.5)", transform: [{ translateY: dy }] }}
+      onLayout={(e) => void (h.current = e.nativeEvent.layout.height)}
+      style={{ position: "absolute", left: 0, right: 0, bottom: 0, maxHeight: height * (tall ? 0.86 : 0.76), minHeight: tall ? height * 0.5 : undefined, backgroundColor: t.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, boxShadow: "0 -14px 40px rgba(0,0,0,.5)", transform: [{ translateY: Animated.add(out, pull.d) }] }}
     >
-      <ScrollView onScroll={(e) => void (sy.current = e.nativeEvent.contentOffset.y)} scrollEventThrottle={16} contentContainerStyle={{ paddingTop: 8, paddingHorizontal: 16, paddingBottom: 16 + ins.bottom }}>
+      <Animated.ScrollView {...pull.scroll} style={{ flexGrow: tall ? 1 : 0, transform: [{ translateY: pull.neg }] }} contentContainerStyle={[pull.pad, { paddingTop: PULL_S + 8, paddingHorizontal: 16, paddingBottom: 16 + ins.bottom }]}>
         <View style={{ alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: t.line, marginTop: 2, marginBottom: 12 }} />
         {children}
-      </ScrollView>
+      </Animated.ScrollView>
     </Animated.View>
   );
 }

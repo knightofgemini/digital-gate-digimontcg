@@ -2,37 +2,34 @@
 // per conto suo. Prima si usava Modal con animationType="slide", che faceva scorrere giù anche il velo (effetto di
 // opacità che scendeva dall'alto in chiusura). Animazioni sul thread nativo (useNativeDriver).
 import { ReactNode, createContext, useContext, useEffect, useRef, useState } from "react";
-import { Animated, Easing, Modal, PanResponder, Platform, Pressable, ScrollView, ScrollViewProps, StyleProp, StyleSheet, ViewStyle, useWindowDimensions } from "react-native";
+import { Animated, Easing, Modal, PanResponder, Platform, Pressable, ScrollViewProps, StyleProp, StyleSheet, ViewStyle, useWindowDimensions } from "react-native";
 import { useTheme } from "./theme";
 import { useKbH } from "./chrome";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { PULL_S, usePull } from "./pull";
 
 const EASE = Easing.bezier(0.32, 0.72, 0, 1);
 
-// posizione di scorrimento dell'elenco dentro il foglio: se è in cima il foglio si trascina giù da qualsiasi punto
-// (come dragDown dell'app attuale); gli elenchi del foglio passano onScroll={useSheetScroll()}
-const ScrollCtx = createContext<{ current: number } | null>(null);
-// elenco che scorre dentro un foglio (al posto di ScrollView)
-export function SheetScrollView(p: ScrollViewProps & { children?: ReactNode }) {
-  const on = useSheetScroll();
-  return (
-    <ScrollView
-      scrollEventThrottle={16}
-      {...p}
-      onScroll={(e) => {
-        on(e);
-        p.onScroll && p.onScroll(e);
-      }}
-    />
+// elenco dentro il foglio: tirandolo giù quando è in cima il foglio segue il dito e si chiude (vedi pull.tsx)
+type Ctx = { setD: (d: Animated.AnimatedInterpolation<number> | null) => void; close: () => void; h: { current: number } };
+const SheetCtx = createContext<Ctx | null>(null);
+// elenco che scorre dentro un foglio (al posto di ScrollView): deve arrivare fino al fondo del foglio
+export function SheetScrollView({ style, contentContainerStyle, ...p }: ScrollViewProps & { children?: ReactNode }) {
+  const ctx = useContext(SheetCtx);
+  const pull = usePull(
+    PULL_S,
+    () => (ctx ? ctx.h.current : 400) * 0.25,
+    () => ctx && ctx.close()
   );
-}
-export function useSheetScroll() {
-  const r = useContext(ScrollCtx);
-  return (e: any) => {
-    if (r) r.current = e.nativeEvent.contentOffset.y;
-  };
+  useEffect(() => {
+    if (!ctx) return;
+    ctx.setD(pull.d);
+    return () => ctx.setD(null);
+  }, []);
+  return <Animated.ScrollView {...p} {...pull.scroll} style={[style, { transform: [{ translateY: pull.neg }] }]} contentContainerStyle={[pull.pad, contentContainerStyle]} />;
 }
 const NATIVE = Platform.OS !== "web";
+const ZERO = new Animated.Value(0);
 
 export function Sheet({
   visible,
@@ -71,7 +68,11 @@ export function Sheet({
   const hRef = useRef(0);
   hRef.current = h;
   const startIn = useRef(false);
-  const scrollY = useRef(0);
+  const [pd, setPd] = useState<Animated.AnimatedInterpolation<number> | null>(null);
+  // con un elenco che tira il foglio, il dito trascina da sé solo dalla parte alta (maniglia/intestazione)
+  const hasPull = useRef(false);
+  hasPull.current = !!pd;
+  const ctx = useRef<Ctx>({ setD: setPd, close: () => closeRef.current(), h: hRef }).current;
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   const pan = useRef(
@@ -80,7 +81,7 @@ export function Sheet({
         startIn.current = e.nativeEvent.pageY - topY.current < 64;
         return false;
       },
-      onMoveShouldSetPanResponderCapture: (_, g) => (startIn.current || scrollY.current <= 0) && g.dy > 8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.3,
+      onMoveShouldSetPanResponderCapture: (_, g) => (!hasPull.current || startIn.current) && g.dy > 8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.3,
       onPanResponderMove: (_, g) => drag.setValue(Math.max(0, g.dy)),
       onPanResponderRelease: (_, g) => {
         if (g.dy > (hRef.current || 400) * 0.25 || g.vy > 0.8) closeRef.current();
@@ -98,7 +99,6 @@ export function Sheet({
           setShown(false);
           setH(0);
           drag.setValue(0);
-          scrollY.current = 0;
         }
       });
     }
@@ -114,7 +114,7 @@ export function Sheet({
   const dist = h || winH;
   return (
     <Modal visible transparent animationType="none" statusBarTranslucent onRequestClose={onBack || onClose}>
-      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: scrim || t.scrim, opacity: Animated.multiply(a, drag.interpolate({ inputRange: [0, dist], outputRange: [1, 0.15], extrapolate: "clamp" })) }]}>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: scrim || t.scrim, opacity: Animated.multiply(a, (pd ? Animated.add(drag, pd) : drag).interpolate({ inputRange: [0, dist], outputRange: [1, 0.15], extrapolate: "clamp" })) }]}>
         <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Chiudi" />
       </Animated.View>
       <Animated.View
@@ -131,11 +131,11 @@ export function Sheet({
             right: 0,
             bottom: kb,
             maxHeight: Math.round(Math.min(winH * maxH, winH - kb - top - 8)),
-            transform: [{ translateY: Animated.add(a.interpolate({ inputRange: [0, 1], outputRange: [dist + 40, 0] }), drag) }],
+            transform: [{ translateY: Animated.add(Animated.add(a.interpolate({ inputRange: [0, 1], outputRange: [dist + 40, 0] }), drag), pd || ZERO) }],
           },
         ]}
       >
-        <ScrollCtx.Provider value={scrollY}>{children}</ScrollCtx.Provider>
+        <SheetCtx.Provider value={ctx}>{children}</SheetCtx.Provider>
       </Animated.View>
       {overlay}
     </Modal>

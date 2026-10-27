@@ -83,8 +83,17 @@ def back():
     time.sleep(1.5)
 
 
+def tabs():
+    # torna alle schede principali (la barra in basso con "Carte")
+    for _ in range(5):
+        if find("^Carte$"):
+            return
+        back()
+
+
 adb("shell", "cmd", "uimode", "night", "yes")
 time.sleep(2)
+tabs()
 
 # --- 1) scheda carta tirata giù: sotto si vede Ricerca carte
 tap("^Carte$")
@@ -98,14 +107,19 @@ for y in (0.35, 0.2, 0.1):
 adb("shell", "input", "motionevent", "UP", str(W // 2), str(int(H * 0.1)))
 time.sleep(1.5)
 shot("g03_tornata")
-# dal centro (pagina in cima) fino in fondo: si chiude
-hold_drag(W // 2, int(H * 0.35), int(H * 0.9))
+# dal contenuto (pagina in cima): a metà la scheda segue il dito, poi fino in fondo si chiude
+hold_drag(W // 2, int(H * 0.35), int(H * 0.6), "g03b_tirata_dal_contenuto", release=False)
+for y in (0.7, 0.8, 0.92):
+    adb("shell", "input", "motionevent", "MOVE", str(W // 2), str(int(H * y)))
+    time.sleep(0.05)
+adb("shell", "input", "motionevent", "UP", str(W // 2), str(int(H * 0.92)))
+time.sleep(1.5)
 time.sleep(1)
 shot("g04_chiusa")
 
 # --- 2) Alt-Art di un altro prodotto: chiudendo si va a quel prodotto
 card("bt11|BT11-064")
-tap("BT25 Alt-Art")
+tap("^BT25")
 shot("g05_altart_bt25")
 tap("^Chiudi$", wait=2.5)
 shot("g06_dopo_chiusura_bt25")
@@ -131,6 +145,7 @@ if alts:
     shot("g09_dopo_chiusura")
 
 # --- 4) mazzo: foglio di ricerca e pila
+tabs()
 tap("^Mazzi$")
 tap("^Nuovo mazzo$", wait=2.5)
 tap("Cerca e aggiungi carte", wait=2)
@@ -148,11 +163,25 @@ if p:
     if p:
         hold_drag(W // 2, p[1], int(H * 0.97), steps=8)
         shot("g13_foglio_chiuso")
+# di nuovo: risultati in cima tirati giù fino a chiudere
+tap("Cerca e aggiungi carte", wait=2)
+adb("shell", "input", "text", "Gabumon")
+time.sleep(2)
+adb("shell", "input", "keyevent", "111")
+time.sleep(1.5)
+hold_drag(W // 2, int(H * 0.62), int(H * 0.8), "g13b_risultati_tirati", release=False)
+for y in (0.88, 0.95):
+    adb("shell", "input", "motionevent", "MOVE", str(W // 2), str(int(H * y)))
+    time.sleep(0.05)
+adb("shell", "input", "motionevent", "UP", str(W // 2), str(int(H * 0.95)))
+time.sleep(1.5)
+shot("g13c_risultati_chiuso")
 tap("Agumon.*cop", wait=2)
 shot("g14_pila_scelta")
 back()
 
 # --- 5) tendina dei Filtri tirata giù
+tabs()
 tap("^Carte$")
 tap("^Filtri", wait=2)
 tap("^Attributo", wait=1.5)
@@ -165,7 +194,15 @@ if p:
 hold_drag(W // 2, int(H * 0.6), int(H * 0.95), steps=8)
 shot("g18_filtri_chiusi")
 
-# --- 6) cronologia della scansione tirata giù
+# --- 6) Salva in… (preferite) tirato giù dal contenuto
+card("bt5|BT5-109")
+tap("Liste e avviso di prezzo", wait=2)
+shot("g18b_salva_in")
+hold_drag(W // 2, int(H * 0.75), int(H * 0.97), steps=8)
+shot("g18c_salva_in_chiuso")
+tabs()
+
+# --- 7) cronologia della scansione tirata giù
 adb("shell", "pm", "grant", PKG, "android.permission.CAMERA")
 tap("Scansiona una carta", wait=4)
 tap("Cronologia", last=True, wait=2)

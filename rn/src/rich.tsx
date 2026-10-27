@@ -61,7 +61,7 @@ export function Chip({ text, cls, fs, bg, ink, line, onPress, open, maxW, dy }: 
   const grad = (
     <Defs>
       <LinearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-        {g ? g.s.map(([o, c]) => <Stop key={o} offset={o} stopColor={c} />) : null}
+        {g ? g.s.map(([o, c]) => <Stop key={o} offset={o} stopColor={c} />) : undefined}
       </LinearGradient>
     </Defs>
   );
