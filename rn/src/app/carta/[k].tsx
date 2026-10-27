@@ -378,7 +378,8 @@ function CardPage({ c, setC, width, deck, strip, fade, sv, exitTo }: { c: Card; 
           </Pressable>
         </View>
       </View>
-      <Animated.ScrollView {...pull.scroll} style={{ flex: 1, transform: [{ translateY: pull.neg }] }} contentContainerStyle={[pull.pad, { paddingBottom: 14 + footH, width: maxW, alignSelf: "center" }]} nestedScrollEnabled>
+      {/* overScrollMode never: niente effetto elastico di Android arrivando in fondo (la scheda "rimbalzava", segnalato dall'utente) */}
+      <Animated.ScrollView {...pull.scroll} overScrollMode="never" bounces={false} style={{ flex: 1, transform: [{ translateY: pull.neg }] }} contentContainerStyle={[pull.pad, { paddingBottom: 14 + footH, width: maxW, alignSelf: "center" }]} nestedScrollEnabled>
         {/* fila delle carte a ventaglio (precedente e successiva ai lati) */}
         {strip}
 
