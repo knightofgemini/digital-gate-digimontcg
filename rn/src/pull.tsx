@@ -21,7 +21,6 @@ export function usePull(S: number, threshold: () => number, onPull: () => void) 
   const toTop = (animated: boolean) => ref.current && ref.current.scrollTo({ y: S, animated });
   const fix = () => {
     const s = st.current;
-    console.log("PULL fix", S, "V", V, "seen", s.seen, "last", s.last, "ref", !!ref.current);
     if (s.drag || s.closing) return;
     if (!s.seen || s.last < S - 0.5) {
       toTop(false);
@@ -39,7 +38,6 @@ export function usePull(S: number, threshold: () => number, onPull: () => void) 
       // a riposo l'elenco è in cima al contenuto vero (anche se contentOffset non venisse applicato)
       onLayout: (e: any) => {
         const h = Math.round(e.nativeEvent.layout.height);
-        console.log("PULL layout", h);
         setV((o) => (Math.abs(o - h) > 1 ? h : o));
         fix();
       },
@@ -50,7 +48,6 @@ export function usePull(S: number, threshold: () => number, onPull: () => void) 
           const s = st.current,
             v = e.nativeEvent.contentOffset.y,
             now = Date.now();
-          if (!s.seen || v < S - 0.5) console.log("PULL scroll", v, "drag", s.drag, "closing", s.closing);
           s.seen = true;
           if (now > s.t) s.v = (v - s.last) / (now - s.t);
           s.last = v;

@@ -97,13 +97,8 @@ tabs()
 
 # --- 6) Salva in… (preferite) tirato giù dal contenuto
 card("bt5|BT5-109")
-adb("logcat", "-c")
 tap("Liste e avviso di prezzo", wait=3.5)
 shot("g18b_salva_in")
-for n in nodes():
-    if "Salva" in n[0] or "Preferite" in n[0]:
-        print("nodo", n, flush=True)
-open(os.path.join(OUT, "logcat.txt"), "w").write(adb("logcat", "-d", "-s", "ReactNativeJS:V"))
 hold_drag(W // 2, int(H * 0.75), int(H * 0.97), steps=8)
 shot("g18c_salva_in_chiuso")
 tabs()
