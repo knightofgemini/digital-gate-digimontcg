@@ -91,8 +91,9 @@ export function ProdVisual({ code, radius = 0, codeSize = 32, children }: { code
   const lg = !b ? logoUrl(code) : null;
   const pk = !b && !lg ? packUrl(code) : null;
   return (
-    <View style={{ width: "100%", aspectRatio: 16 / 9, borderRadius: radius, overflow: "hidden", alignItems: "center", justifyContent: "center" }}>
-      <Glow id={"pv" + code} kind="pv" />
+    // con l'illustrazione lo sfondo sfumato (disegnato) resterebbe coperto: un colore pieno basta ed è molto più leggero
+    <View style={{ width: "100%", aspectRatio: 16 / 9, borderRadius: radius, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: b ? "#1a2540" : undefined }}>
+      {b ? null : <Glow id={"pv" + code} kind="pv" />}
       {b ? (
         <Image source={b} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" contentPosition={{ left: "50%", top: "40%" }} cachePolicy="disk" transition={120} />
       ) : lg ? (

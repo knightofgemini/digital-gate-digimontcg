@@ -73,20 +73,6 @@ export default function Carta() {
       transform: [{ translateY: m.interpolate({ inputRange: [0, S * 0.5, S], outputRange: [0, 12, 0] }) }],
     };
   }, [S, n]);
-  // scorrendo con il dito anche sul testo si passa alla carta precedente/successiva (con la stessa animazione)
-  const curRef = useRef(cur);
-  curRef.current = cur;
-  const pan = useMemo(
-    () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 18 && Math.abs(g.dx) > Math.abs(g.dy) * 1.6,
-        onPanResponderTerminationRequest: () => true,
-        onPanResponderRelease: (_, g) => {
-          if (Math.abs(g.dx) > 50 || Math.abs(g.vx) > 0.35) go.current(Math.max(0, Math.min(n - 1, curRef.current + (g.dx < 0 ? 1 : -1))));
-        },
-      }),
-    [n]
-  );
   if (!c0) return null;
   const at = (i: number) => vers[i] || (i === start ? c0 : list[i]);
   const c = at(cur);
@@ -109,7 +95,7 @@ export default function Carta() {
   );
   // versione scelta con i pulsanti (non dall'editor del mazzo): uscendo si va al suo prodotto, come nell'app attuale
   const exitTo = !deck && vers[cur] ? hostSet(vers[cur]) : "";
-  return <CardPage c={c} setC={(a) => setVers((v) => ({ ...v, [cur]: a }))} width={width} deck={deck} strip={strip} fade={fade} pan={pan.panHandlers} sv={sv} exitTo={exitTo} />;
+  return <CardPage c={c} setC={(a) => setVers((v) => ({ ...v, [cur]: a }))} width={width} deck={deck} strip={strip} fade={fade} sv={sv} exitTo={exitTo} />;
 }
 
 // Fila delle carte "a ventaglio": la carta al centro è dritta e grande, le vicine spuntano ai lati più piccole,
@@ -142,8 +128,15 @@ function Fan({ list, start, cur, at, sel, width, cw, S, x, go, onIndex }: { list
       }),
     [S, list]
   );
+  // si passa a un'altra carta solo trascinando la carta al centro: sopra il resto della fila (ai lati e sopra/sotto la carta)
+  // ci sono zone che non lasciano partire lo scorrimento orizzontale; un tocco sulle vicine le porta comunque al centro.
+  // collapsable={false}: su Android una vista senza sfondo verrebbe tolta e il dito arriverebbe di nuovo alla fila
+  const side = Math.max(0, (width - cw) / 2);
+  const ch = (cw * 7) / 5;
+  const block = { position: "absolute" as const };
   return (
     <CurCtx.Provider value={cur}>
+    <View>
     <Animated.FlatList
       ref={ref}
       data={list}
@@ -167,6 +160,11 @@ function Fan({ list, start, cur, at, sel, width, cw, S, x, go, onIndex }: { list
       CellRendererComponent={FanCell}
       renderItem={({ index }: { item: Card; index: number }) => <FanCard c={at(index)} i={index} S={S} cw={cw} x={x} onPress={press} />}
     />
+    <Pressable collapsable={false} onPress={() => cur > 0 && go.current(cur - 1)} accessible={false} style={[block, { left: 0, top: 0, bottom: 0, width: side }]} />
+    <Pressable collapsable={false} onPress={() => cur < list.length - 1 && go.current(cur + 1)} accessible={false} style={[block, { right: 0, top: 0, bottom: 0, width: side }]} />
+    <View collapsable={false} style={[block, { left: side, width: cw, top: 0, height: 18 }]} />
+    <View collapsable={false} style={[block, { left: side, width: cw, top: 18 + ch, bottom: 0 }]} />
+    </View>
     </CurCtx.Provider>
   );
 }
@@ -208,7 +206,13 @@ const FanCard = memo(function FanCard({ c, i, S, cw, x, onPress }: { c: Card; i:
   );
 });
 
-function CardPage({ c, setC, width, deck, strip, fade, pan, sv, exitTo }: { c: Card; setC: (c: Card) => void; width: number; deck?: string; strip: ReactNode; fade: any; pan: any; sv: { current: any }; exitTo: string }) {
+// chiusura tirando giù: oltre un terzo dello schermo, oppure con un colpo deciso (veloce e lungo almeno CLOSE_MIN).
+// Prima bastavano un quarto dello schermo o un colpo veloce anche di pochi pixel (troppo sensibile, segnalato dall'utente)
+const CLOSE_AT = 0.34;
+const CLOSE_V = 1.4;
+const CLOSE_MIN = 90;
+
+function CardPage({ c, setC, width, deck, strip, fade, sv, exitTo }: { c: Card; setC: (c: Card) => void; width: number; deck?: string; strip: ReactNode; fade: any; sv: { current: any }; exitTo: string }) {
   const t = useTheme();
   const nav = useNavigation();
   const { height: winH } = useWindowDimensions();
@@ -258,10 +262,10 @@ function CardPage({ c, setC, width, deck, strip, fade, pan, sv, exitTo }: { c: C
         startIn.current = e.nativeEvent.pageY - topY.current < headH.current;
         return false;
       },
-      onMoveShouldSetPanResponderCapture: (_, g) => startIn.current && g.dy > 10 && Math.abs(g.dy) > Math.abs(g.dx) * 1.5,
+      onMoveShouldSetPanResponderCapture: (_, g) => startIn.current && g.dy > 16 && Math.abs(g.dy) > Math.abs(g.dx) * 1.8,
       onPanResponderMove: (_, g) => dragY.setValue(Math.max(0, g.dy)),
       onPanResponderRelease: (_, g) => {
-        if (g.dy > hRef.current * 0.25 || g.vy > 0.8)
+        if (g.dy > hRef.current * CLOSE_AT || (g.vy > CLOSE_V && g.dy > CLOSE_MIN))
           Animated.timing(dragY, { toValue: hRef.current, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => closeRef.current());
         else Animated.spring(dragY, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start();
       },
@@ -271,8 +275,9 @@ function CardPage({ c, setC, width, deck, strip, fade, pan, sv, exitTo }: { c: C
   // dal contenuto già in cima: è l'elenco stesso a tirare (vedi pull.tsx)
   const pull = usePull(
     PULL_S,
-    () => hRef.current * 0.25,
-    () => Animated.timing(dragY, { toValue: hRef.current, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => closeRef.current())
+    () => hRef.current * CLOSE_AT,
+    () => Animated.timing(dragY, { toValue: hRef.current, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => closeRef.current()),
+    { v: CLOSE_V, min: CLOSE_MIN }
   );
   sv.current = { scrollTo: (o: { y: number; animated?: boolean }) => pull.scrollTo(o.y, !!o.animated) };
   const moved = Animated.add(dragY, pull.d);
@@ -377,7 +382,7 @@ function CardPage({ c, setC, width, deck, strip, fade, pan, sv, exitTo }: { c: C
         {/* fila delle carte a ventaglio (precedente e successiva ai lati) */}
         {strip}
 
-        <Animated.View style={fade} {...pan}>
+        <Animated.View style={fade}>
         {/* versioni */}
         {vers.length > 1 && (
           <ScrollView ref={vsv} onLayout={(e) => ((vw.current = e.nativeEvent.layout.width), centerVer(false))} horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }} contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: 14, paddingVertical: 2, gap: 8 }}>

@@ -8,7 +8,8 @@ import { useMemo, useRef, useState } from "react";
 import { Animated } from "react-native";
 
 export const PULL_S = 1600;
-export function usePull(S: number, threshold: () => number, onPull: () => void) {
+// fling: colpo veloce che chiude anche sotto la soglia (velocità in px/ms e tratto minimo); di serie come prima
+export function usePull(S: number, threshold: () => number, onPull: () => void, fling: { v: number; min: number } = { v: 0.8, min: 16 }) {
   const y = useRef(new Animated.Value(S)).current;
   const ref = useRef<any>(null);
   const st = useRef({ drag: false, top: false, settle: 0, closing: false, last: S, t: 0, v: 0, seen: false });
@@ -18,6 +19,8 @@ export function usePull(S: number, threshold: () => number, onPull: () => void) 
   pullRef.current = onPull;
   const thRef = useRef(threshold);
   thRef.current = threshold;
+  const flRef = useRef(fling);
+  flRef.current = fling;
   const toTop = (animated: boolean) => ref.current && ref.current.scrollTo({ y: S, animated });
   const fix = () => {
     const s = st.current;
@@ -66,7 +69,7 @@ export function usePull(S: number, threshold: () => number, onPull: () => void) 
         s.drag = false;
         const p = S - e.nativeEvent.contentOffset.y;
         if (p <= 0) return;
-        if (s.top && (p > thRef.current() || (s.v < -0.8 && p > 16))) {
+        if (s.top && (p > thRef.current() || (s.v < -flRef.current.v && p > flRef.current.min))) {
           s.closing = true;
           pullRef.current();
         } else {
