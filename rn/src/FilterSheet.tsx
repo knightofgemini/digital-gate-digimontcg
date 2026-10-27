@@ -290,7 +290,7 @@ function DDPop({ kind, r, f, vw, vh, pick, onClose }: { kind: Kind; r: Rect; f: 
   });
   return (
     <Animated.View style={{ position: "absolute", left, width: w, ...pos, borderRadius: 14, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, boxShadow: "0 14px 40px rgba(0,0,0,.25)", overflow: "hidden", opacity: mv.interpolate({ inputRange: [0, 187], outputRange: [1, 0.15], extrapolate: "clamp" }), transform: [{ translateY: mv }] }}>
-      <Animated.ScrollView {...pull.scroll} style={{ flexShrink: 1, transform: [{ translateY: pull.neg }] }} contentContainerStyle={[pull.pad, { paddingVertical: 8, paddingHorizontal: 6, gap: grid ? 6 : 2 }, grid ? { flexDirection: "row", flexWrap: "wrap" } : null]} keyboardShouldPersistTaps="handled">
+      <Animated.ScrollView {...pull.scroll} style={{ flexShrink: 1, transform: [{ translateY: pull.neg }] }} contentContainerStyle={[pull.pad, { paddingVertical: 8, paddingTop: PULL_S + 8, paddingHorizontal: 6, gap: grid ? 6 : 2 }, grid ? { flexDirection: "row", flexWrap: "wrap" } : null]} keyboardShouldPersistTaps="handled">
         {items}
       </Animated.ScrollView>
       {kind === "sp" ? (

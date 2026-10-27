@@ -26,7 +26,10 @@ export function SheetScrollView({ style, contentContainerStyle, ...p }: ScrollVi
     ctx.setD(pull.d);
     return () => ctx.setD(null);
   }, []);
-  return <Animated.ScrollView {...p} {...pull.scroll} style={[style, { transform: [{ translateY: pull.neg }] }]} contentContainerStyle={[pull.pad, contentContainerStyle]} />;
+  // lo spazio vuoto sopra si somma al margine interno in alto dell'elenco (non lo sostituisce)
+  const cs: any = StyleSheet.flatten(contentContainerStyle) || {};
+  const top = cs.paddingTop ?? cs.paddingVertical ?? cs.padding ?? 0;
+  return <Animated.ScrollView {...p} {...pull.scroll} style={[style, { transform: [{ translateY: pull.neg }] }]} contentContainerStyle={[cs, pull.pad, { paddingTop: PULL_S + top }]} />;
 }
 const NATIVE = Platform.OS !== "web";
 const ZERO = new Animated.Value(0);
