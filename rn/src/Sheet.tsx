@@ -114,7 +114,7 @@ export function Sheet({
   const dist = h || winH;
   return (
     <Modal visible transparent animationType="none" statusBarTranslucent onRequestClose={onBack || onClose}>
-      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: scrim || t.scrim, opacity: Animated.multiply(a, (pd ? Animated.add(drag, pd) : drag).interpolate({ inputRange: [0, dist], outputRange: [1, 0.15], extrapolate: "clamp" })) }]}>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: scrim || t.scrim, opacity: Animated.multiply(a, ((pd ? Animated.add(drag, pd) : drag) as any).interpolate({ inputRange: [0, dist], outputRange: [1, 0.15], extrapolate: "clamp" })) }]}>
         <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Chiudi" />
       </Animated.View>
       <Animated.View

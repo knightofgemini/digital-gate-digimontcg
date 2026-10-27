@@ -4,19 +4,29 @@
 // dell'elenco) e a riposo l'elenco è scorso di S; tirando giù dalla cima si scorre dentro lo spazio vuoto.
 // d = quanto si è tirato: il foglio scende di d e l'elenco sale di d al suo interno, così tutto segue il dito.
 // Rilasciando oltre la soglia o con un colpo veloce si chiude (onPull), altrimenti torna su.
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Animated } from "react-native";
 
 export const PULL_S = 1600;
 export function usePull(S: number, threshold: () => number, onPull: () => void) {
   const y = useRef(new Animated.Value(S)).current;
   const ref = useRef<any>(null);
-  const st = useRef({ drag: false, top: false, settle: 0, closing: false, last: S, t: 0, v: 0, init: false });
+  const st = useRef({ drag: false, top: false, settle: 0, closing: false, last: S, t: 0, v: 0, seen: false });
+  // altezza dell'elenco: il contenuto è alto almeno quanto l'elenco, così la posizione di riposo (S) è sempre raggiungibile
+  const [V, setV] = useState(0);
   const pullRef = useRef(onPull);
   pullRef.current = onPull;
   const thRef = useRef(threshold);
   thRef.current = threshold;
   const toTop = (animated: boolean) => ref.current && ref.current.scrollTo({ y: S, animated });
+  const fix = () => {
+    const s = st.current;
+    if (s.drag || s.closing) return;
+    if (!s.seen || s.last < S - 0.5) {
+      toTop(false);
+      setTimeout(() => !st.current.drag && !st.current.closing && (!st.current.seen || st.current.last < S - 0.5) && toTop(false), 60);
+    }
+  };
   return useMemo(() => {
     const d = y.interpolate({ inputRange: [0, S], outputRange: [S, 0], extrapolate: "clamp" });
     const neg = y.interpolate({ inputRange: [0, S], outputRange: [-S, 0], extrapolate: "clamp" });
@@ -26,18 +36,19 @@ export function usePull(S: number, threshold: () => number, onPull: () => void) 
       scrollEventThrottle: 16,
       showsVerticalScrollIndicator: false,
       // a riposo l'elenco è in cima al contenuto vero (anche se contentOffset non venisse applicato)
-      onLayout: () => {
-        if (!st.current.init) {
-          st.current.init = true;
-          toTop(false);
-        }
+      onLayout: (e: any) => {
+        const h = Math.round(e.nativeEvent.layout.height);
+        setV((o) => (Math.abs(o - h) > 1 ? h : o));
+        fix();
       },
+      onContentSizeChange: () => fix(),
       onScroll: Animated.event([{ nativeEvent: { contentOffset: { y } } }], {
         useNativeDriver: true,
         listener: (e: any) => {
           const s = st.current,
             v = e.nativeEvent.contentOffset.y,
             now = Date.now();
+          s.seen = true;
           if (now > s.t) s.v = (v - s.last) / (now - s.t);
           s.last = v;
           s.t = now;
@@ -65,7 +76,7 @@ export function usePull(S: number, threshold: () => number, onPull: () => void) 
       },
     };
     // contenuto: spazio vuoto sopra che non conta nell'altezza dell'elenco
-    const pad = { paddingTop: S, marginBottom: -S };
+    const pad = { paddingTop: S, marginBottom: -S, minHeight: V ? S + V : undefined };
     return {
       d,
       neg,
@@ -83,5 +94,5 @@ export function usePull(S: number, threshold: () => number, onPull: () => void) 
       // posizione nel contenuto vero
       offset: () => st.current.last - S,
     };
-  }, [S]);
+  }, [S, V]);
 }
