@@ -37,4 +37,13 @@ html = head + tpl.replace("/*DATA*/", data) + tail
 for f in ("icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "favicon.ico", "favicon-32.png",
           "manifest.webmanifest", "sw.js"):
     shutil.copy(src / f, www / f)
+# dati delle carte anche come file a parte (www/dati/): la nuova app (rn/) li scarica all'avvio, così le carte nuove
+# (es. gli spoiler) arrivano senza installare un APK nuovo. ver.json: impronta dei dati (h) e momento della pubblicazione (t)
+import hashlib, subprocess
+dd = www / "dati"; dd.mkdir(exist_ok=True)
+raw_d, raw_p = (src / "data.json").read_bytes(), (src / "products.json").read_bytes()
+(dd / "data.json").write_bytes(raw_d); (dd / "products.json").write_bytes(raw_p)
+try: t = int(subprocess.run(["git", "log", "-1", "--format=%ct"], cwd=root, capture_output=True, text=True).stdout.strip() or 0)
+except Exception: t = 0
+(dd / "ver.json").write_text(json.dumps({"h": hashlib.sha1(raw_d + raw_p).hexdigest()[:16], "t": t}), encoding="utf-8")
 print("www/index.html", len(html) // 1024, "KB")

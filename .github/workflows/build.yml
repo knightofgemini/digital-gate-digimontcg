@@ -42,6 +42,7 @@ jobs:
           path: |
             www
             !www/img
+            !www/dati
   deploy:
     needs: web
     if: ${{ !inputs.prova_apk }}

@@ -1,9 +1,10 @@
 name: Nuove carte (spoiler)
-# Ogni giorno controlla nella raccolta TakaOtaku se ci sono carte nuove nei prodotti in arrivo (es. BT27, EX14),
-# immagini arrivate per le versioni tenute da parte o prodotti nuovi con carte già svelate.
-# Se c'è qualcosa: prepara i dati nel ramo "spoiler-nuove" (NON pubblicati) e avvisa con una segnalazione (issue)
-# con l'elenco e le immagini. La pubblicazione avviene solo dopo il controllo sulle immagini e l'ok dell'utente.
-# Avviso una volta sola per le stesse novità (stato salvato nel ramo "spoiler-stato").
+# Ogni giorno controlla nella raccolta TakaOtaku se ci sono carte nuove nei prodotti in arrivo (es. BT27, EX14).
+# Pubblicazione automatica con filtro (scelta dell'utente del 31 ottobre 2026): le carte con immagine e testo completo
+# vanno su main e si pubblicano subito (sito, APK attuale e nuova app, che scarica i dati dal sito); le altre restano
+# in "_hold"/"_hold_versions" di tools/card_fixes.json ed entrano da sole quando sono complete.
+# Avviso via mail con l'elenco (segnalazione su GitHub aperta e subito chiusa), una volta sola per le stesse novità
+# (stato nel ramo "spoiler-stato"). Con "prova": dati nel ramo "spoiler-auto-prova", niente pubblicazione né avviso.
 on:
   workflow_dispatch:
     inputs:
@@ -14,6 +15,7 @@ on:
 permissions:
   contents: write
   issues: write
+  actions: write   # avvio della pubblicazione (build.yml): i push fatti da qui non la fanno partire da soli
 concurrency:
   group: spoiler
   cancel-in-progress: false
@@ -48,47 +50,59 @@ jobs:
         id: c
         env:
           TAKA: ${{ runner.temp }}/taka
-        run: python3 tools/spoiler_check.py --apply --report "$RUNNER_TEMP/report.md" --out "$GITHUB_OUTPUT" --prev "${{ steps.prev.outputs.ids }}"
+        run: python3 tools/spoiler_check.py --apply --auto --report "$RUNNER_TEMP/report.md" --out "$GITHUB_OUTPUT" --prev "${{ steps.prev.outputs.ids }}"
       - name: Riepilogo
         if: ${{ always() && !inputs.prova_mail }}
         run: cat "$RUNNER_TEMP/report.md" >> "$GITHUB_STEP_SUMMARY" || true
-      - name: Ramo spoiler-nuove e segnalazione
-        if: ${{ !inputs.prova_mail && steps.c.outputs.cambiato == '1' && steps.c.outputs.ids != steps.prev.outputs.ids }}
+      - name: Pubblica le carte nuove
+        if: ${{ !inputs.prova_mail && steps.c.outputs.pubblica == '1' }}
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -e
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add src/data.json tools/card_fixes.json
+          git diff --cached --quiet && { echo "niente da pubblicare"; exit 0; }
+          git commit -qm "Spoiler: carte nuove del $(date +%d/%m/%Y) (pubblicate da sole: con immagine e testo completo)"
+          if [ "${{ inputs.prova }}" = "true" ]; then
+            git push -q -f origin HEAD:refs/heads/spoiler-auto-prova; echo "Prova: dati nel ramo spoiler-auto-prova"; exit 0
+          fi
+          for n in 1 2 3; do
+            git pull -q --rebase origin main && git push -q origin HEAD:main && break
+            sleep 10
+          done
+          gh workflow run build.yml --ref main
+          echo "::notice title=Pubblicazione::carte nuove su main, pubblicazione avviata"
+      - name: Avviso via mail
+        if: ${{ !inputs.prova_mail && !inputs.prova && steps.c.outputs.cambiato == '1' && steps.c.outputs.ids != steps.prev.outputs.ids }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -e
+          echo "" >> "$RUNNER_TEMP/report.md"; echo "@${{ github.repository_owner }}" >> "$RUNNER_TEMP/report.md"
+          # segnalazione aperta e subito chiusa: arriva la mail, non resta niente da fare
+          url=$(gh issue create --repo "${{ github.repository }}" --title "Spoiler del $(date +%d/%m/%Y)" --body-file "$RUNNER_TEMP/report.md")
+          gh issue close "$url" --repo "${{ github.repository }}"
+      - name: Stato dell'avviso
+        if: ${{ !inputs.prova_mail && steps.c.outputs.ids != steps.prev.outputs.ids }}
+        env:
           SUF: ${{ inputs.prova && '-prova' || '' }}
         shell: bash
         run: |
-          set -eE
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          if ! git diff --quiet src/data.json; then
-            git checkout -q -B "spoiler-nuove$SUF"
-            git add src/data.json
-            git commit -qm "Spoiler: carte nuove dal controllo del $(date +%d/%m/%Y) (da controllare, non pubblicate)"
-            git push -q -f origin "spoiler-nuove$SUF"
-          fi
-          echo "" >> "$RUNNER_TEMP/report.md"; echo "@${{ github.repository_owner }}" >> "$RUNNER_TEMP/report.md"
-          # una sola segnalazione aperta alla volta: le novità successive diventano commenti
-          if [ -n "$SUF" ]; then echo "Prova: nessuna segnalazione"; else
-          num=$(gh issue list --repo "${{ github.repository }}" --state open --search "Nuove carte spoiler in:title" --json number --jq '.[0].number // empty')
-          if [ -n "$num" ]; then gh issue comment "$num" --repo "${{ github.repository }}" --body-file "$RUNNER_TEMP/report.md"
-          else gh issue create --repo "${{ github.repository }}" --title "Nuove carte spoiler da controllare" --body-file "$RUNNER_TEMP/report.md"; fi
-          fi
-          # stato: le novità già segnalate (per non ripetere l'avviso domani)
+          git config user.name "github-actions"; git config user.email "actions@github.com"
           d=$(mktemp -d); git worktree add -q --detach "$d"; cd "$d"
           git checkout -q --orphan "spoiler-stato$SUF"; git rm -rqf --ignore-unmatch .
           echo "${{ steps.c.outputs.ids }}" > stato.txt
           git add stato.txt; git commit -qm "Stato del controllo spoiler"; git push -q -f origin "spoiler-stato$SUF"
-      - name: Nessuna novità da segnalare
-        if: ${{ !inputs.prova_mail && (steps.c.outputs.cambiato != '1' || steps.c.outputs.ids == steps.prev.outputs.ids) }}
-        run: echo "Nessuna novità rispetto all'ultimo avviso"
-      - name: Chiudi la segnalazione quando tutto è pubblicato
-        # nessuna differenza fra la raccolta e il catalogo pubblicato: le carte segnalate sono state pubblicate
-        if: ${{ !inputs.prova_mail && !inputs.prova && steps.c.outputs.cambiato != '1' }}
+      - name: Chiudi la vecchia segnalazione "da controllare"
+        # prima del 31 ottobre 2026 le carte aspettavano il controllo a mano: ora non serve più
+        if: ${{ !inputs.prova_mail && !inputs.prova }}
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           num=$(gh issue list --repo "${{ github.repository }}" --state open --search "Nuove carte spoiler in:title" --json number --jq '.[0].number // empty')
-          if [ -n "$num" ]; then gh issue close "$num" --repo "${{ github.repository }}" --comment "Tutte le carte segnalate sono nel catalogo pubblicato."; fi
+          if [ -n "$num" ]; then gh issue close "$num" --repo "${{ github.repository }}" --comment "Le carte spoiler ora si pubblicano da sole (con immagine e testo completo)."; fi
