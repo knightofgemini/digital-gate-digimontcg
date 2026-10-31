@@ -8,9 +8,10 @@ import { Card } from "./data";
 import { useTheme } from "./theme";
 
 type Act = { label: string; onPress: () => void };
-let show: ((m: string, a?: Act) => void) | null = null;
-export function toast(msg: string, action?: Act) {
-  show && show(msg, action);
+let show: ((m: string, a?: Act, ms?: number) => void) | null = null;
+// ms: per quanto resta visibile (di solito 2,6 s; di più per gli avvisi con un'azione da non perdere)
+export function toast(msg: string, action?: Act, ms?: number) {
+  show && show(msg, action, ms);
 }
 // apertura del foglio "Salva in…" da qualunque pagina (registrata da FavSheetHost)
 export const favSheetRef: { open: (c: Card) => void } = { open: () => {} };
@@ -23,10 +24,10 @@ export function ToastHost() {
   const [m, setM] = useState<{ msg: string; act?: Act } | null>(null);
   useEffect(() => {
     let tm: any;
-    show = (msg, act) => {
+    show = (msg, act, ms) => {
       setM({ msg, act });
       clearTimeout(tm);
-      tm = setTimeout(() => setM(null), 2600);
+      tm = setTimeout(() => setM(null), ms || 2600);
     };
     return () => {
       show = null;

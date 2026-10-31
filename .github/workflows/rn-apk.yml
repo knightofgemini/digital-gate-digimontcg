@@ -33,6 +33,14 @@ jobs:
         run: |
           if npx tsc --noEmit > /tmp/tsc.txt 2>&1; then echo "TSC OK" >> /tmp/tsc.txt; else echo "TSC ERRORI" >> /tmp/tsc.txt; fi
           tail -40 /tmp/tsc.txt
+      # carte dell'ultimo catalogo pubblicato (ramo main, come il sito): l'APK parte già aggiornato e poi scarica da solo
+      # le carte nuove dal sito (rn/src/dataupd.ts). DATA_T = momento dell'ultimo commit di main, come www/dati/ver.json
+      - name: Dati delle carte del catalogo pubblicato
+        run: |
+          git fetch -q --depth=1 origin main
+          git show FETCH_HEAD:src/data.json > src/data.json
+          git show FETCH_HEAD:src/products.json > src/products.json
+          echo "DATA_T=$(git log -1 --format=%ct FETCH_HEAD)" >> $GITHUB_ENV
       - run: node scripts/sync-data.js
         working-directory: rn
       - name: Numero di versione (sopra l'APK pubblicato) e build 0 (niente avviso di aggiornamento nella prova)

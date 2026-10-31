@@ -8,7 +8,8 @@ import { StatusBar } from "expo-status-bar";
 import { useFonts } from "expo-font";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { loadStore } from "../store";
-import { ToastHost } from "../toast";
+import { ToastHost, toast } from "../toast";
+import { applyNewData, startDataUpdates } from "../dataupd";
 import { FavSheetHost } from "../FavSheet";
 import { UpdateCheck } from "../Update";
 import { loadThemePref, useTheme } from "../theme";
@@ -61,6 +62,8 @@ export default function RootLayout() {
       setReady(true);
       if (!m) startOffline();
       refreshPrices();
+      // carte nuove pubblicate sul sito (es. spoiler): scaricate in sottofondo, in uso riaprendo l'app o con "Aggiorna"
+      startDataUpdates(() => toast("Sono arrivate carte nuove", { label: "Aggiorna", onPress: applyNewData }, 10000));
     });
   }, []);
   if (!ready || (!fonts && !fontErr)) return <View style={{ flex: 1, backgroundColor: t.bg }} />;

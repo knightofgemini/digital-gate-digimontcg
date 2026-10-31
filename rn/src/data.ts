@@ -1,8 +1,12 @@
 // Dati dell'app: gli stessi del sito (src/data.json, src/products.json, src/prices.json), copiati in rn/data/ da scripts/sync-data.js.
 // Stessa logica di src/template.html (CARDS, mkEntry, cardsOfSet, imgQ...).
-import raw from "../data/data.json";
-import rawProducts from "../data/products.json";
+import bundledData from "../data/data.json";
+import bundledProducts from "../data/products.json";
 import { shown } from "./imgstore";
+import { pickData } from "./dataupd";
+
+// dati inclusi nell'APK oppure, se più recenti, gli ultimi scaricati dal sito (dataupd.ts: carte nuove senza un APK nuovo)
+const { raw, products: rawProducts } = pickData<any, any>(bundledData, bundledProducts);
 
 export const TYPES: Record<string, string> = { BT: "Booster", EX: "Extra Booster", ST: "Starter Deck", LM: "Limited", PB: "Premium Bandai", AL: "Altri" };
 export const COLORS: Record<string, string> = { Red: "Rosso", Blue: "Blu", Yellow: "Giallo", Green: "Verde", Black: "Nero", Purple: "Viola", White: "Bianco" };
