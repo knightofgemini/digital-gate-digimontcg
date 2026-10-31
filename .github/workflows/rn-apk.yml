@@ -5,7 +5,7 @@ name: Nuova app (React Native) - APK di prova
 # la release "latest", il sito e l'APK attuale non vengono toccati.
 on:
   push:
-    branches: [react-native]
+    branches: [react-native, rn-dati]
     paths: ["rn/**", ".github/workflows/rn-apk.yml"]
   workflow_dispatch:
 permissions:
