@@ -398,8 +398,8 @@
   "text": [
    [
     14,
-    "w/[Leomon] in its name or",
-    "w/[Leomon] in name or"
+    "w/[Leomon]\u00a0in its name or",
+    "w/[Leomon]\u00a0in name or"
    ]
   ]
  },
@@ -462,20 +462,17 @@
   "ST24-11_P3"
  ],
  "_hold": {
-  "BT27-074": "senza immagine, testo incompleto",
-  "BT27-078": "senza immagine, testo incompleto",
-  "BT27-081": "senza immagine, testo incompleto",
-  "BT27-083": "senza immagine, testo incompleto",
-  "BT27-085": "senza immagine, testo incompleto",
-  "BT27-096": "senza immagine",
-  "BT27-097": "immagine sbagliata (l'anteprima TakaOtaku di BT27-097 è Keenan Crier BT27-096), testo incompleto"
+  "BT27-097": "immagine sbagliata (l'anteprima TakaOtaku di BT27-097 è Keenan Crier BT27-096), testo incompleto",
+  "BT27-032": "senza immagine (dal 2026-11-03)"
  },
  "_hold_versions": [
   "BT27-035_P2",
   "BT27-103_P2",
   "EX14-012_P1",
   "EX14-054_P1",
-  "EX14-054_P2"
+  "EX14-054_P2",
+  "BT27-052_P2",
+  "BT27-085_P2"
  ],
  "_hold_note": "_hold_versions: versioni già annunciate ma ancora senza immagine (spoiler); toglierle da qui quando l'immagine è disponibile. _hold: carte svelate ma tenute da parte (senza immagine, testo incompleto o immagine sbagliata); toglierle da qui dopo il controllo sull'immagine."
 }
