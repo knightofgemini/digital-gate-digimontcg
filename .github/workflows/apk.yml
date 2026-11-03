@@ -30,12 +30,6 @@ jobs:
       - run: git fetch -q --depth=1 origin prezzi && git show FETCH_HEAD:prices.json > /tmp/p.json && mv /tmp/p.json src/prices.json || echo "ramo prezzi non disponibile"
       - run: npm ci
         working-directory: rn
-      # controllo dei tipi: il risultato va nel ramo "rn-check" (leggibile anche da fuori), non ferma la build
-      - name: Controllo dei tipi (TypeScript)
-        working-directory: rn
-        run: |
-          if npx tsc --noEmit > /tmp/tsc.txt 2>&1; then echo "TSC OK" >> /tmp/tsc.txt; else echo "TSC ERRORI" >> /tmp/tsc.txt; fi
-          tail -40 /tmp/tsc.txt
       # carte dentro l'APK: DATA_T = momento dell'ultimo commit dei dati, lo stesso di www/dati/ver.json del sito,
       # così l'app scarica dal sito solo carte davvero più recenti (rn/src/dataupd.ts)
       - name: Dati delle carte
@@ -50,6 +44,13 @@ jobs:
           fi
       - run: node scripts/sync-data.js
         working-directory: rn
+      # controllo dei tipi (dopo la copia dei dati, che il codice importa): il risultato va nel ramo "rn-check"
+      # (leggibile anche da fuori), non ferma la build
+      - name: Controllo dei tipi (TypeScript)
+        working-directory: rn
+        run: |
+          if npx tsc --noEmit > /tmp/tsc.txt 2>&1; then echo "TSC OK" >> /tmp/tsc.txt; else echo "TSC ERRORI" >> /tmp/tsc.txt; fi
+          tail -40 /tmp/tsc.txt
       # motore di lettura della scansione dentro l'APK (plugins/withOcrAssets.js lo copia negli asset)
       - run: node scripts/ocr-files.js
         working-directory: rn
