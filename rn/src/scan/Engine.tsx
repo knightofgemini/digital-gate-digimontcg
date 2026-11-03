@@ -1,4 +1,5 @@
-// Motore della scansione sul telefono: WebView invisibile con la pagina di engine.ts.
+// Motore della scansione sul telefono: WebView invisibile con la pagina di engineHtml.ts. Indirizzo di base = i file del
+// motore di lettura dentro l'APK (plugins/withOcrAssets.js), così si caricano senza internet.
 import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { WebView } from "react-native-webview";
@@ -24,7 +25,7 @@ export function Engine() {
   };
   return (
     <View style={{ width: 1, height: 1, position: "absolute", opacity: 0 }} pointerEvents="none">
-      <WV key={gen} ref={ref} onRenderProcessGone={gone} source={{ html: ENGINE_HTML, baseUrl: "https://knightofgemini.github.io/" }} originWhitelist={["*"]} javaScriptEnabled onMessage={(e: any) => engineMessage(e.nativeEvent.data)} />
+      <WV key={gen} ref={ref} onRenderProcessGone={gone} source={{ html: ENGINE_HTML, baseUrl: "file:///android_asset/ocr/" }} allowFileAccess originWhitelist={["*"]} javaScriptEnabled onMessage={(e: any) => engineMessage(e.nativeEvent.data)} />
     </View>
   );
 }

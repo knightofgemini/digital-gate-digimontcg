@@ -83,14 +83,14 @@ export default function Scansiona() {
   useEffect(() => {
     live.current = true;
     loadHistory();
-    setProgress((p) => setStatus("Preparo il riconoscimento (solo la prima volta)… " + Math.round(p * 100) + "%"));
+    setProgress((p) => setStatus("Preparo il riconoscimento… " + Math.round(p * 100) + "%"));
     warm().then(
       () => {
         setReady(true);
         setProgress(null);
       },
       () => {
-        setStatus("Serve la connessione a Internet per preparare il riconoscimento la prima volta.");
+        setStatus("Non riesco a preparare il riconoscimento: chiudi e riapri la scansione.");
         setWarn(true);
       }
     );
@@ -188,7 +188,7 @@ export default function Scansiona() {
         setWarn(true);
       }
     } catch (e) {
-      setStatus("Serve la connessione a Internet per preparare il riconoscimento la prima volta.");
+      setStatus("Non riesco a preparare il riconoscimento: chiudi e riapri la scansione.");
       setWarn(true);
     }
   }

@@ -6,6 +6,7 @@ const queue: string[] = [];
 const pending: Record<string, Pending> = {};
 let seq = 0;
 let onProgress: ((p: number) => void) | null = null;
+export let engineLog = "";
 
 export function setPoster(fn: ((s: string) => void) | null) {
   post = fn;
@@ -24,6 +25,12 @@ export function engineMessage(data: string) {
   if (m.ev === "ready") {
     ready = true;
     while (queue.length && post) post(queue.shift()!);
+    return;
+  }
+  // da dove è partito il motore di lettura (APK o sito) e perché non è partito: solo per lo sviluppo
+  if (m.ev === "log") {
+    engineLog = m.m;
+    if (__DEV__) console.log("scansione:", m.m);
     return;
   }
   if (m.ev === "progress") {

@@ -42,3 +42,6 @@ yarn-error.*
 
 # copia di ../src/data.json (scripts/sync-data.js)
 data/
+
+# motore di lettura della scansione (scripts/ocr-files.js)
+ocr/

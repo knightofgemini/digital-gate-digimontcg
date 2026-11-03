@@ -1,19 +1,50 @@
-// Pagina nascosta che fa il lavoro "da browser" della scansione, come nell'app attuale: OCR con Tesseract.js (scaricato la
-// prima volta che serve) e impronta dell'illustrazione (16×12 pixel normalizzati) per riconoscere la versione.
-// Gira in una WebView (telefono) o in un iframe (sito). Nessuna foto viene inviata o salvata.
+// Pagina nascosta che fa il lavoro "da browser" della scansione, come nell'app attuale: OCR con Tesseract.js e impronta
+// dell'illustrazione (16×12 pixel normalizzati) per riconoscere la versione. Gira in una WebView (telefono) o in un
+// iframe (sito). Nessuna foto viene inviata o salvata.
+// Motore di lettura senza internet né siti esterni (novembre 2026): i file di scripts/ocr-files.js stanno dentro l'APK
+// (file:///android_asset/ocr/, la WebView ha questo indirizzo come base) e, come ripiego, nel deposito del sito
+// (OCR_SITE). Ogni file mette il suo contenuto in window.__OCR; con motore, dati della lingua e codice del worker si
+// costruisce un worker unico (blob): il motore è già definito (TesseractCore, così Tesseract.js non lo cerca altrove) e
+// le richieste dei dati della lingua (fetch di "…traineddata…") ricevono i dati già presenti.
+export const OCR_SITE = "https://knightofgemini.github.io/digital-gate-digimontcg/ocr/";
 export const ENGINE_HTML = `<!doctype html><html><head><meta charset="utf-8"></head><body><script>
-var TESS_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js", tessP = null;
+var OCR_BASES = ["", "${OCR_SITE}"], tessP = null;
 function send(o) { var s = JSON.stringify(o); if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(s); else parent.postMessage(s, "*"); }
+function addScript(src) {
+  return new Promise(function (res, rej) {
+    var s = document.createElement("script"); s.src = src; s.async = false;
+    s.onload = function () { res(); }; s.onerror = function () { s.remove(); rej(new Error("file " + src)); };
+    document.head.appendChild(s);
+  });
+}
+// stessa prova di wasm-feature-detect (istruzioni SIMD del WebAssembly)
+function simdOk() { try { return WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11])); } catch (e) { return false; } }
+function withTimeout(p, ms) { return new Promise(function (res, rej) { var t = setTimeout(function () { rej(new Error("tempo")); }, ms); p.then(function (v) { clearTimeout(t); res(v); }, function (e) { clearTimeout(t); rej(e); }); }); }
+function startFrom(base) {
+  window.__OCR = {};
+  return Promise.all([addScript(base + "tess.js"), addScript(base + "worker.js"), addScript(base + (simdOk() ? "core-simd.js" : "core.js")), addScript(base + "lang.js")]).then(function () {
+    var O = window.__OCR;
+    if (!window.Tesseract || !O.worker || !O.core || !O.lang) throw new Error("file incompleti");
+    var boot = "var __L=" + JSON.stringify(O.lang) + ",__f=self.fetch;" +
+      "self.fetch=function(u,o){if(/traineddata/.test(String(u&&u.url||u))){var b=atob(__L),a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return Promise.resolve(new Response(a));}return __f.apply(self,arguments);};\\n" +
+      O.core + "\\n;\\n" + O.worker;
+    var url = URL.createObjectURL(new Blob([boot], { type: "application/javascript" }));
+    window.__OCR = null; // i testi grandi non servono più: restano solo nel worker
+    return window.Tesseract.createWorker("eng", 1, {
+      workerPath: url, workerBlobURL: false, corePath: "motore-incluso.js", langPath: "https://motore.locale/ocr", cacheMethod: "none",
+      logger: function (m) { if (m && m.progress != null && String(m.status || "").indexOf("recogn") < 0) send({ ev: "progress", p: m.progress }); }
+    });
+  });
+}
 function loadTess() {
   if (tessP) return tessP;
-  tessP = new Promise(function (res, rej) {
-    if (window.Tesseract) { res(); return; }
-    var s = document.createElement("script"); s.src = TESS_URL; s.async = true;
-    s.onload = function () { res(); }; s.onerror = function () { rej(new Error("rete")); };
-    document.head.appendChild(s);
-  }).then(function () {
-    return window.Tesseract.createWorker("eng", 1, { logger: function (m) { if (m && m.progress != null && String(m.status || "").indexOf("recogn") < 0) send({ ev: "progress", p: m.progress }); } });
-  }).then(function (w) { return w.setParameters({ tessedit_pageseg_mode: "11" }).then(function () { return w; }); });
+  var i = 0;
+  var next = function (err) {
+    if (i >= OCR_BASES.length) return Promise.reject(err || new Error("motore"));
+    var base = OCR_BASES[i++];
+    return withTimeout(startFrom(base), 60000).then(function (w) { send({ ev: "log", m: "motore da " + (base || "APK") }); return w; }, function (e) { send({ ev: "log", m: "motore non pronto da " + (base || "APK") + ": " + (e && e.message) }); return next(e); });
+  };
+  tessP = next().then(function (w) { return w.setParameters({ tessedit_pageseg_mode: "11" }).then(function () { return w; }); });
   tessP.catch(function () { tessP = null; });
   return tessP;
 }
