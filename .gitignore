@@ -1,5 +1,7 @@
 node_modules/
 android/
+# eccezione: i sorgenti Android dei moduli nativi della nuova app (rn/modules/*/android) vanno nel repository
+!rn/modules/*/android/
 www/
 *.apk
 __pycache__/

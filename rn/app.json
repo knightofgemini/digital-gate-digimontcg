@@ -1,0 +1,71 @@
+{
+  "expo": {
+    "name": "Digital Gate",
+    "slug": "digital-gate",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "digitalgate",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0b1120",
+        "foregroundImage": "./assets/android-icon-foreground.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "app.digimon.settracker",
+      "versionCode": 1,
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "name": "Digital Gate - Digimon TCG",
+      "themeColor": "#0b1120",
+      "backgroundColor": "#0b1120"
+    },
+    "plugins": [
+      "expo-image",
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Digital Gate usa la fotocamera per riconoscere le carte che inquadri.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Digital Gate apre le foto che scegli per riconoscere le carte.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0b1120",
+          "image": "./assets/splash-empty.png",
+          "imageWidth": 1,
+          "dark": {
+            "backgroundColor": "#0b1120",
+            "image": "./assets/splash-empty.png"
+          }
+        }
+      ],
+      "./plugins/withBackupRules"
+    ],
+    "extra": {
+      "build": 0
+    },
+    "backgroundColor": "#0b1120"
+  }
+}
