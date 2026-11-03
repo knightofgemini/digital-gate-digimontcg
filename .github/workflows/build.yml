@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       apk: { description: "Costruisci e pubblica anche l'APK", type: boolean, default: false }
-      prova: { description: "Solo prova: costruisce senza pubblicare (sito e release restano come sono)", type: boolean, default: false }
+      prova: { description: "Solo prova: costruisce senza pubblicare il sito; l'APK (se chiesto) va nella release di prova rn-prova", type: boolean, default: false }
 permissions:
   contents: write
   pages: write
@@ -77,7 +77,7 @@ jobs:
     needs: cosa
     if: ${{ needs.cosa.outputs.apk == 'true' }}
     uses: ./.github/workflows/apk.yml
-    with: { tipo: latest }
+    with: { tipo: "${{ inputs.prova && 'prova' || 'latest' }}" }
     secrets: inherit
   release:
     # dopo il sito: l'APK nuovo trova già online immagini e dati delle sue carte
@@ -108,3 +108,21 @@ jobs:
           sleep 5
           gh release edit latest --repo "${{ github.repository }}" --draft=false || true
           gh release view latest --repo "${{ github.repository }}" --json isDraft,name
+  anteprima:
+    # solo nelle prove (anche da un ramo): APK nella release di prova "rn-prova", come apk-prova.yml
+    needs: apk
+    if: ${{ inputs.prova }}
+    runs-on: ubuntu-latest
+    env: { GH_TOKEN: "${{ github.token }}" }
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: apk }
+      - name: Release "rn-prova" (pre-release, non tocca "latest")
+        run: |
+          mv DigimonSetTracker.apk DigitalGate-prova.apk
+          gh release delete rn-prova --repo "${{ github.repository }}" --yes --cleanup-tag || true
+          sleep 3
+          gh release create rn-prova DigitalGate-prova.apk --repo "${{ github.repository }}" --prerelease --latest=false --title "App (prova) · ${{ github.ref_name }} · versione ${{ needs.apk.outputs.vc }}" --notes "APK di prova del ramo ${{ github.ref_name }}: si installa sopra l'app, che resta con collezione, preferite e mazzi." --target "${{ github.sha }}"
+          sleep 3
+          gh release edit rn-prova --repo "${{ github.repository }}" --draft=false --prerelease || true
+          gh release view rn-prova --repo "${{ github.repository }}" --json isDraft,isPrerelease,name
