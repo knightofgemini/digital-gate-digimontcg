@@ -1,7 +1,7 @@
 name: Nuove carte (spoiler)
 # Ogni giorno controlla nella raccolta TakaOtaku se ci sono carte nuove nei prodotti in arrivo (es. BT27, EX14).
 # Pubblicazione automatica con filtro (scelta dell'utente del 31 ottobre 2026): le carte con immagine e testo completo
-# vanno su main e si pubblicano subito (sito, APK attuale e nuova app, che scarica i dati dal sito); le altre restano
+# vanno su main e si pubblicano subito sul sito (www/dati, che l'app scarica da sola: niente APK nuovo); le altre restano
 # in "_hold"/"_hold_versions" di tools/card_fixes.json ed entrano da sole quando sono complete.
 # Avviso via mail con l'elenco (segnalazione su GitHub aperta e subito chiusa), una volta sola per le stesse novità
 # (stato nel ramo "spoiler-stato"). Con "prova": dati nel ramo "spoiler-auto-prova", niente pubblicazione né avviso.

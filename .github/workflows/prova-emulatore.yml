@@ -1,15 +1,20 @@
-name: Nuova app (React Native) - foto su emulatore
-# Anteprima senza pubblicare: compila l'APK della nuova app (solo x86_64, per l'emulatore), lo avvia su un emulatore
-# Android 14 e fotografa le schede carta indicate. Le foto vanno nel ramo "rn-shots"; nessuna release viene toccata.
-# Si avvia a ogni invio sul ramo rn-tag (le carte da fotografare sono in tools/rn_shots.txt).
+name: Prova su emulatore
+# Anteprima senza pubblicare: compila l'APK dell'app (solo x86_64, per l'emulatore), lo avvia su un emulatore Android 14
+# e fotografa le schede carta indicate. Le foto vanno nel ramo "rn-shots"; nessuna release viene toccata.
+# Si avvia a ogni invio sul ramo rn-tag (le carte da fotografare sono in tools/rn_shots.txt) o a mano da qualsiasi ramo;
+# con "scansione" (o inviando sul ramo rn-scan) prova invece la scansione senza rete (tools/rn_scan.py: motore di
+# lettura dall'APK e una foto).
 on:
   push:
-    branches: [rn-tag]
-    paths: ["rn/**", "tools/rn_shots*", ".github/workflows/rn-shot.yml"]
+    branches: [rn-tag, rn-scan]
+    paths: ["rn/**", "tools/rn_shots*", ".github/workflows/prova-emulatore.yml"]
+  workflow_dispatch:
+    inputs:
+      scansione: { description: "Prova della scansione senza rete al posto delle foto delle carte", type: boolean, default: false }
 permissions:
   contents: write
 concurrency:
-  group: rn-shot-${{ github.ref }}
+  group: prova-emulatore-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   shots:
@@ -30,6 +35,8 @@ jobs:
           tail -40 /tmp/tsc.txt
       - run: node scripts/sync-data.js
         working-directory: rn
+      - run: node scripts/ocr-files.js
+        working-directory: rn
       - run: npx expo prebuild --platform android --clean --no-install
         working-directory: rn
       - name: Firma e architettura dell'emulatore
@@ -43,6 +50,9 @@ jobs:
           set -o pipefail
           chmod +x gradlew && ./gradlew assembleRelease --no-daemon 2>&1 | tail -40 | tee /tmp/gradle.txt
       - run: cp rn/android/app/build/outputs/apk/release/app-release.apk prova.apk
+      - name: Foto di una carta per la prova della scansione
+        if: ${{ inputs.scansione || github.ref_name == 'rn-scan' }}
+        run: pip install pillow && python3 -c "from PIL import Image; Image.open('src/errata/BT10-086.webp').convert('RGB').save('carta.jpg', quality=92)"
       - name: KVM per l'emulatore
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -55,7 +65,7 @@ jobs:
           profile: pixel_6
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: adb install -r prova.apk && python3 tools/rn_shots.py foto "$(cat tools/rn_shots.txt)" && python3 tools/rn_gestures.py foto
+          script: adb install -r prova.apk && if [ "${{ inputs.scansione || github.ref_name == 'rn-scan' }}" = "true" ]; then python3 tools/rn_scan.py foto; else python3 tools/rn_shots.py foto "$(cat tools/rn_shots.txt)" && python3 tools/rn_gestures.py foto; fi
       - name: Foto nel ramo rn-shots
         if: always()
         run: |

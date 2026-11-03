@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Digital Gate · Digimon TCG</title>
+<meta name="description" content="Catalogo non ufficiale del Digimon Card Game in inglese: carte, collezione, mazzi e prossime uscite. App per Android.">
+<meta name="theme-color" content="#0b1120">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  :root {
+    --bg: #0b1120; --surface: #131b2e; --surface2: #1c2640; --line: rgba(147, 161, 189, .18);
+    --ink: #e8edf7; --ink2: #93a1bd; --accent: #ff7a3d; --accent-ink: #1a0b03; --cyan: #63d5ee;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f1f4f9; --surface: #ffffff; --surface2: #e7ecf4; --line: rgba(81, 96, 122, .18);
+      --ink: #0f1a2e; --ink2: #51607a; --accent: #e0531a; --accent-ink: #ffffff; --cyan: #1b8fa8;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; min-height: 100vh; min-height: 100dvh; background: var(--bg); color: var(--ink);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    padding: max(40px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
+    -webkit-tap-highlight-color: transparent;
+  }
+  main { width: 100%; max-width: 440px; flex: 1; display: flex; flex-direction: column; }
+  .mark { width: 112px; height: 112px; margin: 8px auto 0; filter: drop-shadow(0 10px 28px rgba(255, 122, 61, .22)); }
+  .mark svg { width: 100%; height: 100%; display: block; }
+  h1 { margin: 22px 0 6px; text-align: center; font-size: 34px; line-height: 1.1; letter-spacing: .02em; font-weight: 800; }
+  .tag { margin: 0 0 4px; text-align: center; color: var(--cyan); font-size: 13px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+  .lead { margin: 14px 0 0; text-align: center; color: var(--ink2); font-size: 16.5px; }
+  .dl {
+    margin: 28px 0 0; display: flex; align-items: center; justify-content: center; gap: 10px;
+    min-height: 56px; padding: 14px 20px; border-radius: 14px; background: var(--accent); color: var(--accent-ink);
+    font-size: 17.5px; font-weight: 800; text-decoration: none; transition: transform .12s ease, filter .12s ease;
+  }
+  .dl:hover { filter: brightness(1.06); }
+  .dl:active { transform: scale(.985); }
+  .dl:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
+  .dl svg { width: 22px; height: 22px; flex: none; }
+  .note { margin: 10px 0 0; text-align: center; color: var(--ink2); font-size: 13.5px; }
+  .card { margin: 26px 0 0; padding: 18px 18px 6px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+  .card h2 { margin: 0 0 12px; font-size: 15px; letter-spacing: .02em; }
+  ol { margin: 0; padding: 0; list-style: none; counter-reset: s; }
+  li { counter-increment: s; position: relative; padding: 0 0 14px 38px; color: var(--ink2); font-size: 15px; }
+  li::before {
+    content: counter(s); position: absolute; left: 0; top: 0; width: 26px; height: 26px; border-radius: 8px;
+    background: var(--surface2); color: var(--ink); font-size: 13.5px; font-weight: 800; display: grid; place-items: center;
+  }
+  li b { color: var(--ink); font-weight: 650; }
+  .feat { margin: 22px 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .feat li { display: flex; align-items: center; padding: 10px 12px; border-radius: 12px; background: var(--surface2); color: var(--ink); font-size: 14px; font-weight: 600; }
+  .feat li::before { content: none; }
+  footer { width: 100%; max-width: 440px; margin-top: 30px; text-align: center; color: var(--ink2); font-size: 12.5px; }
+  @media (prefers-reduced-motion: reduce) { .dl { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="mark"><!--MARK--></div>
+  <h1>Digital Gate</h1>
+  <p class="tag">Digimon Card Game</p>
+  <p class="lead">Il catalogo delle carte in inglese, con la tua collezione, i mazzi e le prossime uscite. Tutto nell'app per Android.</p>
+  <a class="dl" href="https://github.com/knightofgemini/digital-gate-digimontcg/releases/download/latest/DigimonSetTracker.apk">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>
+    Scarica l'app per Android
+  </a>
+  <p class="note">Sempre l'ultima versione · file APK</p>
+  <ul class="feat">
+    <li>Tutte le carte e le versioni</li>
+    <li>Collezione e wishlist</li>
+    <li>Deckbuilding e lista ban</li>
+    <li>Prezzi e scansione</li>
+  </ul>
+  <section class="card">
+    <h2>Come si installa</h2>
+    <ol>
+      <li><b>Scarica il file</b> dal telefono Android con il pulsante qui sopra.</li>
+      <li><b>Aprilo</b> e, se Android lo chiede, consenti l'installazione da questa fonte.</li>
+      <li><b>Hai già l'app?</b> Si aggiorna sopra: collezione, preferite e mazzi restano dove sono.</li>
+    </ol>
+  </section>
+</main>
+<footer>Progetto non ufficiale. Immagini e marchi © Bandai, Akiyoshi Hongo, Toei Animation.</footer>
+</body>
+</html>

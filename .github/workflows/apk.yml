@@ -1,0 +1,123 @@
+name: APK (costruzione)
+# Costruisce l'APK dell'app (React Native/Expo, cartella rn/) e lo lascia nell'artifact "apk" (DigimonSetTracker.apk).
+# Non pubblica niente: lo usano build.yml (release "latest") e apk-prova.yml (release "rn-prova").
+# Stesso pacchetto (app.digimon.settracker) e stessa chiave (android-keys/debug.keystore) di sempre: ogni versione si
+# installa sopra la precedente, anche sopra la vecchia app. NON cambiare la chiave.
+# tipo "latest": versionCode e numero di build = numero di run di build.yml (la release "latest" si chiama "… build N",
+#   l'app lo confronta con il suo per proporre l'aggiornamento); dati delle carte di questo commit.
+# tipo "prova": versionCode = numero della release "latest" (si installa sopra e si torna indietro senza disinstallare),
+#   build 0 (niente avviso di aggiornamento), dati delle carte del catalogo pubblicato (main).
+on:
+  workflow_call:
+    inputs:
+      tipo: { type: string, required: true }
+    outputs:
+      vc: { description: "versionCode dell'APK", value: "${{ jobs.apk.outputs.vc }}" }
+permissions:
+  contents: write
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env: { GH_TOKEN: "${{ github.token }}" }
+    outputs: { vc: "${{ steps.ver.outputs.vc }}" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: rn/package-lock.json }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      # prezzi più recenti (ramo "prezzi", aggiornato ogni notte da prezzi.yml); se manca resta src/prices.json
+      - run: git fetch -q --depth=1 origin prezzi && git show FETCH_HEAD:prices.json > /tmp/p.json && mv /tmp/p.json src/prices.json || echo "ramo prezzi non disponibile"
+      - run: npm ci
+        working-directory: rn
+      # controllo dei tipi: il risultato va nel ramo "rn-check" (leggibile anche da fuori), non ferma la build
+      - name: Controllo dei tipi (TypeScript)
+        working-directory: rn
+        run: |
+          if npx tsc --noEmit > /tmp/tsc.txt 2>&1; then echo "TSC OK" >> /tmp/tsc.txt; else echo "TSC ERRORI" >> /tmp/tsc.txt; fi
+          tail -40 /tmp/tsc.txt
+      # carte dentro l'APK: DATA_T = momento dell'ultimo commit dei dati, lo stesso di www/dati/ver.json del sito,
+      # così l'app scarica dal sito solo carte davvero più recenti (rn/src/dataupd.ts)
+      - name: Dati delle carte
+        run: |
+          if [ "${{ inputs.tipo }}" = "prova" ]; then
+            git fetch -q --depth=1 origin main
+            git show FETCH_HEAD:src/data.json > src/data.json
+            git show FETCH_HEAD:src/products.json > src/products.json
+            echo "DATA_T=$(git log -1 --format=%ct FETCH_HEAD)" >> $GITHUB_ENV
+          else
+            echo "DATA_T=$(git log -1 --format=%ct HEAD)" >> $GITHUB_ENV
+          fi
+      - run: node scripts/sync-data.js
+        working-directory: rn
+      # motore di lettura della scansione dentro l'APK (plugins/withOcrAssets.js lo copia negli asset)
+      - run: node scripts/ocr-files.js
+        working-directory: rn
+      - name: Numero di versione
+        id: ver
+        working-directory: rn
+        run: |
+          if [ "${{ inputs.tipo }}" = "prova" ]; then
+            LATEST=$(gh release view latest --json name -q .name | grep -oE '[0-9]+$' || echo 0)
+            VC=$((LATEST > 0 ? LATEST : 1)); BUILD=0
+          else
+            VC=${{ github.run_number }}; BUILD=$VC
+          fi
+          echo "vc=$VC" >> $GITHUB_OUTPUT
+          export VC BUILD
+          node -e '
+            const fs = require("fs"), j = JSON.parse(fs.readFileSync("app.json", "utf8"));
+            j.expo.android.versionCode = +process.env.VC; j.expo.version = "2.0." + process.env.VC;
+            j.expo.extra = Object.assign({}, j.expo.extra, { build: +process.env.BUILD });
+            fs.writeFileSync("app.json", JSON.stringify(j, null, 2));
+            console.log(j.expo.android, j.expo.version, j.expo.extra);'
+      - run: npx expo prebuild --platform android --clean --no-install
+        working-directory: rn
+      - name: Icona Digital Gate e firma fissa
+        working-directory: rn
+        run: |
+          rm -f android/app/src/main/res/mipmap-*/ic_launcher*.webp   # icone generate da Expo: al loro posto quelle di Digital Gate
+          cp -r ../android-res/. android/app/src/main/res/
+          cp ../android-keys/debug.keystore android/app/debug.keystore
+          grep -n -A6 "signingConfigs" android/app/build.gradle
+          # a capo prima: l'ultima riga del file non ne ha uno (altrimenti si attacca alla riga precedente)
+          printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g\n' >> android/gradle.properties
+          # solo le architetture dei telefoni (x86 e x86_64 servono agli emulatori: ~65 MB in meno)
+          printf 'reactNativeArchitectures=arm64-v8a,armeabi-v7a\n' >> android/gradle.properties
+          tail -4 android/gradle.properties
+      - name: Build APK
+        working-directory: rn/android
+        run: |
+          set -o pipefail
+          chmod +x gradlew && ./gradlew assembleRelease --no-daemon 2>&1 | tee /tmp/gradle.txt
+      - run: cp rn/android/app/build/outputs/apk/release/app-release.apk DigimonSetTracker.apk
+      # pezzi che devono esserci davvero (prima il servizio di scaricamento mancava senza che la build se ne accorgesse)
+      - name: Controllo del contenuto (scaricamento in sottofondo, motore della scansione)
+        run: |
+          BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+          unzip -p DigimonSetTracker.apk 'classes*.dex' | grep -a -q "expo/modules/bgdownload/BgDownloadService" || { echo "BgDownloadService non trovato nell'APK" | tee -a /tmp/gradle.txt; exit 1; }
+          $BT/aapt dump xmltree DigimonSetTracker.apk AndroidManifest.xml | grep -q "FOREGROUND_SERVICE_DATA_SYNC" || { echo "permessi del servizio mancanti" | tee -a /tmp/gradle.txt; exit 1; }
+          for f in tess.js worker.js core.js core-simd.js lang.js; do
+            unzip -l DigimonSetTracker.apk "assets/ocr/$f" | grep -q "assets/ocr/$f" || { echo "motore della scansione: manca assets/ocr/$f" | tee -a /tmp/gradle.txt; exit 1; }
+          done
+          ls -la DigimonSetTracker.apk
+      - name: Controllo firma (deve essere sempre la stessa chiave, altrimenti l'aggiornamento non si installa)
+        run: |
+          BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+          GOT=$($BT/apksigner verify --print-certs DigimonSetTracker.apk | grep -m1 "certificate SHA-256 digest" | awk '{print $NF}')
+          WANT=$(keytool -list -v -keystore android-keys/debug.keystore -storepass android -alias androiddebugkey | grep -m1 "SHA256:" | awk '{print $2}' | tr -d ':' | tr 'A-F' 'a-f')
+          echo "firma APK: $GOT"; echo "chiave:     $WANT"
+          test -n "$GOT" && test "$GOT" = "$WANT"
+          $BT/aapt dump badging DigimonSetTracker.apk | head -3
+      - uses: actions/upload-artifact@v4
+        with: { name: apk, path: DigimonSetTracker.apk, retention-days: 7 }
+      # esito del controllo dei tipi e (se fallisce) la fine del log della build nel ramo "rn-check"
+      - name: Esito nel ramo rn-check
+        if: always()
+        run: |
+          mkdir -p /tmp/chk && cd /tmp/chk && git init -q
+          cp /tmp/tsc.txt . 2>/dev/null || echo "tsc non eseguito" > tsc.txt
+          tail -300 /tmp/gradle.txt > gradle.txt 2>/dev/null || echo "build non eseguita" > gradle.txt
+          echo "${{ github.sha }} ${{ job.status }}" > esito.txt
+          git add -A && git -c user.name=Claude -c user.email=noreply@anthropic.com commit -qm "controllo ${{ github.sha }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/rn-check || true

@@ -1,0 +1,32 @@
+name: APK di prova
+# Anteprima di una modifica all'app: avviato a mano su un ramo di prova, costruisce l'APK (apk.yml, tipo "prova") e lo
+# mette nella release "rn-prova" (pre-release, DigitalGate-prova.apk). La release "latest", il sito e main non cambiano.
+# L'APK di prova ha lo stesso versionCode della "latest": si installa sopra e si torna indietro senza disinstallare.
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: apk-prova-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  apk:
+    uses: ./.github/workflows/apk.yml
+    with: { tipo: prova }
+    secrets: inherit
+  release:
+    needs: apk
+    runs-on: ubuntu-latest
+    env: { GH_TOKEN: "${{ github.token }}" }
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: apk }
+      - name: Release "rn-prova" (pre-release, non tocca "latest")
+        run: |
+          mv DigimonSetTracker.apk DigitalGate-prova.apk
+          gh release delete rn-prova --repo "${{ github.repository }}" --yes --cleanup-tag || true
+          sleep 3
+          gh release create rn-prova DigitalGate-prova.apk --repo "${{ github.repository }}" --prerelease --latest=false --title "App (prova) · ${{ github.ref_name }} · versione ${{ needs.apk.outputs.vc }}" --notes "APK di prova del ramo ${{ github.ref_name }}: si installa sopra l'app, che resta con collezione, preferite e mazzi." --target "${{ github.sha }}"
+          sleep 3
+          gh release edit rn-prova --repo "${{ github.repository }}" --draft=false --prerelease || true
+          gh release view rn-prova --repo "${{ github.repository }}" --json isDraft,isPrerelease,name

@@ -1,18 +1,43 @@
 name: Sito e APK
+# Pubblicazione (novembre 2026: l'app è quella React Native di rn/, la vecchia app è nell'etichetta "vecchia-app").
+# A ogni invio su main, e quando lo avvia un altro flusso (es. spoiler.yml con le carte nuove):
+# - deposito su GitHub Pages (tools/build.py e gli script delle immagini): pagina per scaricare l'APK, carte e prodotti
+#   in dati/ (l'app li scarica da sola), immagini, banner, confezioni e loghi, copia del motore della scansione;
+# - APK nella release "latest" solo se è cambiata l'app (rn/, icone, chiave, questo flusso o apk.yml) o se lo si chiede
+#   avviandolo a mano: per le sole carte nuove non serve un APK nuovo (e niente avviso di aggiornamento ogni giorno).
+# Il nome del file resta build.yml: il numero di run è il numero di build dell'APK (cambiando nome ripartirebbe da 1).
 on:
   push:
     branches: [main]
   workflow_dispatch:
     inputs:
-      prova_apk: { description: "Solo prova: costruisce l'APK senza pubblicare sito e release (APK negli artifact)", type: boolean, default: false }
+      apk: { description: "Costruisci e pubblica anche l'APK", type: boolean, default: false }
+      prova: { description: "Solo prova: costruisce senza pubblicare (sito e release restano come sono)", type: boolean, default: false }
 permissions:
   contents: write
   pages: write
   id-token: write
 concurrency:
   group: build-${{ github.ref }}
-  cancel-in-progress: true
+  # in coda, senza interrompere: un controllo degli spoiler non deve fermare un APK a metà
+  cancel-in-progress: false
 jobs:
+  cosa:
+    runs-on: ubuntu-latest
+    outputs: { apk: "${{ steps.c.outputs.apk }}" }
+    steps:
+      - uses: actions/checkout@v4
+      - id: c
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" != "push" ]; then echo "apk=${{ inputs.apk }}" >> $GITHUB_OUTPUT; exit 0; fi
+          B="${{ github.event.before }}"
+          if [ -z "$B" ] || [ "$B" = "0000000000000000000000000000000000000000" ] || ! git fetch -q --depth=1 origin "$B"; then
+            echo "apk=true" >> $GITHUB_OUTPUT; exit 0
+          fi
+          git diff --name-only "$B" HEAD | tee /tmp/cambiati.txt
+          if grep -qE '^(rn/|android-res/|android-keys/|\.github/workflows/(build|apk)\.yml$)' /tmp/cambiati.txt; then echo "apk=true" >> $GITHUB_OUTPUT; else echo "apk=false" >> $GITHUB_OUTPUT; fi
+      - run: echo "::notice title=APK::${{ steps.c.outputs.apk == 'true' && 'costruito e pubblicato (app cambiata)' || 'non serve (solo dati)' }}"
   web:
     runs-on: ubuntu-latest
     steps:
@@ -23,175 +48,63 @@ jobs:
           # una cache nuova a ogni build: così si conservano anche le immagini senza SAMPLE sostituite (www/img/sample.json)
           key: img-v1-${{ hashFiles('src/data.json', 'src/errata/*') }}-${{ github.run_id }}
           restore-keys: img-v1-
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
       - run: pip install pillow numpy   # numpy: ritaglio delle anteprime degli spoiler (tools/spoiler_trim.py)
-      # prezzi più recenti (ramo "prezzi", aggiornato ogni notte da prezzi.yml); se manca resta src/prices.json
-      - run: git fetch -q --depth=1 origin prezzi && git show FETCH_HEAD:prices.json > /tmp/p.json && mv /tmp/p.json src/prices.json || echo "ramo prezzi non ancora disponibile"
+      - run: node rn/scripts/ocr-files.js
       - run: python3 tools/build.py
       - run: python3 tools/fetch_images.py
       - run: python3 tools/fetch_banners.py
       - run: python3 tools/fetch_product_images.py
       - run: python3 tools/apply_errata_images.py
       - run: python3 tools/img_versions.py   # img/v.json: immagini cambiate (il telefono le riscarica)
+      - name: Riepilogo del deposito
+        run: |
+          { echo "### Deposito"; for d in www/*; do echo "- $(basename $d): $(find $d -type f | wc -l) file, $(du -sh $d | cut -f1)"; done; echo; cat www/dati/ver.json; } >> $GITHUB_STEP_SUMMARY
       - uses: actions/configure-pages@v5
         continue-on-error: true
       - uses: actions/upload-pages-artifact@v3
         with: { path: www }
-      - uses: actions/upload-artifact@v4
-        with:
-          name: www
-          path: |
-            www
-            !www/img
-            !www/dati
   deploy:
     needs: web
-    if: ${{ !inputs.prova_apk }}
+    if: ${{ !inputs.prova }}
     runs-on: ubuntu-latest
     environment: { name: github-pages, url: "${{ steps.d.outputs.page_url }}" }
     steps:
       - id: d
         uses: actions/deploy-pages@v4
   apk:
-    needs: web
+    needs: cosa
+    if: ${{ needs.cosa.outputs.apk == 'true' }}
+    uses: ./.github/workflows/apk.yml
+    with: { tipo: latest }
+    secrets: inherit
+  release:
+    # dopo il sito: l'APK nuovo trova già online immagini e dati delle sue carte
+    needs: [deploy, apk]
+    if: ${{ !inputs.prova && needs.apk.result == 'success' }}
     runs-on: ubuntu-latest
+    env: { GH_TOKEN: "${{ github.token }}" }
     steps:
-      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
-        with: { name: www, path: www }
-      - uses: actions/setup-node@v4
-        with: { node-version: 20 }
-      - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: 17 }
-      - run: npm install
-      - run: npx cap add android
-      - name: Permesso fotocamera (scansione delle carte)
+        with: { name: apk }
+      # una volta sola: l'ultimo APK della vecchia app (build 126) resta scaricabile nella release "vecchia-app"
+      - name: Archivio dell'APK della vecchia app
         run: |
-          python3 - <<'PY'
-          import pathlib
-          p = pathlib.Path("android/app/src/main/AndroidManifest.xml"); t = p.read_text()
-          add = ""
-          if "android.permission.CAMERA" not in t: add += '    <uses-permission android:name="android.permission.CAMERA" />\n'
-          if "android.hardware.camera" not in t: add += '    <uses-feature android:name="android.hardware.camera" android:required="false" />\n'
-          t = t.replace("</manifest>", add + "</manifest>"); p.write_text(t)
-          print(t)
-          PY
-      - name: Scaricamento in background (servizio e plugin nativi in android-src/)
+          if gh release view vecchia-app --repo "${{ github.repository }}" >/dev/null 2>&1; then echo "archivio già presente"; exit 0; fi
+          N=$(gh release view latest --repo "${{ github.repository }}" --json name -q .name | grep -oE '[0-9]+$' || echo 0)
+          if [ "$N" -gt 0 ] && [ "$N" -le 126 ]; then
+            mkdir -p vecchia && gh release download latest --repo "${{ github.repository }}" -p DigimonSetTracker.apk -D vecchia
+            mv vecchia/DigimonSetTracker.apk vecchia/DigitalGate-vecchia-app.apk
+            gh release create vecchia-app vecchia/DigitalGate-vecchia-app.apk --repo "${{ github.repository }}" --latest=false \
+              --target cc7b1ed9a8fb7e55a856ca41fa2dd02f7afa3ae9 --title "Vecchia app (archivio) · build $N" \
+              --notes "Ultima versione della vecchia app (HTML + Capacitor), conservata in archivio. Il codice è nell'etichetta vecchia-app; come funzionava: docs/vecchia-app.md."
+          fi
+      - name: Pubblica l'APK nella release "latest"
         run: |
-          python3 - <<'PY'
-          import pathlib, re, shutil
-          src = pathlib.Path("android-src/java"); dst = pathlib.Path("android/app/src/main/java")
-          for f in src.rglob("*.java"):
-              t = dst / f.relative_to(src); t.parent.mkdir(parents=True, exist_ok=True); shutil.copy(f, t); print("copiato", t)
-          ma = next(dst.rglob("MainActivity.java")); t = ma.read_text()
-          if "BgDownloadPlugin" not in t:
-              t = t.replace("public class MainActivity extends BridgeActivity {}",
-                  "public class MainActivity extends BridgeActivity {\n"
-                  "    @Override\n    public void onCreate(android.os.Bundle savedInstanceState) {\n"
-                  "        registerPlugin(BgDownloadPlugin.class);\n        super.onCreate(savedInstanceState);\n    }\n}")
-              assert "registerPlugin(BgDownloadPlugin.class)" in t, "MainActivity non riconosciuta:\n" + t
-              ma.write_text(t)
-          print(ma.read_text())
-          p = pathlib.Path("android/app/src/main/AndroidManifest.xml"); t = p.read_text()
-          add = ""
-          for perm in ("FOREGROUND_SERVICE", "FOREGROUND_SERVICE_DATA_SYNC", "POST_NOTIFICATIONS", "WAKE_LOCK", "ACCESS_WIFI_STATE", "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"):
-              if "android.permission." + perm not in t: add += '    <uses-permission android:name="android.permission.%s" />\n' % perm
-          t = t.replace("</manifest>", add + "</manifest>")
-          if "BgDownloadService" not in t:
-              t = t.replace("</application>", '        <service android:name=".BgDownloadService" android:exported="false" android:foregroundServiceType="dataSync" />\n    </application>')
-          p.write_text(t); print(t)
-          PY
-      - run: npx capacitor-assets generate --android
-      - name: Icona Digital Gate (adattiva, rotonda, a tema) e splash nativo solo blu notte (il marchio è nell'intro)
-        run: |
-          cp -r android-res/. android/app/src/main/res/
-          python3 - <<'PY'
-          import pathlib, re
-          p = pathlib.Path("android/app/src/main/res/values/styles.xml"); t = p.read_text()
-          # barra di stato dello stesso blu notte dell'app già all'apertura (poi l'app la adatta al tema con il plugin StatusBar)
-          if "android:statusBarColor" not in t:
-              t = re.sub(r'(<style name="AppTheme.NoActionBar"[^>]*>)', r'\1\n        <item name="android:statusBarColor">#0b1120</item>\n        <item name="android:windowLightStatusBar">false</item>', t)
-          if "windowSplashScreenBackground" not in t and "Theme.SplashScreen" in t:
-              t = re.sub(r'(<style name="AppTheme.NoActionBarLaunch"[^>]*>)', r'\1\n        <item name="windowSplashScreenBackground">#0b1120</item>\n        <item name="windowSplashScreenAnimatedIcon">@drawable/digital_gate_splash_empty</item>', t)
-          p.write_text(t)
-          print(t)
-          PY
-          ls android/app/src/main/res/mipmap-anydpi-v26 android/app/src/main/res/mipmap-anydpi-v33 android/app/src/main/res/drawable
-      - run: npx cap sync android
-      - name: Firma fissa e numero di versione (aggiornamenti senza disinstallare)
-        run: |
-          # la chiave del repository va indicata esplicitamente: copiata in ~/.android veniva ignorata
-          # e ogni build usciva con una firma diversa (l'aggiornamento sopra l'app installata falliva)
-          python3 - <<'PY'
-          import pathlib, re
-          p = pathlib.Path("android/app/build.gradle"); t = p.read_text()
-          ks = str(pathlib.Path("android-keys/debug.keystore").resolve())
-          cfg = ('    signingConfigs {\n        debug {\n            storeFile file("%s")\n            storePassword "android"\n'
-                 '            keyAlias "androiddebugkey"\n            keyPassword "android"\n        }\n    }\n' % ks)
-          t, n = re.subn(r"^android \{\n", "android {\n" + cfg, t, count=1, flags=re.M)
-          assert n == 1, "blocco android non trovato"
-          p.write_text(t)
-          PY
-          sed -i -E "s/versionCode [0-9]+/versionCode ${{ github.run_number }}/; s/versionName \"[^\"]*\"/versionName \"1.${{ github.run_number }}\"/" android/app/build.gradle
-          grep -E "versionCode|versionName" android/app/build.gradle
-      - run: chmod +x gradlew && ./gradlew assembleDebug
-        working-directory: android
-      - run: cp android/app/build/outputs/apk/debug/app-debug.apk DigimonSetTracker.apk
-      - name: Controllo firma (deve essere sempre la stessa chiave, altrimenti l'aggiornamento non si installa)
-        run: |
-          BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
-          GOT=$($BT/apksigner verify --print-certs DigimonSetTracker.apk | grep -m1 "certificate SHA-256 digest" | awk '{print $NF}')
-          WANT=$(keytool -list -v -keystore android-keys/debug.keystore -storepass android -alias androiddebugkey | grep -m1 "SHA256:" | awk '{print $2}' | tr -d ':' | tr 'A-F' 'a-f')
-          echo "firma APK: $GOT"; echo "chiave:     $WANT"
-          test -n "$GOT" && test "$GOT" = "$WANT"
-      - uses: actions/upload-artifact@v4
-        if: ${{ inputs.prova_apk }}
-        with: { name: apk-prova, path: DigimonSetTracker.apk, retention-days: 7 }
-      - name: Pubblica APK nella release "latest"
-        if: ${{ !inputs.prova_apk }}
-        env: { GH_TOKEN: "${{ github.token }}" }
-        run: |
-          gh release delete latest --yes --cleanup-tag || true
+          gh release delete latest --repo "${{ github.repository }}" --yes --cleanup-tag || true
           sleep 5
-          gh release create latest DigimonSetTracker.apk --title "APK più recente · build ${{ github.run_number }}" --notes "Scarica DigimonSetTracker.apk e installalo sul telefono. build: ${{ github.run_number }}" --target "${{ github.sha }}" --latest
+          gh release create latest DigimonSetTracker.apk --repo "${{ github.repository }}" --title "APK più recente · build ${{ needs.apk.outputs.vc }}" --notes "Scarica DigimonSetTracker.apk e installalo sul telefono. build: ${{ needs.apk.outputs.vc }}" --target "${{ github.sha }}"
           sleep 5
-          gh release edit latest --draft=false || true
-          gh release view latest --json isDraft,name
-  bgtest:
-    # solo nelle prove (prova_apk): emulatore Android 14, scaricamento a schermo spento con la versione pubblicata e con la nuova
-    needs: apk
-    if: ${{ inputs.prova_apk }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with: { name: apk-prova, path: nuova }
-      - name: APK pubblicato (per il confronto)
-        env: { GH_TOKEN: "${{ github.token }}" }
-        run: mkdir -p vecchia && gh release download latest -p DigimonSetTracker.apk -D vecchia
-      - run: pip install websocket-client
-      - name: KVM per l'emulatore
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
-      - uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 34
-          target: google_apis
-          arch: x86_64
-          # rete lenta come un cellulare 3G, così lo scaricamento dura più della prova a schermo spento
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -netspeed umts -netdelay umts
-          disable-animations: true
-          script: ROUNDS=12 bash tools/bgtest.sh nuova/DigimonSetTracker.apk nuova
-      - name: Riepilogo
-        if: always()
-        run: |
-          for f in bgtest-*.txt; do echo "### $f"; cat "$f"; echo; done | tee -a "$GITHUB_STEP_SUMMARY"
-          grep -h "RISULTATO" bgtest-*.txt | sed 's/^/::notice title=Prova sottofondo::/' || true
-      - name: Risultati nel ramo analysis-out
-        if: always()
-        run: |
-          mkdir -p analysis && cp *.txt analysis/ 2>/dev/null || true
-          git config user.name "github-actions"; git config user.email "actions@github.com"
-          git checkout -q --orphan analysis-out; git rm -rqf --cached . >/dev/null
-          git add -f analysis; git commit -qm "prova sottofondo"; git push -q -f origin analysis-out
+          gh release edit latest --repo "${{ github.repository }}" --draft=false || true
+          gh release view latest --repo "${{ github.repository }}" --json isDraft,name

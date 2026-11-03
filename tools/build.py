@@ -1,49 +1,39 @@
 #!/usr/bin/env python3
-"""Costruisce www/index.html (sito e APK usano gli stessi file) da src/template.html + src/data.json."""
-import json, shutil, pathlib, os
+"""Prepara il deposito di GitHub Pages (www/) da cui l'app prende ciò che non sta dentro l'APK.
+
+Da novembre 2026 il sito non è più un'app (la vecchia app è nell'etichetta "vecchia-app" e in docs/vecchia-app.md):
+- www/index.html: pagina per scaricare l'APK (src/sito/index.html con il marchio di src/icons/digital-gate-mark.svg);
+- www/sw.js: chiude il service worker della vecchia app nei browser che l'avevano aperta;
+- www/dati/: carte e prodotti pubblicati, che l'app scarica da sola (rn/src/dataupd.ts) senza bisogno di un APK nuovo;
+  ver.json = impronta dei dati (h) e momento dell'ultimo commit (t), lo stesso usato per i dati dentro l'APK;
+- www/ocr/: copia del motore di lettura della scansione (rn/ocr/, da rn/scripts/ocr-files.js), ripiego di quello nell'APK.
+Immagini (img/), confezioni e loghi (prod/), banner (banners/) li aggiungono gli altri script di tools/ (vedi build.yml)."""
+import hashlib, json, pathlib, shutil, subprocess
+
 root = pathlib.Path(__file__).resolve().parent.parent
 src, www = root / "src", root / "www"
 www.mkdir(exist_ok=True)
-tpl = (src / "template.html").read_text(encoding="utf-8")
-data = (src / "data.json").read_text(encoding="utf-8")
-# caratteristiche dei prodotti (tools/fetch_products.py): aggiunte ai dati come "products"
-prod = json.loads((src / "products.json").read_text(encoding="utf-8"))
-data = data.rstrip()[:-1] + ',"products":' + json.dumps(prod, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/") + "}"
-# prezzi Cardmarket (tools/cardmarket_prices.py): aggiunti ai dati come "prices", se presenti
-if (src / "prices.json").exists():
-    pr = json.loads((src / "prices.json").read_text(encoding="utf-8"))
-    data = data.rstrip()[:-1] + ',"prices":' + json.dumps(pr, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/") + "}"
-# logo ufficiale Cardmarket (src/brand/cardmarket-mark.png, solo forma: il colore lo dà il CSS) incorporato, così funziona anche offline
-import base64
-_cm = src / "brand" / "cardmarket-mark.png"
-if _cm.exists():
-    tpl = tpl.replace("/*CMMARK*/", "data:image/png;base64," + base64.b64encode(_cm.read_bytes()).decode())
-assert "/*DATA*/" in tpl
-head = ('<!doctype html>\n<html lang="it">\n<head>\n<meta charset="utf-8">\n'
-        '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
-        '<meta name="theme-color" content="#0b1120">\n<meta name="color-scheme" content="light dark">\n'
-        '<link rel="manifest" href="manifest.webmanifest">\n<link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">\n'
-        '<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">\n'
-        '<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">\n'
-        '<link rel="apple-touch-icon" href="apple-touch-icon.png">\n<style>[hidden]{display:none!important}</style>\n')
-tail = ('\n<script>if ("serviceWorker" in navigator && /^https?:/.test(location.protocol)) '
-        'navigator.serviceWorker.register("sw.js").catch(function(){});</script>\n</body>\n</html>\n')
-# numero di build (run di GitHub Actions): l'APK lo confronta con quello dell'ultima release per proporre l'aggiornamento
-build = os.environ.get("GITHUB_RUN_NUMBER", "0")
-head += '<script>window.APPBUILD=' + str(int(build)) + ';</script>\n'
-html = head + tpl.replace("/*DATA*/", data) + tail
-(www / "index.html").write_text(html, encoding="utf-8")
-# icone generate da src/icons/digital-gate-mark.svg con tools/make_icons.py
-for f in ("icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "favicon.ico", "favicon-32.png",
-          "manifest.webmanifest", "sw.js"):
-    shutil.copy(src / f, www / f)
-# dati delle carte anche come file a parte (www/dati/): la nuova app (rn/) li scarica all'avvio, così le carte nuove
-# (es. gli spoiler) arrivano senza installare un APK nuovo. ver.json: impronta dei dati (h) e momento della pubblicazione (t)
-import hashlib, subprocess
+
+page = (src / "sito" / "index.html").read_text(encoding="utf-8")
+mark = (src / "icons" / "digital-gate-mark.svg").read_text(encoding="utf-8").strip()
+assert "<!--MARK-->" in page
+(www / "index.html").write_text(page.replace("<!--MARK-->", mark), encoding="utf-8")
+for f in ("favicon.ico", "favicon-32.png", "apple-touch-icon.png", "sw.js"):
+    shutil.copy(src / "sito" / f, www / f)
+# la vecchia app installata come app web cercava questo file: non c'è più
+(www / "manifest.webmanifest").unlink(missing_ok=True)
+
 dd = www / "dati"; dd.mkdir(exist_ok=True)
 raw_d, raw_p = (src / "data.json").read_bytes(), (src / "products.json").read_bytes()
 (dd / "data.json").write_bytes(raw_d); (dd / "products.json").write_bytes(raw_p)
 try: t = int(subprocess.run(["git", "log", "-1", "--format=%ct"], cwd=root, capture_output=True, text=True).stdout.strip() or 0)
 except Exception: t = 0
 (dd / "ver.json").write_text(json.dumps({"h": hashlib.sha1(raw_d + raw_p).hexdigest()[:16], "t": t}), encoding="utf-8")
-print("www/index.html", len(html) // 1024, "KB")
+
+ocr = root / "rn" / "ocr"
+if (ocr / "v.json").exists():
+    shutil.rmtree(www / "ocr", ignore_errors=True)
+    shutil.copytree(ocr, www / "ocr")
+else:
+    print("rn/ocr mancante (node rn/scripts/ocr-files.js): niente copia del motore di lettura sul sito")
+print("deposito pronto:", ", ".join(sorted(p.name for p in www.iterdir())))
