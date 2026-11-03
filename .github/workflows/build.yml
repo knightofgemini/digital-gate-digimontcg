@@ -88,17 +88,25 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with: { name: apk }
-      # una volta sola: l'ultimo APK della vecchia app (build 126) resta scaricabile nella release "vecchia-app"
+      # una volta sola: l'ultimo APK della vecchia app (build 126) resta scaricabile nella release "vecchia-app".
+      # Non deve mai fermare la pubblicazione (continue-on-error). Il 3 novembre 2026 GitHub ha rifiutato (403) la
+      # release sull'etichetta vecchia-app, che punta a un commit vecchio: in quel caso si usa un'etichetta nuova
+      # "vecchia-app-apk" sul commit attuale (il codice resta comunque nell'etichetta vecchia-app).
       - name: Archivio dell'APK della vecchia app
+        continue-on-error: true
         run: |
-          if gh release view vecchia-app --repo "${{ github.repository }}" >/dev/null 2>&1; then echo "archivio già presente"; exit 0; fi
+          for t in vecchia-app vecchia-app-apk; do
+            if gh release view $t --repo "${{ github.repository }}" >/dev/null 2>&1; then echo "archivio già presente ($t)"; exit 0; fi
+          done
           N=$(gh release view latest --repo "${{ github.repository }}" --json name -q .name | grep -oE '[0-9]+$' || echo 0)
           if [ "$N" -gt 0 ] && [ "$N" -le 126 ]; then
             mkdir -p vecchia && gh release download latest --repo "${{ github.repository }}" -p DigimonSetTracker.apk -D vecchia
             mv vecchia/DigimonSetTracker.apk vecchia/DigitalGate-vecchia-app.apk
-            gh release create vecchia-app vecchia/DigitalGate-vecchia-app.apk --repo "${{ github.repository }}" --latest=false \
-              --target cc7b1ed9a8fb7e55a856ca41fa2dd02f7afa3ae9 --title "Vecchia app (archivio) · build $N" \
-              --notes "Ultima versione della vecchia app (HTML + Capacitor), conservata in archivio. Il codice è nell'etichetta vecchia-app; come funzionava: docs/vecchia-app.md."
+            NOTE="Ultima versione della vecchia app (HTML + Capacitor), conservata in archivio. Il codice è nell'etichetta vecchia-app; come funzionava: docs/vecchia-app.md."
+            gh release create vecchia-app vecchia/DigitalGate-vecchia-app.apk --repo "${{ github.repository }}" --latest=false --verify-tag --title "Vecchia app (archivio) · build $N" --notes "$NOTE" \
+              || gh release create vecchia-app-apk vecchia/DigitalGate-vecchia-app.apk --repo "${{ github.repository }}" --latest=false --target "${{ github.sha }}" --title "Vecchia app (archivio) · build $N" --notes "$NOTE"
+          else
+            echo "la release latest non è più la vecchia app (build $N): niente da archiviare"
           fi
       - name: Pubblica l'APK nella release "latest"
         run: |
