@@ -19,6 +19,19 @@ for t in glob.glob(d + "/*.tgz"):
 for f in sorted(glob.glob(d + "/*/package/**/*", recursive=True)):
     if os.path.isfile(f) and ("/dist/" in f or f.endswith((".wasm.js", ".gz", ".wasm")) or "package.json" in f[-12:]):
         p(os.path.getsize(f), f.replace(d, ""))
+# funzioni intere che servono
+import pathlib
+ws = pathlib.Path(glob.glob(d + "/tesseract.js-*/package/src/worker-script/index.js")[0]).read_text()
+cw = pathlib.Path(glob.glob(d + "/tesseract.js-*/package/src/createWorker.js")[0]).read_text()
+sp = pathlib.Path(glob.glob(d + "/tesseract.js-*/package/src/worker/browser/spawnWorker.js")[0]).read_text()
+gc = pathlib.Path(glob.glob(d + "/tesseract.js-*/package/src/worker-script/browser/getCore.js")[0]).read_text()
+i = ws.find("const initialize = async"); p("==== initialize"); p(ws[i:i+2600])
+i = ws.find("const loadAndGunzipFile"); p("==== loadAndGunzipFile"); p(ws[i:i+3200])
+i = cw.find("module.exports = async"); p("==== createWorker"); p(cw[i:i+1800])
+i = cw.find("const initializeInternal"); p("==== initializeInternal"); p(cw[i:i+900])
+p("==== spawnWorker"); p(sp)
+p("==== getCore"); p(gc[:2500])
+sys.exit(0)
 # codice: caricamento della lingua e creazione del worker
 for f in glob.glob(d + "/tesseract.js-*/package/src/**/*.js", recursive=True):
     s = open(f, encoding="utf-8").read()
