@@ -1,8 +1,8 @@
 // Prodotti (come renderSets/segProd/renderSoonDesk dell'app attuale sul telefono): schede "Rilasciati" / "In arrivo";
 // i rilasciati in griglia con l'illustrazione, per tipo o in ordine cronologico per anno (pulsanti accanto alle schede,
 // scelta salvata in "dg-pord"); gli "In arrivo" come cronologia per mese dalla più vicina. Ricerca in basso con i tipi.
-import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { memo, useEffect, useMemo, useState } from "react";
+import { FlatList, Pressable, View, useWindowDimensions } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Svg, { Path, Rect } from "react-native-svg";
@@ -13,7 +13,7 @@ import { openUpcoming } from "../../nav";
 import { useTheme } from "../../theme";
 import { PageTitle } from "../../ui";
 import { Screen, useBarState } from "../../chrome";
-import { Badge, Grid2, ProdVisual, ProgLine } from "../../visual";
+import { Badge, ProdVisual, ProgLine } from "../../visual";
 import { BOTTOM_PAD, BottomBar, Chip } from "../../BottomBar";
 
 const CHIPS: [string, string][] = [["ALL", "Tutti"], ["BT", "Booster"], ["EX", "Extra"], ["ST", "Starter"], ["LM", "Limited"], ["PB", "Premium"], ["AL", "Altri"]];
@@ -70,10 +70,9 @@ function GroupTitle({ children, top = 18 }: { children: string; top?: number }) 
   return <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "500", fontSize: 12.5, letterSpacing: 1.5, textTransform: "uppercase", marginTop: top, marginBottom: 8 }}>{children}</Text>;
 }
 
-// riquadro di un prodotto (.ptile)
-function ProdTile({ s, hit, q, w }: { s: CardSet; hit?: number; q: string; w: number }) {
+// riquadro di un prodotto (.ptile). memo: si ridisegna solo se cambia qualcosa di suo (non a ogni copia aggiunta altrove)
+const ProdTile = memo(function ProdTile({ s, hit, q, w, h, n }: { s: CardSet; hit?: number; q: string; w: number; h: number; n: number }) {
   const t = useTheme();
-  const st = setStats()[s.id] || { n: 0, h: 0 };
   const isNew = !!s.date && daysTo(s.date) >= -60 && daysTo(s.date) <= 0;
   return (
     <Pressable onPress={() => router.push({ pathname: "/prodotto/[id]", params: hit ? { id: s.id, q, qm: "name" } : { id: s.id } })} style={{ width: w, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, borderRadius: 12, overflow: "hidden" }}>
@@ -83,11 +82,14 @@ function ProdTile({ s, hit, q, w }: { s: CardSet; hit?: number; q: string; w: nu
         <Text style={{ color: t.ink, fontWeight: "600", fontSize: 14.7, lineHeight: 18 }}>{s.name}</Text>
         {s.date && s.date.charAt(0) !== "0" ? <Text style={{ color: t.ink2, fontSize: 12.5 }}>{monthLabel(s.date)}</Text> : null}
         {hit ? <Text style={{ color: t.accent, fontSize: 12.5, fontWeight: "600" }}>{hit + (hit === 1 ? " carta trovata" : " carte trovate")}</Text> : null}
-        <ProgLine h={st.h} n={st.n} />
+        <ProgLine h={h} n={n} />
       </View>
     </Pressable>
   );
-}
+});
+
+// righe dell'elenco: titolo di un gruppo oppure due riquadri affiancati
+type Row = { k: string; title?: string; top?: number; sets?: CardSet[] };
 
 // voce della cronologia delle uscite (.titem)
 function SoonItem({ u }: { u: Upcoming }) {
@@ -206,32 +208,65 @@ export default function Prodotti() {
     return { groups, hits };
   }, [q, type, pord]);
 
+  // larghezza dei riquadri dalla finestra: niente prima passata vuota per misurare (comparivano prima i soli titoli)
+  const { width: winW } = useWindowDimensions();
+  const tileW = Math.floor((winW - 28 - 10) / 2);
+  // elenco a righe che si costruiscono man mano che si scorre: all'apertura solo quelle in vista (prima si costruivano
+  // tutti i ~100 riquadri insieme e la pagina si bloccava per un attimo)
+  const rows = useMemo(() => {
+    const r: Row[] = [];
+    if (seg !== "sets") return r;
+    groups.forEach(([label, items], i) => {
+      r.push({ k: "h" + label, title: label + " · " + items.length, top: i ? 8 : 6 });
+      for (let j = 0; j < items.length; j += 2) r.push({ k: items[j].id, sets: items.slice(j, j + 2) });
+    });
+    return r;
+  }, [groups, seg]);
+  const stats = setStats();
+  const head = (
+    <>
+      <PageTitle>Prodotti</PageTitle>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2, marginBottom: 12 }}>
+        <Seg active={seg} onPick={pickSeg} />
+        {seg === "sets" ? (
+          <View style={{ flexDirection: "row", gap: 6 }}>
+            <OrdBtn kind="date" on={pord === "date"} onPress={() => pickOrd("date")} />
+            <OrdBtn kind="type" on={pord === "type"} onPress={() => pickOrd("type")} />
+          </View>
+        ) : null}
+      </View>
+      {seg === "soon" ? <SoonList /> : !groups.length ? <Text style={{ color: t.ink2, textAlign: "center", marginTop: 30 }}>Nessun set corrisponde ai filtri.</Text> : null}
+    </>
+  );
+
   return (
     <Screen bs={bar}>
-      <ScrollView onScroll={bar.onScroll} scrollEventThrottle={16} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: seg === "sets" ? BOTTOM_PAD + (px ? 46 : 0) : 28 }}>
-        <PageTitle>Prodotti</PageTitle>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2, marginBottom: 12 }}>
-          <Seg active={seg} onPick={pickSeg} />
-          {seg === "sets" ? (
-            <View style={{ flexDirection: "row", gap: 6 }}>
-              <OrdBtn kind="date" on={pord === "date"} onPress={() => pickOrd("date")} />
-              <OrdBtn kind="type" on={pord === "type"} onPress={() => pickOrd("type")} />
+      <FlatList
+        data={rows}
+        keyExtractor={(r) => r.k}
+        ListHeaderComponent={head}
+        renderItem={({ item: r }) =>
+          r.title ? (
+            <GroupTitle top={r.top}>{r.title}</GroupTitle>
+          ) : (
+            <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
+              {r.sets!.map((s) => {
+                const st = stats[s.id] || { n: 0, h: 0 };
+                return <ProdTile key={s.id} s={s} hit={hits[s.id]} q={q} w={tileW} h={st.h} n={st.n} />;
+              })}
             </View>
-          ) : null}
-        </View>
-        {seg === "soon" ? (
-          <SoonList />
-        ) : !groups.length ? (
-          <Text style={{ color: t.ink2, textAlign: "center", marginTop: 30 }}>Nessun set corrisponde ai filtri.</Text>
-        ) : (
-          groups.map(([label, items], i) => (
-            <View key={label}>
-              <GroupTitle top={i ? 18 : 6}>{label + " · " + items.length}</GroupTitle>
-              <Grid2 gap={10}>{(w) => items.map((s) => <ProdTile key={s.id} s={s} hit={hits[s.id]} q={q} w={w} />)}</Grid2>
-            </View>
-          ))
-        )}
-      </ScrollView>
+          )
+        }
+        initialNumToRender={6}
+        maxToRenderPerBatch={4}
+        windowSize={7}
+        removeClippedSubviews
+        onScroll={bar.onScroll}
+        scrollEventThrottle={16}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: seg === "sets" ? BOTTOM_PAD + (px ? 46 : 0) : 28 }}
+      />
       {seg === "sets" ? (
         <BottomBar
           q={q}
