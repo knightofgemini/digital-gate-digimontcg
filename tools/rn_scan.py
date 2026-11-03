@@ -46,6 +46,7 @@ def tap(n):
 
 
 # avvio con la rete (intro e prima apertura), permesso della fotocamera già dato
+adb("logcat", "-c")
 adb("shell", "pm", "grant", PKG, "android.permission.CAMERA")
 adb("shell", "monkey", "-p", PKG, "-c", "android.intent.category.LAUNCHER", "1")
 time.sleep(25)
@@ -90,6 +91,9 @@ else:
     tap(f[0])
     time.sleep(5)
     shot("02_galleria")
+    say("in primo piano:", [l.strip() for l in adb("shell", "dumpsys", "activity", "activities").splitlines() if "topResumedActivity" in l or "ResumedActivity:" in l][:3])
+    say("chiusure dell'app:", adb("logcat", "-d", "-b", "crash")[-3000:] or "nessuna")
+    say("registro:", "\n".join([l for l in adb("logcat", "-d").splitlines() if re.search(r"FATAL|AndroidRuntime|ImagePicker|PhotoPicker|photopicker|PICK_IMAGES|ActivityTaskManager: START", l)][-25:]))
     ns = nodes()
     pics = [n for n in ns if n["b"] and (re.search(r"(Photo|Foto|Image|Immagine)", n["desc"]) or n["cls"].endswith("ImageView")) and n["pkg"] != PKG and (n["b"][2] - n["b"][0]) > 150]
     say("immagini nella galleria:", len(pics), [p["desc"][:40] for p in pics[:3]])
