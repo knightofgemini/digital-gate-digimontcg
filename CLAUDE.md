@@ -102,7 +102,8 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
 - `spoiler.yml` (ogni mattina), `prezzi.yml` (ogni notte, ramo `prezzi`), `set-assets.yml` (ogni lunedì, ramo
   `set-assets`), `analysis.yml` (script a richiesta, risultati nel ramo `analysis-out`).
 - Rami che devono restare: `main`, `prezzi`, `set-assets`, `spoiler-stato`, `analysis-out`, `rn-check`, `rn-shots`.
-  Esperimenti scartati della vecchia app: etichette `archivio/<nome>` (pulizia del 3 novembre 2026, `pulizia.yml`).
+  Esperimenti scartati della vecchia app: etichette `archivio/<nome>` (pulizia del 3 novembre 2026: 75 rami già
+  confluiti cancellati, 15 archiviati, con un flusso `pulizia.yml` usato una volta e poi tolto; si ritrova nella storia).
 - Commit con autore `Claude <noreply@anthropic.com>`.
 
 ### Limiti dell'ambiente cloud
