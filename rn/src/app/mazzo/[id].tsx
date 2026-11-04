@@ -3,7 +3,7 @@
 // barra "Cerca e aggiungi carte…" che apre il foglio di ricerca, e la vista Statistiche.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Animated, BackHandler, Easing, Linking, PanResponder, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { Animated, BackHandler, Easing, Keyboard, Linking, PanResponder, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
 import { Sheet, SheetScrollView } from "../../Sheet";
 import { DISPLAY, Text, TextInput } from "../../Text";
 import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
@@ -46,14 +46,23 @@ export default function Mazzo() {
   const [add, setAdd] = useState<Filters | null>(null);
   // gruppo da inquadrare aprendo la ricerca ("+ Aggiungi" di un gruppo), altrimenti la prima pila
   const [addG, setAddG] = useState<string | null>(null);
+  // tastiera aperta subito: sì dalla barra "Cerca e aggiungi carte…" (e da "Aggiungi carte" del mazzo vuoto), anche se
+  // restano filtri della volta prima; no da "+ Aggiungi" di un gruppo e da Filtra (come nell'app attuale)
+  const [addK, setAddK] = useState(false);
   // ultimi filtri della ricerca nel mazzo: riaprendola restano colore, attributo, tipo, rarità, espansione e "Cerca in"
   const lastF = useRef<Filters>({ ...EMPTY });
   const openAdd = (filterSheet?: boolean) => {
     setSel(null);
     setAddG(null);
     setAddF(!!filterSheet);
+    setAddK(!filterSheet);
     setAdd({ ...lastF.current, ct: "", lv: "", cost: "" });
   };
+  // altezza della zona dello schermo sotto la barra di stato (misurata: se il telefono accorcia la finestra con la
+  // tastiera, si accorcia anche lei) e quanto il foglio di ricerca copre dal fondo (foglio + tastiera)
+  const [areaH, setAreaH] = useState(0);
+  const cov = useRef(0);
+  const toFirstT = useRef<any>(null);
   const [name, setName] = useState(d ? d.name : "");
   const [nameFocus, setNameFocus] = useState(false);
   // il nome si salva anche uscendo dalla pagina con la tastiera ancora aperta (prima andava perso)
@@ -96,7 +105,7 @@ export default function Mazzo() {
     const gy = (pos.current.__base || 0) + (pos.current[g] || 0);
     const top = gy + (pos.current["w|" + g] || 0) + p.y,
       bot = gy + barY + barH;
-    const free = scrollY.current + viewH.current - (add ? winH * 0.64 : 100) - 8;
+    const free = scrollY.current + viewH.current - (add ? cov.current || winH * 0.64 : 100) - 8;
     if (top < scrollY.current + 64 || bot > free) scroll.current?.scrollTo({ y: Math.max(0, top - 70), animated: true });
   };
   if (!d)
@@ -114,6 +123,34 @@ export default function Mazzo() {
   // posizione di un gruppo nel mazzo (dentro il riquadro delle pile, che parte da __base)
   const yOf = (g: string) => (pos.current.__base || 0) + pos.current[g] - 64;
   const goTo = (g: string) => pos.current[g] != null && scroll.current?.scrollTo({ y: yOf(g), animated: true });
+  // toccando il campo di ricerca il mazzo torna alla prima carta (dkToFirst), ripetuto quando la tastiera ha finito di aprirsi
+  const toFirst = () => {
+    const go = () => {
+      const g = (dkGroups(d)[0] || [null])[0];
+      if (g) goTo(g);
+    };
+    go();
+    clearTimeout(toFirstT.current);
+    toFirstT.current = setTimeout(go, 450);
+  };
+  // carta appena aggiunta: il gruppo in alto; se così la sua pila resterebbe sotto il foglio, si inquadra la pila
+  // nella parte libera sopra il foglio (la pila nuova si misura appena compare: si riprova per un attimo)
+  const showNew = (k: string, tries = 0) => {
+    const hit = dkGroups(d).find(([, cs]) => cs.some((x) => x.k === k));
+    if (!hit) return;
+    const g = hit[0];
+    const p = pileY.current[k];
+    if (pos.current[g] == null || !p) {
+      if (tries < 5) setTimeout(() => showNew(k, tries + 1), 100);
+      else goTo(g);
+      return;
+    }
+    const gy = (pos.current.__base || 0) + pos.current[g];
+    const top = gy + (pos.current["w|" + g] || 0) + p.y;
+    let y = gy - 64;
+    if (top + p.h > y + viewH.current - (cov.current || winH * 0.64) - 8) y = top - 70;
+    scroll.current?.scrollTo({ y: Math.max(0, y), animated: true });
+  };
 
   // "+ Aggiungi" di un gruppo: ricerca già filtrata per quel tipo e livello
   function addTo(g: string) {
@@ -126,11 +163,13 @@ export default function Mazzo() {
     else f.ct = g;
     setSel(null);
     setAddG(g);
+    setAddK(false);
     setAdd(f);
   }
 
   return (
     <Screen bs={bar}>
+      <View pointerEvents="none" onLayout={(e) => setAreaH(Math.round(e.nativeEvent.layout.height))} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />
       <ScrollView ref={scroll} onLayout={(e) => void (viewH.current = e.nativeEvent.layout.height)} onScroll={(e) => ((scrollY.current = e.nativeEvent.contentOffset.y), bar.onScroll(e))} scrollEventThrottle={16} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: add ? winH * 0.64 : view === "deck" ? 100 : 28 }}>
         {/* intestazione (.mdkh): indietro, nome del mazzo, freccia che apre le azioni */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginHorizontal: -6, marginTop: 10, marginBottom: 8 }}>
@@ -350,11 +389,24 @@ export default function Mazzo() {
         </View>
       ) : null}
 
-      {add && <AddSheet key={JSON.stringify(add)} d={d} f0={add} openF={addF} onF={(f) => void (lastF.current = f)} onClose={() => (setAdd(null), setAddF(false), setDkNew(null))} onAdded={(c) => {
-        setDkNew(c.k);
-        const g = dkGroups(d).find(([, cs]) => cs.some((x) => x.k === c.k));
-        setTimeout(() => g && pos.current[g[0]] != null && scroll.current?.scrollTo({ y: yOf(g[0]), animated: true }), 120);
-      }} />}
+      {add && (
+        <AddSheet
+          key={JSON.stringify(add)}
+          d={d}
+          f0={add}
+          openF={addF}
+          focus={addK}
+          areaH={areaH}
+          onCover={(h) => void (cov.current = h)}
+          onFocusQ={toFirst}
+          onF={(f) => void (lastF.current = f)}
+          onClose={() => ((cov.current = 0), setAdd(null), setAddF(false), setDkNew(null))}
+          onAdded={(c) => {
+            setDkNew(c.k);
+            setTimeout(() => showNew(c.k), 120);
+          }}
+        />
+      )}
       <CoverPicker visible={cover} d={d} onClose={() => setCover(false)} />
       <ConfirmBox
         visible={cfm === "empty"}
@@ -411,11 +463,15 @@ function Pile({ c, q, on, isNew, onPress, onLayout }: { c: Card; q: number; on: 
 // (vista elenco/griglia separata, "dg-dkview"). La carta appena aggiunta si vede nella sua pila sopra il foglio.
 let DKVIEW: "list" | "grid" = "list";
 AsyncStorage.getItem("dg-dkview").then((v) => v === "grid" && (DKVIEW = "grid")).catch(() => {});
-function AddSheet({ d, f0, openF, onF, onClose, onAdded }: { d: any; f0: Filters; openF?: boolean; onF: (f: Filters) => void; onClose: () => void; onAdded: (c: Card) => void }) {
+// spazio del mazzo da lasciare libero sopra il foglio con la tastiera aperta: il gruppo portato in cima (64) con la sua
+// intestazione e una fila intera di pile
+const DK_SHOW = 228;
+function AddSheet({ d, f0, openF, focus, areaH, onCover, onFocusQ, onF, onClose, onAdded }: { d: any; f0: Filters; openF?: boolean; focus?: boolean; areaH: number; onCover: (h: number) => void; onFocusQ: () => void; onF: (f: Filters) => void; onClose: () => void; onAdded: (c: Card) => void }) {
   const t = useTheme();
   useStore();
   const { width, height: winH } = useWindowDimensions();
   const kb = useKbH();
+  const kbd = useKbd();
   const ins = useSafeAreaInsets();
   const [q, setQ] = useState("");
   const [f, setF] = useState<Filters>(f0);
@@ -427,8 +483,13 @@ function AddSheet({ d, f0, openF, onF, onClose, onAdded }: { d: any; f0: Filters
   // filtri (o l'elenco già in cima, solo verso il basso) cambia altezza tra metà e alto; sotto la metà scende.
   // Al rilascio va alla posizione più vicina tenendo conto della velocità: alto, metà o chiuso.
   // I cambi dovuti alla tastiera restano immediati (animandoli il mazzo non tornava alla prima carta).
-  const half = Math.round(Math.min(winH * 0.62, winH - kb - ins.top - 8));
-  const tall = Math.max(half + 2, winH - kb - ins.top);
+  // "A metà" con la tastiera aperta = a metà dello spazio sopra la tastiera, come nell'APK attuale (la finestra si
+  // accorciava e il foglio restava al 62% di quella): al massimo il 62% dello schermo sopra la tastiera, e comunque
+  // abbastanza basso da lasciare in vista, sopra il foglio, la prima fila del mazzo (DK_SHOW). Prima con la tastiera il
+  // foglio arrivava quasi in cima allo schermo. "Alto" arriva fino alla barra di stato, mai oltre.
+  const area = Math.max(200, (areaH || winH - ins.top) - kb);
+  const half = Math.round(kbd ? Math.min((area + ins.top) * 0.62, Math.max(240, area - DK_SHOW)) : Math.min(winH * 0.62, area - 8));
+  const tall = Math.max(half + 2, area);
   const hp = useRef(new Animated.Value(0)).current;
   const cur = useRef(0);
   useEffect(() => {
@@ -451,10 +512,13 @@ function AddSheet({ d, f0, openF, onF, onClose, onAdded }: { d: any; f0: Filters
     hp.stopAnimation();
     hp.setValue(full ? tall : half);
   }, [half, tall]);
+  // il mazzo sa quanto il foglio copre dal fondo, per inquadrare le pile nella parte libera sopra
+  useEffect(() => onCover((full ? tall : half) + kb), [full, half, tall, kb]);
   const closing = useRef(false);
   const shut = () => {
     if (closing.current) return;
     closing.current = true;
+    Keyboard.dismiss();
     Animated.timing(hp, { toValue: 0, duration: 240, easing: Easing.in(Easing.cubic), useNativeDriver: false }).start(() => onClose());
   };
   const shutRef = useRef(shut);
@@ -486,7 +550,11 @@ function AddSheet({ d, f0, openF, onF, onClose, onAdded }: { d: any; f0: Filters
         const opts: [number, string][] = [[0, "x"], [Hh, "half"], [T, "full"]];
         const best = opts.reduce((a, b) => (Math.abs(b[0] - proj) < Math.abs(a[0] - proj) ? b : a));
         if (best[1] === "x") shutRef.current();
-        else snapRef.current(best[1] as any, 260);
+        else {
+          // ridotto da alto a metà col dito: la tastiera si chiude (come nell'app attuale)
+          if (best[1] === "half" && fullRef.current) Keyboard.dismiss();
+          snapRef.current(best[1] as any, 260);
+        }
       },
       onPanResponderTerminate: () => {
         dragging.current = false;
@@ -505,6 +573,7 @@ function AddSheet({ d, f0, openF, onF, onClose, onAdded }: { d: any; f0: Filters
         const d = Math.max(0, -pull.offset());
         hp.setValue(Math.max(sz.current.half, cur.current - d));
         pull.reset();
+        Keyboard.dismiss();
         snapRef.current("half", 260);
       } else shutRef.current();
     }
@@ -569,9 +638,9 @@ function AddSheet({ d, f0, openF, onF, onClose, onAdded }: { d: any; f0: Filters
           <View pointerEvents="none" style={{ position: "absolute", left: 13 }}>
             <SearchIcon color={t.accent} />
           </View>
-          <TextInput value={q} onChangeText={setQ} autoFocus={!anyFlt(f0) && !openF} placeholder={qmHolder(f.qm)} placeholderTextColor={t.ink2} autoCorrect={false} returnKeyType="search" style={{ height: 44, paddingLeft: 42, paddingRight: 12, color: t.ink, fontSize: 16 }} />
+          <TextInput value={q} onChangeText={setQ} autoFocus={!!focus && !openF} onFocus={onFocusQ} placeholder={qmHolder(f.qm)} placeholderTextColor={t.ink2} autoCorrect={false} returnKeyType="search" style={{ height: 44, paddingLeft: 42, paddingRight: 12, color: t.ink, fontSize: 16 }} />
         </View>
-        <SquareBtn size={46} shadow={false} onPress={() => setFOpen(true)} on={!!nf} badge={nf} label={"Filtri" + (nf ? ": " + nf + (nf === 1 ? " attivo" : " attivi") : "")}>
+        <SquareBtn size={46} shadow={false} onPress={() => (Keyboard.dismiss(), setFOpen(true))} on={!!nf} badge={nf} label={"Filtri" + (nf ? ": " + nf + (nf === 1 ? " attivo" : " attivi") : "")}>
           <FilterIcon color={t.ink} />
         </SquareBtn>
         <Pressable onPress={shut} style={{ height: 46, justifyContent: "center", paddingRight: 4 }}>

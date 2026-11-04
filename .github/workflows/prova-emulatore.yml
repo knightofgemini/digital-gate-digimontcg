@@ -7,7 +7,7 @@ name: Prova su emulatore
 on:
   push:
     branches: [rn-tag, rn-scan]
-    paths: ["rn/**", "tools/rn_shots*", ".github/workflows/prova-emulatore.yml"]
+    paths: ["rn/**", "tools/rn_shots*", "tools/rn_gestures.py", "tools/rn_mazzo.py", ".github/workflows/prova-emulatore.yml"]
   workflow_dispatch:
     inputs:
       scansione: { description: "Prova della scansione senza rete al posto delle foto delle carte", type: boolean, default: false }
@@ -65,7 +65,7 @@ jobs:
           profile: pixel_6
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: adb install -r prova.apk && if [ "${{ inputs.scansione || github.ref_name == 'rn-scan' }}" = "true" ]; then python3 tools/rn_scan.py foto; else python3 tools/rn_shots.py foto "$(cat tools/rn_shots.txt)" && python3 tools/rn_gestures.py foto; fi
+          script: adb install -r prova.apk && if [ "${{ inputs.scansione || github.ref_name == 'rn-scan' }}" = "true" ]; then python3 tools/rn_scan.py foto; else python3 tools/rn_shots.py foto "$(cat tools/rn_shots.txt)" && python3 tools/rn_gestures.py foto; python3 tools/rn_mazzo.py foto; fi
       - name: Foto nel ramo rn-shots
         if: always()
         run: |
