@@ -170,7 +170,7 @@ export default function Mazzo() {
   return (
     <Screen bs={bar}>
       <View pointerEvents="none" onLayout={(e) => setAreaH(Math.round(e.nativeEvent.layout.height))} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />
-      <ScrollView ref={scroll} onLayout={(e) => void (viewH.current = e.nativeEvent.layout.height)} onScroll={(e) => ((scrollY.current = e.nativeEvent.contentOffset.y), bar.onScroll(e))} scrollEventThrottle={16} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: add ? winH * 0.64 : view === "deck" ? 100 : 28 }}>
+      <ScrollView ref={scroll} onLayout={(e) => void (viewH.current = e.nativeEvent.layout.height)} onScroll={(e) => ((scrollY.current = e.nativeEvent.contentOffset.y), bar.onScroll(e))} scrollEventThrottle={16} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: add ? Math.max(winH * 0.64, areaH) : view === "deck" ? 100 : 28 }}>
         {/* intestazione (.mdkh): indietro, nome del mazzo, freccia che apre le azioni */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginHorizontal: -6, marginTop: 10, marginBottom: 8 }}>
           <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/mazzi"))} accessibilityLabel="I miei mazzi" style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
@@ -397,6 +397,7 @@ export default function Mazzo() {
           openF={addF}
           focus={addK}
           areaH={areaH}
+          barH={bar.pad}
           onCover={(h) => void (cov.current = h)}
           onFocusQ={toFirst}
           onF={(f) => void (lastF.current = f)}
@@ -466,7 +467,7 @@ AsyncStorage.getItem("dg-dkview").then((v) => v === "grid" && (DKVIEW = "grid"))
 // spazio del mazzo da lasciare libero sopra il foglio con la tastiera aperta: il gruppo portato in cima (64) con la sua
 // intestazione e una fila intera di pile
 const DK_SHOW = 228;
-function AddSheet({ d, f0, openF, focus, areaH, onCover, onFocusQ, onF, onClose, onAdded }: { d: any; f0: Filters; openF?: boolean; focus?: boolean; areaH: number; onCover: (h: number) => void; onFocusQ: () => void; onF: (f: Filters) => void; onClose: () => void; onAdded: (c: Card) => void }) {
+function AddSheet({ d, f0, openF, focus, areaH, barH, onCover, onFocusQ, onF, onClose, onAdded }: { d: any; f0: Filters; openF?: boolean; focus?: boolean; areaH: number; barH: number; onCover: (h: number) => void; onFocusQ: () => void; onF: (f: Filters) => void; onClose: () => void; onAdded: (c: Card) => void }) {
   const t = useTheme();
   useStore();
   const { width, height: winH } = useWindowDimensions();
@@ -486,10 +487,11 @@ function AddSheet({ d, f0, openF, focus, areaH, onCover, onFocusQ, onF, onClose,
   // "A metà" con la tastiera aperta = a metà dello spazio sopra la tastiera, come nell'APK attuale (la finestra si
   // accorciava e il foglio restava al 62% di quella): al massimo il 62% dello schermo sopra la tastiera, e comunque
   // abbastanza basso da lasciare in vista, sopra il foglio, la prima fila del mazzo (DK_SHOW). Prima con la tastiera il
-  // foglio arrivava quasi in cima allo schermo. "Alto" arriva fino alla barra di stato, mai oltre.
+  // foglio arrivava quasi in cima allo schermo. "Alto" lascia libera la barra in alto (come i 52 px dell'app attuale):
+  // prima il campo di ricerca finiva sotto la barra e non si vedeva più.
   const area = Math.max(200, (areaH || winH - ins.top) - kb);
   const half = Math.round(kbd ? Math.min((area + ins.top) * 0.62, Math.max(240, area - DK_SHOW)) : Math.min(winH * 0.62, area - 8));
-  const tall = Math.max(half + 2, area);
+  const tall = Math.max(half + 2, area - barH);
   const hp = useRef(new Animated.Value(0)).current;
   const cur = useRef(0);
   useEffect(() => {
