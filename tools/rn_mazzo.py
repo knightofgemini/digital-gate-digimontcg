@@ -145,6 +145,8 @@ back()
 back()
 
 # 7) spazio sotto il campo: "Omni" in vista a immagini, elenco scorso (le carte non devono arrivare a filo del campo)
+# (il secondo indietro del punto 6 è uscito dal mazzo: si riapre)
+tap("^Nuovo mazzo 2$", wait=2.5)
 tap("Cerca e aggiungi carte", wait=2.5)
 search("Omni")
 tap("^Vista a immagini$", wait=1.5)
