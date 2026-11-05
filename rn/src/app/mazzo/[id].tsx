@@ -467,6 +467,9 @@ AsyncStorage.getItem("dg-dkview").then((v) => v === "grid" && (DKVIEW = "grid"))
 // spazio del mazzo da lasciare libero sopra il foglio con la tastiera aperta: il gruppo portato in cima (64) con la sua
 // intestazione e una fila intera di pile
 const DK_SHOW = 228;
+// sotto il campo di ricerca: striscia vuota (le carte spariscono qui) e sfumatura in cui ricompaiono
+const DK_GAP = 12;
+const DK_FADE = 24;
 function AddSheet({ d, f0, openF, focus, areaH, barH, onCover, onFocusQ, onF, onClose, onAdded }: { d: any; f0: Filters; openF?: boolean; focus?: boolean; areaH: number; barH: number; onCover: (h: number) => void; onFocusQ: () => void; onF: (f: Filters) => void; onClose: () => void; onAdded: (c: Card) => void }) {
   const t = useTheme();
   useStore();
@@ -655,6 +658,9 @@ function AddSheet({ d, f0, openF, focus, areaH, barH, onCover, onFocusQ, onF, on
         </View>
       ) : null}
       </View>
+      {/* risultati: sotto il campo una striscia vuota e poi una sfumatura (come .dkbody dell'app attuale, un po' più ampia,
+          richiesta dell'utente del 5 novembre 2026), così scorrendo le carte non arrivano a filo del campo */}
+      <View style={{ flex: 1 }}>
       <Animated.ScrollView
         {...pull.scroll}
         keyboardShouldPersistTaps="handled"
@@ -668,7 +674,7 @@ function AddSheet({ d, f0, openF, focus, areaH, barH, onCover, onFocusQ, onF, on
           const { contentOffset: o, contentSize: cs, layoutMeasurement: lm } = e.nativeEvent;
           if (list.length > shown && o.y + lm.height > cs.height - 900) setShown((n) => Math.min(list.length, n + 40));
         }}
-        style={{ flex: 1, transform: [{ translateY: pull.neg }] }} contentContainerStyle={[pull.pad, { paddingTop: PULL_S + 24, paddingBottom: 16 + ins.bottom }]}>
+        style={{ flex: 1, transform: [{ translateY: pull.neg }] }} contentContainerStyle={[pull.pad, { paddingTop: PULL_S + DK_GAP + DK_FADE, paddingBottom: 16 + ins.bottom }]}>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
           <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.2, letterSpacing: 1.35, textTransform: "uppercase" }}>{!filt ? "Cerca una carta" : list.length + (list.length === 1 ? " carta trovata" : " carte trovate")}</Text>
           {filt ? <ViewToggle value={vw} onChange={pickVw} /> : null}
@@ -703,6 +709,17 @@ function AddSheet({ d, f0, openF, focus, areaH, barH, onCover, onFocusQ, onF, on
           </Pressable>
         ) : null}
       </Animated.ScrollView>
+      <Svg pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0 }} width="100%" height={DK_GAP + DK_FADE} preserveAspectRatio="none" viewBox={"0 0 10 " + (DK_GAP + DK_FADE)}>
+        <Defs>
+          <LinearGradient id="dkqfade" x1="0" y1="0" x2="0" y2={DK_GAP + DK_FADE} gradientUnits="userSpaceOnUse">
+            <Stop offset={0} stopColor={t.bg} stopOpacity={1} />
+            <Stop offset={DK_GAP / (DK_GAP + DK_FADE)} stopColor={t.bg} stopOpacity={1} />
+            <Stop offset={1} stopColor={t.bg} stopOpacity={0} />
+          </LinearGradient>
+        </Defs>
+        <Rect width="10" height={DK_GAP + DK_FADE} fill="url(#dkqfade)" />
+      </Svg>
+      </View>
       <FilterSheet visible={fOpen} f={f} setF={setF} onClose={() => setFOpen(false)} count={list.length} />
       </Animated.View>
     </Animated.View>
