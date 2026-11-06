@@ -14,11 +14,11 @@ import { ActiveChips, FilterSheet, fltCount } from "../../FilterSheet";
 import { EMPTY, Filters, cardMatches, qmHolder } from "../../filters";
 import { CountRow, GridTile, ListRow } from "../../items";
 import { usePrices } from "../../prices";
-import { S, setStats, useStore } from "../../store";
+import { S, owned, setStats, useStore } from "../../store";
 import { useTheme } from "../../theme";
 import { Screen, useBarState } from "../../chrome";
 import { ProdVisual, Progress } from "../../visual";
-import { BOTTOM_PAD, BottomBar } from "../../BottomBar";
+import { BOTTOM_PAD, BottomBar, FltChip } from "../../BottomBar";
 
 const REGIONS: Record<string, string> = { Europe: "Europa", "North America": "Nord America", "Latin America": "America Latina", Oceania: "Oceania", "United States": "Stati Uniti", "Other regions": "Altre regioni" };
 const UNITS: Record<string, string> = { pack: "a busta", deck: "a mazzo", box: "a box" };
@@ -40,11 +40,14 @@ function BackLink({ label }: { label: string }) {
 }
 
 export default function Prodotto() {
-  const { id, from, q: q0, qm } = useLocalSearchParams<{ id: string; from?: string; q?: string; qm?: string }>();
+  const { id, from, q: q0, qm, miss: miss0 } = useLocalSearchParams<{ id: string; from?: string; q?: string; qm?: string; miss?: string }>();
   const t = useTheme();
   const bar = useBarState();
   const { width } = useWindowDimensions();
-  useStore();
+  const sv = useStore();
+  // solo le carte che mancano ("Un set da completare" della Home): etichetta "Mancanti" con ✕ tra i filtri attivi;
+  // una carta segnata come posseduta esce subito dall'elenco (come nella Wishlist)
+  const [miss, setMiss] = useState(miss0 === "1");
   usePrices();
   const grid = S.view === "grid";
   const cols = grid ? 2 : 1;
@@ -65,7 +68,7 @@ export default function Prodotto() {
   const { sections, flat, n } = useMemo(() => {
     if (!set) return { sections: [], flat: [] as Card[], n: 0 };
     const nq = normQ(q);
-    let l = all.filter((c) => cardMatches(c, nq, f));
+    let l = all.filter((c) => cardMatches(c, nq, f) && (!miss || !owned(c)));
     // cercando restano le sezioni (Regular, Alternative Art, Ristampe…), ognuna in ordine di rilevanza (come nell'app attuale)
     if (nq && f.qm !== "text")
       l = l
@@ -83,7 +86,7 @@ export default function Prodotto() {
         return { title: title ? title + " (" + g.length + ")" : "", data: rows };
       });
     return { sections, flat, n: l.length };
-  }, [set, cols, q, f]);
+  }, [set, cols, q, f, miss, miss ? sv : 0]);
 
   if (!set && !up)
     return (
@@ -166,7 +169,7 @@ export default function Prodotto() {
         </View>
       ) : null}
       {p ? (
-        <Details title="Dettagli del prodotto e rarità" open={!fromColl}>
+        <Details title="Dettagli del prodotto e rarità" open={!fromColl && !miss}>
           <ProdBox code={s.code} type={s.type} kind={s.type === "AL" ? "" : TYPES[s.type]} fallback={hasDate ? s.date.slice(0, 7) : null} inDetails />
         </Details>
       ) : null}
@@ -188,14 +191,14 @@ export default function Prodotto() {
             {!all.length ? (
               <Text style={{ color: t.ink2, textAlign: "center", paddingVertical: 48 }}>Questo prodotto non contiene carte: solo accessori (playmat, bustine, box).</Text>
             ) : !n ? (
-              <Text style={{ color: t.ink2, textAlign: "center", paddingVertical: 48 }}>Nessuna carta corrisponde ai filtri.</Text>
+              <Text style={{ color: t.ink2, textAlign: "center", paddingVertical: 48 }}>{miss && !q && !nf ? "Hai tutte le carte di questo prodotto." : "Nessuna carta corrisponde ai filtri."}</Text>
             ) : (
               <CountRow n={n} />
             )}
           </View>
         }
         onScroll={bar.onScroll} scrollEventThrottle={16}
-        contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: BOTTOM_PAD + (nf ? 42 : 0) }}
+        contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: BOTTOM_PAD + (nf || miss ? 42 : 0) }}
         initialNumToRender={6}
         renderSectionHeader={({ section }) =>
           section.title ? <Text style={{ color: t.accent, fontFamily: DISPLAY, fontWeight: "500", fontSize: 11.8, letterSpacing: 1.2, textTransform: "uppercase", marginTop: 18, marginBottom: 8 }}>{section.title}</Text> : null
@@ -214,7 +217,23 @@ export default function Prodotto() {
           )
         }
       />
-      {all.length ? <BottomBar q={q} setQ={setQ} placeholder={f.qm ? qmHolder(f.qm) : "Cerca in " + s.code + ", es. Agumon"} cam filter={{ n: nf, onPress: () => setFOpen(true) }} chips={nf ? <ActiveChips f={f} setF={setF} lockExp /> : undefined} /> : null}
+      {all.length ? (
+        <BottomBar
+          q={q}
+          setQ={setQ}
+          placeholder={f.qm ? qmHolder(f.qm) : "Cerca in " + s.code + ", es. Agumon"}
+          cam
+          filter={{ n: nf, onPress: () => setFOpen(true) }}
+          chips={
+            nf || miss ? (
+              <>
+                {miss ? <FltChip label="Mancanti" onPress={() => setMiss(false)} /> : null}
+                <ActiveChips f={f} setF={setF} lockExp onReset={() => setMiss(false)} />
+              </>
+            ) : undefined
+          }
+        />
+      ) : null}
       <FilterSheet visible={fOpen} f={f} setF={setF} onClose={() => setFOpen(false)} count={n} lockExp expCur={s.id} onExp={(v) => (v ? router.setParams({ id: v }) : allCards(q, f))} />
     </Screen>
   );

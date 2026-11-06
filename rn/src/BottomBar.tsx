@@ -1,7 +1,7 @@
 // Ricerca in basso (come .mbot dell'app attuale sul telefono): sopra la barra di navigazione, con la sfumatura verso lo sfondo.
 // In fila: campo con la lente arancione, poi (secondo la pagina) fotocamera, Filtri con il numero dei filtri attivi
 // e la freccia che apre i tipi di prodotto. Sopra la fila le etichette dei filtri attivi, sotto la riga che si apre.
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { router } from "expo-router";
 import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
@@ -74,7 +74,7 @@ export function FltChip({ label, dot, onPress, children }: { label?: string; dot
   );
 }
 
-export function BottomBar({ q, setQ, placeholder, chips, cam, filter, x, below }: {
+export function BottomBar({ q, setQ, placeholder, chips, cam, filter, x, below, focus }: {
   q: string;
   setQ: (s: string) => void;
   placeholder: string;
@@ -83,10 +83,19 @@ export function BottomBar({ q, setQ, placeholder, chips, cam, filter, x, below }
   filter?: { n: number; onPress: () => void };
   x?: { open: boolean; onPress: () => void };
   below?: ReactNode;
+  // valore che cambia a ogni richiesta di attivare il campo ("Cerca una carta" della Home)
+  focus?: string;
 }) {
   const t = useTheme();
   // con la tastiera aperta la barra sta subito sopra la tastiera (come --kb nell'app attuale)
   const kbH = useKbH();
+  const inp = useRef<any>(null);
+  // campo attivo e tastiera aperta quando la pagina è già sullo schermo (subito dopo il cambio di scheda non si apre)
+  useEffect(() => {
+    if (!focus) return;
+    const id = setTimeout(() => inp.current && inp.current.focus(), 350);
+    return () => clearTimeout(id);
+  }, [focus]);
   return (
     <View pointerEvents="box-none" style={{ position: "absolute", left: 0, right: 0, bottom: kbH, paddingTop: 18, paddingHorizontal: 14, paddingBottom: 8, gap: 8 }}>
       <Svg pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 100">
@@ -105,7 +114,7 @@ export function BottomBar({ q, setQ, placeholder, chips, cam, filter, x, below }
           <View pointerEvents="none" style={{ position: "absolute", left: 13 }}>
             <SearchIcon color={t.accent} />
           </View>
-          <TextInput value={q} onChangeText={setQ} placeholder={placeholder} placeholderTextColor={t.ink2} autoCorrect={false} returnKeyType="search" style={{ height: 48, paddingLeft: 42, paddingRight: 13, color: t.ink, fontSize: 16 }} />
+          <TextInput ref={inp} value={q} onChangeText={setQ} placeholder={placeholder} placeholderTextColor={t.ink2} autoCorrect={false} returnKeyType="search" style={{ height: 48, paddingLeft: 42, paddingRight: 13, color: t.ink, fontSize: 16 }} />
         </View>
         {cam ? (
           <SquareBtn onPress={() => router.push("/scansiona")} label="Scansiona una carta con la fotocamera">
