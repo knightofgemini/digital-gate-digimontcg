@@ -15,6 +15,7 @@ def adb(*a):
 
 
 def shot(name):
+    nodes()  # chiude prima eventuali avvisi di sistema dell'emulatore
     with open(os.path.join(OUT, name + ".png"), "wb") as f:
         f.write(subprocess.run(["adb", "exec-out", "screencap", "-p"], capture_output=True).stdout)
     print("foto", name, flush=True)
@@ -43,6 +44,15 @@ def nodes():
             b = re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', s)
             if b:
                 out.append(((t.group(1) if t else ""), (d.group(1) if d else ""), (c.group(1) if c else ""), tuple(map(int, b.groups()))))
+        # avviso di sistema dell'emulatore ("Pixel Launcher isn't responding"): "Wait" e si rilegge lo schermo
+        if any(re.search(r"isn.t responding|non risponde", t) for t, _, _, _ in out):
+            for t, _, _, (x1, y1, x2, y2) in out:
+                if t in ("Wait", "Attendi"):
+                    adb("shell", "input", "tap", str((x1 + x2) // 2), str((y1 + y2) // 2))
+                    print("chiuso un avviso di sistema", flush=True)
+                    time.sleep(1.5)
+                    break
+            continue
         if out:
             return out
         time.sleep(1.5)
