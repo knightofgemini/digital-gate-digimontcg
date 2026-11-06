@@ -2,7 +2,7 @@
 // Uso (dalla cartella rn): node --experimental-strip-types --test scripts/home-logic.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { dateParts, groupName, pickGoal, upRows } from "../src/homeLogic.ts";
+import { dateParts, goals, groupName, heroSlides, pickGoal, upRows } from "../src/homeLogic.ts";
 
 const yes = () => true;
 
@@ -80,4 +80,38 @@ test("date brevi", () => {
   assert.deepEqual(dateParts({ from: "2027-01-01", prec: "month" }), { big: "GEN", small: "2027", label: "gennaio 2027" });
   assert.equal(dateParts({ prec: "none" }), null);
   assert.equal(dateParts({ from: "", prec: "day" }), null);
+});
+
+test("set da completare: tutti, dal più vicino al completamento", () => {
+  const sets = [
+    { id: "a", date: "2026-01-01" },
+    { id: "b", date: "2026-02-01" },
+    { id: "c", date: "2026-03-01" },
+    { id: "d", date: "2026-04-01" },
+  ];
+  const st = { a: { n: 10, h: 5 }, b: { n: 10, h: 9 }, c: { n: 4, h: 2 }, d: { n: 10, h: 10 } };
+  assert.deepEqual(goals(sets, st, yes).map((s) => s.id), ["b", "c", "a"]);
+});
+
+test("In evidenza: spoiler più recenti, poi un prodotto per tipo", () => {
+  const ups = [
+    { code: "LM09", type: "LM", cards: 0, last: "" },
+    { code: "ST25", type: "ST", cards: 0, last: "" },
+    { code: "BT27", type: "BT", cards: 91, last: "2026-11-05" },
+    { code: "EX14", type: "EX", cards: 2, last: "2026-10-24" },
+  ];
+  const rel = [
+    { id: "bt26", code: "BT26", type: "BT", date: "2026-09-04" },
+    { id: "ex13", code: "EX13", type: "EX", date: "2026-10-02" },
+    { id: "st24", code: "ST24", type: "ST", date: "2026-05-15" },
+    { id: "st23", code: "ST23", type: "ST", date: "2026-05-14" },
+    { id: "lm08", code: "LM08", type: "LM", date: "2026-08-04" },
+  ];
+  const s = heroSlides(ups, rel, ["BT", "EX", "ST", "LM", "PB"]);
+  assert.deepEqual(s.map((x) => x.kind + ":" + x.code), ["spoiler:BT27", "up:EX14", "set:ST24", "set:LM08"]);
+  // EX14 con spoiler più recenti: prima EX14, poi BT27 per i Booster
+  ups[3].last = "2026-11-06";
+  assert.deepEqual(heroSlides(ups, rel, ["BT", "EX"]).map((x) => x.kind + ":" + x.code), ["spoiler:EX14", "up:BT27"]);
+  // nessuno spoiler: solo gli ultimi usciti
+  assert.deepEqual(heroSlides([], rel, ["BT", "EX"]).map((x) => x.code), ["BT26", "EX13"]);
 });

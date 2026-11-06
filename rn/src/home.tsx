@@ -1,29 +1,32 @@
-// Moduli della Home (6 novembre 2026, nuova Home dal mockup "home-proposta" dell'utente): titolo con "Cerca una carta",
-// banner del prodotto in evidenza con il testo sopra l'illustrazione, riga "La tua collezione", set da completare,
-// usciti di recente (due), "All'orizzonte" compatto e mazzo da riprendere.
+// Moduli della Home. 6 novembre 2026: nuova Home dal mockup "home-proposta" dell'utente; poi (stesso giorno, richieste
+// dell'utente) niente ricerca nel titolo, file scorrevoli in ogni sezione e ordine: In evidenza (con "La tua
+// collezione" sotto), [Ultimi spoiler], Usciti di recente, All'orizzonte, Set da completare, Riprendi il mazzo.
+// Gli ultimi spoiler sono proposti in due modi da scegliere: sezione "Ultimi spoiler" (SpoilerRow) e miniature
+// dentro il banner del set con gli spoiler più recenti (SpoilerStrip).
 // Stili solo di questa pagina: i componenti condivisi (Banner, SecHead, Progress…) restano come sono.
-// Dati e azioni sono quelli di prima: prodotto in evidenza = il primo delle prossime uscite (upSorted), stessa
-// destinazione del banner di prima, avanzamento di setStats, mazzo più recente come DeckResume, regola "Nuovo" (60 giorni).
-import { Pressable, View } from "react-native";
+import { ReactNode, useState } from "react";
+import { Pressable, ScrollView, View } from "react-native";
 import { Image } from "expo-image";
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { DISPLAY, Text } from "./Text";
-import { CARDS, CardSet, PRODUCTS, SETS, Upcoming, bannerUrl, daysTo, logoUrl, packUrl, recentSets, soonSet, thumbUrl, typeOf, upBadge, upWhen } from "./data";
-import { openDeck, openSet, openSoon, openUpcoming } from "./nav";
+import { CARDS, Card, CardSet, MONTHS, PRODUCTS, SETS, SETBY, TYPES, Upcoming, bannerUrl, cardsOfSet, daysTo, logoUrl, markText, packUrl, recentSets, soonSet, spoilDate, spoilerSet, thumbUrl, typeOf, upBadge, upSorted, upWhen } from "./data";
+import { openCard, openDeck, openSet, openSoon, openUpcoming } from "./nav";
 import { useTheme } from "./theme";
 import { Icon } from "./ui";
 import { goSearch, goTab } from "./chrome";
 import { Btn, Glow, ICO_ARROW, ICO_PLUS, Progress } from "./visual";
-import { S, owned, setStats } from "./store";
+import { Deck, S, owned, setStats } from "./store";
 import { deckCover, deckState, deckStats, newDeck } from "./decks";
 import { DBadge } from "./deckui";
-import { SearchIcon } from "./BottomBar";
-import { dateParts, groupName, pickGoal, upRows } from "./homeLogic";
+import { dateParts, goals, groupName, heroSlides, upRows } from "./homeLogic";
 
 const FILL = { position: "absolute" as const, top: 0, left: 0, right: 0, bottom: 0 };
 // banner in evidenza: stessi colori nei due temi (illustrazione che sfuma nel blu notte, testo chiaro)
 const HERO = { bg: "#0b1120", ink: "#e8edf7", title: "#f4f7fd", soft: "#a3b1cb", eyebrow: "#63d5ee", btn: "#ff7a3d", btnInk: "#1a0b03", glass: "rgba(11,17,32,.86)", edge: "rgba(232,237,247,.17)" };
 const SEC_TOP = 24;
+const GAP = 12;
+// tipi di prodotto del banner scorrevole, in quest'ordine (uno per tipo)
+const HERO_TYPES = ["BT", "EX", "ST", "LM", "PB"];
 
 function Arrow({ color, size = 17 }: { color: string; size?: number }) {
   return (
@@ -58,30 +61,129 @@ function Sec({ title, link, onLink }: { title: string; link?: string; onLink?: (
   );
 }
 
-// ---- titolo "Home" e accesso alla ricerca vera (scheda Carte con la tastiera aperta)
-export function HomeTitle() {
+// fila scorrevole: schede larghe w una accanto all'altra, si fermano sempre all'inizio di una scheda; la scheda dopo
+// si vede appena sul bordo, così si capisce che si può scorrere. Le schede di una fila hanno tutte la stessa altezza.
+// dots: puntini sotto la fila con la scheda in vista
+function Carousel({ w, children, dots }: { w: number; children: ReactNode[]; dots?: boolean }) {
   const t = useTheme();
+  const [i, setI] = useState(0);
+  const n = children.length;
   return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 8, marginBottom: 14 }}>
-      <Text accessibilityRole="header" style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 25, lineHeight: 29, letterSpacing: -0.6 }}>
-        Home
-      </Text>
-      <Pressable onPress={goSearch} accessibilityRole="button" accessibilityLabel="Cerca una carta" style={{ minHeight: 44, flexShrink: 1, flexDirection: "row", alignItems: "center", gap: 7, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface }}>
-        <SearchIcon color={t.ink2} size={16} />
-        <Text style={{ flexShrink: 1, color: t.ink2, fontSize: 13.4 }} numberOfLines={1}>
-          Cerca una carta
-        </Text>
-      </Pressable>
+    <View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        snapToInterval={w + GAP}
+        snapToAlignment="start"
+        decelerationRate="fast"
+        disableIntervalMomentum
+        nestedScrollEnabled
+        style={{ marginHorizontal: -14 }}
+        contentContainerStyle={{ paddingHorizontal: 14, gap: GAP }}
+        onScroll={dots ? (e) => setI(Math.max(0, Math.min(n - 1, Math.round(e.nativeEvent.contentOffset.x / (w + GAP))))) : undefined}
+        scrollEventThrottle={32}
+      >
+        {children}
+      </ScrollView>
+      {dots && n > 1 ? (
+        <View style={{ flexDirection: "row", justifyContent: "center", gap: 6, marginTop: 10 }} accessibilityLabel={"Scheda " + (i + 1) + " di " + n}>
+          {children.map((_, k) => (
+            <View key={k} style={{ width: k === i ? 18 : 6, height: 6, borderRadius: 3, backgroundColor: k === i ? t.accent : t.line }} />
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
 
-// ---- banner del prodotto in evidenza
+// ---- titolo "Home"
+export function HomeTitle() {
+  const t = useTheme();
+  return (
+    <Text accessibilityRole="header" style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 25, lineHeight: 29, letterSpacing: -0.6, marginTop: 10, marginBottom: 14 }}>
+      Home
+    </Text>
+  );
+}
+
+// ---- carte spoiler: quelle dei prodotti in arrivo con la data di arrivo nel catalogo, dalla più recente
+type Spoil = { c: Card; d: string; u: Upcoming };
+function spoilers(): Spoil[] {
+  const out: Spoil[] = [];
+  upSorted().forEach((u) => {
+    const sp = spoilerSet(u.code);
+    if (sp) cardsOfSet(sp.id).forEach((c) => {
+      const d = spoilDate(c);
+      if (d) out.push({ c, d, u });
+    });
+  });
+  // stabile: a parità di data resta l'ordine del prodotto (numero)
+  return out.map((x, i) => [x, i] as [Spoil, number]).sort((a, b) => (b[0].d > a[0].d ? 1 : b[0].d < a[0].d ? -1 : a[1] - b[1])).map((x) => x[0]);
+}
+// "oggi", "ieri", "5 nov"
+function dayLabel(d: string) {
+  const n = daysTo(d);
+  if (n === 0) return "oggi";
+  if (n === -1) return "ieri";
+  const p = d.split("-");
+  return +p[2] + " " + MONTHS[+p[1] - 1].slice(0, 3);
+}
+
+// ---- banner "In evidenza" scorrevole
 // conto alla rovescia di upBadge ("35 gg" → "tra 35 gg"; "Questo mese", "Oggi", "Data da definire" restano così)
 const upStatus = (u: Upcoming) => {
   const b = upBadge(u);
   return /^\d/.test(b) ? "tra " + b : b;
 };
+type HeroData = { key: string; code: string; name: string; badge: string; eyebrow: string; dp: ReturnType<typeof dateParts>; when: string; cta: string; go: () => void; spoil?: { list: Spoil[]; n: number } };
+
+function heroData(sp: Spoil[]): HeroData[] {
+  const ups = upSorted();
+  const cardsOf = (code: string) => {
+    const s = spoilerSet(code);
+    return s ? cardsOfSet(s.id).filter((c) => !c.suf).length : 0;
+  };
+  const lastOf = (code: string) => (sp.find((x) => x.u.code === code) || { d: "" }).d;
+  const released = SETS.filter((s) => s.date && s.date.charAt(0) !== "0" && !soonSet(s));
+  const slides = heroSlides(
+    ups.map((u) => ({ code: u.code, type: typeOf(u.code), cards: cardsOf(u.code), last: lastOf(u.code) })),
+    released.map((s) => ({ id: s.id, code: s.code, type: s.type, date: s.date })),
+    HERO_TYPES
+  );
+  return slides.map((sl) => {
+    if (sl.kind === "set") {
+      const s = SETBY[sl.id];
+      const exp = s.type === "BT" || s.type === "EX";
+      return {
+        key: s.id,
+        code: s.code,
+        name: s.name,
+        badge: "USCITO DI RECENTE",
+        eyebrow: [s.code, TYPES[s.type], "Uscito"].join(" · "),
+        dp: dateParts({ from: s.date, prec: "day" }),
+        when: upWhen({ code: s.code, name: s.name, from: s.date, prec: "day" }),
+        cta: exp ? "Scopri il set" : "Scopri il prodotto",
+        go: () => openSet(s.id, "home"),
+      };
+    }
+    const u = ups.find((x) => x.code === sl.code)!;
+    const n = cardsOf(u.code);
+    const mine = sp.filter((x) => x.u.code === u.code);
+    return {
+      key: u.code,
+      code: u.code,
+      name: u.name,
+      badge: sl.kind === "spoiler" ? "NUOVI SPOILER" : "IN ARRIVO",
+      eyebrow: [u.code, u.kind, upStatus(u)].filter(Boolean).join(" · "),
+      dp: dateParts(u),
+      when: upWhen(u),
+      cta: "Vedi le " + n + (n === 1 ? " carta svelata" : " carte svelate"),
+      // pagina del prodotto con le carte svelate
+      go: () => openUpcoming(u.code, "home"),
+      spoil: sl.kind === "spoiler" && mine.length ? { list: mine, n } : undefined,
+    };
+  });
+}
 
 // senza illustrazione: il ripiego del progetto (confezione, logo o codice su sfondo sfumato)
 function HeroFallback({ code }: { code: string }) {
@@ -91,7 +193,7 @@ function HeroFallback({ code }: { code: string }) {
     <View style={FILL}>
       <Glow id={"hero" + code} kind="bn" />
       {pk ? (
-        <Image source={pk} style={{ position: "absolute", top: 44, bottom: 130, left: 0, right: 0 }} contentFit="contain" cachePolicy="disk" />
+        <Image source={pk} style={{ position: "absolute", top: 44, bottom: 150, left: 0, right: 0 }} contentFit="contain" cachePolicy="disk" />
       ) : lg ? (
         <Image source={lg} style={{ position: "absolute", top: 54, height: 76, left: "12%", right: "12%" }} contentFit="contain" cachePolicy="disk" />
       ) : (
@@ -103,54 +205,83 @@ function HeroFallback({ code }: { code: string }) {
   );
 }
 
-export function Hero({ u }: { u: Upcoming }) {
-  const has = !!PRODUCTS[u.code];
-  // stessa destinazione del banner di prima: scheda del prodotto (o pagina degli spoiler), altrimenti il calendario
-  const go = () => (has ? openUpcoming(u.code, "home") : openSoon());
-  const b = bannerUrl(u.code);
-  const dp = dateParts(u);
-  const ty = typeOf(u.code);
-  const cta = !has ? "Vedi il calendario" : ty === "BT" || ty === "EX" ? "Scopri il set" : "Scopri il prodotto";
-  const eyebrow = [u.code, u.kind, upStatus(u)].filter(Boolean).join(" · ");
+// proposta B per gli spoiler: dentro il banner, le ultime carte svelate (tocco = scheda della carta)
+function SpoilerStrip({ s }: { s: { list: Spoil[]; n: number } }) {
+  const last = s.list[0].d;
+  const today = s.list.filter((x) => x.d === last);
+  const shown = s.list.slice(0, 6);
+  const cards = s.list.map((x) => x.c);
   return (
-    <Pressable onPress={go} accessibilityRole="button" accessibilityLabel={"In evidenza: " + u.code + " " + u.name + ", " + upWhen(u) + ". " + cta} style={{ minHeight: 276, borderRadius: 16, overflow: "hidden", backgroundColor: HERO.bg, padding: 15, justifyContent: "space-between" }}>
-      {b ? <Image source={b} style={FILL} contentFit="cover" contentPosition={{ left: "42%", top: "27%" }} cachePolicy="disk" transition={120} /> : <HeroFallback code={u.code} />}
+    <View style={{ marginBottom: 12 }}>
+      <Text style={{ color: HERO.soft, fontSize: 12, lineHeight: 16, marginBottom: 6 }}>
+        <Text style={{ color: HERO.ink, fontWeight: "600" }}>{today.length + (today.length === 1 ? " nuova" : " nuove")}</Text> · svelate {dayLabel(last)}
+      </Text>
+      <View style={{ flexDirection: "row", gap: 6 }}>
+        {shown.map((x) => (
+          <Pressable key={x.c.k} onPress={() => openCard(x.c, cards)} accessibilityLabel={"Apri " + x.c.name + " " + x.c.code} style={{ width: 38, height: 53, borderRadius: 4, overflow: "hidden", backgroundColor: "#1a2540", borderWidth: x.d === last ? 1.5 : 0, borderColor: HERO.btn }}>
+            <Image source={thumbUrl(x.c)} style={FILL} contentFit="cover" cachePolicy="disk" recyclingKey={x.c.k} />
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function HeroSlide({ h, w }: { h: HeroData; w: number }) {
+  const b = bannerUrl(h.code);
+  return (
+    <Pressable onPress={h.go} accessibilityRole="button" accessibilityLabel={h.badge.toLowerCase() + ": " + h.code + " " + h.name + ", " + h.when + ". " + h.cta} style={{ width: w, minHeight: 276, borderRadius: 16, overflow: "hidden", backgroundColor: HERO.bg, padding: 15, justifyContent: "space-between" }}>
+      {b ? <Image source={b} style={FILL} contentFit="cover" contentPosition={{ left: "42%", top: "27%" }} cachePolicy="disk" transition={120} /> : <HeroFallback code={h.code} />}
       {/* sfumatura in una vista a tutta superficie: con width/height "100%" sull'Svg la misura sarebbe quella
           interna (meno il margine di 15) e la sfumatura non arriverebbe al bordo destro e in fondo */}
       <View pointerEvents="none" style={FILL}>
         <Svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 100">
           <Defs>
-            <LinearGradient id="heroFade" x1="0" y1="0" x2="0" y2="1">
+            <LinearGradient id={"heroFade" + h.key} x1="0" y1="0" x2="0" y2="1">
               <Stop offset="0" stopColor={HERO.bg} stopOpacity={0.15} />
               <Stop offset="0.18" stopColor={HERO.bg} stopOpacity={0.15} />
               <Stop offset="0.35" stopColor={HERO.bg} stopOpacity={0.25} />
-              <Stop offset="0.72" stopColor={HERO.bg} stopOpacity={0.91} />
+              <Stop offset="0.66" stopColor={HERO.bg} stopOpacity={0.91} />
               <Stop offset="1" stopColor={HERO.bg} stopOpacity={1} />
             </LinearGradient>
           </Defs>
-          <Rect width="10" height="100" fill="url(#heroFade)" />
+          <Rect width="10" height="100" fill={`url(#heroFade${h.key})`} />
         </Svg>
       </View>
       <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
-        <View style={{ borderRadius: 6, borderWidth: 1, borderColor: HERO.edge, backgroundColor: HERO.glass, paddingVertical: 5, paddingHorizontal: 8 }}>
-          <Text style={{ color: HERO.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, lineHeight: 14, letterSpacing: 1.4 }}>IN EVIDENZA</Text>
+        <View style={{ flexShrink: 1, borderRadius: 6, borderWidth: 1, borderColor: h.spoil ? HERO.btn : HERO.edge, backgroundColor: HERO.glass, paddingVertical: 5, paddingHorizontal: 8 }}>
+          <Text style={{ color: h.spoil ? HERO.btn : HERO.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, lineHeight: 14, letterSpacing: 1.4 }}>{h.badge}</Text>
         </View>
-        {dp ? (
-          <View accessible accessibilityLabel={dp.label} style={{ minWidth: 46, alignItems: "center", borderRadius: 9, borderWidth: 1, borderColor: HERO.edge, backgroundColor: HERO.glass, paddingVertical: 6, paddingHorizontal: 8 }}>
-            <Text style={{ color: HERO.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 22, lineHeight: 24 }}>{dp.big}</Text>
-            <Text style={{ color: HERO.soft, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10, lineHeight: 14, letterSpacing: 1.3 }}>{dp.small}</Text>
+        {h.dp ? (
+          <View accessible accessibilityLabel={h.dp.label} style={{ minWidth: 46, alignItems: "center", borderRadius: 9, borderWidth: 1, borderColor: HERO.edge, backgroundColor: HERO.glass, paddingVertical: 6, paddingHorizontal: 8 }}>
+            <Text style={{ color: HERO.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 22, lineHeight: 24 }}>{h.dp.big}</Text>
+            <Text style={{ color: HERO.soft, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10, lineHeight: 14, letterSpacing: 1.3 }}>{h.dp.small}</Text>
           </View>
         ) : null}
       </View>
       <View style={{ paddingTop: 36 }}>
-        <Text style={{ color: HERO.eyebrow, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, lineHeight: 14, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 3 }}>{eyebrow}</Text>
-        <Text style={{ color: HERO.title, fontFamily: DISPLAY, fontWeight: "700", fontSize: 29, lineHeight: 32, letterSpacing: -0.4, marginBottom: 12 }}>{u.name}</Text>
-        <Pressable onPress={go} accessibilityRole="button" accessibilityLabel={cta + ": " + u.name} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, paddingHorizontal: 15, borderRadius: 10, backgroundColor: HERO.btn }}>
-          <Text style={{ color: HERO.btnInk, fontWeight: "600", fontSize: 14 }}>{cta}</Text>
+        <Text style={{ color: HERO.eyebrow, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, lineHeight: 14, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 3 }}>{h.eyebrow}</Text>
+        <Text style={{ color: HERO.title, fontFamily: DISPLAY, fontWeight: "700", fontSize: 29, lineHeight: 32, letterSpacing: -0.4, marginBottom: 12 }}>{h.name}</Text>
+        {h.spoil ? <SpoilerStrip s={h.spoil} /> : null}
+        <Pressable onPress={h.go} accessibilityRole="button" accessibilityLabel={h.cta + ": " + h.name} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, paddingHorizontal: 15, borderRadius: 10, backgroundColor: HERO.btn }}>
+          <Text style={{ color: HERO.btnInk, fontWeight: "600", fontSize: 14 }}>{h.cta}</Text>
           <Arrow color={HERO.btnInk} />
         </Pressable>
       </View>
     </Pressable>
+  );
+}
+
+export function HeroCarousel({ cw, sp }: { cw: number; sp: Spoil[] }) {
+  const list = heroData(sp);
+  if (!list.length) return null;
+  const w = list.length > 1 ? cw - 22 : cw;
+  return (
+    <Carousel w={w} dots>
+      {list.map((h) => (
+        <HeroSlide key={h.key} h={h} w={w} />
+      ))}
+    </Carousel>
   );
 }
 
@@ -176,7 +307,189 @@ export function CollectionRow() {
   );
 }
 
-// ---- un set da completare
+// ---- proposta A per gli spoiler: sezione "Ultimi spoiler", carte dalla più recente (tocco = scheda della carta)
+export function SpoilerRow({ sp }: { sp: Spoil[] }) {
+  const t = useTheme();
+  if (!sp.length) return null;
+  const list = sp.slice(0, 16);
+  const cards = list.map((x) => x.c);
+  const last = list[0].d;
+  const W = 104;
+  return (
+    <>
+      <Sec title="Ultimi spoiler" link={list[0].u.code + " →"} onLink={() => openUpcoming(list[0].u.code, "home")} />
+      <Carousel w={W}>
+        {list.map((x) => {
+          const mk = markText(x.c);
+          const fresh = x.d === last;
+          return (
+            <Pressable key={x.c.k} onPress={() => openCard(x.c, cards)} accessibilityLabel={x.c.name + " " + x.c.code + ", svelata " + dayLabel(x.d)} style={{ width: W }}>
+              <View style={{ width: W, height: Math.round(W / 0.716), borderRadius: 7, overflow: "hidden", backgroundColor: t.surface2, borderWidth: fresh ? 2 : 0, borderColor: t.accent }}>
+                <Image source={thumbUrl(x.c)} style={FILL} contentFit="cover" cachePolicy="disk" transition={120} recyclingKey={x.c.k} />
+              </View>
+              <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.5, marginTop: 6 }} numberOfLines={1}>
+                {x.c.code}
+                {mk ? " " + mk : ""}
+              </Text>
+              <Text style={{ color: fresh ? t.accent : t.ink2, fontWeight: fresh ? "600" : "400", fontSize: 11.5, lineHeight: 15 }} numberOfLines={1}>
+                {fresh ? "Nuova · " : ""}
+                {dayLabel(x.d)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </Carousel>
+    </>
+  );
+}
+
+// ---- usciti di recente: recentSets (stessa scelta e stesso ordine di prima), a scorrimento
+function RecentCard({ x, st, w }: { x: CardSet; st?: { n: number; h: number }; w: number }) {
+  const t = useTheme();
+  const isNew = daysTo(x.date) >= -60;
+  const has = !!st && st.n > 0;
+  const done = has && st!.h === st!.n;
+  const b = bannerUrl(x.code);
+  return (
+    <Pressable onPress={() => openSet(x.id, "home")} accessibilityRole="button" accessibilityLabel={x.code + " " + x.name + (isNew ? ", nuovo" : "") + (has ? ": " + st!.h + " su " + st!.n + " carte" : "")} style={{ width: w, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, overflow: "hidden" }}>
+      <View style={{ width: "100%", aspectRatio: 1.6, alignItems: "center", justifyContent: "center", backgroundColor: "#1a2540" }}>
+        {b ? (
+          <Image source={b} style={FILL} contentFit="cover" contentPosition={{ left: "50%", top: "40%" }} cachePolicy="disk" transition={120} />
+        ) : (
+          <Text style={{ color: "#c7d2e8", fontFamily: DISPLAY, fontWeight: "700", fontStyle: "italic", fontSize: 22 }}>{x.code}</Text>
+        )}
+      </View>
+      <View style={{ flex: 1, paddingHorizontal: 10, paddingTop: 10, paddingBottom: 11 }}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 5 }}>
+          <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, lineHeight: 15, letterSpacing: 0.6 }}>{x.code}</Text>
+          {isNew ? (
+            <View style={{ borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1, backgroundColor: t.dark ? "#163329" : "#eaf6ed" }}>
+              <Text style={{ color: t.ok, fontFamily: DISPLAY, fontWeight: "600", fontSize: 9.5, lineHeight: 13 }}>NUOVO</Text>
+            </View>
+          ) : null}
+        </View>
+        <Text style={{ minHeight: 36, color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 14, lineHeight: 18, letterSpacing: 0.05, textTransform: "uppercase", marginTop: 5, marginBottom: 8 }}>{x.name}</Text>
+        {has ? (
+          <View style={{ marginTop: "auto" }}>
+            <Progress h={st!.h} n={st!.n} height={5} color={done ? t.ok : t.cyan} />
+            <Text style={{ color: done ? t.ok : t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, marginTop: 5, fontVariant: ["tabular-nums"] }}>
+              {st!.h} / {st!.n} carte
+            </Text>
+          </View>
+        ) : null}
+      </View>
+    </Pressable>
+  );
+}
+
+export function Recent({ cw }: { cw: number }) {
+  const stats = setStats();
+  const list = recentSets(10);
+  if (!list.length) return null;
+  // due schede intere e l'inizio della terza
+  const w = Math.floor((cw - GAP) / 2) - 18;
+  return (
+    <>
+      <Sec title="Usciti di recente" link="Tutti →" onLink={() => goTab("sets")} />
+      <Carousel w={w}>
+        {list.map((x) => (
+          <RecentCard key={x.id} x={x} st={stats[x.id]} w={w} />
+        ))}
+      </Carousel>
+    </>
+  );
+}
+
+// ---- All'orizzonte: una scheda per data; i prodotti dello stesso giorno (data esatta, stesso tipo, stesse uscite
+// per regione) stanno nella stessa scheda, che apre il calendario dove ognuno ha la sua voce
+const relKey = (u: { code: string }) => {
+  const p = PRODUCTS[u.code];
+  return JSON.stringify((p && p.rel) || []);
+};
+
+function PackThumb({ code }: { code: string }) {
+  const t = useTheme();
+  const pk = packUrl(code);
+  if (pk) return <Image source={pk} style={{ width: 29, height: 46 }} contentFit="contain" cachePolicy="disk" />;
+  const b = bannerUrl(code);
+  const lg = !b ? logoUrl(code) : null;
+  return (
+    <View style={{ width: 29, height: 46, borderRadius: 5, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: b ? "#1a2540" : t.surface2 }}>
+      {b ? (
+        <Image source={b} style={FILL} contentFit="cover" cachePolicy="disk" />
+      ) : lg ? (
+        <Image source={lg} style={{ width: 27, height: 27 }} contentFit="contain" cachePolicy="disk" />
+      ) : (
+        <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "700", fontSize: 8.5 }} numberOfLines={1} adjustsFontSizeToFit>
+          {code}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+function HorizonCard({ r, w }: { r: Upcoming[]; w: number }) {
+  const t = useTheme();
+  const u = r[0];
+  const one = r.length === 1;
+  const dp = dateParts(u);
+  // un prodotto: la sua scheda (o gli spoiler; il calendario se non c'è, come prima); più prodotti: il calendario
+  const go = () => (one && (PRODUCTS[u.code] || spoilerSet(u.code)) ? openUpcoming(u.code, "home") : openSoon());
+  const name = groupName(r.map((x) => x.name));
+  const codes = r.map((x) => x.code).join(" + ");
+  const day = u.prec === "day";
+  return (
+    <Pressable onPress={go} accessibilityRole="button" accessibilityLabel={(dp ? dp.label : "Data da definire") + ": " + codes + ", " + name} style={{ width: w, padding: 12, gap: 8, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <View style={{ flex: 1 }}>
+          {dp ? (
+            <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
+              <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "700", fontSize: 24, lineHeight: 27 }}>{dp.big}</Text>
+              <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11, letterSpacing: 1 }}>{dp.small}</Text>
+            </View>
+          ) : (
+            <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11, lineHeight: 27, letterSpacing: 0.8 }}>DA DEFINIRE</Text>
+          )}
+          <View style={{ alignSelf: "flex-start", marginTop: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 7, backgroundColor: day ? t.accentSoft : t.cyanSoft }}>
+            <Text style={{ color: day ? t.accent : t.cyan, fontWeight: "600", fontSize: 11.5, lineHeight: 16 }}>{upBadge(u)}</Text>
+          </View>
+        </View>
+        <View style={{ flexDirection: "row", gap: 4 }}>
+          {r.map((x) => (
+            <PackThumb key={x.code} code={x.code} />
+          ))}
+        </View>
+      </View>
+      <View style={{ marginTop: "auto" }}>
+        <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 14.5, lineHeight: 19 }} numberOfLines={2}>
+          {name}
+        </Text>
+        <Text style={{ color: t.ink2, fontSize: 11.8, lineHeight: 17 }}>
+          {codes}
+          {u.kind ? " · " + u.kind : ""}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+export function Horizon({ cw }: { cw: number }) {
+  const rows = upRows(upSorted(), 20, relKey);
+  if (!rows.length) return null;
+  const w = Math.min(250, Math.floor(cw * 0.62));
+  return (
+    <>
+      <Sec title="All’orizzonte" link="Calendario →" onLink={openSoon} />
+      <Carousel w={w}>
+        {rows.map((r) => (
+          <HorizonCard key={r[0].code} r={r} w={w} />
+        ))}
+      </Carousel>
+    </>
+  );
+}
+
+// ---- set da completare: tutti quelli iniziati e incompleti, dal più vicino al completamento
 // ritaglio dell'illustrazione del prodotto; senza: confezione, logo o codice
 function SetArt({ code, w, h }: { code: string; w: number; h: number }) {
   const t = useTheme();
@@ -223,234 +536,127 @@ function StartCollection() {
   );
 }
 
-export function GoalModule() {
+function GoalCard({ g, st, w }: { g: CardSet; st: { n: number; h: number }; w: number }) {
   const t = useTheme();
-  if (!Object.keys(S.qty).length) return <StartCollection />;
-  const stats = setStats();
-  const g = pickGoal(SETS, stats, (s) => !soonSet(s));
-  // nessun set iniziato e incompleto: niente modulo (e niente titolo)
-  if (!g) return null;
-  const st = stats[g.id];
   const miss = st.n - st.h;
   const missTxt = miss === 1 ? "Ti manca 1 carta" : "Ti mancano " + miss + " carte";
   // pagina del prodotto con le sole carte mancanti
   const go = () => openSet(g.id, "home", true);
   return (
-    <>
-      <Sec title="Un set da completare" link="Mancanti →" onLink={go} />
-      <Pressable onPress={go} accessibilityRole="button" accessibilityLabel={g.code + " " + g.name + ": " + st.h + " su " + st.n + ". " + missTxt} style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 13, borderRadius: 14, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface }}>
-        <View style={{ position: "absolute", left: -1, top: 18, bottom: 18, width: 3, borderRadius: 2, backgroundColor: t.cyan }} />
-        <SetArt code={g.code} w={65} h={91} />
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 6, marginBottom: 2 }}>
-            <View style={{ borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1, backgroundColor: t.cyanSoft }}>
-              <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, lineHeight: 15, letterSpacing: 0.6 }}>{g.code}</Text>
-            </View>
-            <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.5, fontVariant: ["tabular-nums"] }}>
-              {st.h} / {st.n}
-            </Text>
+    <Pressable onPress={go} accessibilityRole="button" accessibilityLabel={g.code + " " + g.name + ": " + st.h + " su " + st.n + ". " + missTxt} style={{ width: w, flexDirection: "row", alignItems: "center", gap: 12, padding: 13, borderRadius: 14, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface }}>
+      <View style={{ position: "absolute", left: -1, top: 18, bottom: 18, width: 3, borderRadius: 2, backgroundColor: t.cyan }} />
+      <SetArt code={g.code} w={65} h={91} />
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 6, marginBottom: 2 }}>
+          <View style={{ borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1, backgroundColor: t.cyanSoft }}>
+            <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, lineHeight: 15, letterSpacing: 0.6 }}>{g.code}</Text>
           </View>
-          <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16, lineHeight: 20, marginTop: 1, marginBottom: 8 }}>{g.name}</Text>
-          <Progress h={st.h} n={st.n} height={5} color={t.cyan} />
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, minHeight: 31, paddingTop: 9 }}>
-            <Text style={{ flex: 1, color: t.cyan, fontWeight: "600", fontSize: 12.8 }}>{missTxt}</Text>
-            <Arrow color={t.cyan} size={16} />
-          </View>
+          <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.5, fontVariant: ["tabular-nums"] }}>
+            {st.h} / {st.n}
+          </Text>
         </View>
-      </Pressable>
-    </>
-  );
-}
-
-// ---- usciti di recente: i primi due di recentSets (stessa scelta e stesso ordine di prima)
-function RecentCard({ x, st }: { x: CardSet; st?: { n: number; h: number } }) {
-  const t = useTheme();
-  const isNew = daysTo(x.date) >= -60;
-  const has = !!st && st.n > 0;
-  const done = has && st!.h === st!.n;
-  const b = bannerUrl(x.code);
-  return (
-    <Pressable onPress={() => openSet(x.id, "home")} accessibilityRole="button" accessibilityLabel={x.code + " " + x.name + (isNew ? ", nuovo" : "") + (has ? ": " + st!.h + " su " + st!.n + " carte" : "")} style={{ flex: 1, minWidth: 0, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, overflow: "hidden" }}>
-      <View style={{ width: "100%", aspectRatio: 1.6, alignItems: "center", justifyContent: "center", backgroundColor: "#1a2540" }}>
-        {b ? (
-          <Image source={b} style={FILL} contentFit="cover" contentPosition={{ left: "50%", top: "40%" }} cachePolicy="disk" transition={120} />
-        ) : (
-          <Text style={{ color: "#c7d2e8", fontFamily: DISPLAY, fontWeight: "700", fontStyle: "italic", fontSize: 22 }}>{x.code}</Text>
-        )}
-      </View>
-      <View style={{ flex: 1, paddingHorizontal: 10, paddingTop: 10, paddingBottom: 11 }}>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 5 }}>
-          <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, lineHeight: 15, letterSpacing: 0.6 }}>{x.code}</Text>
-          {isNew ? (
-            <View style={{ borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1, backgroundColor: t.dark ? "#163329" : "#eaf6ed" }}>
-              <Text style={{ color: t.ok, fontFamily: DISPLAY, fontWeight: "600", fontSize: 9.5, lineHeight: 13 }}>NUOVO</Text>
-            </View>
-          ) : null}
+        <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16, lineHeight: 20, marginTop: 1, marginBottom: 8 }} numberOfLines={2}>
+          {g.name}
+        </Text>
+        <Progress h={st.h} n={st.n} height={5} color={t.cyan} />
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, minHeight: 31, paddingTop: 9 }}>
+          <Text style={{ flex: 1, color: t.cyan, fontWeight: "600", fontSize: 12.8 }}>{missTxt}</Text>
+          <Arrow color={t.cyan} size={16} />
         </View>
-        <Text style={{ minHeight: 36, color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 14, lineHeight: 18, letterSpacing: 0.05, textTransform: "uppercase", marginTop: 5, marginBottom: 8 }}>{x.name}</Text>
-        {has ? (
-          <View style={{ marginTop: "auto" }}>
-            <Progress h={st!.h} n={st!.n} height={5} color={done ? t.ok : t.cyan} />
-            <Text style={{ color: done ? t.ok : t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, marginTop: 5, fontVariant: ["tabular-nums"] }}>
-              {st!.h} / {st!.n} carte
-            </Text>
-          </View>
-        ) : null}
       </View>
     </Pressable>
   );
 }
 
-export function Recent() {
+export function GoalModule({ cw }: { cw: number }) {
+  if (!Object.keys(S.qty).length) return <StartCollection />;
   const stats = setStats();
-  const list = recentSets(2);
+  const list = goals(SETS, stats, (s) => !soonSet(s)).slice(0, 12);
+  // nessun set iniziato e incompleto: niente sezione (e niente titolo)
   if (!list.length) return null;
+  const w = list.length > 1 ? cw - 30 : cw;
   return (
     <>
-      <Sec title="Usciti di recente" link="Tutti →" onLink={() => goTab("sets")} />
-      <View style={{ flexDirection: "row", gap: 12 }}>
-        {list.map((x) => (
-          <RecentCard key={x.id} x={x} st={stats[x.id]} />
+      <Sec title="Set da completare" link="Collezione →" onLink={() => goTab("coll")} />
+      <Carousel w={w}>
+        {list.map((g) => (
+          <GoalCard key={g.id} g={g} st={stats[g.id]} w={w} />
         ))}
-        {list.length < 2 ? <View style={{ flex: 1 }} /> : null}
-      </View>
+      </Carousel>
     </>
   );
 }
 
-// ---- All'orizzonte: al massimo due righe; i prodotti dello stesso giorno (data esatta, stesso tipo, stesse uscite per
-// regione) stanno in una riga sola, che apre il calendario dove ognuno ha la sua voce
-const relKey = (u: { code: string }) => {
-  const p = PRODUCTS[u.code];
-  return JSON.stringify((p && p.rel) || []);
-};
-
-function PackThumb({ code }: { code: string }) {
+// ---- mazzi: dal più recente (il primo è quello di DeckResume), più "Nuovo mazzo" in fondo
+function DeckCard({ d, w }: { d: Deck; w: number }) {
   const t = useTheme();
-  const pk = packUrl(code);
-  if (pk) return <Image source={pk} style={{ width: 29, height: 46 }} contentFit="contain" cachePolicy="disk" />;
-  const b = bannerUrl(code);
-  const lg = !b ? logoUrl(code) : null;
+  const s = deckStats(d);
+  const [k, label] = deckState(s);
+  const cv = deckCover(d);
   return (
-    <View style={{ width: 29, height: 46, borderRadius: 5, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: b ? "#1a2540" : t.surface2 }}>
-      {b ? (
-        <Image source={b} style={FILL} contentFit="cover" cachePolicy="disk" />
-      ) : lg ? (
-        <Image source={lg} style={{ width: 27, height: 27 }} contentFit="contain" cachePolicy="disk" />
-      ) : (
-        <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "700", fontSize: 8.5 }} numberOfLines={1} adjustsFontSizeToFit>
-          {code}
-        </Text>
-      )}
-    </View>
-  );
-}
-
-function HorizonRow({ r, first }: { r: Upcoming[]; first: boolean }) {
-  const t = useTheme();
-  const u = r[0];
-  const one = r.length === 1;
-  const dp = dateParts(u);
-  // un prodotto: la sua scheda (o il calendario se non c'è, come prima); più prodotti: il calendario
-  const go = () => (one && PRODUCTS[u.code] ? openUpcoming(u.code, "home") : openSoon());
-  const name = groupName(r.map((x) => x.name));
-  const codes = r.map((x) => x.code).join(" + ");
-  return (
-    <Pressable onPress={go} accessibilityRole="button" accessibilityLabel={(dp ? dp.label : "Data da definire") + ": " + codes + ", " + name} style={{ flexDirection: "row", alignItems: "center", gap: 11, padding: 12, borderTopWidth: first ? 0 : 1, borderTopColor: t.line }}>
-      <View style={{ minWidth: 44, alignItems: "center", paddingRight: 11, borderRightWidth: 1, borderRightColor: t.line }}>
-        {dp ? (
-          <>
-            <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "700", fontSize: 21, lineHeight: 23 }}>{dp.big}</Text>
-            <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10, lineHeight: 14, letterSpacing: 1 }}>{dp.small}</Text>
-          </>
-        ) : (
-          <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10, lineHeight: 13, letterSpacing: 0.8, textAlign: "center" }}>{"DA\nDEFINIRE"}</Text>
-        )}
+    <Pressable onPress={() => openDeck(d.id)} accessibilityRole="button" accessibilityLabel={"Riprendi il mazzo " + d.name + ": principale " + s.main + " su 50, Digi-Egg " + s.egg + " su 5, " + label} style={{ width: w, flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface }}>
+      <View style={{ width: 46, height: 64, marginLeft: 2, borderRadius: 5, transform: [{ rotate: "-7deg" }], boxShadow: `4px 2px 0 ${t.surface2}` }}>
+        <View style={{ flex: 1, borderRadius: 5, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: t.surface2 }}>
+          {cv ? <Image source={thumbUrl(cv)} style={FILL} contentFit="cover" cachePolicy="disk" recyclingKey={cv.k} /> : <Icon name="deck" color={t.ink2} size={20} />}
+        </View>
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 14.5, lineHeight: 20 }} numberOfLines={2}>
-          {name}
+        {/* nome lungo o testo ingrandito: l'etichetta dello stato va sotto e il nome va a capo (non tagliato) */}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: 8, rowGap: 3, marginBottom: 3 }}>
+          <Text style={{ flexShrink: 1, color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16, lineHeight: 21 }} numberOfLines={2}>
+            {d.name}
+          </Text>
+          <DBadge k={k} label={label} />
+        </View>
+        <Text style={{ color: t.ink2, fontSize: 11.8, lineHeight: 16, marginBottom: 8 }}>
+          {s.main}/50 carte · {s.egg}/5 Digi-Egg
         </Text>
-        <Text style={{ color: t.ink2, fontSize: 11.8, lineHeight: 17 }}>
-          {codes}
-          {u.kind ? " · " + u.kind : ""}
-        </Text>
+        <Progress h={Math.min(s.main, 50)} n={50} height={5} color={t.accent} />
       </View>
-      <View style={{ flexDirection: "row", gap: 4 }}>
-        {r.map((x) => (
-          <PackThumb key={x.code} code={x.code} />
-        ))}
-      </View>
+      <Arrow color={t.accent} size={18} />
     </Pressable>
   );
 }
 
-export function Horizon({ ups }: { ups: Upcoming[] }) {
+function NewDeckCard({ w, first }: { w: number; first?: boolean }) {
   const t = useTheme();
-  const rows = upRows(ups, 2, relKey);
-  if (!rows.length) return null;
   return (
-    <>
-      <Sec title="All’orizzonte" link="Calendario →" onLink={openSoon} />
-      <View style={{ borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, overflow: "hidden" }}>
-        {rows.map((r, i) => (
-          <HorizonRow key={r[0].code} r={r} first={i === 0} />
-        ))}
+    <Pressable onPress={() => openDeck(newDeck("Nuovo mazzo " + (S.decks.length + 1)).id)} accessibilityRole="button" accessibilityLabel={first ? "Crea il tuo primo mazzo" : "Nuovo mazzo"} style={{ width: w, flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderRadius: 12, borderWidth: 1, borderStyle: first ? "solid" : "dashed", borderColor: t.line, backgroundColor: t.surface }}>
+      <View style={{ width: 46, height: 64, alignItems: "center", justifyContent: "center", borderRadius: 6, borderWidth: 1.5, borderStyle: "dashed", borderColor: t.line }}>
+        <Svg width={22} height={22} viewBox="0 0 24 24">
+          <Path d={ICO_PLUS} stroke={t.accent} strokeWidth={2.2} strokeLinecap="round" fill="none" />
+        </Svg>
       </View>
-    </>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16, lineHeight: 21 }}>{first ? "Il tuo primo mazzo" : "Nuovo mazzo"}</Text>
+        <Text style={{ color: t.ink2, fontSize: 12.5, lineHeight: 17, marginTop: 2 }}>{first ? "Regole e lista ban vengono controllate mentre lo componi." : "Parti da una carta o da un'idea"}</Text>
+      </View>
+      {first ? <Arrow color={t.accent} size={18} /> : null}
+    </Pressable>
   );
 }
 
-// ---- mazzo da riprendere (il più recente, come DeckResume) o invito a creare il primo
-export function DeckModule() {
-  const t = useTheme();
-  const last = S.decks.slice().sort((a, b) => (b.upd || 0) - (a.upd || 0))[0];
-  const box = { flexDirection: "row" as const, alignItems: "center" as const, gap: 12, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface };
-  if (!last)
+export function DeckModule({ cw }: { cw: number }) {
+  const decks = S.decks.slice().sort((a, b) => (b.upd || 0) - (a.upd || 0));
+  if (!decks.length)
     return (
       <>
         <Sec title="Deckbuilding" link="I tuoi mazzi →" onLink={() => goTab("deck")} />
-        <Pressable onPress={() => openDeck(newDeck("Nuovo mazzo 1").id)} accessibilityRole="button" accessibilityLabel="Crea il tuo primo mazzo" style={box}>
-          <View style={{ width: 46, height: 64, alignItems: "center", justifyContent: "center", borderRadius: 6, borderWidth: 1.5, borderStyle: "dashed", borderColor: t.line }}>
-            <Svg width={22} height={22} viewBox="0 0 24 24">
-              <Path d={ICO_PLUS} stroke={t.accent} strokeWidth={2.2} strokeLinecap="round" fill="none" />
-            </Svg>
-          </View>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16, lineHeight: 21 }}>Il tuo primo mazzo</Text>
-            <Text style={{ color: t.ink2, fontSize: 12.5, lineHeight: 17, marginTop: 2 }}>Regole e lista ban vengono controllate mentre lo componi.</Text>
-          </View>
-          <Arrow color={t.accent} size={18} />
-        </Pressable>
+        <NewDeckCard w={cw} first />
       </>
     );
-  const s = deckStats(last);
-  const [k, label] = deckState(s);
-  const cv = deckCover(last);
+  const w = cw - 30;
   return (
     <>
       <Sec title="Riprendi il mazzo" link="I tuoi mazzi →" onLink={() => goTab("deck")} />
-      <Pressable onPress={() => openDeck(last.id)} accessibilityRole="button" accessibilityLabel={"Riprendi il mazzo " + last.name + ": principale " + s.main + " su 50, Digi-Egg " + s.egg + " su 5, " + label} style={box}>
-        <View style={{ width: 46, height: 64, marginLeft: 2, borderRadius: 5, transform: [{ rotate: "-7deg" }], boxShadow: `4px 2px 0 ${t.surface2}` }}>
-          <View style={{ flex: 1, borderRadius: 5, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: t.surface2 }}>
-            {cv ? <Image source={thumbUrl(cv)} style={FILL} contentFit="cover" cachePolicy="disk" recyclingKey={cv.k} /> : <Icon name="deck" color={t.ink2} size={20} />}
-          </View>
-        </View>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          {/* nome lungo o testo ingrandito: l'etichetta dello stato va sotto e il nome va a capo (non tagliato) */}
-          <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: 8, rowGap: 3, marginBottom: 3 }}>
-            <Text style={{ flexShrink: 1, color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16, lineHeight: 21 }} numberOfLines={2}>
-              {last.name}
-            </Text>
-            <DBadge k={k} label={label} />
-          </View>
-          <Text style={{ color: t.ink2, fontSize: 11.8, lineHeight: 16, marginBottom: 8 }}>
-            {s.main}/50 carte · {s.egg}/5 Digi-Egg
-          </Text>
-          <Progress h={Math.min(s.main, 50)} n={50} height={5} color={t.accent} />
-        </View>
-        <Arrow color={t.accent} size={18} />
-      </Pressable>
+      <Carousel w={w}>
+        {decks
+          .slice(0, 10)
+          .map((d) => <DeckCard key={d.id} d={d} w={w} />)
+          .concat(<NewDeckCard key="nuovo" w={w} />)}
+      </Carousel>
     </>
   );
 }
+
+export { spoilers };

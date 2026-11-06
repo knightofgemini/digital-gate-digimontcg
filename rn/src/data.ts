@@ -410,6 +410,10 @@ export function recentSets(n: number) {
     .slice(0, n);
 }
 
+// ---- date di arrivo delle carte spoiler ("sd" di data.json, tools/spoiler_dates.py): {"BT27-015_P1": "2026-11-03"}
+export const SPOILDATE: Record<string, string> = {};
+export const spoilDate = (c: Card) => SPOILDATE[c.code + (c.suf || "")] || "";
+
 // ---- costruzione del catalogo (all'avvio e quando arrivano carte nuove)
 const clear = (o: Record<string, any>) => Object.keys(o).forEach((k) => delete o[k]);
 function build(raw: any, products: any) {
@@ -466,6 +470,8 @@ function build(raw: any, products: any) {
   );
   clear(BANNERS);
   (raw.banners || []).forEach((c: string) => (BANNERS[c] = 1));
+  clear(SPOILDATE);
+  Object.assign(SPOILDATE, raw.sd || {});
 }
 
 // dati inclusi nell'APK oppure, se più recenti, gli ultimi scaricati dal sito (dataupd.ts: carte nuove senza un APK nuovo)

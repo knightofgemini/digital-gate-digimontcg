@@ -1,5 +1,5 @@
 # Prova su emulatore della nuova Home (6 novembre 2026): foto nei due temi, con e senza collezione e mazzi, senza rete
-# (immagini mancanti), larghezze 320/360/390/430 dp e testo ingrandito, più i collegamenti principali (Cerca una carta,
+# (immagini mancanti), larghezze 320/360/390/430 dp e testo ingrandito, file scorrevoli e collegamenti principali (banner,
 # Mancanti, banner in evidenza, Calendario, mazzo). Foto in OUT con il prefisso "h"; "h9x_intera_*" = pagina intera
 # (schermo virtuale alto 5600 px).
 # Uso: python3 tools/rn_home.py OUT  (adb già collegato all'emulatore, APK appena installato)
@@ -205,18 +205,36 @@ time.sleep(3)
 pages("h03_chiara")
 full("h90_intera_chiara")
 
-# 6) collegamenti
-tap("^Cerca una carta$", wait=2.5)
-shot("h10_cerca_una_carta")
+# 6) collegamenti e file scorrevoli
+def hswipe(y, n=1):
+    for _ in range(n):
+        adb("shell", "input", "swipe", str(int(W * 0.85)), str(y), str(int(W * 0.15)), str(y), "350")
+        time.sleep(1.6)
+
+
 home()
-swipe(0.3)
-if not tap("^Mancanti", wait=3):
-    swipe(0.3)
-    tap("^Mancanti", wait=3)
+h = finds("^(nuovi spoiler|in arrivo|uscito di recente):")
+if h:
+    for i in range(1, 6):
+        shot("h15_evidenza_%d" % i)
+        hswipe(h[0][1])
+home()
+tap("^nuovi spoiler:", wait=3)
+shot("h12_in_evidenza")
+home()
+for _ in range(4):
+    if tap("Ti mancan", wait=3, ymax=0.85):
+        break
+    swipe(0.35)
 shot("h11_mancanti")
 home()
-tap("^In evidenza", wait=3)
-shot("h12_in_evidenza")
+for _ in range(4):
+    r = finds("^EX13 Chivalrous XIII, nuovo", ymax=0.85)
+    if r:
+        hswipe(r[0][1], 2)
+        shot("h16_recenti_scorsi")
+        break
+    swipe(0.35)
 home()
 for _ in range(4):
     if tap("^Calendario", wait=3, ymax=0.85):
@@ -225,7 +243,7 @@ for _ in range(4):
 shot("h13_calendario")
 home()
 for _ in range(5):
-    if tap("^Riprendi il mazzo ", wait=3, ymax=0.85):
+    if tap("^Riprendi il mazzo ", wait=3, ymax=0.9):
         break
     swipe(0.35)
 shot("h14_mazzo")
