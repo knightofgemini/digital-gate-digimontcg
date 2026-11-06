@@ -1,8 +1,7 @@
 // Moduli della Home. 6 novembre 2026: nuova Home dal mockup "home-proposta" dell'utente; poi (stesso giorno, richieste
 // dell'utente) niente ricerca nel titolo, file scorrevoli in ogni sezione e ordine: In evidenza (con "La tua
-// collezione" sotto), [Ultimi spoiler], Usciti di recente, All'orizzonte, Set da completare, Riprendi il mazzo.
-// Gli ultimi spoiler sono proposti in due modi da scegliere: sezione "Ultimi spoiler" (SpoilerRow) e miniature
-// dentro il banner del set con gli spoiler più recenti (SpoilerStrip).
+// collezione" sotto), Ultimi spoiler, Usciti di recente, All'orizzonte, Set da completare, Riprendi il mazzo.
+// Ultimi spoiler: sezione a sé (SpoilerRow, scelta dell'utente tra due proposte; scartate le miniature nel banner).
 // Stili solo di questa pagina: i componenti condivisi (Banner, SecHead, Progress…) restano come sono.
 import { ReactNode, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
@@ -27,8 +26,6 @@ const SEC_TOP = 24;
 const GAP = 12;
 // tipi di prodotto del banner scorrevole, in quest'ordine (uno per tipo)
 const HERO_TYPES = ["BT", "EX", "ST", "LM", "PB"];
-// come mettere in evidenza gli ultimi spoiler: "A" sezione "Ultimi spoiler", "B" miniature nel banner, "AB" entrambe
-export const SPOILER_UI: "A" | "B" | "AB" = "AB";
 
 function Arrow({ color, size = 17 }: { color: string; size?: number }) {
   return (
@@ -137,7 +134,7 @@ const upStatus = (u: Upcoming) => {
   const b = upBadge(u);
   return /^\d/.test(b) ? "tra " + b : b;
 };
-type HeroData = { key: string; code: string; name: string; badge: string; eyebrow: string; dp: ReturnType<typeof dateParts>; when: string; cta: string; go: () => void; spoil?: { list: Spoil[]; n: number } };
+type HeroData = { key: string; code: string; name: string; badge: string; eyebrow: string; dp: ReturnType<typeof dateParts>; when: string; cta: string; go: () => void; spoil?: boolean };
 
 function heroData(sp: Spoil[]): HeroData[] {
   const ups = upSorted();
@@ -170,7 +167,6 @@ function heroData(sp: Spoil[]): HeroData[] {
     }
     const u = ups.find((x) => x.code === sl.code)!;
     const n = cardsOf(u.code);
-    const mine = sp.filter((x) => x.u.code === u.code);
     return {
       key: u.code,
       code: u.code,
@@ -182,7 +178,8 @@ function heroData(sp: Spoil[]): HeroData[] {
       cta: "Vedi le " + n + (n === 1 ? " carta svelata" : " carte svelate"),
       // pagina del prodotto con le carte svelate
       go: () => openUpcoming(u.code, "home"),
-      spoil: sl.kind === "spoiler" && mine.length ? { list: mine, n } : undefined,
+      // etichetta arancione per il set con gli spoiler più recenti
+      spoil: sl.kind === "spoiler",
     };
   });
 }
@@ -203,28 +200,6 @@ function HeroFallback({ code }: { code: string }) {
           <Text style={{ color: "rgba(255,255,255,.9)", fontFamily: DISPLAY, fontWeight: "700", fontStyle: "italic", fontSize: 44, letterSpacing: 1.5 }}>{code}</Text>
         </View>
       )}
-    </View>
-  );
-}
-
-// proposta B per gli spoiler: dentro il banner, le ultime carte svelate (tocco = scheda della carta)
-function SpoilerStrip({ s }: { s: { list: Spoil[]; n: number } }) {
-  const last = s.list[0].d;
-  const today = s.list.filter((x) => x.d === last);
-  const shown = s.list.slice(0, 6);
-  const cards = s.list.map((x) => x.c);
-  return (
-    <View style={{ marginBottom: 12 }}>
-      <Text style={{ color: HERO.soft, fontSize: 12, lineHeight: 16, marginBottom: 6 }}>
-        <Text style={{ color: HERO.ink, fontWeight: "600" }}>{today.length + (today.length === 1 ? " nuova" : " nuove")}</Text> · svelate {dayLabel(last)}
-      </Text>
-      <View style={{ flexDirection: "row", gap: 6 }}>
-        {shown.map((x) => (
-          <Pressable key={x.c.k} onPress={() => openCard(x.c, cards)} accessibilityLabel={"Apri " + x.c.name + " " + x.c.code} style={{ width: 38, height: 53, borderRadius: 4, overflow: "hidden", backgroundColor: "#1a2540", borderWidth: x.d === last ? 1.5 : 0, borderColor: HERO.btn }}>
-            <Image source={thumbUrl(x.c)} style={FILL} contentFit="cover" cachePolicy="disk" recyclingKey={x.c.k} />
-          </Pressable>
-        ))}
-      </View>
     </View>
   );
 }
@@ -264,7 +239,6 @@ function HeroSlide({ h, w }: { h: HeroData; w: number }) {
       <View style={{ paddingTop: 36 }}>
         <Text style={{ color: HERO.eyebrow, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, lineHeight: 14, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 3 }}>{h.eyebrow}</Text>
         <Text style={{ color: HERO.title, fontFamily: DISPLAY, fontWeight: "700", fontSize: 29, lineHeight: 32, letterSpacing: -0.4, marginBottom: 12 }}>{h.name}</Text>
-        {h.spoil && SPOILER_UI !== "A" ? <SpoilerStrip s={h.spoil} /> : null}
         <Pressable onPress={h.go} accessibilityRole="button" accessibilityLabel={h.cta + ": " + h.name} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, paddingHorizontal: 15, borderRadius: 10, backgroundColor: HERO.btn }}>
           <Text style={{ color: HERO.btnInk, fontWeight: "600", fontSize: 14 }}>{h.cta}</Text>
           <Arrow color={HERO.btnInk} />
@@ -309,10 +283,10 @@ export function CollectionRow() {
   );
 }
 
-// ---- proposta A per gli spoiler: sezione "Ultimi spoiler", carte dalla più recente (tocco = scheda della carta)
+// ---- sezione "Ultimi spoiler", carte dalla più recente (tocco = scheda della carta)
 export function SpoilerRow({ sp }: { sp: Spoil[] }) {
   const t = useTheme();
-  if (!sp.length || SPOILER_UI === "B") return null;
+  if (!sp.length) return null;
   const list = sp.slice(0, 16);
   const cards = list.map((x) => x.c);
   const last = list[0].d;
