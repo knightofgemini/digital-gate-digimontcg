@@ -28,7 +28,7 @@ const GAP = 12;
 // tipi di prodotto del banner scorrevole, in quest'ordine (uno per tipo)
 const HERO_TYPES = ["BT", "EX", "ST", "LM", "PB"];
 // come mettere in evidenza gli ultimi spoiler: "A" sezione "Ultimi spoiler", "B" miniature nel banner, "AB" entrambe
-export const SPOILER_UI: "A" | "B" | "AB" = "AB";
+export const SPOILER_UI: "A" | "B" | "AB" = "B";
 
 function Arrow({ color, size = 17 }: { color: string; size?: number }) {
   return (
