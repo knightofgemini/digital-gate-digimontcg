@@ -63,7 +63,7 @@ jobs:
           set -e
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add src/data.json tools/card_fixes.json
+          git add src/data.json tools/card_fixes.json tools/spoiler_dates.json
           git diff --cached --quiet && { echo "niente da pubblicare"; exit 0; }
           git commit -qm "Spoiler: carte nuove del $(date +%d/%m/%Y) (pubblicate da sole: con immagine e testo completo)"
           if [ "${{ inputs.prova }}" = "true" ]; then

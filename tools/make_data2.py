@@ -212,6 +212,8 @@ BAN=json.load(open(__import__("os").path.join(__import__("os").path.dirname(__im
 out={"sets":sets,"cards":rows,"upcoming":upcoming,"versions":VERS,"banners":sorted(k for k in BAN if not k.startswith("_")),
      "errata":sorted(f[:-5] for f in __import__("os").listdir(SP+"errata") if f.endswith(".webp")),
      "ban":json.load(open(SP+"../tools/banlist.json",encoding="utf-8"))}  # lista ufficiale carte bandite/limitate
+if not __import__("os").environ.get("DATA_OUT"):   # date di arrivo delle carte spoiler (tools/spoiler_dates.py)
+    __import__("sys").path.insert(0,str(__import__("pathlib").Path(__file__).resolve().parent)); import spoiler_dates; spoiler_dates.stamp(out)
 s=json.dumps(out,ensure_ascii=False,separators=(",",":")).replace("</","<\\/")
 open(__import__("os").environ.get("DATA_OUT") or SP+"data.json","w",encoding="utf-8").write(s)   # DATA_OUT: scrive altrove (usato da merge_set.py)
 print(len(rows),"cards",len(sets),"sets",len(s)//1024,"KB")

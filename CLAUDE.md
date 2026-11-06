@@ -147,6 +147,17 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   tipo + stesse uscite per regione in una riga (`upRows`, nome comune prima di " · ", tocco → calendario); "Riprendi
   il mazzo" (il più recente, copertina `deckCover`, conteggi e stato di `deckStats`/`deckState`) o "Il tuo primo
   mazzo". Prova su emulatore: `prova-emulatore.yml` con "home" (`tools/rn_home.py`).
+- **Home scorrevole (6 novembre 2026, ramo `home-scorrevole`, richieste dell'utente)**: tolta la ricerca dal titolo;
+  ordine: In evidenza, La tua collezione, Ultimi spoiler, Usciti di recente, All'orizzonte, Set da completare,
+  Riprendi il mazzo; ogni sezione è una fila che scorre di lato (`Carousel` in `home.tsx`, scheda dopo che si intravede).
+  **In evidenza** (`heroSlides` in `homeLogic.ts`, puntini sotto): prima il prodotto in arrivo con gli spoiler più
+  recenti ("NUOVI SPOILER", "Vedi le N carte svelate"), poi uno per tipo (BT, EX, ST, LM, PB): il prossimo in arrivo se
+  ha già carte, altrimenti l'ultimo uscito. **Ultimi spoiler** (`SpoilerRow`, scelta dell'utente tra due proposte;
+  scartate le miniature dentro il banner): le carte dei prodotti in arrivo (16) nell'ordine in cui sono arrivate, dalla
+  più recente, con codice e nome; la data non si mostra (scelta dell'utente). Le date di arrivo vengono da `tools/spoiler_dates.json` (`tools/spoiler_dates.py`:
+  `stamp` da `merge_set.py`, `make_data2.py` e quindi `spoiler.yml`; storico ricostruito con `--storia` dai commit) →
+  `sd` in `src/data.json` → `SPOILDATE`/`spoilDate` in `data.ts`. Set da completare = tutti (`goals`), dal più vicino
+  al completamento; All'orizzonte fino a 20 righe.
 - **Scheda carta, gesti solo sull'immagine (27 ottobre 2026, ramo `rn-fluido`, scelta dell'utente)**: la fila a ventaglio non scorre da sola (`scrollEnabled={false}`); sopra la carta al centro c'è una zona trasparente **fuori dalla pagina che scorre** (`imgPan` in `CardPage`, segue la carta con `scrollY`) che: di lato sposta la fila col dito (`fanCtl` begin/move/end), giù con la pagina in cima fa scendere la scheda (chiusa solo oltre il 30% dello schermo o con un colpo veloce lungo almeno 80 px, `CLOSE_*`), altrimenti fa scorrere la pagina. Tolti il trascinamento dall'intestazione e `usePull` dalla scheda; niente effetto elastico (`overScrollMode="never"`); sotto la scheda un fondo pieno che svanisce solo scendendo davvero (prima si vedeva il logo della pagina sotto). Tocco sulle carte ai lati = carta precedente/successiva. **Prodotti** a elenco progressivo (`FlatList` a righe, larghezza dalla finestra) e riquadri con illustrazione senza sfondo SVG: prima all'apertura si bloccava.
 - **Scansione senza internet (3 novembre 2026)**: prima Tesseract.js si scaricava da jsdelivr la prima volta. Ora
   `rn/scripts/ocr-files.js` prende da npm (versioni fisse: tesseract.js 5.1.1, core 5.1.1, eng 1.0.0 `4.0.0_best_int`)

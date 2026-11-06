@@ -8,20 +8,45 @@ export type GoalStat = { n: number; h: number };
 // Set da completare: tra quelli già usciti, con almeno una carta posseduta e almeno una mancante (h e n come in
 // setStats dello store: carte e illustrazioni del prodotto), quello più vicino al completamento (h/n più alto);
 // a parità il più recente.
-export function pickGoal<T extends GoalSet>(sets: T[], stats: Record<string, GoalStat | undefined>, released: (s: T) => boolean): T | null {
-  let best: T | null = null;
-  let bst: GoalStat | null = null;
-  for (const s of sets) {
+// goals: tutti i set da completare in quest'ordine (fila scorrevole della Home); pickGoal: il primo.
+export function goals<T extends GoalSet>(sets: T[], stats: Record<string, GoalStat | undefined>, released: (s: T) => boolean): T[] {
+  const ok = sets.filter((s) => {
     const st = stats[s.id];
-    if (!st || !(st.n > 0) || !(st.h > 0) || st.h >= st.n || !released(s)) continue;
-    // confronto delle frazioni senza divisioni: h/n > bh/bn  ⇔  h·bn > bh·n
-    const d = bst ? st.h * bst.n - bst.h * st.n : 1;
-    if (!best || d > 0 || (d === 0 && (s.date || "") > (best.date || ""))) {
-      best = s;
-      bst = st;
+    return !!st && st.n > 0 && st.h > 0 && st.h < st.n && released(s);
+  });
+  // confronto delle frazioni senza divisioni: h/n > bh/bn  ⇔  h·bn > bh·n
+  return ok.sort((a, b) => {
+    const A = stats[a.id]!,
+      B = stats[b.id]!;
+    return B.h * A.n - A.h * B.n || ((b.date || "") > (a.date || "") ? 1 : (b.date || "") < (a.date || "") ? -1 : 0);
+  });
+}
+export function pickGoal<T extends GoalSet>(sets: T[], stats: Record<string, GoalStat | undefined>, released: (s: T) => boolean): T | null {
+  return goals(sets, stats, released)[0] || null;
+}
+
+// ---- "In evidenza" scorrevole (scelta dell'utente, 6 novembre 2026): prima il prodotto in arrivo con gli spoiler
+// più recenti; poi, per ogni tipo (Booster, Extra Booster, Starter, Limited, Premium Bandai), il prossimo in arrivo
+// se ha già carte nel catalogo, altrimenti l'ultimo uscito di quel tipo.
+export type HeroUp = { code: string; type: string; cards: number; last: string }; // last = data dell'ultimo spoiler
+export type HeroSet = { id: string; code: string; type: string; date: string };
+export type Slide = { kind: "spoiler" | "up"; code: string } | { kind: "set"; id: string; code: string };
+export function heroSlides(ups: HeroUp[], released: HeroSet[], types: string[]): Slide[] {
+  const out: Slide[] = [];
+  const withCards = ups.filter((u) => u.cards > 0);
+  // a parità di data dell'ultimo spoiler vince il primo in ordine di uscita (ups è già in ordine)
+  const sp = withCards.reduce<HeroUp | null>((b, u) => (!b || u.last > b.last ? u : b), null);
+  if (sp) out.push({ kind: "spoiler", code: sp.code });
+  for (const t of types) {
+    const u = withCards.find((x) => x.type === t);
+    if (u) {
+      if (!sp || u.code !== sp.code) out.push({ kind: "up", code: u.code });
+      continue;
     }
+    const s = released.filter((x) => x.type === t).sort((a, b) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0))[0];
+    if (s) out.push({ kind: "set", id: s.id, code: s.code });
   }
-  return best;
+  return out;
 }
 
 export type UpLike = { code: string; name: string; from?: string; to?: string; prec?: string; kind?: string };

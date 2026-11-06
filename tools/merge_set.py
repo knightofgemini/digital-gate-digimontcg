@@ -57,6 +57,8 @@ def merge(CUR, NEW, codes):
 def load():
     return json.load(open(root / "src" / "data.json", encoding="utf-8"))
 def save(D):
+    # date di arrivo delle carte spoiler (tools/spoiler_dates.py): quelle nuove prendono la data di oggi, poi dentro "sd"
+    sys.path.insert(0, str(root / "tools")); import spoiler_dates; spoiler_dates.stamp(D)
     s = json.dumps(D, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     open(root / "src" / "data.json", "w", encoding="utf-8").write(s)
 if __name__ == "__main__":
