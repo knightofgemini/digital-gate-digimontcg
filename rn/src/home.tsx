@@ -105,15 +105,15 @@ export function HomeTitle() {
   );
 }
 
-// ---- carte spoiler: quelle dei prodotti in arrivo con la data di arrivo nel catalogo, dalla più recente
+// ---- carte spoiler: quelle dei prodotti in arrivo, dalla più recente; le carte senza data di arrivo (dati scaricati
+// prima che le date esistessero) vengono dopo, in ordine di uscita del prodotto e di numero
 type Spoil = { c: Card; d: string; u: Upcoming };
 function spoilers(): Spoil[] {
   const out: Spoil[] = [];
   upSorted().forEach((u) => {
     const sp = spoilerSet(u.code);
     if (sp) cardsOfSet(sp.id).forEach((c) => {
-      const d = spoilDate(c);
-      if (d) out.push({ c, d, u });
+      out.push({ c, d: spoilDate(c), u });
     });
   });
   // stabile: a parità di data resta l'ordine del prodotto (numero)
@@ -291,15 +291,16 @@ export function SpoilerRow({ sp }: { sp: Spoil[] }) {
   const cards = list.map((x) => x.c);
   const last = list[0].d;
   const W = 104;
+  const when = (x: Spoil) => (x.d ? dayLabel(x.d) : "");
   return (
     <>
       <Sec title="Ultimi spoiler" link={list[0].u.code + " →"} onLink={() => openUpcoming(list[0].u.code, "home")} />
       <Carousel w={W}>
         {list.map((x) => {
           const mk = markText(x.c);
-          const fresh = x.d === last;
+          const fresh = !!x.d && x.d === last;
           return (
-            <Pressable key={x.c.k} onPress={() => openCard(x.c, cards)} accessibilityLabel={x.c.name + " " + x.c.code + ", svelata " + dayLabel(x.d)} style={{ width: W }}>
+            <Pressable key={x.c.k} onPress={() => openCard(x.c, cards)} accessibilityLabel={x.c.name + " " + x.c.code + (x.d ? ", svelata " + when(x) : "")} style={{ width: W }}>
               <View style={{ width: W, height: Math.round(W / 0.716), borderRadius: 7, overflow: "hidden", backgroundColor: t.surface2, borderWidth: fresh ? 2 : 0, borderColor: t.accent }}>
                 <Image source={thumbUrl(x.c)} style={FILL} contentFit="cover" cachePolicy="disk" transition={120} recyclingKey={x.c.k} />
               </View>
@@ -308,8 +309,7 @@ export function SpoilerRow({ sp }: { sp: Spoil[] }) {
                 {mk ? " " + mk : ""}
               </Text>
               <Text style={{ color: fresh ? t.accent : t.ink2, fontWeight: fresh ? "600" : "400", fontSize: 11.5, lineHeight: 15 }} numberOfLines={1}>
-                {fresh ? "Nuova · " : ""}
-                {dayLabel(x.d)}
+                {fresh ? "Nuova · " + when(x) : x.d ? when(x) : x.c.name}
               </Text>
             </Pressable>
           );
