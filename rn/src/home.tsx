@@ -97,18 +97,22 @@ export function Hero({ u }: { u: Upcoming }) {
   return (
     <Pressable onPress={go} accessibilityRole="button" accessibilityLabel={"In evidenza: " + u.code + " " + u.name + ", " + upWhen(u) + ". " + cta} style={{ minHeight: 276, borderRadius: 16, overflow: "hidden", backgroundColor: HERO.bg, padding: 15, justifyContent: "space-between" }}>
       {b ? <Image source={b} style={FILL} contentFit="cover" contentPosition={{ left: "42%", top: "27%" }} cachePolicy="disk" transition={120} /> : <HeroFallback code={u.code} />}
-      <Svg pointerEvents="none" style={FILL} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 100">
-        <Defs>
-          <LinearGradient id="heroFade" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={HERO.bg} stopOpacity={0.15} />
-            <Stop offset="0.18" stopColor={HERO.bg} stopOpacity={0.15} />
-            <Stop offset="0.35" stopColor={HERO.bg} stopOpacity={0.25} />
-            <Stop offset="0.72" stopColor={HERO.bg} stopOpacity={0.91} />
-            <Stop offset="1" stopColor={HERO.bg} stopOpacity={1} />
-          </LinearGradient>
-        </Defs>
-        <Rect width="10" height="100" fill="url(#heroFade)" />
-      </Svg>
+      {/* sfumatura in una vista a tutta superficie: con width/height "100%" sull'Svg la misura sarebbe quella
+          interna (meno il margine di 15) e la sfumatura non arriverebbe al bordo destro e in fondo */}
+      <View pointerEvents="none" style={FILL}>
+        <Svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 100">
+          <Defs>
+            <LinearGradient id="heroFade" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={HERO.bg} stopOpacity={0.15} />
+              <Stop offset="0.18" stopColor={HERO.bg} stopOpacity={0.15} />
+              <Stop offset="0.35" stopColor={HERO.bg} stopOpacity={0.25} />
+              <Stop offset="0.72" stopColor={HERO.bg} stopOpacity={0.91} />
+              <Stop offset="1" stopColor={HERO.bg} stopOpacity={1} />
+            </LinearGradient>
+          </Defs>
+          <Rect width="10" height="100" fill="url(#heroFade)" />
+        </Svg>
+      </View>
       <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
         <View style={{ borderRadius: 6, borderWidth: 1, borderColor: HERO.edge, backgroundColor: HERO.glass, paddingVertical: 5, paddingHorizontal: 8 }}>
           <Text style={{ color: HERO.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, lineHeight: 14, letterSpacing: 1.4 }}>IN EVIDENZA</Text>
