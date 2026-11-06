@@ -8,7 +8,7 @@ import { Pressable, ScrollView, View } from "react-native";
 import { Image } from "expo-image";
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { DISPLAY, Text } from "./Text";
-import { CARDS, Card, CardSet, MONTHS, PRODUCTS, SETS, SETBY, TYPES, Upcoming, bannerUrl, cardsOfSet, daysTo, logoUrl, markText, packUrl, recentSets, soonSet, spoilDate, spoilerSet, thumbUrl, typeOf, upBadge, upSorted, upWhen } from "./data";
+import { CARDS, Card, CardSet, PRODUCTS, SETS, SETBY, TYPES, Upcoming, bannerUrl, cardsOfSet, daysTo, logoUrl, markText, packUrl, recentSets, soonSet, spoilDate, spoilerSet, thumbUrl, typeOf, upBadge, upSorted, upWhen } from "./data";
 import { openCard, openDeck, openSet, openSoon, openUpcoming } from "./nav";
 import { useTheme } from "./theme";
 import { Icon } from "./ui";
@@ -105,8 +105,8 @@ export function HomeTitle() {
   );
 }
 
-// ---- carte spoiler: quelle dei prodotti in arrivo, dalla più recente; le carte senza data di arrivo (dati scaricati
-// prima che le date esistessero) vengono dopo, in ordine di uscita del prodotto e di numero
+// ---- carte spoiler: quelle dei prodotti in arrivo, nell'ordine in cui sono arrivate nel catalogo (dalla più recente;
+// la data non si mostra, scelta dell'utente); le carte senza data di arrivo vengono dopo, in ordine di numero
 type Spoil = { c: Card; d: string; u: Upcoming };
 function spoilers(): Spoil[] {
   const out: Spoil[] = [];
@@ -118,14 +118,6 @@ function spoilers(): Spoil[] {
   });
   // stabile: a parità di data resta l'ordine del prodotto (numero)
   return out.map((x, i) => [x, i] as [Spoil, number]).sort((a, b) => (b[0].d > a[0].d ? 1 : b[0].d < a[0].d ? -1 : a[1] - b[1])).map((x) => x[0]);
-}
-// "oggi", "ieri", "5 nov"
-function dayLabel(d: string) {
-  const n = daysTo(d);
-  if (n === 0) return "oggi";
-  if (n === -1) return "ieri";
-  const p = d.split("-");
-  return +p[2] + " " + MONTHS[+p[1] - 1].slice(0, 3);
 }
 
 // ---- banner "In evidenza" scorrevole
@@ -289,27 +281,24 @@ export function SpoilerRow({ sp }: { sp: Spoil[] }) {
   if (!sp.length) return null;
   const list = sp.slice(0, 16);
   const cards = list.map((x) => x.c);
-  const last = list[0].d;
   const W = 104;
-  const when = (x: Spoil) => (x.d ? dayLabel(x.d) : "");
   return (
     <>
       <Sec title="Ultimi spoiler" link={list[0].u.code + " →"} onLink={() => openUpcoming(list[0].u.code, "home")} />
       <Carousel w={W}>
         {list.map((x) => {
           const mk = markText(x.c);
-          const fresh = !!x.d && x.d === last;
           return (
-            <Pressable key={x.c.k} onPress={() => openCard(x.c, cards)} accessibilityLabel={x.c.name + " " + x.c.code + (x.d ? ", svelata " + when(x) : "")} style={{ width: W }}>
-              <View style={{ width: W, height: Math.round(W / 0.716), borderRadius: 7, overflow: "hidden", backgroundColor: t.surface2, borderWidth: fresh ? 2 : 0, borderColor: t.accent }}>
+            <Pressable key={x.c.k} onPress={() => openCard(x.c, cards)} accessibilityLabel={x.c.name + " " + x.c.code} style={{ width: W }}>
+              <View style={{ width: W, height: Math.round(W / 0.716), borderRadius: 7, overflow: "hidden", backgroundColor: t.surface2, }}>
                 <Image source={thumbUrl(x.c)} style={FILL} contentFit="cover" cachePolicy="disk" transition={120} recyclingKey={x.c.k} />
               </View>
               <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.5, marginTop: 6 }} numberOfLines={1}>
                 {x.c.code}
                 {mk ? " " + mk : ""}
               </Text>
-              <Text style={{ color: fresh ? t.accent : t.ink2, fontWeight: fresh ? "600" : "400", fontSize: 11.5, lineHeight: 15 }} numberOfLines={1}>
-                {fresh ? "Nuova · " + when(x) : x.d ? when(x) : x.c.name}
+              <Text style={{ color: t.ink2, fontSize: 11.5, lineHeight: 15 }} numberOfLines={1}>
+                {x.c.name}
               </Text>
             </Pressable>
           );

@@ -153,8 +153,8 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   **In evidenza** (`heroSlides` in `homeLogic.ts`, puntini sotto): prima il prodotto in arrivo con gli spoiler più
   recenti ("NUOVI SPOILER", "Vedi le N carte svelate"), poi uno per tipo (BT, EX, ST, LM, PB): il prossimo in arrivo se
   ha già carte, altrimenti l'ultimo uscito. **Ultimi spoiler** (`SpoilerRow`, scelta dell'utente tra due proposte;
-  scartate le miniature dentro il banner): le carte dei prodotti in arrivo dalla più recente (16), la più nuova
-  bordata con "Nuova · ieri". Le date di arrivo vengono da `tools/spoiler_dates.json` (`tools/spoiler_dates.py`:
+  scartate le miniature dentro il banner): le carte dei prodotti in arrivo (16) nell'ordine in cui sono arrivate, dalla
+  più recente, con codice e nome; la data non si mostra (scelta dell'utente). Le date di arrivo vengono da `tools/spoiler_dates.json` (`tools/spoiler_dates.py`:
   `stamp` da `merge_set.py`, `make_data2.py` e quindi `spoiler.yml`; storico ricostruito con `--storia` dai commit) →
   `sd` in `src/data.json` → `SPOILDATE`/`spoilDate` in `data.ts`. Set da completare = tutti (`goals`), dal più vicino
   al completamento; All'orizzonte fino a 20 righe.
