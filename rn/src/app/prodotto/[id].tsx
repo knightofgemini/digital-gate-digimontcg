@@ -169,7 +169,7 @@ export default function Prodotto() {
         </View>
       ) : null}
       {p ? (
-        <Details title="Dettagli del prodotto e rarità" open={!fromColl}>
+        <Details title="Dettagli del prodotto e rarità" open={!fromColl && !miss}>
           <ProdBox code={s.code} type={s.type} kind={s.type === "AL" ? "" : TYPES[s.type]} fallback={hasDate ? s.date.slice(0, 7) : null} inDetails />
         </Details>
       ) : null}

@@ -13,7 +13,7 @@ import { openDeck, openSet, openSoon, openUpcoming } from "./nav";
 import { useTheme } from "./theme";
 import { Icon } from "./ui";
 import { goSearch, goTab } from "./chrome";
-import { Btn, Glow, ICO_ARROW, ICO_PLUS, Progress, SecHead } from "./visual";
+import { Btn, Glow, ICO_ARROW, ICO_PLUS, Progress } from "./visual";
 import { S, owned, setStats } from "./store";
 import { deckCover, deckState, deckStats, newDeck } from "./decks";
 import { DBadge } from "./deckui";
@@ -37,6 +37,24 @@ function ChevronRight({ color, size = 16 }: { color: string; size?: number }) {
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <Path d="M9 6l6 6-6 6" stroke={color} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </Svg>
+  );
+}
+
+// titoletto di sezione (come SecHead, lettere un po' più strette come nel mockup): con il testo ingrandito il titolo va a capo
+// e il collegamento resta in vista (con SecHead finiva fuori dallo schermo)
+function Sec({ title, link, onLink }: { title: string; link?: string; onLink?: () => void }) {
+  const t = useTheme();
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: SEC_TOP, marginBottom: 11 }}>
+      <Text accessibilityRole="header" style={{ flex: 1, color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 12.5, lineHeight: 18, letterSpacing: 2, textTransform: "uppercase" }}>
+        {title}
+      </Text>
+      {link ? (
+        <Pressable onPress={onLink} hitSlop={8} accessibilityRole="link" style={{ minHeight: 30, justifyContent: "center", paddingVertical: 4 }}>
+          <Text style={{ color: t.cyan, fontWeight: "600", fontSize: 13.6 }}>{link}</Text>
+        </Pressable>
+      ) : null}
+    </View>
   );
 }
 
@@ -185,7 +203,7 @@ function StartCollection() {
   const t = useTheme();
   return (
     <>
-      <SecHead top={SEC_TOP} title="Inizia la collezione" />
+      <Sec title="Inizia la collezione" />
       <View style={{ gap: 12, padding: 13, borderRadius: 14, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
           <View style={{ width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: t.cyanSoft }}>
@@ -219,7 +237,7 @@ export function GoalModule() {
   const go = () => openSet(g.id, "home", true);
   return (
     <>
-      <SecHead top={SEC_TOP} title="Un set da completare" link="Mancanti →" onLink={go} />
+      <Sec title="Un set da completare" link="Mancanti →" onLink={go} />
       <Pressable onPress={go} accessibilityRole="button" accessibilityLabel={g.code + " " + g.name + ": " + st.h + " su " + st.n + ". " + missTxt} style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 13, borderRadius: 14, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface }}>
         <View style={{ position: "absolute", left: -1, top: 18, bottom: 18, width: 3, borderRadius: 2, backgroundColor: t.cyan }} />
         <SetArt code={g.code} w={65} h={91} />
@@ -289,7 +307,7 @@ export function Recent() {
   if (!list.length) return null;
   return (
     <>
-      <SecHead top={SEC_TOP} title="Usciti di recente" link="Tutti →" onLink={() => goTab("sets")} />
+      <Sec title="Usciti di recente" link="Tutti →" onLink={() => goTab("sets")} />
       <View style={{ flexDirection: "row", gap: 12 }}>
         {list.map((x) => (
           <RecentCard key={x.id} x={x} st={stats[x.id]} />
@@ -373,7 +391,7 @@ export function Horizon({ ups }: { ups: Upcoming[] }) {
   if (!rows.length) return null;
   return (
     <>
-      <SecHead top={SEC_TOP} title="All’orizzonte" link="Calendario →" onLink={openSoon} />
+      <Sec title="All’orizzonte" link="Calendario →" onLink={openSoon} />
       <View style={{ borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, overflow: "hidden" }}>
         {rows.map((r, i) => (
           <HorizonRow key={r[0].code} r={r} first={i === 0} />
@@ -391,7 +409,7 @@ export function DeckModule() {
   if (!last)
     return (
       <>
-        <SecHead top={SEC_TOP} title="Deckbuilding" link="I tuoi mazzi →" onLink={() => goTab("deck")} />
+        <Sec title="Deckbuilding" link="I tuoi mazzi →" onLink={() => goTab("deck")} />
         <Pressable onPress={() => openDeck(newDeck("Nuovo mazzo 1").id)} accessibilityRole="button" accessibilityLabel="Crea il tuo primo mazzo" style={box}>
           <View style={{ width: 46, height: 64, alignItems: "center", justifyContent: "center", borderRadius: 6, borderWidth: 1.5, borderStyle: "dashed", borderColor: t.line }}>
             <Svg width={22} height={22} viewBox="0 0 24 24">
@@ -411,7 +429,7 @@ export function DeckModule() {
   const cv = deckCover(last);
   return (
     <>
-      <SecHead top={SEC_TOP} title="Riprendi il mazzo" link="I tuoi mazzi →" onLink={() => goTab("deck")} />
+      <Sec title="Riprendi il mazzo" link="I tuoi mazzi →" onLink={() => goTab("deck")} />
       <Pressable onPress={() => openDeck(last.id)} accessibilityRole="button" accessibilityLabel={"Riprendi il mazzo " + last.name + ": principale " + s.main + " su 50, Digi-Egg " + s.egg + " su 5, " + label} style={box}>
         <View style={{ width: 46, height: 64, marginLeft: 2, borderRadius: 5, transform: [{ rotate: "-7deg" }], boxShadow: `4px 2px 0 ${t.surface2}` }}>
           <View style={{ flex: 1, borderRadius: 5, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: t.surface2 }}>
@@ -419,8 +437,9 @@ export function DeckModule() {
           </View>
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 3 }}>
-            <Text style={{ flexShrink: 1, color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16, lineHeight: 21 }} numberOfLines={1}>
+          {/* nome lungo o testo ingrandito: l'etichetta dello stato va sotto e il nome va a capo (non tagliato) */}
+          <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: 8, rowGap: 3, marginBottom: 3 }}>
+            <Text style={{ flexShrink: 1, color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16, lineHeight: 21 }} numberOfLines={2}>
               {last.name}
             </Text>
             <DBadge k={k} label={label} />
