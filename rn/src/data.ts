@@ -489,19 +489,13 @@ export function useData() {
   return useSyncExternalStore(subView, getDV, getDV);
 }
 export function setData(raw: any, products: any) {
-  const t0 = Date.now();
   build(raw, products);
-  console.log("[carte-nuove] build " + (Date.now() - t0) + " ms, cache " + caches.size + ", viste " + views.size); // PROVA
   DV++;
   caches.forEach((f) => {
     try {
       f();
-    } catch (e) {
-      console.log("[carte-nuove] cache errore " + e); // PROVA
-    }
+    } catch (e) {}
   });
-  console.log("[carte-nuove] cache ok"); // PROVA
   views.forEach((f) => f());
-  console.log("[carte-nuove] viste ok"); // PROVA
 }
 setApply(setData);

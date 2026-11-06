@@ -1,6 +1,8 @@
 # Prova su emulatore del riquadro "Carte nuove" (rn/src/News.tsx) con le carte messe in uso ad app aperta, senza riavvio.
 # L'APK ha i dati di prima degli spoiler del 3 novembre 2026 (prova-emulatore.yml con "novita"), così all'apertura l'app
-# scarica dal sito i dati pubblicati e trova le carte arrivate da allora (BT27). Foto in OUT con il prefisso "n":
+# scarica dal sito i dati pubblicati e trova le carte arrivate da allora (BT27). Il primo avvio dopo l'installazione (o
+# pm clear) recupera i dati della vecchia app e lì il riquadro aspetta: prima di ogni prova un avvio senza rete (prep).
+# Foto in OUT con il prefisso "n":
 #  n1  riquadro dopo l'apertura (stesso processo: niente riavvio), n2 elenco scorso
 #  n3  tocco su una carta del riquadro → la sua scheda
 #  n4  riaperta: niente riquadro (già visto)
@@ -103,38 +105,64 @@ def logcat(name):
     adb("logcat", "-c")
 
 
+def net(on):
+    adb("shell", "svc", "wifi", "enable" if on else "disable")
+    adb("shell", "svc", "data", "enable" if on else "disable")
+    time.sleep(4)
+
+
+def prep(clear):
+    # installazione "usata": primo avvio (recupero dei dati della vecchia app) senza rete, così niente carte nuove
+    stop()
+    if clear:
+        adb("shell", "pm", "clear", PKG)
+        time.sleep(2)
+    net(False)
+    launch()
+    time.sleep(14)
+    stop()
+    net(True)
+
+
 adb("shell", "cmd", "uimode", "night", "yes")
 time.sleep(2)
-
-# 1) prima apertura: dati dell'APK vecchi, quelli del sito più recenti → carte in uso e riquadro, nello stesso processo
 adb("logcat", "-c")
+
+# 1) apertura con l'app già usata: dati dell'APK vecchi, quelli del sito più recenti → carte in uso e riquadro, nello
+# stesso processo (niente riavvio)
+prep(False)
 t0 = time.time()
 launch()
 time.sleep(1)
 p0 = pid()
+seen = None
 for i in range(30):
-    time.sleep(2)
+    time.sleep(1.5)
     if not pid():
         log("app chiusa dopo %.1f s" % (time.time() - t0))
         shot("n0_chiusa")
         break
     if find(GO):
+        seen = time.time() - t0
         break
-log("riquadro dopo %.1f s dall'apertura · processo %s → %s (%s)" % (time.time() - t0, p0, pid(), "nessun riavvio" if p0 == pid() else "RIAVVIATA"))
-logcat("logcat1")
+log("riquadro %s · processo %s → %s (%s)" % ("dopo %.1f s dall'apertura" % seen if seen else "NON COMPARSO", p0, pid(), "nessun riavvio" if p0 == pid() else "RIAVVIATA O CHIUSA"))
 time.sleep(1.5)
 shot("n1_riquadro")
+logcat("logcat1")
 adb("shell", "input", "swipe", str(W // 2), str(int(H * 0.7)), str(W // 2), str(int(H * 0.3)), "700")
 time.sleep(1.5)
 shot("n2_scorso")
 
-# 2) tocco su una carta del riquadro → scheda della carta
+# 2) tocco su una carta del riquadro → scheda della carta (già con i dati nuovi)
 adb("shell", "input", "swipe", str(W // 2), str(int(H * 0.3)), str(W // 2), str(int(H * 0.8)), "500")
 time.sleep(1)
 tap("Apri Kapurimon|Apri Solarmon|Apri Meramon|Apri Spinomon", 4)
 shot("n3_carta")
+adb("shell", "input", "keyevent", "4")
+time.sleep(2)
+shot("n3b_dopo")
 
-# riaperta: niente riquadro (già visto)
+# riaperta: niente riquadro (già visto), carte nuove già in uso
 stop()
 launch()
 time.sleep(12)
@@ -142,9 +170,7 @@ log("riquadro alla riapertura: " + ("SÌ (errore)" if find(GO) else "no"))
 shot("n4_riaperta")
 
 # 3) di nuovo i dati dell'APK: "Vai a BT27" → pagina del prodotto con le carte nuove
-stop()
-adb("shell", "pm", "clear", PKG)
-time.sleep(2)
+prep(True)
 launch()
 if wait_for(GO, 60):
     time.sleep(1.5)
@@ -155,9 +181,7 @@ if wait_for(GO, 60):
     shot("n5b_prodotto")
 
 # 4) app chiusa senza toccare il riquadro → riaperta: riquadro subito, con le carte già in uso
-stop()
-adb("shell", "pm", "clear", PKG)
-time.sleep(2)
+prep(True)
 launch()
 if wait_for(GO, 60):
     time.sleep(1)
@@ -168,14 +192,11 @@ if wait_for(GO, 60):
     log("riquadro all'apertura successiva dopo %.1f s" % (time.time() - t0))
     time.sleep(1)
     shot("n6_apertura")
-
 logcat("logcat2")
 
 # 5) tema chiaro
-stop()
-adb("shell", "pm", "clear", PKG)
 adb("shell", "cmd", "uimode", "night", "no")
-time.sleep(2)
+prep(True)
 launch()
 if wait_for(GO, 60):
     time.sleep(1.5)
