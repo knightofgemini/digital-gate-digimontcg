@@ -92,16 +92,36 @@ def log(msg):
     print(msg, flush=True)
 
 
+def logcat(name):
+    # errori dell'app (JS e Android) dall'ultima pulizia: file in OUT e righe principali nel log della prova
+    out = adb("logcat", "-d", "-v", "time", "ReactNativeJS:V", "ReactNative:W", "AndroidRuntime:E", "Hermes:V", "*:F", "*:S")
+    with open(os.path.join(OUT, name + ".txt"), "w") as f:
+        f.write(out)
+    for line in out.splitlines():
+        if re.search(r"FATAL|Error|Exception|ReactNativeJS", line):
+            print("  logcat:", line[:400], flush=True)
+    adb("logcat", "-c")
+
+
 adb("shell", "cmd", "uimode", "night", "yes")
 time.sleep(2)
 
 # 1) prima apertura: dati dell'APK vecchi, quelli del sito più recenti → carte in uso e riquadro, nello stesso processo
+adb("logcat", "-c")
 t0 = time.time()
 launch()
 time.sleep(1)
 p0 = pid()
-wait_for(GO, 60)
+for i in range(30):
+    time.sleep(2)
+    if not pid():
+        log("app chiusa dopo %.1f s" % (time.time() - t0))
+        shot("n0_chiusa")
+        break
+    if find(GO):
+        break
 log("riquadro dopo %.1f s dall'apertura · processo %s → %s (%s)" % (time.time() - t0, p0, pid(), "nessun riavvio" if p0 == pid() else "RIAVVIATA"))
+logcat("logcat1")
 time.sleep(1.5)
 shot("n1_riquadro")
 adb("shell", "input", "swipe", str(W // 2), str(int(H * 0.7)), str(W // 2), str(int(H * 0.3)), "700")
@@ -148,6 +168,8 @@ if wait_for(GO, 60):
     log("riquadro all'apertura successiva dopo %.1f s" % (time.time() - t0))
     time.sleep(1)
     shot("n6_apertura")
+
+logcat("logcat2")
 
 # 5) tema chiaro
 stop()
