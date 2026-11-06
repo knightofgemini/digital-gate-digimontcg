@@ -60,7 +60,8 @@ export function fltActive(f: Filters, lockExp?: boolean): [Kind, string, string]
   if (f.exp && SETBY[f.exp] && !lockExp) a.push(["exp", f.exp, SETBY[f.exp].code]);
   return a;
 }
-export function ActiveChips({ f, setF, lockExp }: { f: Filters; setF: (f: Filters) => void; lockExp?: boolean }) {
+// onReset: "Azzera" toglie anche le scelte della pagina che non sono filtri (es. "Mancanti" nella pagina del prodotto)
+export function ActiveChips({ f, setF, lockExp, onReset }: { f: Filters; setF: (f: Filters) => void; lockExp?: boolean; onReset?: () => void }) {
   const t = useTheme();
   const act = fltActive(f, lockExp);
   if (!act.length) return null;
@@ -84,7 +85,14 @@ export function ActiveChips({ f, setF, lockExp }: { f: Filters; setF: (f: Filter
           {k === "rar" && MARKV[v] != null ? <RarLab v={v} size={13.1} color={t.ink} /> : undefined}
         </FltChip>
       ))}
-      <Pressable onPress={() => setF({ ...EMPTY, exp: lockExp ? f.exp : "" })} hitSlop={6} style={{ minHeight: 34, justifyContent: "center", paddingHorizontal: 6 }}>
+      <Pressable
+        onPress={() => {
+          setF({ ...EMPTY, exp: lockExp ? f.exp : "" });
+          onReset && onReset();
+        }}
+        hitSlop={6}
+        style={{ minHeight: 34, justifyContent: "center", paddingHorizontal: 6 }}
+      >
         <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "700", fontSize: 13.1 }}>Azzera</Text>
       </Pressable>
     </>

@@ -17,9 +17,12 @@ export function openSoon() {
   if (router.canDismiss()) router.dismissAll();
   router.navigate({ pathname: "/prodotti", params: { seg: "soon" } });
 }
-// from "home": aperto dalla Home ("← Home")
-export function openSet(id: string, from?: string) {
-  router.push({ pathname: "/prodotto/[id]", params: from ? { id, from } : { id } });
+// from "home": aperto dalla Home ("← Home"); miss: solo le carte che mancano (set da completare della Home)
+export function openSet(id: string, from?: string, miss?: boolean) {
+  const params: Record<string, string> = { id };
+  if (from) params.from = from;
+  if (miss) params.miss = "1";
+  router.push({ pathname: "/prodotto/[id]", params: params as { id: string } });
 }
 // deck: scheda aperta dall'editor di un mazzo (mostra anche le copie nel mazzo)
 export function openCard(c: Card, list?: Card[], deck?: string) {

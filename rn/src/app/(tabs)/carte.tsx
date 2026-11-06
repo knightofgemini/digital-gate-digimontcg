@@ -17,7 +17,14 @@ export default function Carte() {
   const [open, setOpen] = useState(false);
   const nf = fltCount(f);
   // arrivando da "Tutte le espansioni" nei Filtri di un prodotto: stessa ricerca e stessi filtri, Filtri aperto
-  const p = useLocalSearchParams<{ q?: string; flt?: string; fo?: string; t?: string }>();
+  const p = useLocalSearchParams<{ q?: string; flt?: string; fo?: string; t?: string; kb?: string }>();
+  // "Cerca una carta" della Home (goSearch): stessa ricerca di sempre, con il campo attivo e la tastiera aperta
+  const [kb, setKb] = useState("");
+  useEffect(() => {
+    if (!p.kb) return;
+    setKb(p.kb);
+    router.setParams({ kb: undefined });
+  }, [p.kb]);
   // arrivando da Prodotti testo e filtri si azzerano (non con "Tutte le espansioni", che li porta con sé)
   useFocusEffect(
     useCallback(() => {
@@ -62,7 +69,7 @@ export default function Carte() {
         }
         empty={q || anyFlt(f) || f.qm ? "Nessuna carta corrisponde ai filtri." : ""}
       />
-      <BottomBar q={q} setQ={setQ} placeholder={qmHolder(f.qm)} cam filter={{ n: nf, onPress: () => setOpen(true) }} chips={nf ? <ActiveChips f={f} setF={setF} /> : undefined} />
+      <BottomBar q={q} setQ={setQ} placeholder={qmHolder(f.qm)} cam filter={{ n: nf, onPress: () => setOpen(true) }} chips={nf ? <ActiveChips f={f} setF={setF} /> : undefined} focus={kb} />
       <FilterSheet visible={open} f={f} setF={setF} onClose={() => setOpen(false)} count={list.length} />
     </Screen>
   );

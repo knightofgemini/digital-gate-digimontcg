@@ -35,7 +35,7 @@ export function Badge({ icon, text, isNew, small }: { icon: "clock" | "spark"; t
 }
 
 // sfondo con sfumatura disegnata (i gradienti CSS non esistono in React Native)
-function Glow({ id, kind }: { id: string; kind: "bn" | "pv" }) {
+export function Glow({ id, kind }: { id: string; kind: "bn" | "pv" }) {
   return (
     <Svg style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100">
       <Defs>

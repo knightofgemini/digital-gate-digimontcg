@@ -295,6 +295,14 @@ export function goTab(id: TabId) {
   router.navigate((id === "sets" ? { pathname: href, params: { seg: "sets" } } : href) as any);
 }
 
+// "Cerca una carta" della Home: la ricerca vera (scheda Carte, con i suoi filtri e la sua barra) con la tastiera già
+// aperta sul campo; kb cambia a ogni tocco così il campo si attiva anche se la scheda era già aperta
+export function goSearch() {
+  TABNAV.from = LASTPATH;
+  if (router.canDismiss()) router.dismissAll();
+  router.navigate({ pathname: "/carte", params: { kb: String(Date.now()) } } as any);
+}
+
 function curTab(path: string, from?: string): TabId | null {
   if (path === "/") return "home";
   if (path.startsWith("/prodott")) return from === "coll" ? "coll" : "sets";
