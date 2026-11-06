@@ -52,6 +52,19 @@ export function pickData<D, P>(raw: D, products: P): { raw: D; products: P } {
   USED = raw;
   if (!NATIVE) return { raw, products };
   readGoto();
+  // APK di prova del riquadro "Carte nuove" (apk-prova.yml con "novita": dentro ci sono apposta i dati di prima del
+  // 3 novembre 2026): alla prima apertura di questo APK si scartano i dati già scaricati (solo la copia delle carte,
+  // non collezione e mazzi), così l'app riscarica quelli del sito e mostra il riquadro come all'arrivo di carte nuove
+  if ((BUNDLED as any).demo) {
+    try {
+      const mk = new File(Paths.document, "dg-demo-" + BUNDLED.h);
+      if (!mk.exists) {
+        mk.create();
+        const old = new File(Paths.document, NAMES.v);
+        if (old.exists) old.delete();
+      }
+    } catch (e) {}
+  }
   try {
     const vf = new File(Paths.document, NAMES.v);
     if (!vf.exists) return { raw, products };

@@ -4,6 +4,8 @@ name: APK di prova
 # L'APK di prova ha lo stesso versionCode della "latest": si installa sopra e si torna indietro senza disinstallare.
 on:
   workflow_dispatch:
+    inputs:
+      novita: { description: "Dati vecchi apposta, per vedere il riquadro Carte nuove", type: boolean, default: false }
 permissions:
   contents: write
 concurrency:
@@ -12,7 +14,9 @@ concurrency:
 jobs:
   apk:
     uses: ./.github/workflows/apk.yml
-    with: { tipo: prova }
+    with:
+      tipo: prova
+      novita: ${{ inputs.novita == true }}
     secrets: inherit
   release:
     needs: apk

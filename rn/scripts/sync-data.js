@@ -18,5 +18,8 @@ if (!t) {
     t = +require("child_process").execSync("git log -1 --format=%ct", { cwd: __dirname }).toString().trim() || 0;
   } catch (e) {}
 }
-fs.writeFileSync(path.join(dir, "ver.json"), JSON.stringify({ h: crypto.createHash("sha1").update(buf).digest("hex").slice(0, 16), t }));
+const ver = { h: crypto.createHash("sha1").update(buf).digest("hex").slice(0, 16), t };
+// APK di prova del riquadro "Carte nuove" con dati vecchi (apk.yml, "novita"): vedi pickData in src/dataupd.ts
+if (process.env.NEWS_DEMO) ver.demo = 1;
+fs.writeFileSync(path.join(dir, "ver.json"), JSON.stringify(ver));
 console.log("dati copiati", t);

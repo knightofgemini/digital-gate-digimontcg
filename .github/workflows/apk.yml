@@ -11,6 +11,8 @@ on:
   workflow_call:
     inputs:
       tipo: { type: string, required: true }
+      # solo per il tipo "prova": dati di prima del 3 novembre 2026, per far vedere il riquadro "Carte nuove" sul telefono
+      novita: { type: boolean, required: false, default: false }
     outputs:
       vc: { description: "versionCode dell'APK", value: "${{ jobs.apk.outputs.vc }}" }
 permissions:
@@ -34,7 +36,12 @@ jobs:
       # così l'app scarica dal sito solo carte davvero più recenti (rn/src/dataupd.ts)
       - name: Dati delle carte
         run: |
-          if [ "${{ inputs.tipo }}" = "prova" ]; then
+          if [ "${{ inputs.tipo }}" = "prova" ] && [ "${{ inputs.novita }}" = "true" ]; then
+            git fetch -q --depth=1 origin 83c5b989cc0832526dde40e7db1bc228af25b84d
+            git show FETCH_HEAD:src/data.json > src/data.json
+            echo "DATA_T=$(git log -1 --format=%ct FETCH_HEAD)" >> $GITHUB_ENV
+            echo "NEWS_DEMO=1" >> $GITHUB_ENV
+          elif [ "${{ inputs.tipo }}" = "prova" ]; then
             git fetch -q --depth=1 origin main
             git show FETCH_HEAD:src/data.json > src/data.json
             git show FETCH_HEAD:src/products.json > src/products.json
