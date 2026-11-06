@@ -1,5 +1,5 @@
 // Filtri della ricerca carte, con le stesse regole del sito (ddKinds, ddValues, cardMatches, srcCards).
-import { BYCODE, CARDS, COLORS, Card, SETBY, SETS, TYPES, cardsOfSet, fold } from "./data";
+import { BYCODE, CARDS, COLORS, Card, SETBY, SETS, TYPES, cardsOfSet, fold, onData } from "./data";
 
 export type Filters = { qm: string; color: string; ct: string; lv: string; cost: string; attr: string; sp: string; rar: string; exp: string };
 export const EMPTY: Filters = { qm: "", color: "", ct: "", lv: "", cost: "", attr: "", sp: "", rar: "", exp: "" };
@@ -37,6 +37,7 @@ export function ddKinds(f: Filters): Kind[] {
 
 // tutte le versioni (carte base + alternative art): servono per filtrare per ★, ★★ e SP
 let ALLV: Card[] | null = null;
+onData(() => (ALLV = null)); // carte nuove arrivate ad app aperta
 export function allVers() {
   if (!ALLV) {
     ALLV = [];

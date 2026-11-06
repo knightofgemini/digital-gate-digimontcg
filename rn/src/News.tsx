@@ -1,10 +1,8 @@
 // Riquadro "Carte nuove" (6 novembre 2026, richiesta dell'utente: al posto dell'avviso piccolo "Sono arrivate carte
-// nuove" con "Aggiorna", che spariva dopo 10 s senza dire quali carte). Elenco per prodotto delle carte nuove e corrette
-// (dataupd.ts → diffData) con miniatura, colori, codice, stelle e nome; per le corrette anche cosa è cambiato.
-// Due momenti:
-// - appena scaricate (dati non ancora in uso, "pending"): "Mostra le carte" fa il riavvio veloce dell'app (il catalogo
-//   si prepara all'apertura) e poi apre il prodotto, o la carta toccata; "Più tardi" = in uso dalla prossima apertura;
-// - all'apertura successiva, se il riepilogo non è ancora stato visto (dati già in uso): tutto si apre subito.
+// nuove" con "Aggiorna", che spariva dopo 10 s senza dire quali carte e riavviava l'app). Elenco per prodotto delle carte
+// nuove e corrette (dataupd.ts → diffData) con miniatura, colori, codice, stelle e nome; per le corrette anche cosa è
+// cambiato. Compare appena le carte sono scaricate e già in uso (nessun riavvio): tocco su una carta = la sua scheda,
+// sul prodotto = la pagina del prodotto. Se l'app si chiude prima di vederlo, compare alla prossima apertura.
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { Image } from "expo-image";
@@ -15,18 +13,18 @@ import { FitText } from "./fit";
 import { ColorBand } from "./ui";
 import { useTheme } from "./theme";
 import { BYKEY, Card, MONTHS, SETBY, thumbUrl } from "./data";
-import { News, NewsCard, NewsGroup, applyNewData, newsSeen, startupNews, takeGoto } from "./dataupd";
+import { News, NewsCard, NewsGroup, newsSeen, startupNews } from "./dataupd";
 import { openCard, openSet } from "./nav";
 import { whenIntroDone } from "./Intro";
 
 const MAXROWS = 60; // per prodotto (es. dopo una correzione di molte carte): le altre si contano soltanto
 
-let host: ((n: News, pending: boolean) => void) | null = null;
-let queued: [News, boolean] | null = null;
-// chiamata da _layout.tsx quando dataupd.ts ha scaricato carte nuove
-export function showNews(n: News, pending: boolean) {
-  if (host) host(n, pending);
-  else queued = [n, pending];
+let host: ((n: News) => void) | null = null;
+let queued: News | null = null;
+// chiamata da _layout.tsx quando dataupd.ts ha scaricato e messo in uso carte nuove
+export function showNews(n: News) {
+  if (host) host(n);
+  else queued = n;
 }
 
 const plural = (n: number, one: string, many: string) => n + " " + (n === 1 ? one : many);
@@ -46,54 +44,37 @@ const live = (g: NewsGroup) => g.cards.map((x) => BYKEY[x.k]).filter(Boolean) as
 export function NewsHost() {
   const t = useTheme();
   const ins = useSafeAreaInsets();
-  const [st, setSt] = useState<{ n: News; pending: boolean } | null>(null);
+  const [n, setN] = useState<News | null>(null);
   const [vis, setVis] = useState(false);
 
   useEffect(() => {
-    const show = (n: News, pending: boolean) =>
+    const show = (x: News) =>
       whenIntroDone(() => {
-        setSt({ n, pending });
+        setN(x);
         setVis(true);
       });
     host = show;
-    if (queued) {
-      show(queued[0], queued[1]);
-      queued = null;
-    }
-    // dopo il riavvio di "Mostra le carte": dritti al prodotto (e alla carta toccata), senza riquadro
-    const g = takeGoto();
-    const n = startupNews();
-    if (g && g.set && SETBY[g.set]) {
-      if (n) newsSeen(n);
-      const set = g.set;
-      setTimeout(() => {
-        openSet(set);
-        const c = g.k && BYKEY[g.k];
-        if (c) {
-          const list = (g.keys || []).map((k) => BYKEY[k]).filter(Boolean) as Card[];
-          setTimeout(() => openCard(c, list), 350);
-        }
-      }, 150);
-    } else if (n) show(n, false); // carte arrivate dall'ultima volta: riepilogo appena aperta l'app
+    const q = queued;
+    queued = null;
+    // carte arrivate l'ultima volta ma riepilogo non ancora visto (app chiusa prima): appena aperta l'app
+    const old = q ? null : startupNews();
+    if (q || old) show((q || old)!);
     return () => {
       host = null;
     };
   }, []);
 
-  if (!st) return null;
-  const { n, pending } = st;
+  if (!n) return null;
   const close = () => {
     setVis(false);
     newsSeen(n);
   };
-  // dati già in uso: si chiude il riquadro e si apre la pagina; altrimenti riavvio veloce e poi la pagina
+  // si chiude il riquadro e si apre la pagina (le carte sono già in uso)
   const goGroup = (g: NewsGroup) => {
-    if (pending) return applyNewData({ set: g.id });
     close();
     setTimeout(() => SETBY[g.id] && openSet(g.id), 260);
   };
   const goCard = (g: NewsGroup, x: NewsCard) => {
-    if (pending) return applyNewData({ set: g.id, k: x.k, keys: g.cards.map((c) => c.k) });
     const c = BYKEY[x.k];
     if (!c) return goGroup(g);
     close();
@@ -169,16 +150,15 @@ export function NewsHost() {
         ))}
       </ScrollView>
 
-      <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 14 + ins.bottom, borderTopWidth: 1, borderColor: t.line }}>
-        {pending ? <Text style={{ color: t.ink2, fontSize: 12.8, lineHeight: 18, marginBottom: 10 }}>Per vederle nell'app serve un riavvio veloce, che fa "Mostra le carte". Se scegli "Più tardi" le trovi alla prossima apertura.</Text> : null}
+      <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 14 + ins.bottom, borderTopWidth: 1, borderColor: t.line }}>
         <View style={{ flexDirection: "row", gap: 8 }}>
           <Pressable onPress={close} style={[btn, { backgroundColor: t.surface2 }]}>
-            <Text style={{ color: t.ink, fontWeight: "600", fontSize: 15.2 }}>{pending ? "Più tardi" : "Chiudi"}</Text>
+            <Text style={{ color: t.ink, fontWeight: "600", fontSize: 15.2 }}>Chiudi</Text>
           </Pressable>
-          {pending || one ? (
-            <Pressable onPress={() => (pending && !one ? applyNewData() : goGroup(one!))} style={[btn, { flex: 1.4, backgroundColor: t.accent }]}>
+          {one ? (
+            <Pressable onPress={() => goGroup(one)} style={[btn, { flex: 1.4, backgroundColor: t.accent }]}>
               <Text style={{ color: t.accentInk, fontWeight: "700", fontSize: 15.2 }} numberOfLines={1}>
-                {pending ? "Mostra le carte" : "Apri " + one!.code}
+                {"Vai a " + one.code}
               </Text>
             </Pressable>
           ) : null}

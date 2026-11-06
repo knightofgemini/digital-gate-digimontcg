@@ -64,10 +64,10 @@ export default function RootLayout() {
       setReady(true);
       if (!m) startOffline();
       refreshPrices();
-      // carte nuove pubblicate sul sito (es. spoiler): scaricate subito all'apertura, poi il riquadro "Carte nuove" con
-      // l'elenco (News.tsx); in uso con "Mostra le carte" (riavvio veloce) o alla prossima apertura. Durante il recupero
-      // dei dati dell'app vecchia niente riquadro: comparirà all'apertura successiva
-      startDataUpdates((n) => !m && showNews(n, true));
+      // carte nuove pubblicate sul sito (es. spoiler): scaricate subito all'apertura e messe in uso senza riavviare, poi
+      // il riquadro "Carte nuove" con l'elenco (News.tsx). Durante il recupero dei dati dell'app vecchia niente
+      // riquadro: comparirà all'apertura successiva
+      startDataUpdates((n) => !m && showNews(n));
     });
   }, []);
   if (!ready || (!fonts && !fontErr)) return <View style={{ flex: 1, backgroundColor: t.bg }} />;

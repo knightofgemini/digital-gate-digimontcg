@@ -7,7 +7,6 @@ import Svg, { Circle, Defs, Path, RadialGradient, Rect, Stop } from "react-nativ
 import { DISPLAY, Text } from "./Text";
 import { DgMark } from "./chrome";
 import { StatusBar } from "expo-status-bar";
-import { gotoPending } from "./dataupd";
 
 const ND = Platform.OS !== "web";
 const PIX: [number, number, number][] = [
@@ -64,8 +63,7 @@ function Ring({ size, thin, arc, from, to }: { size: number; thin: string; arc: 
 
 export function Intro() {
   const { width } = useWindowDimensions();
-  // niente intro dopo il riavvio veloce di "Mostra le carte" (riquadro "Carte nuove"): si va subito alle carte
-  const [on, setOn] = useState(() => !seenOnWeb() && !gotoPending());
+  const [on, setOn] = useState(() => !seenOnWeb());
   const t = useRef(new Animated.Value(0)).current; // tempo 0 → 1235 ms
   const timer = useRef<any>(null);
   const small = width <= 380;

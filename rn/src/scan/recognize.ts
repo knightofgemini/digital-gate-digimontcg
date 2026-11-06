@@ -2,7 +2,7 @@
 // l'OCR confonde), altrimenti il nome (distanza di modifica) e, tra le carte con lo stesso nome, le parole dell'effetto.
 // Poi le versioni (Regular, ★, ★★, SP, ristampe) ordinate per somiglianza con l'illustrazione inquadrata.
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { BYCODE, CARDS, Card, NET, SETBY, fold } from "../data";
+import { BYCODE, CARDS, Card, NET, SETBY, fold, onData } from "../data";
 import { vurl } from "../imgstore";
 import { ask } from "./bridge";
 
@@ -40,6 +40,7 @@ export function scanCodes(txt: string) {
 }
 
 let NAMES: [string, Card[]][] | null = null;
+onData(() => (NAMES = null)); // carte nuove arrivate ad app aperta
 function names() {
   if (!NAMES) {
     const m: Record<string, Card[]> = {};

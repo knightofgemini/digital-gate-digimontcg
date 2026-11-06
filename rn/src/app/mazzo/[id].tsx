@@ -16,7 +16,7 @@ import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { BYKEY, CARDS, Card, SETS, deckable, normQ, relevance, thumbUrl, verLabel } from "../../data";
+import { BYKEY, CARDS, Card, SETS, deckable, normQ, relevance, thumbUrl, useData, verLabel } from "../../data";
 import { BanBadge, DeckQty } from "../../DeckQty";
 import { banEffective, banNote, banSource, deckColors, deckCover, deckCurve, deckGroups, deckById, deckStats, deckText, deleteDeck, dkGroups, isEgg } from "../../decks";
 import { ActiveChips, FilterSheet, fltCount } from "../../FilterSheet";
@@ -605,6 +605,7 @@ function AddSheet({ d, f0, openF, focus, areaH, barH, onCover, onFocusQ, onF, on
   );
   const nq = normQ(q);
   const filt = !!nq || anyFlt(f) || !!f.qm;
+  const dv = useData(); // carte nuove arrivate ad app aperta
   const list = useMemo(() => {
     if (!filt) return [];
     const l = srcCards(f, CARDS).filter((c) => deckable(c) && cardMatches(c, nq, f));
@@ -614,7 +615,7 @@ function AddSheet({ d, f0, openF, focus, areaH, barH, onCover, onFocusQ, onF, on
           .sort((a, b) => a.r - b.r || a.j - b.j)
           .map((o) => o.c)
       : l;
-  }, [q, f]);
+  }, [q, f, dv]);
   const nf = fltCount(f);
   const pickVw = (v: "list" | "grid") => {
     DKVIEW = v;

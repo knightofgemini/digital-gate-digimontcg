@@ -1,57 +1,37 @@
 // Carte aggiornate senza installare un APK nuovo (31 ottobre 2026): il sito pubblica i dati anche come file a parte
 // (www/dati/ di tools/build.py: data.json, products.json e ver.json con impronta "h" e momento della pubblicazione "t").
 // All'apertura e tornando nell'app dopo 3 ore si legge ver.json; se i dati sono più recenti di quelli in uso si
-// scaricano e si salvano nel dispositivo, poi il riquadro "Carte nuove" (News.tsx, 6 novembre 2026) elenca le carte
-// nuove e corrette e propone "Mostra le carte" (riavvio veloce dell'app, poi la pagina del prodotto o della carta).
-// All'avvio successivo data.ts li usa comunque da sé (pickData, lettura sincrona), se sono più recenti di quelli
-// inclusi nell'APK (rn/data/ver.json, scritto da scripts/sync-data.js). Così arrivano anche gli spoiler pubblicati da soli.
+// scaricano, si salvano nel dispositivo e si mettono subito in uso ad app aperta (data.ts → setData, 6 novembre 2026:
+// niente riavvio), poi il riquadro "Carte nuove" (News.tsx) elenca le carte nuove e corrette.
+// Alle aperture successive data.ts li usa da sé (pickData, lettura sincrona), se sono più recenti di quelli inclusi
+// nell'APK (rn/data/ver.json, scritto da scripts/sync-data.js). Così arrivano anche gli spoiler pubblicati da soli.
 import { AppState, Platform } from "react-native";
 import { File, Paths } from "expo-file-system";
 import { documentDirectory, writeAsStringAsync } from "expo-file-system/legacy";
-import { reloadAppAsync } from "expo";
 import bundledVer from "../data/ver.json";
 
 type Ver = { h: string; t: number };
 const SITE = "https://knightofgemini.github.io/digital-gate-digimontcg/dati/";
 const NATIVE = Platform.OS !== "web" && !!documentDirectory;
-const NAMES = { d: "dg-data.json", p: "dg-products.json", v: "dg-ver.json", n: "dg-news.json", g: "dg-goto.json" };
+const NAMES = { d: "dg-data.json", p: "dg-products.json", v: "dg-ver.json", n: "dg-news.json" };
 const BUNDLED: Ver = bundledVer as any;
 
 // dati in uso in questa sessione (quelli dell'APK o gli ultimi scaricati)
 export let CURVER: Ver = BUNDLED;
-let PENDING: Ver | null = null; // scaricati ma non ancora in uso (si usano riaprendo l'app o con "Mostra le carte")
-let USED: any = null; // dati delle carte in uso: con quelli nuovi si fa l'elenco "Carte nuove" (News.tsx)
-
-// pagina da aprire dopo il riavvio di "Mostra le carte" (prodotto o carta toccati nel riquadro); letta una volta sola
-export type Goto = { set?: string; k?: string; keys?: string[] };
-export let GOTO: Goto | null = null;
-export const takeGoto = () => {
-  readGoto();
-  const g = GOTO;
-  GOTO = null;
-  return g;
+// dati delle carte e dei prodotti in uso: con quelli nuovi si fa l'elenco "Carte nuove" (News.tsx)
+let USED: any = null,
+  USEDP: any = null;
+// sostituzione del catalogo ad app aperta (setData di data.ts, che la registra qui: data.ts importa già questo file)
+let APPLY: ((raw: any, products: any) => void) | null = null;
+export const setApply = (f: (raw: any, products: any) => void) => {
+  APPLY = f;
 };
-// riavvio chiesto da "Mostra le carte": niente intro, si va subito alla pagina
-export const gotoPending = () => (readGoto(), !!GOTO);
-let gotoRead = false;
-function readGoto() {
-  if (gotoRead || !NATIVE) return;
-  gotoRead = true;
-  try {
-    const f = new File(Paths.document, NAMES.g);
-    if (!f.exists) return;
-    const g = JSON.parse(f.textSync());
-    f.delete();
-    // solo se il riavvio è di pochi minuti fa (non un file rimasto lì da un riavvio non riuscito)
-    if (g && Date.now() - (g.at || 0) < 5 * 60e3) GOTO = g;
-  } catch (e) {}
-}
 
 // chiamata da data.ts prima di costruire carte e prodotti: legge in modo sincrono i dati salvati, se più recenti
 export function pickData<D, P>(raw: D, products: P): { raw: D; products: P } {
   USED = raw;
+  USEDP = products;
   if (!NATIVE) return { raw, products };
-  readGoto();
   // APK di prova del riquadro "Carte nuove" (apk-prova.yml con "novita": dentro ci sono apposta i dati di prima del
   // 3 novembre 2026): alla prima apertura di questo APK si scartano i dati già scaricati (solo la copia delle carte,
   // non collezione e mazzi), così l'app riscarica quelli del sito e mostra il riquadro come all'arrivo di carte nuove
@@ -75,6 +55,7 @@ export function pickData<D, P>(raw: D, products: P): { raw: D; products: P } {
     if (!d || !d.cards || !d.sets || !p) return { raw, products };
     CURVER = v;
     USED = d;
+    USEDP = p;
     return { raw: d, products: p };
   } catch (e) {
     return { raw, products };
@@ -222,13 +203,13 @@ async function check(onNew: (n: News) => void) {
   busy = true;
   try {
     const v: Ver = await fetch(SITE + "ver.json", { cache: "no-store" } as any).then((r) => (r.ok ? r.json() : null));
-    const have = PENDING || CURVER;
+    const have = CURVER;
     if (!v || !v.h || v.h === have.h || !(v.t > have.t)) return;
     const [d, p] = await Promise.all([SITE + "data.json", SITE + "products.json"].map((u) => fetch(u, { cache: "no-store" } as any).then((r) => (r.ok ? r.text() : ""))));
     const D = JSON.parse(d),
       P = JSON.parse(p);
     if (!D || !D.cards || !D.sets || !D.cards.length || !P) return;
-    // elenco delle carte cambiate rispetto a quelle in uso (anche se nel frattempo erano già stati scaricati altri dati)
+    // elenco delle carte cambiate rispetto a quelle in uso
     let news: News | null = null;
     try {
       if (USED) news = { h: v.h, ...diffData(USED, D) };
@@ -238,8 +219,21 @@ async function check(onNew: (n: News) => void) {
     await writeAsStringAsync(documentDirectory + NAMES.p, p);
     if (news) await writeAsStringAsync(documentDirectory + NAMES.n, JSON.stringify(news));
     await writeAsStringAsync(documentDirectory + NAMES.v, JSON.stringify(v));
-    PENDING = v;
-    // nessuna carta cambiata (es. solo lista ban o schede dei prodotti): dati in uso dalla prossima apertura, senza avvisi
+    // in uso subito, senza riavviare l'app; se qualcosa va storto si torna ai dati di prima (quelli nuovi restano
+    // salvati e si usano alla prossima apertura)
+    if (!APPLY) return;
+    try {
+      APPLY(D, P);
+      CURVER = v;
+      USED = D;
+      USEDP = P;
+    } catch (e) {
+      try {
+        APPLY(USED, USEDP);
+      } catch (e2) {}
+      return;
+    }
+    // nessuna carta cambiata (es. solo lista ban o schede dei prodotti): niente riquadro
     if (news && news.groups.length) onNew(news);
   } catch (e) {
   } finally {
@@ -247,20 +241,12 @@ async function check(onNew: (n: News) => void) {
   }
 }
 
-// "Mostra le carte": riavvio veloce dell'app (il catalogo si prepara all'apertura) e poi la pagina scelta nel riquadro
-export async function applyNewData(to?: Goto) {
-  try {
-    // senza prodotto (carte in più prodotti): dopo il riavvio si riapre il riquadro, con le carte già in uso
-    if (NATIVE) await writeAsStringAsync(documentDirectory + NAMES.g, JSON.stringify({ ...(to || {}), at: Date.now() }));
-  } catch (e) {}
-  reloadAppAsync("Carte nuove").catch(() => {});
-}
 
 let started = false;
 export function startDataUpdates(onNew: (n: News) => void) {
   if (!NATIVE || started) return;
   started = true;
-  // subito all'apertura (mentre gira l'intro): il riquadro compare appena i dati sono scaricati
+  // subito all'apertura (mentre gira l'intro): carte in uso e riquadro appena i dati sono scaricati
   setTimeout(() => check(onNew), 300);
   let away = 0;
   AppState.addEventListener("change", (s) => {

@@ -3,7 +3,7 @@
 // "dgm-decks" mazzi; "dgm-view" vista elenco/griglia. Così il backup dell'app attuale si importa così com'è.
 import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { BYKEY, Card, SETS, cardsOfSet } from "./data";
+import { BYKEY, Card, SETS, cardsOfSet, onData } from "./data";
 
 export type FavList = { id: string; n: string; k: Record<string, number> };
 export type Fav = { f: Record<string, number>; l: FavList[]; a: Record<string, number> };
@@ -39,6 +39,8 @@ function changed() {
   STATS = null;
   subs.forEach((f) => f(ver));
 }
+// carte nuove arrivate ad app aperta: statistiche dei prodotti da rifare e schermate da ridisegnare
+onData(() => changed());
 // le schermate che mostrano copie, preferite o mazzi si ridisegnano a ogni cambiamento
 export function useStore() {
   const [, set] = useState(ver);

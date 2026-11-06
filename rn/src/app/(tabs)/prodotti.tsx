@@ -7,7 +7,7 @@ import { useLocalSearchParams, router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Svg, { Path, Rect } from "react-native-svg";
 import { DISPLAY, Text } from "../../Text";
-import { CardSet, PRODUCTS, SETBY, SETS, TYPES, UPCOMING, Upcoming, cardsOfSet, cdParts, daysTo, fold, monthLabel, normQ, numOf, soonSet, spoilerSet, upSorted, upWhen } from "../../data";
+import { CardSet, PRODUCTS, SETBY, SETS, TYPES, UPCOMING, Upcoming, cardsOfSet, cdParts, daysTo, fold, monthLabel, normQ, numOf, soonSet, spoilerSet, upSorted, upWhen, useData } from "../../data";
 import { setStats, useStore } from "../../store";
 import { openUpcoming } from "../../nav";
 import { useTheme } from "../../theme";
@@ -179,6 +179,7 @@ export default function Prodotti() {
     AsyncStorage.setItem("dg-pord", v).catch(() => {});
   };
 
+  const dv = useData(); // carte e prodotti nuovi arrivati ad app aperta
   const { groups, hits } = useMemo(() => {
     const nq = normQ(q);
     const hits: Record<string, number> = {};
@@ -206,7 +207,7 @@ export default function Prodotti() {
         .map((k) => [TYPES[k], list.filter((s) => s.type === k)] as [string, CardSet[]])
         .filter((g) => g[1].length);
     return { groups, hits };
-  }, [q, type, pord]);
+  }, [q, type, pord, dv]);
 
   // larghezza dei riquadri dalla finestra: niente prima passata vuota per misurare (comparivano prima i soli titoli)
   const { width: winW } = useWindowDimensions();

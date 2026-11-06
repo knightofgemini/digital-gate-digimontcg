@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppState, Pressable, ScrollView, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { DISPLAY, Text } from "../Text";
-import { SETBY, SETS, numOf } from "../data";
+import { SETBY, SETS, numOf, useData } from "../data";
 import { haveStats } from "../imgstore";
 import { AVG, OFF, PAGE, RUN, cell, choose, count, deleteAll, deleteKind, deleteSet, items, label, mb, missing, pause, setAuto, start, useOffline } from "../offline";
 import { useTheme } from "../theme";
@@ -59,7 +59,8 @@ export default function Offline() {
     running = !!R && !R.end;
   const off = <T,>(v: T) => (running ? undefined : v);
 
-  const sets = useMemo(() => SETS.filter((x) => (x.v || []).length).sort((a, b) => ((a.date || "") < (b.date || "") ? 1 : (a.date || "") > (b.date || "") ? -1 : numOf(b.code) - numOf(a.code))), []);
+  const dv = useData(); // prodotti nuovi arrivati ad app aperta
+  const sets = useMemo(() => SETS.filter((x) => (x.v || []).length).sort((a, b) => ((a.date || "") < (b.date || "") ? 1 : (a.date || "") > (b.date || "") ? -1 : numOf(b.code) - numOf(a.code))), [dv]);
   const S = haveStats(AVG);
   const nAll = S.nT + S.nF + S.nO;
   const pc = R && R.total ? Math.floor((R.done / R.total) * 100) : 100;

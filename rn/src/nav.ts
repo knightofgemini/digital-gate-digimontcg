@@ -1,9 +1,11 @@
 // Aperture di pagine usate da più schermate.
 import { router } from "expo-router";
-import { Card, spoilerSet } from "./data";
+import { BYKEY, Card, onData, spoilerSet } from "./data";
 
 // elenco da cui è stata aperta la scheda carta: con il dito a destra/sinistra si passa alla precedente/successiva
 export let NAVLIST: Card[] = [];
+// carte nuove arrivate ad app aperta: l'elenco punta alle carte aggiornate (quelle tolte dal catalogo restano com'erano)
+onData(() => (NAVLIST = NAVLIST.map((c) => BYKEY[c.k] || c)));
 
 // Prodotto in arrivo: pagina degli spoiler se ci sono carte svelate, altrimenti la sola scheda
 export function openUpcoming(code: string, from?: string) {

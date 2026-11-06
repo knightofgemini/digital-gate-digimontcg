@@ -11,7 +11,7 @@ import { Sheet } from "./Sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { DISPLAY, Text, TextInput } from "./Text";
-import { COLORS, SETBY, fold } from "./data";
+import { COLORS, SETBY, fold, useData } from "./data";
 import { DDN, EMPTY, Filters, Kind, MARKV, MULTI, ddFix, ddKinds, ddOptions, ddShown, ddValues, fl } from "./filters";
 import { useKbH } from "./chrome";
 import { useTheme } from "./theme";
@@ -219,7 +219,8 @@ function DDPop({ kind, r, f, vw, vh, pick, onClose }: { kind: Kind; r: Rect; f: 
   );
   const mv = Animated.add(dy, pull.d);
   const [find, setFind] = useState("");
-  const opts = useMemo(() => ddOptions(kind, f), [kind, f.ct]);
+  const dv = useData();
+  const opts = useMemo(() => ddOptions(kind, f), [kind, f.ct, dv]);
   const multi = !!MULTI[kind];
   const grid = kind === "lv" || kind === "cost" || kind === "rar" || kind === "exp";
   const w = Math.min(vw - 16, Math.max(r.w, kind === "qm" || kind === "sp" || kind === "exp" ? 280 : 210));

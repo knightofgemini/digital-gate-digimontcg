@@ -1,12 +1,14 @@
 // Dati dell'app: gli stessi del sito (src/data.json, src/products.json, src/prices.json), copiati in rn/data/ da scripts/sync-data.js.
 // Stessa logica di src/template.html (CARDS, mkEntry, cardsOfSet, imgQ...).
+// Catalogo sostituibile ad app aperta (6 novembre 2026, richiesta dell'utente: carte nuove senza riavviare l'app):
+// SETS, SETBY, CARDS, BYKEY, BYCODE, PRODUCTS, UPCOMING, BAN, PAIRS, BANNERS sono sempre gli stessi oggetti, riempiti da
+// build(); setData() li svuota e li riempie con i dati nuovi, poi avvisa le cache degli altri moduli (onData) e ridisegna
+// le schermate che usano useData() (da mettere tra le dipendenze di useMemo che leggono il catalogo).
+import { useSyncExternalStore } from "react";
 import bundledData from "../data/data.json";
 import bundledProducts from "../data/products.json";
 import { shown } from "./imgstore";
-import { pickData } from "./dataupd";
-
-// dati inclusi nell'APK oppure, se più recenti, gli ultimi scaricati dal sito (dataupd.ts: carte nuove senza un APK nuovo)
-const { raw, products: rawProducts } = pickData<any, any>(bundledData, bundledProducts);
+import { pickData, setApply } from "./dataupd";
 
 export const TYPES: Record<string, string> = { BT: "Booster", EX: "Extra Booster", ST: "Starter Deck", LM: "Limited", PB: "Premium Bandai", AL: "Altri" };
 export const COLORS: Record<string, string> = { Red: "Rosso", Blue: "Blu", Yellow: "Giallo", Green: "Verde", Black: "Nero", Purple: "Viola", White: "Bianco" };
@@ -77,17 +79,16 @@ export function normQ(q: string) {
   return fold(q).replace(/\b(bt|ex|st|rb|lm|ad)0+(\d)/g, "$1$2");
 }
 
-export const SETS: CardSet[] = (raw as any).sets;
+export const SETS: CardSet[] = [];
 export const SETBY: Record<string, CardSet> = {};
-SETS.forEach((s) => (SETBY[s.id] = s));
-export const UPCOMING: Upcoming[] = (raw as any).upcoming || [];
-export const PRODUCTS: Record<string, Product> = rawProducts as any;
-const VERS: string[] = (raw as any).versions || ["Normal"];
+export const UPCOMING: Upcoming[] = [];
+export const PRODUCTS: Record<string, Product> = {};
+let VERS: string[] = ["Normal"];
 const ERRATA: Record<string, 1> = {};
-((raw as any).errata || []).forEach((k: string) => (ERRATA[k] = 1));
-export const BAN = (raw as any).ban;
+export const BAN: any = {};
 
-export const CARDS: Card[] = ((raw as any).cards as RawCard[]).map((a, i) => ({
+export const CARDS: Card[] = [];
+const mkCard = (a: RawCard, i: number): Card => ({
   i,
   k: "",
   code: a[0],
@@ -112,12 +113,6 @@ export const CARDS: Card[] = ((raw as any).cards as RawCard[]).map((a, i) => ({
   nb: " " + fold(a[0] + " " + a[1] + (/(^|\n)Effetto ACE:/.test(a[14] || "") ? " ACE" : "")) + " ",
   // nome normalizzato calcolato una volta sola (ordinamento per rilevanza a ogni lettera digitata)
   nf: fold(a[1]),
-}));
-const seen: Record<string, number> = {};
-CARDS.forEach((c) => {
-  const base = c.set + "|" + c.code;
-  seen[base] = (seen[base] || 0) + 1;
-  c.k = seen[base] > 1 ? base + "#" + seen[base] : base;
 });
 
 // Una "versione" = carta + arte uscita in quel prodotto. La versione base è la carta stessa.
@@ -144,18 +139,6 @@ export function cardsOfSet(id: string): Card[] {
 // Tutte le versioni per chiave (base + alternative) e per codice
 export const BYKEY: Record<string, Card> = {};
 export const BYCODE: Record<string, Card[]> = {};
-CARDS.forEach((c) => {
-  BYKEY[c.k] = c;
-  (BYCODE[c.code] = BYCODE[c.code] || []).push(c);
-});
-SETS.forEach((s) =>
-  cardsOfSet(s.id).forEach((e) => {
-    if (e.suf && !BYKEY[e.k]) {
-      BYKEY[e.k] = e;
-      BYCODE[e.code].push(e);
-    }
-  })
-);
 
 // ---- date e prodotti in arrivo
 export function parseDay(s: string) {
@@ -248,7 +231,6 @@ export function markText(c: Card) {
 // Sezioni di un prodotto (Regular, Alternative Art, Ristampe...): come renderCards() del sito
 // ordine delle carte di AD1 senza ricerca (setOrder dell'app attuale): Digi-Egg, Digimon, Tamer, Option, poi prodotto e numero
 const SETRANK: Record<string, number> = {};
-SETS.forEach((x, i) => (SETRANK[x.id] = i));
 const ctRank = (c: Card) => (/^Digi-Egg/.test(c.ct || "") ? 0 : /^Digimon/.test(c.ct || "") ? 1 : /^Tamer/.test(c.ct || "") ? 2 : /^Option/.test(c.ct || "") ? 3 : 4);
 export const setOrder = (a: Card, b: Card) => ctRank(a) - ctRank(b) || (SETRANK[a.set] || 0) - (SETRANK[b.set] || 0) || a.i - b.i || ((a.suf || "") < (b.suf || "") ? -1 : (a.suf || "") > (b.suf || "") ? 1 : 0);
 // sorted: senza ricerca (con la ricerca l'ordine è quello della rilevanza)
@@ -366,14 +348,6 @@ export function splitExtra(c: Card, iconClass: (s: string) => string) {
 const BANNED: Record<string, 1> = {},
   RESTR: Record<string, 1> = {};
 export const PAIRS: Record<string, string[]> = {};
-(BAN?.banned || []).forEach((x: string) => (BANNED[x] = 1));
-(BAN?.restricted || []).forEach((x: string) => (RESTR[x] = 1));
-(BAN?.pairs || []).forEach((p: [string, string[]]) =>
-  p[1].forEach((b) => {
-    (PAIRS[p[0]] = PAIRS[p[0]] || []).push(b);
-    (PAIRS[b] = PAIRS[b] || []).push(p[0]);
-  })
-);
 export const deckable = (c: Card) => /^(Digi-Egg|Digimon|Tamer|Option|Digimon\/Option)$/.test(c.ct);
 export function maxCopies(c: Card) {
   return BANNED[c.code] ? 0 : RESTR[c.code] ? 1 : /up to 50 copies/.test(c.extra || "") ? 50 : 4;
@@ -381,7 +355,6 @@ export function maxCopies(c: Card) {
 
 // ---- banner dei prodotti e prossime uscite (come nell'app attuale: BANNERS, upSorted, upBadge, upWhen, recentSets)
 export const BANNERS: Record<string, 1> = {};
-((raw as any).banners || []).forEach((c: string) => (BANNERS[c] = 1));
 export const bannerUrl = (code: string) => {
   const u = NET.banner(code);
   return u && shown(u);
@@ -436,3 +409,93 @@ export function recentSets(n: number) {
     .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : IMP[a.type] - IMP[b.type] || numOf(b.code) - numOf(a.code)))
     .slice(0, n);
 }
+
+// ---- costruzione del catalogo (all'avvio e quando arrivano carte nuove)
+const clear = (o: Record<string, any>) => Object.keys(o).forEach((k) => delete o[k]);
+function build(raw: any, products: any) {
+  SETS.length = 0;
+  (raw.sets || []).forEach((x: CardSet) => SETS.push(x));
+  clear(SETBY);
+  SETS.forEach((x) => (SETBY[x.id] = x));
+  UPCOMING.length = 0;
+  (raw.upcoming || []).forEach((u: Upcoming) => UPCOMING.push(u));
+  clear(PRODUCTS);
+  Object.assign(PRODUCTS, products || {});
+  VERS = raw.versions || ["Normal"];
+  clear(ERRATA);
+  (raw.errata || []).forEach((k: string) => (ERRATA[k] = 1));
+  clear(BAN);
+  Object.assign(BAN, raw.ban || {});
+
+  CARDS.length = 0;
+  (raw.cards as RawCard[]).forEach((a, i) => CARDS.push(mkCard(a, i)));
+  const seen: Record<string, number> = {};
+  CARDS.forEach((c) => {
+    const base = c.set + "|" + c.code;
+    seen[base] = (seen[base] || 0) + 1;
+    c.k = seen[base] > 1 ? base + "#" + seen[base] : base;
+  });
+  clear(SETCARDS);
+  clear(BYKEY);
+  clear(BYCODE);
+  CARDS.forEach((c) => {
+    BYKEY[c.k] = c;
+    (BYCODE[c.code] = BYCODE[c.code] || []).push(c);
+  });
+  SETS.forEach((x) =>
+    cardsOfSet(x.id).forEach((e) => {
+      if (e.suf && !BYKEY[e.k]) {
+        BYKEY[e.k] = e;
+        BYCODE[e.code].push(e);
+      }
+    })
+  );
+  clear(SETRANK);
+  SETS.forEach((x, i) => (SETRANK[x.id] = i));
+
+  clear(BANNED);
+  clear(RESTR);
+  clear(PAIRS);
+  (BAN.banned || []).forEach((x: string) => (BANNED[x] = 1));
+  (BAN.restricted || []).forEach((x: string) => (RESTR[x] = 1));
+  (BAN.pairs || []).forEach((p: [string, string[]]) =>
+    p[1].forEach((b) => {
+      (PAIRS[p[0]] = PAIRS[p[0]] || []).push(b);
+      (PAIRS[b] = PAIRS[b] || []).push(p[0]);
+    })
+  );
+  clear(BANNERS);
+  (raw.banners || []).forEach((c: string) => (BANNERS[c] = 1));
+}
+
+// dati inclusi nell'APK oppure, se più recenti, gli ultimi scaricati dal sito (dataupd.ts: carte nuove senza un APK nuovo)
+const first = pickData<any, any>(bundledData, bundledProducts);
+build(first.raw, first.products);
+
+// ---- cambio del catalogo ad app aperta
+let DV = 0; // versione del catalogo in questa sessione
+const caches = new Set<() => void>(); // cache degli altri moduli da svuotare (filtri, statistiche, scansione…)
+const views = new Set<() => void>(); // schermate da ridisegnare
+export function onData(f: () => void) {
+  caches.add(f);
+  return () => {
+    caches.delete(f);
+  };
+}
+const subView = (f: () => void) => (views.add(f), () => views.delete(f));
+const getDV = () => DV;
+// versione del catalogo: le schermate la mettono tra le dipendenze dei useMemo che leggono carte e prodotti
+export function useData() {
+  return useSyncExternalStore(subView, getDV, getDV);
+}
+export function setData(raw: any, products: any) {
+  build(raw, products);
+  DV++;
+  caches.forEach((f) => {
+    try {
+      f();
+    } catch (e) {}
+  });
+  views.forEach((f) => f());
+}
+setApply(setData);

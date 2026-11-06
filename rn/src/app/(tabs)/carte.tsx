@@ -2,7 +2,7 @@
 // dei dati (dalle più recenti svelate); ricerca, fotocamera e Filtri nella barra in basso, filtri attivi come etichette.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { CARDS, normQ, relevance } from "../../data";
+import { CARDS, normQ, relevance, useData } from "../../data";
 import { ActiveChips, FilterSheet, fltCount } from "../../FilterSheet";
 import { EMPTY, Filters, anyFlt, cardMatches, qmHolder, srcCards } from "../../filters";
 import { CardList, CountRow } from "../../items";
@@ -38,6 +38,7 @@ export default function Carte() {
     router.setParams({ q: undefined, flt: undefined, fo: undefined, t: undefined });
   }, [p.t]);
 
+  const dv = useData(); // carte nuove arrivate ad app aperta
   const list = useMemo(() => {
     const nq = normQ(q);
     const l = srcCards(f, CARDS).filter((c) => cardMatches(c, nq, f));
@@ -46,7 +47,7 @@ export default function Carte() {
       .map((c, j) => ({ c, j, r: relevance(c, nq) }))
       .sort((a, b) => a.r - b.r || a.j - b.j)
       .map((o) => o.c);
-  }, [q, f]);
+  }, [q, f, dv]);
 
   return (
     <Screen>

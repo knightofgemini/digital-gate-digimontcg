@@ -12,7 +12,7 @@ import { favToast } from "../../toast";
 import { Image } from "expo-image";
 import { router, useFocusEffect, useLocalSearchParams, useNavigation } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { BYKEY, Card, PAIRS, BYCODE, RARITY, SETBY, carVers, deckable, fullUrl, hasErrata, hostSet, isAce, maxCopies, preUrl, splitExtra, thumbUrl } from "../../data";
+import { BYCODE, BYKEY, Card, PAIRS, RARITY, SETBY, carVers, deckable, fullUrl, hasErrata, hostSet, isAce, maxCopies, preUrl, splitExtra, thumbUrl, useData } from "../../data";
 import { NAVLIST, openCard } from "../../nav";
 import { bestVal, cmCovered, cmDate, cmOf, cmUrl, cmVal, ctCovered, ctDate, ctOf, ctUrl, ctVal, eur, eurN, eurT, usePrices } from "../../prices";
 import { Chip, Rich, RichInline, iconClass, kwJoin, kwNoRem } from "../../rich";
@@ -27,7 +27,9 @@ export default function Carta() {
   const { k, deck } = useLocalSearchParams<{ k: string; deck?: string }>();
   // la carta dell'elenco da cui si è aperta la scheda (le alternative presenti in due prodotti hanno la stessa chiave:
   // quella dell'elenco ha il prodotto giusto)
-  const c0 = useMemo(() => NAVLIST.find((x) => x.k === k) || BYKEY[k], [k]);
+  // dv: carte aggiornate ad app aperta (NAVLIST e BYKEY puntano già a quelle nuove)
+  const dv = useData();
+  const c0 = useMemo(() => NAVLIST.find((x) => x.k === k) || BYKEY[k], [k, dv]);
   const { width } = useWindowDimensions();
   usePrices();
   // elenco per scorrere: quello da cui si è aperta la scheda (anche se si apre una sua versione)
@@ -48,6 +50,18 @@ export default function Carta() {
   const [cur, setCur] = useState(start);
   // versioni scelte con i pulsanti, una per carta (restano tornando su quella carta)
   const [vers, setVers] = useState<Record<number, Card>>({});
+  // carte aggiornate ad app aperta: anche le versioni scelte passano a quelle nuove (stesso prodotto se c'è ancora)
+  useEffect(() => {
+    if (!dv) return;
+    setVers((v) => {
+      const o: Record<number, Card> = {};
+      Object.keys(v).forEach((i) => {
+        const c = v[+i];
+        o[+i] = (BYCODE[c.code] || []).find((x) => x.k === c.k && (x.from || "") === (c.from || "")) || BYKEY[c.k] || c;
+      });
+      return o;
+    });
+  }, [dv]);
   const maxW = Math.min(width, 560);
   const cw = Math.min(290, maxW - 84);
   // distanza tra le carte della fila: le vicine spuntano ai lati senza coprire quella al centro.

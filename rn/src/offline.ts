@@ -11,7 +11,7 @@ import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image } from "expo-image";
 import * as Network from "expo-network";
-import { BANNERS, CARDS, Card, NET, PRODUCTS, SETBY, SETS, cardsOfSet, errataKeys, hasErrata } from "./data";
+import { BANNERS, CARDS, Card, NET, PRODUCTS, SETBY, SETS, cardsOfSet, errataKeys, hasErrata, onData } from "./data";
 import { HAVE, dropAll, dropImgs, dropKind, fileOf, loadImages, loadVersions, saveImg, vurl } from "./imgstore";
 import { toast } from "./toast";
 import { BGD } from "./bgdl";
@@ -354,11 +354,18 @@ export function setAuto(v: boolean) {
   emit();
   if (v) auto(false);
 }
-let started = false;
+let started = false,
+  booted = false;
+// carte nuove arrivate ad app aperta (dataupd.ts → data.ts setData): elenchi da rifare e, dopo il primo controllo
+// dell'avvio, scaricamento automatico delle immagini nuove (prima ci pensa già quello dell'avvio)
+onData(() => {
+  LISTS = {};
+  if (booted) loadVersions().then(() => ((LISTS = {}), auto(false)));
+});
 export function startOffline() {
   if (started) return;
   started = true;
-  setTimeout(() => loadVersions().then((ch) => (ch && (LISTS = {}), auto(true))), 8000);
+  setTimeout(() => ((booted = true), loadVersions().then((ch) => (ch && (LISTS = {}), auto(true)))), 8000);
   let away = 0;
   AppState.addEventListener("change", (s) => {
     if (s !== "active") {
