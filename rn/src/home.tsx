@@ -27,6 +27,8 @@ const SEC_TOP = 24;
 const GAP = 12;
 // tipi di prodotto del banner scorrevole, in quest'ordine (uno per tipo)
 const HERO_TYPES = ["BT", "EX", "ST", "LM", "PB"];
+// come mettere in evidenza gli ultimi spoiler: "A" sezione "Ultimi spoiler", "B" miniature nel banner, "AB" entrambe
+export const SPOILER_UI: "A" | "B" | "AB" = "AB";
 
 function Arrow({ color, size = 17 }: { color: string; size?: number }) {
   return (
@@ -262,7 +264,7 @@ function HeroSlide({ h, w }: { h: HeroData; w: number }) {
       <View style={{ paddingTop: 36 }}>
         <Text style={{ color: HERO.eyebrow, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, lineHeight: 14, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 3 }}>{h.eyebrow}</Text>
         <Text style={{ color: HERO.title, fontFamily: DISPLAY, fontWeight: "700", fontSize: 29, lineHeight: 32, letterSpacing: -0.4, marginBottom: 12 }}>{h.name}</Text>
-        {h.spoil ? <SpoilerStrip s={h.spoil} /> : null}
+        {h.spoil && SPOILER_UI !== "A" ? <SpoilerStrip s={h.spoil} /> : null}
         <Pressable onPress={h.go} accessibilityRole="button" accessibilityLabel={h.cta + ": " + h.name} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, paddingHorizontal: 15, borderRadius: 10, backgroundColor: HERO.btn }}>
           <Text style={{ color: HERO.btnInk, fontWeight: "600", fontSize: 14 }}>{h.cta}</Text>
           <Arrow color={HERO.btnInk} />
@@ -310,7 +312,7 @@ export function CollectionRow() {
 // ---- proposta A per gli spoiler: sezione "Ultimi spoiler", carte dalla più recente (tocco = scheda della carta)
 export function SpoilerRow({ sp }: { sp: Spoil[] }) {
   const t = useTheme();
-  if (!sp.length) return null;
+  if (!sp.length || SPOILER_UI === "B") return null;
   const list = sp.slice(0, 16);
   const cards = list.map((x) => x.c);
   const last = list[0].d;
