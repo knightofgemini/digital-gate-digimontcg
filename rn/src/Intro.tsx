@@ -7,6 +7,7 @@ import Svg, { Circle, Defs, Path, RadialGradient, Rect, Stop } from "react-nativ
 import { DISPLAY, Text } from "./Text";
 import { DgMark } from "./chrome";
 import { StatusBar } from "expo-status-bar";
+import { gotoPending } from "./dataupd";
 
 const ND = Platform.OS !== "web";
 const PIX: [number, number, number][] = [
@@ -19,6 +20,18 @@ const PIX: [number, number, number][] = [
   [62, -128, 104],
   [144, -11, 124],
 ];
+
+// fine dell'intro: il riquadro "Carte nuove" (News.tsx) aspetta che sia finita
+let introDone = false;
+const waiting: (() => void)[] = [];
+function markDone() {
+  introDone = true;
+  waiting.splice(0).forEach((f) => f());
+}
+export function whenIntroDone(f: () => void) {
+  if (introDone) f();
+  else waiting.push(f);
+}
 
 function seenOnWeb() {
   if (Platform.OS !== "web") return false;
@@ -51,7 +64,8 @@ function Ring({ size, thin, arc, from, to }: { size: number; thin: string; arc: 
 
 export function Intro() {
   const { width } = useWindowDimensions();
-  const [on, setOn] = useState(() => !seenOnWeb());
+  // niente intro dopo il riavvio veloce di "Mostra le carte" (riquadro "Carte nuove"): si va subito alle carte
+  const [on, setOn] = useState(() => !seenOnWeb() && !gotoPending());
   const t = useRef(new Animated.Value(0)).current; // tempo 0 → 1235 ms
   const timer = useRef<any>(null);
   const small = width <= 380;
@@ -60,9 +74,10 @@ export function Intro() {
   const finish = () => {
     clearTimeout(timer.current);
     setOn(false);
+    markDone();
   };
   useEffect(() => {
-    if (!on) return;
+    if (!on) return markDone();
     let stop = false;
     AccessibilityInfo.isReduceMotionEnabled()
       .catch(() => false)

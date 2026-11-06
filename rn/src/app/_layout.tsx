@@ -8,8 +8,9 @@ import { StatusBar } from "expo-status-bar";
 import { useFonts } from "expo-font";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { loadStore } from "../store";
-import { ToastHost, toast } from "../toast";
-import { applyNewData, startDataUpdates } from "../dataupd";
+import { ToastHost } from "../toast";
+import { startDataUpdates } from "../dataupd";
+import { NewsHost, showNews } from "../News";
 import { FavSheetHost } from "../FavSheet";
 import { UpdateCheck } from "../Update";
 import { loadThemePref, useTheme } from "../theme";
@@ -43,6 +44,7 @@ function Root() {
       <MoreSheet />
       <ToastHost />
       <FavSheetHost />
+      <NewsHost />
       <UpdateCheck />
       <Intro />
     </>
@@ -62,8 +64,10 @@ export default function RootLayout() {
       setReady(true);
       if (!m) startOffline();
       refreshPrices();
-      // carte nuove pubblicate sul sito (es. spoiler): scaricate in sottofondo, in uso riaprendo l'app o con "Aggiorna"
-      startDataUpdates(() => toast("Sono arrivate carte nuove", { label: "Aggiorna", onPress: applyNewData }, 10000));
+      // carte nuove pubblicate sul sito (es. spoiler): scaricate subito all'apertura, poi il riquadro "Carte nuove" con
+      // l'elenco (News.tsx); in uso con "Mostra le carte" (riavvio veloce) o alla prossima apertura. Durante il recupero
+      // dei dati dell'app vecchia niente riquadro: comparirà all'apertura successiva
+      startDataUpdates((n) => !m && showNews(n, true));
     });
   }, []);
   if (!ready || (!fonts && !fontErr)) return <View style={{ flex: 1, backgroundColor: t.bg }} />;

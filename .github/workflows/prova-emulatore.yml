@@ -3,14 +3,16 @@ name: Prova su emulatore
 # e fotografa le schede carta indicate. Le foto vanno nel ramo "rn-shots"; nessuna release viene toccata.
 # Si avvia a ogni invio sul ramo rn-tag (le carte da fotografare sono in tools/rn_shots.txt) o a mano da qualsiasi ramo;
 # con "scansione" (o inviando sul ramo rn-scan) prova invece la scansione senza rete (tools/rn_scan.py: motore di
-# lettura dall'APK e una foto).
+# lettura dall'APK e una foto). Con "novita" (o inviando sul ramo rn-novita) prova il riquadro "Carte nuove"
+# (tools/rn_news.py): l'APK ha i dati di prima degli spoiler del 3 novembre 2026, così all'apertura scarica quelli del sito.
 on:
   push:
-    branches: [rn-tag, rn-scan]
-    paths: ["rn/**", "tools/rn_shots*", "tools/rn_gestures.py", "tools/rn_mazzo.py", ".github/workflows/prova-emulatore.yml"]
+    branches: [rn-tag, rn-scan, rn-novita]
+    paths: ["rn/**", "tools/rn_shots*", "tools/rn_gestures.py", "tools/rn_mazzo.py", "tools/rn_news.py", ".github/workflows/prova-emulatore.yml"]
   workflow_dispatch:
     inputs:
       scansione: { description: "Prova della scansione senza rete al posto delle foto delle carte", type: boolean, default: false }
+      novita: { description: "Prova del riquadro Carte nuove (APK con dati vecchi)", type: boolean, default: false }
 permissions:
   contents: write
 concurrency:
@@ -33,6 +35,12 @@ jobs:
         run: |
           if npx tsc --noEmit > /tmp/tsc.txt 2>&1; then echo "TSC OK" >> /tmp/tsc.txt; else echo "TSC ERRORI" >> /tmp/tsc.txt; fi
           tail -40 /tmp/tsc.txt
+      - name: Dati vecchi per la prova del riquadro "Carte nuove"
+        if: ${{ inputs.novita || github.ref_name == 'rn-novita' }}
+        run: |
+          git fetch -q --depth=1 origin 83c5b989cc0832526dde40e7db1bc228af25b84d
+          git show FETCH_HEAD:src/data.json > src/data.json
+          echo "DATA_T=$(git log -1 --format=%ct FETCH_HEAD)" >> $GITHUB_ENV
       - run: node scripts/sync-data.js
         working-directory: rn
       - run: node scripts/ocr-files.js
@@ -65,7 +73,7 @@ jobs:
           profile: pixel_6
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: adb install -r prova.apk && if [ "${{ inputs.scansione || github.ref_name == 'rn-scan' }}" = "true" ]; then python3 tools/rn_scan.py foto; else python3 tools/rn_shots.py foto "$(cat tools/rn_shots.txt)" && python3 tools/rn_gestures.py foto; python3 tools/rn_mazzo.py foto; fi
+          script: adb install -r prova.apk && if [ "${{ inputs.novita || github.ref_name == 'rn-novita' }}" = "true" ]; then python3 tools/rn_news.py foto; elif [ "${{ inputs.scansione || github.ref_name == 'rn-scan' }}" = "true" ]; then python3 tools/rn_scan.py foto; else python3 tools/rn_shots.py foto "$(cat tools/rn_shots.txt)" && python3 tools/rn_gestures.py foto; python3 tools/rn_mazzo.py foto; fi
       - name: Foto nel ramo rn-shots
         if: always()
         run: |
