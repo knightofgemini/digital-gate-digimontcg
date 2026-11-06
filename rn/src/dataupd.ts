@@ -197,6 +197,7 @@ export function newsSeen(n: News) {
   writeAsStringAsync(documentDirectory + NAMES.n, JSON.stringify(n)).catch(() => {});
 }
 
+const LOG = (m: string) => console.log("[carte-nuove] " + m); // PROVA: da togliere
 let busy = false;
 async function check(onNew: (n: News) => void) {
   if (busy) return;
@@ -206,6 +207,7 @@ async function check(onNew: (n: News) => void) {
     const have = CURVER;
     if (!v || !v.h || v.h === have.h || !(v.t > have.t)) return;
     const [d, p] = await Promise.all([SITE + "data.json", SITE + "products.json"].map((u) => fetch(u, { cache: "no-store" } as any).then((r) => (r.ok ? r.text() : ""))));
+    LOG("scaricati " + d.length);
     const D = JSON.parse(d),
       P = JSON.parse(p);
     if (!D || !D.cards || !D.sets || !D.cards.length || !P) return;
@@ -213,7 +215,10 @@ async function check(onNew: (n: News) => void) {
     let news: News | null = null;
     try {
       if (USED) news = { h: v.h, ...diffData(USED, D) };
-    } catch (e) {}
+    } catch (e) {
+      LOG("diff errore " + e);
+    }
+    LOG("diff " + (news ? news.n + "/" + news.c : "-"));
     // prima i dati, ver.json per ultimo: se lo scaricamento si interrompe a metà restano in uso quelli di prima
     await writeAsStringAsync(documentDirectory + NAMES.d, d);
     await writeAsStringAsync(documentDirectory + NAMES.p, p);
@@ -221,13 +226,16 @@ async function check(onNew: (n: News) => void) {
     await writeAsStringAsync(documentDirectory + NAMES.v, JSON.stringify(v));
     // in uso subito, senza riavviare l'app; se qualcosa va storto si torna ai dati di prima (quelli nuovi restano
     // salvati e si usano alla prossima apertura)
+    LOG("salvati");
     if (!APPLY) return;
     try {
       APPLY(D, P);
+      LOG("in uso");
       CURVER = v;
       USED = D;
       USEDP = P;
     } catch (e) {
+      LOG("setData errore " + e);
       try {
         APPLY(USED, USEDP);
       } catch (e2) {}
@@ -235,7 +243,9 @@ async function check(onNew: (n: News) => void) {
     }
     // nessuna carta cambiata (es. solo lista ban o schede dei prodotti): niente riquadro
     if (news && news.groups.length) onNew(news);
+    LOG("riquadro chiesto");
   } catch (e) {
+    LOG("errore " + e);
   } finally {
     busy = false;
   }

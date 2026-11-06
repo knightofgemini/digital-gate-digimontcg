@@ -94,11 +94,11 @@ def log(msg):
 
 def logcat(name):
     # errori dell'app (JS e Android) dall'ultima pulizia: file in OUT e righe principali nel log della prova
-    out = adb("logcat", "-d", "-v", "time", "ReactNativeJS:V", "ReactNative:W", "AndroidRuntime:E", "Hermes:V", "*:F", "*:S")
+    out = adb("logcat", "-d", "-v", "time", "*:W", "ReactNativeJS:V", "ActivityManager:I", "lmkd:V", "libc:V", "DEBUG:V")
     with open(os.path.join(OUT, name + ".txt"), "w") as f:
         f.write(out)
     for line in out.splitlines():
-        if re.search(r"FATAL|Error|Exception|ReactNativeJS", line):
+        if re.search(r"(?i)fatal|exception|ReactNativeJS|anr in|kill|died|lowmem|digimon|signal", line):
             print("  logcat:", line[:400], flush=True)
     adb("logcat", "-c")
 
