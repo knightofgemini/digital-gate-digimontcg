@@ -6,7 +6,7 @@ name: Prova su emulatore
 # lettura dall'APK e una foto). Con "novita" (o inviando sul ramo rn-novita) prova il riquadro "Carte nuove"
 # (tools/rn_news.py): l'APK ha i dati di prima degli spoiler del 3 novembre 2026, così all'apertura scarica quelli del sito.
 # Con "home" fotografa la Home (tools/rn_home.py: temi chiaro e scuro, collezione vuota e piena, senza rete, larghezze
-# 320/360/430 dp, testo ingrandito e collegamenti principali).
+# 320/360/430 dp, testo ingrandito e collegamenti principali; di solito solo la prova rapida, tutto con "completa").
 on:
   push:
     branches: [rn-tag, rn-scan, rn-novita]
@@ -15,7 +15,8 @@ on:
     inputs:
       scansione: { description: "Prova della scansione senza rete al posto delle foto delle carte", type: boolean, default: false }
       novita: { description: "Prova del riquadro Carte nuove (APK con dati vecchi)", type: boolean, default: false }
-      home: { description: "Foto della Home al posto delle foto delle carte", type: boolean, default: false }
+      home: { description: "Foto della Home al posto delle foto delle carte (rapida: tema scuro, pagina intera, banner)", type: boolean, default: false }
+      completa: { description: "Con home: prova completa (senza rete, collezione vuota, tema chiaro, collegamenti, larghezze)", type: boolean, default: false }
 permissions:
   contents: write
 concurrency:
@@ -54,12 +55,38 @@ jobs:
         working-directory: rn
         run: |
           cp ../android-keys/debug.keystore android/app/debug.keystore
-          printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g\nreactNativeArchitectures=x86_64\n' >> android/gradle.properties
+          printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g\norg.gradle.caching=true\nreactNativeArchitectures=x86_64\n' >> android/gradle.properties
+      # lavoro già fatto dalle build precedenti (7 novembre 2026, per accorciare i tempi): file scaricati da Gradle,
+      # risultati riutilizzabili di Gradle (org.gradle.caching) e parti in C++ già compilate (ccache, usato da CMake
+      # tramite CMAKE_*_COMPILER_LAUNCHER). La chiave cambia a ogni run, così si salva sempre l'ultima versione e si
+      # riparte dalla più recente (restore-keys).
+      - name: Strumenti per riusare il lavoro già fatto
+        run: |
+          sudo apt-get install -y -qq ccache > /dev/null
+          echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
+          echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+          echo "CCACHE_NOHASHDIR=true" >> $GITHUB_ENV
+          echo "CCACHE_SLOPPINESS=pch_defines,time_macros,include_file_mtime,include_file_ctime" >> $GITHUB_ENV
+          echo "CCACHE_MAXSIZE=2G" >> $GITHUB_ENV
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.ccache
+          key: gradle-x86-${{ hashFiles('rn/package-lock.json') }}-${{ github.run_id }}
+          restore-keys: |
+            gradle-x86-${{ hashFiles('rn/package-lock.json') }}-
+            gradle-x86-
       - name: Build APK
         working-directory: rn/android
         run: |
           set -o pipefail
+          ccache -z > /dev/null
           chmod +x gradlew && ./gradlew assembleRelease --no-daemon 2>&1 | tail -40 | tee /tmp/gradle.txt
+          ccache -s | tee -a /tmp/gradle.txt
       - run: cp rn/android/app/build/outputs/apk/release/app-release.apk prova.apk
       - name: Foto di una carta per la prova della scansione
         if: ${{ inputs.scansione || github.ref_name == 'rn-scan' }}
@@ -68,15 +95,36 @@ jobs:
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      # emulatore già acceso una volta e salvato (7 novembre 2026): le prove successive ripartono da lì, più in fretta
+      - uses: actions/cache@v4
+        id: avd
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-34-google_apis-x86_64-pixel_6
+      - name: Emulatore da salvare (solo la prima volta)
+        if: steps.avd.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: false
+          script: echo "emulatore salvato"
       - uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
           target: google_apis
           arch: x86_64
           profile: pixel_6
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot-save
           disable-animations: true
-          script: adb install -r prova.apk && if [ "${{ inputs.home }}" = "true" ]; then python3 tools/rn_home.py foto; elif [ "${{ inputs.novita || github.ref_name == 'rn-novita' }}" = "true" ]; then python3 tools/rn_news.py foto; elif [ "${{ inputs.scansione || github.ref_name == 'rn-scan' }}" = "true" ]; then python3 tools/rn_scan.py foto; else python3 tools/rn_shots.py foto "$(cat tools/rn_shots.txt)" && python3 tools/rn_gestures.py foto; python3 tools/rn_mazzo.py foto; fi
+          script: adb install -r prova.apk && if [ "${{ inputs.home }}" = "true" ]; then HOME_COMPLETA=${{ inputs.completa && '1' || '0' }} python3 tools/rn_home.py foto; elif [ "${{ inputs.novita || github.ref_name == 'rn-novita' }}" = "true" ]; then python3 tools/rn_news.py foto; elif [ "${{ inputs.scansione || github.ref_name == 'rn-scan' }}" = "true" ]; then python3 tools/rn_scan.py foto; else python3 tools/rn_shots.py foto "$(cat tools/rn_shots.txt)" && python3 tools/rn_gestures.py foto; python3 tools/rn_mazzo.py foto; fi
       - name: Foto nel ramo rn-shots
         if: always()
         run: |
