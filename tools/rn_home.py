@@ -3,7 +3,11 @@
 # Mancanti, banner in evidenza, Calendario, mazzo). Foto in OUT con il prefisso "h"; "h9x_intera_*" = pagina intera
 # (schermo virtuale alto 5600 px).
 # Uso: python3 tools/rn_home.py OUT  (adb già collegato all'emulatore, APK appena installato)
+# Di solito prova rapida (7 novembre 2026, per accorciare i tempi): solo tema scuro con collezione e mazzo, pagina
+# intera e banner in evidenza. Con HOME_COMPLETA=1 (prova-emulatore.yml con "completa") anche senza rete, collezione
+# vuota, tema chiaro, collegamenti e larghezze.
 import os, re, subprocess, sys, time
+FULL = os.environ.get("HOME_COMPLETA") == "1"
 
 OUT = sys.argv[1]
 PKG = "app.digimon.settracker"
@@ -134,15 +138,21 @@ def tabs():
 
 
 def home():
-    tabs()
-    tap("^Home$", wait=2)
+    # tocca Home nella barra in basso finché in alto non c'è il titolo "Home" (una pagina aperta sopra, come il mazzo,
+    # va chiusa prima con indietro)
+    for _ in range(6):
+        tabs()
+        tap("^Home$", wait=2, ymin=0.85)
+        if finds("^Home$", 0.0, 0.3):
+            break
+        back()
     top()
 
 
 def full(name):
     # pagina intera: schermo virtuale alto, la Home si ridisegna senza riavvio
     global W, H
-    adb("shell", "wm", "size", "1080x5600")
+    adb("shell", "wm", "size", "1080x7200")
     time.sleep(4)
     W, H = size()
     top()
@@ -156,24 +166,27 @@ adb("shell", "settings", "put", "secure", "show_ime_with_hard_keyboard", "1")
 adb("shell", "cmd", "uimode", "night", "yes")
 time.sleep(2)
 
+if not FULL:
+    launch(16)
 # 1) primo avvio senza rete: recupero dei dati della vecchia app, nessuna immagine scaricata (illustrazioni mancanti)
-adb("shell", "svc", "wifi", "disable")
-adb("shell", "svc", "data", "disable")
-time.sleep(2)
-launch(28)
-shot("h00_senza_rete")
-adb("shell", "svc", "wifi", "enable")
-adb("shell", "svc", "data", "enable")
-time.sleep(6)
+if FULL:
+    adb("shell", "svc", "wifi", "disable")
+    adb("shell", "svc", "data", "disable")
+    time.sleep(2)
+    launch(28)
+    shot("h00_senza_rete")
+    adb("shell", "svc", "wifi", "enable")
+    adb("shell", "svc", "data", "enable")
+    time.sleep(6)
 
-# 2) con la rete: collezione vuota e nessun mazzo
-launch(16)
-pages("h01_vuota_scura")
-full("h95_intera_vuota_scura")
+    # 2) con la rete: collezione vuota e nessun mazzo
+    launch(16)
+    pages("h01_vuota_scura")
+    full("h95_intera_vuota_scura")
 
 # 3) qualche carta di EX13 e di BT26 nella collezione (pagina del prodotto con la ricerca del suo codice: senza
 #    intestazione le carte sono subito in vista)
-for key, rounds in (("ex13", 4), ("bt26", 2)):
+for key, rounds in (("ex13", 4), ("bt26", 2)) if FULL else (("ex13", 2),):
     url = "digitalgate://prodotto/%s?q=%s" % (key, key)
     adb("shell", "am", "start", "-W", "-a", "android.intent.action.VIEW", "-d", "'" + url + "'", PKG)
     time.sleep(6)
@@ -192,7 +205,7 @@ for key, rounds in (("ex13", 4), ("bt26", 2)):
 tap("^Mazzi$", wait=2)
 tap("^Nuovo mazzo$", wait=2.5)
 tap("Cerca e aggiungi carte", wait=2.5)
-for w, n in (("Koromon", 2), ("Agumon", 4), ("Greymon", 3), ("WarGreymon", 2)):
+for w, n in (("Koromon", 2), ("Agumon", 4), ("Greymon", 3), ("WarGreymon", 2)) if FULL else (("Agumon", 4),):
     f = finds("", cls="android.widget.EditText")
     if f:
         tap_at(f[-1][0], f[-1][1], 0.8)
@@ -208,12 +221,13 @@ back()
 home()
 
 # 5) Home con collezione e mazzo, tema scuro e chiaro (anche a pagina intera)
-pages("h02_scura")
+pages("h02_scura", 3 if FULL else 7)
 full("h91_intera_scura")
-adb("shell", "cmd", "uimode", "night", "no")
-time.sleep(3)
-pages("h03_chiara")
-full("h90_intera_chiara")
+if FULL:
+    adb("shell", "cmd", "uimode", "night", "no")
+    time.sleep(3)
+    pages("h03_chiara")
+    full("h90_intera_chiara")
 
 # 6) collegamenti e file scorrevoli
 def hswipe(y, n=1):
@@ -228,6 +242,8 @@ if h:
     for i in range(1, 6):
         shot("h15_evidenza_%d" % i)
         hswipe(h[0][1])
+if not FULL:
+    sys.exit(0)
 home()
 tap("^nuovi spoiler:", wait=3)
 shot("h12_in_evidenza")

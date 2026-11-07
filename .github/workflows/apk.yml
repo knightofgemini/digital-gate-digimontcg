@@ -89,15 +89,41 @@ jobs:
           cp ../android-keys/debug.keystore android/app/debug.keystore
           grep -n -A6 "signingConfigs" android/app/build.gradle
           # a capo prima: l'ultima riga del file non ne ha uno (altrimenti si attacca alla riga precedente)
-          printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g\n' >> android/gradle.properties
+          printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g\norg.gradle.caching=true\n' >> android/gradle.properties
           # solo le architetture dei telefoni (x86 e x86_64 servono agli emulatori: ~65 MB in meno)
           printf 'reactNativeArchitectures=arm64-v8a,armeabi-v7a\n' >> android/gradle.properties
           tail -4 android/gradle.properties
+      # lavoro già fatto dalle build precedenti (7 novembre 2026, per accorciare i tempi): file scaricati da Gradle,
+      # risultati riutilizzabili di Gradle (org.gradle.caching) e parti in C++ già compilate (ccache, usato da CMake
+      # tramite CMAKE_*_COMPILER_LAUNCHER). La chiave cambia a ogni run, così si salva sempre l'ultima versione e si
+      # riparte dalla più recente (restore-keys).
+      - name: Strumenti per riusare il lavoro già fatto
+        run: |
+          sudo apt-get install -y -qq ccache > /dev/null
+          echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
+          echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+          echo "CCACHE_NOHASHDIR=true" >> $GITHUB_ENV
+          echo "CCACHE_SLOPPINESS=pch_defines,time_macros,include_file_mtime,include_file_ctime" >> $GITHUB_ENV
+          echo "CCACHE_MAXSIZE=2G" >> $GITHUB_ENV
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.ccache
+          key: gradle-arm-${{ hashFiles('rn/package-lock.json') }}-${{ github.run_id }}
+          restore-keys: |
+            gradle-arm-${{ hashFiles('rn/package-lock.json') }}-
+            gradle-arm-
       - name: Build APK
         working-directory: rn/android
         run: |
           set -o pipefail
+          ccache -z > /dev/null
           chmod +x gradlew && ./gradlew assembleRelease --no-daemon 2>&1 | tee /tmp/gradle.txt
+          ccache -s | tee -a /tmp/gradle.txt
       - run: cp rn/android/app/build/outputs/apk/release/app-release.apk DigimonSetTracker.apk
       # pezzi che devono esserci davvero (prima il servizio di scaricamento mancava senza che la build se ne accorgesse)
       - name: Controllo del contenuto (scaricamento in sottofondo, motore della scansione)

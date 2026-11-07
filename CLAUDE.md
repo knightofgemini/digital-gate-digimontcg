@@ -175,7 +175,14 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   più recente, con codice e nome; la data non si mostra (scelta dell'utente). Le date di arrivo vengono da `tools/spoiler_dates.json` (`tools/spoiler_dates.py`:
   `stamp` da `merge_set.py`, `make_data2.py` e quindi `spoiler.yml`; storico ricostruito con `--storia` dai commit) →
   `sd` in `src/data.json` → `SPOILDATE`/`spoilDate` in `data.ts`. Set da completare = tutti (`goals`), dal più vicino
-  al completamento; All'orizzonte fino a 20 righe.
+  al completamento; All'orizzonte fino a 20 righe, come **linea del tempo** (7 novembre 2026, scelta dell'utente tra 4
+  proposte: copertina, confezione, locandina, linea del tempo): in alto una linea con un punto per data (arancione se il
+  giorno è esatto, azzurro se si sa solo il mese), sotto l'immagine quadrata del prodotto (`ProdImg`: illustrazione,
+  altrimenti confezione, logo o codice), codici, nome e conto alla rovescia (`HorizonLine`).
+- **Prove più veloci (7 novembre 2026)**: in `apk.yml` e `prova-emulatore.yml` si conservano tra una build e l'altra i
+  file di Gradle, i suoi risultati riutilizzabili (`org.gradle.caching=true`) e le parti in C++ (ccache, finora poche
+  riuse); emulatore salvato dopo il primo avvio (cache `avd-…`). APK di prova da 18 a 11 minuti. `prova-emulatore.yml`
+  con "home" fa la prova rapida della Home (tema scuro, pagina intera, banner); con "completa" anche il resto.
 - **Scheda carta, gesti solo sull'immagine (27 ottobre 2026, ramo `rn-fluido`, scelta dell'utente)**: la fila a ventaglio non scorre da sola (`scrollEnabled={false}`); sopra la carta al centro c'è una zona trasparente **fuori dalla pagina che scorre** (`imgPan` in `CardPage`, segue la carta con `scrollY`) che: di lato sposta la fila col dito (`fanCtl` begin/move/end), giù con la pagina in cima fa scendere la scheda (chiusa solo oltre il 30% dello schermo o con un colpo veloce lungo almeno 80 px, `CLOSE_*`), altrimenti fa scorrere la pagina. Tolti il trascinamento dall'intestazione e `usePull` dalla scheda; niente effetto elastico (`overScrollMode="never"`); sotto la scheda un fondo pieno che svanisce solo scendendo davvero (prima si vedeva il logo della pagina sotto). Tocco sulle carte ai lati = carta precedente/successiva. **Prodotti** a elenco progressivo (`FlatList` a righe, larghezza dalla finestra) e riquadri con illustrazione senza sfondo SVG: prima all'apertura si bloccava.
 - **Scansione senza internet (3 novembre 2026)**: prima Tesseract.js si scaricava da jsdelivr la prima volta. Ora
   `rn/scripts/ocr-files.js` prende da npm (versioni fisse: tesseract.js 5.1.1, core 5.1.1, eng 1.0.0 `4.0.0_best_int`)

@@ -372,83 +372,90 @@ const relKey = (u: { code: string }) => {
   return JSON.stringify((p && p.rel) || []);
 };
 
-function PackThumb({ code }: { code: string }) {
-  const t = useTheme();
-  const pk = packUrl(code);
-  if (pk) return <Image source={pk} style={{ width: 29, height: 46 }} contentFit="contain" cachePolicy="disk" />;
+export function Horizon({ cw }: { cw: number }) {
+  const rows = upRows(upSorted(), 20, relKey);
+  if (!rows.length) return null;
+  return <HorizonLine cw={cw} rows={rows} />;
+}
+
+// ---- All'orizzonte a linea del tempo (7 novembre 2026, scelta dell'utente tra 4 proposte: si vede l'immagine del prodotto)
+type HzInfo = { u: Upcoming; dp: ReturnType<typeof dateParts>; name: string; codes: string; badge: string; day: boolean; go: () => void; label: string };
+function hz(r: Upcoming[]): HzInfo {
+  const u = r[0];
+  const one = r.length === 1;
+  const dp = dateParts(u);
+  const name = groupName(r.map((x) => x.name));
+  const codes = r.map((x) => x.code).join(" + ");
+  const go = () => (one && (PRODUCTS[u.code] || spoilerSet(u.code)) ? openUpcoming(u.code, "home") : openSoon());
+  return { u, dp, name, codes, badge: upBadge(u), day: u.prec === "day", go, label: (dp ? dp.label : "Data da definire") + ": " + codes + ", " + name };
+}
+// immagine del prodotto: illustrazione (banner) o confezione, nell'ordine chiesto; poi logo; poi il codice
+function ProdImg({ code, prefer, fit = "cover", pos }: { code: string; prefer: "banner" | "pack"; fit?: "cover" | "contain"; pos?: { left: string; top: string } }) {
   const b = bannerUrl(code);
-  const lg = !b ? logoUrl(code) : null;
+  const pk = packUrl(code);
+  const first = prefer === "banner" ? (b ? { src: b, kind: "b" } : pk ? { src: pk, kind: "p" } : null) : pk ? { src: pk, kind: "p" } : b ? { src: b, kind: "b" } : null;
+  const lg = !first ? logoUrl(code) : null;
   return (
-    <View style={{ width: 29, height: 46, borderRadius: 5, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: b ? "#1a2540" : t.surface2 }}>
-      {b ? (
-        <Image source={b} style={FILL} contentFit="cover" cachePolicy="disk" />
+    <View style={[FILL, { alignItems: "center", justifyContent: "center", backgroundColor: "#1a2540" }]}>
+      {first ? (
+        first.kind === "b" ? (
+          <Image source={first.src} style={FILL} contentFit={fit} contentPosition={(pos as any) || { left: "50%", top: "40%" }} cachePolicy="disk" transition={120} />
+        ) : (
+          <>
+            <Glow id={"pk" + code + prefer} kind="bn" />
+            <Image source={first.src} style={{ position: "absolute", top: "8%", bottom: "8%", left: "8%", right: "8%" }} contentFit="contain" cachePolicy="disk" transition={120} />
+          </>
+        )
       ) : lg ? (
-        <Image source={lg} style={{ width: 27, height: 27 }} contentFit="contain" cachePolicy="disk" />
+        <>
+          <Glow id={"lg" + code + prefer} kind="bn" />
+          <Image source={lg} style={{ width: "70%", height: "50%" }} contentFit="contain" cachePolicy="disk" />
+        </>
       ) : (
-        <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "700", fontSize: 8.5 }} numberOfLines={1} adjustsFontSizeToFit>
-          {code}
-        </Text>
+        <Text style={{ color: "#c7d2e8", fontFamily: DISPLAY, fontWeight: "700", fontStyle: "italic", fontSize: 22 }}>{code}</Text>
       )}
     </View>
   );
 }
-
-function HorizonCard({ r, w }: { r: Upcoming[]; w: number }) {
+// in alto una linea con un punto per ogni data (arancione: giorno esatto, azzurro: solo il mese), sotto l'immagine
+// quadrata del prodotto (illustrazione, altrimenti confezione, logo o codice), codici, nome e conto alla rovescia
+function HorizonLine({ cw, rows }: { cw: number; rows: Upcoming[][] }) {
   const t = useTheme();
-  const u = r[0];
-  const one = r.length === 1;
-  const dp = dateParts(u);
-  // un prodotto: la sua scheda (o gli spoiler; il calendario se non c'è, come prima); più prodotti: il calendario
-  const go = () => (one && (PRODUCTS[u.code] || spoilerSet(u.code)) ? openUpcoming(u.code, "home") : openSoon());
-  const name = groupName(r.map((x) => x.name));
-  const codes = r.map((x) => x.code).join(" + ");
-  const day = u.prec === "day";
-  return (
-    <Pressable onPress={go} accessibilityRole="button" accessibilityLabel={(dp ? dp.label : "Data da definire") + ": " + codes + ", " + name} style={{ width: w, padding: 12, gap: 8, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-        <View style={{ flex: 1 }}>
-          {dp ? (
-            <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
-              <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "700", fontSize: 24, lineHeight: 27 }}>{dp.big}</Text>
-              <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11, letterSpacing: 1 }}>{dp.small}</Text>
-            </View>
-          ) : (
-            <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11, lineHeight: 27, letterSpacing: 0.8 }}>DA DEFINIRE</Text>
-          )}
-          <View style={{ alignSelf: "flex-start", marginTop: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 7, backgroundColor: day ? t.accentSoft : t.cyanSoft }}>
-            <Text style={{ color: day ? t.accent : t.cyan, fontWeight: "600", fontSize: 11.5, lineHeight: 16 }}>{upBadge(u)}</Text>
-          </View>
-        </View>
-        <View style={{ flexDirection: "row", gap: 4 }}>
-          {r.map((x) => (
-            <PackThumb key={x.code} code={x.code} />
-          ))}
-        </View>
-      </View>
-      <View style={{ marginTop: "auto" }}>
-        <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 14.5, lineHeight: 19 }} numberOfLines={2}>
-          {name}
-        </Text>
-        <Text style={{ color: t.ink2, fontSize: 11.8, lineHeight: 17 }}>
-          {codes}
-          {u.kind ? " · " + u.kind : ""}
-        </Text>
-      </View>
-    </Pressable>
-  );
-}
-
-export function Horizon({ cw }: { cw: number }) {
-  const rows = upRows(upSorted(), 20, relKey);
-  if (!rows.length) return null;
-  const w = Math.min(250, Math.floor(cw * 0.62));
+  const w = Math.floor((cw - GAP) / 2.3);
   return (
     <>
       <Sec title="All’orizzonte" link="Calendario →" onLink={openSoon} />
       <Carousel w={w}>
-        {rows.map((r) => (
-          <HorizonCard key={r[0].code} r={r} w={w} />
-        ))}
+        {rows.map((r, k) => {
+          const i = hz(r);
+          return (
+            <Pressable key={i.u.code} onPress={i.go} accessibilityRole="button" accessibilityLabel={i.label} style={{ width: w }}>
+              <View style={{ height: 22, justifyContent: "center", marginBottom: 6 }}>
+                <View style={{ position: "absolute", left: k === 0 ? 6 : -GAP, right: -GAP, height: 2, backgroundColor: t.line }} />
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <View style={{ width: 12, height: 12, borderRadius: 6, borderWidth: 2, borderColor: t.bg, backgroundColor: i.day ? t.accent : t.cyan }} />
+                  <View style={{ paddingHorizontal: 5, borderRadius: 4, backgroundColor: t.bg }}>
+                    <Text style={{ color: i.day ? t.accent : t.cyan, fontFamily: DISPLAY, fontWeight: "700", fontSize: 12, letterSpacing: 0.6 }} numberOfLines={1}>
+                      {i.dp ? (i.u.prec === "day" ? i.dp.big + " " + i.dp.small : i.dp.big + " " + i.dp.small) : "DA DEFINIRE"}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              <View style={{ width: w, height: w, borderRadius: 12, overflow: "hidden" }}>
+                <ProdImg code={i.u.code} prefer="banner" pos={{ left: "50%", top: "35%" }} />
+              </View>
+              <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, letterSpacing: 0.6, marginTop: 7 }} numberOfLines={1}>
+                {i.codes}
+              </Text>
+              <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 13, lineHeight: 17 }} numberOfLines={2}>
+                {i.name}
+              </Text>
+              <Text style={{ color: t.ink2, fontSize: 11.5, lineHeight: 16, marginTop: 2 }} numberOfLines={1}>
+                {i.badge}
+              </Text>
+            </Pressable>
+          );
+        })}
       </Carousel>
     </>
   );
