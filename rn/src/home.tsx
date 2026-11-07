@@ -372,86 +372,13 @@ const relKey = (u: { code: string }) => {
   return JSON.stringify((p && p.rel) || []);
 };
 
-function PackThumb({ code }: { code: string }) {
-  const t = useTheme();
-  const pk = packUrl(code);
-  if (pk) return <Image source={pk} style={{ width: 29, height: 46 }} contentFit="contain" cachePolicy="disk" />;
-  const b = bannerUrl(code);
-  const lg = !b ? logoUrl(code) : null;
-  return (
-    <View style={{ width: 29, height: 46, borderRadius: 5, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: b ? "#1a2540" : t.surface2 }}>
-      {b ? (
-        <Image source={b} style={FILL} contentFit="cover" cachePolicy="disk" />
-      ) : lg ? (
-        <Image source={lg} style={{ width: 27, height: 27 }} contentFit="contain" cachePolicy="disk" />
-      ) : (
-        <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "700", fontSize: 8.5 }} numberOfLines={1} adjustsFontSizeToFit>
-          {code}
-        </Text>
-      )}
-    </View>
-  );
-}
-
-function HorizonCard({ r, w }: { r: Upcoming[]; w: number }) {
-  const t = useTheme();
-  const u = r[0];
-  const one = r.length === 1;
-  const dp = dateParts(u);
-  // un prodotto: la sua scheda (o gli spoiler; il calendario se non c'è, come prima); più prodotti: il calendario
-  const go = () => (one && (PRODUCTS[u.code] || spoilerSet(u.code)) ? openUpcoming(u.code, "home") : openSoon());
-  const name = groupName(r.map((x) => x.name));
-  const codes = r.map((x) => x.code).join(" + ");
-  const day = u.prec === "day";
-  return (
-    <Pressable onPress={go} accessibilityRole="button" accessibilityLabel={(dp ? dp.label : "Data da definire") + ": " + codes + ", " + name} style={{ width: w, padding: 12, gap: 8, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-        <View style={{ flex: 1 }}>
-          {dp ? (
-            <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
-              <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "700", fontSize: 24, lineHeight: 27 }}>{dp.big}</Text>
-              <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11, letterSpacing: 1 }}>{dp.small}</Text>
-            </View>
-          ) : (
-            <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11, lineHeight: 27, letterSpacing: 0.8 }}>DA DEFINIRE</Text>
-          )}
-          <View style={{ alignSelf: "flex-start", marginTop: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 7, backgroundColor: day ? t.accentSoft : t.cyanSoft }}>
-            <Text style={{ color: day ? t.accent : t.cyan, fontWeight: "600", fontSize: 11.5, lineHeight: 16 }}>{upBadge(u)}</Text>
-          </View>
-        </View>
-        <View style={{ flexDirection: "row", gap: 4 }}>
-          {r.map((x) => (
-            <PackThumb key={x.code} code={x.code} />
-          ))}
-        </View>
-      </View>
-      <View style={{ marginTop: "auto" }}>
-        <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 14.5, lineHeight: 19 }} numberOfLines={2}>
-          {name}
-        </Text>
-        <Text style={{ color: t.ink2, fontSize: 11.8, lineHeight: 17 }}>
-          {codes}
-          {u.kind ? " · " + u.kind : ""}
-        </Text>
-      </View>
-    </Pressable>
-  );
-}
-
 export function Horizon({ cw }: { cw: number }) {
   const rows = upRows(upSorted(), 20, relKey);
   if (!rows.length) return null;
-  return (
-    <>
-      <HorizonP1 cw={cw} rows={rows} />
-      <HorizonP2 cw={cw} rows={rows} />
-      <HorizonP3 cw={cw} rows={rows} />
-      <HorizonP4 cw={cw} rows={rows} />
-    </>
-  );
+  return <HorizonLine cw={cw} rows={rows} />;
 }
 
-// ---- PROPOSTE per "All'orizzonte" (7 novembre 2026, da scegliere: l'utente vuole vedere l'immagine del prodotto)
+// ---- All'orizzonte a linea del tempo (7 novembre 2026, scelta dell'utente tra 4 proposte: si vede l'immagine del prodotto)
 type HzInfo = { u: Upcoming; dp: ReturnType<typeof dateParts>; name: string; codes: string; badge: string; day: boolean; go: () => void; label: string };
 function hz(r: Upcoming[]): HzInfo {
   const u = r[0];
@@ -490,172 +417,13 @@ function ProdImg({ code, prefer, fit = "cover", pos }: { code: string; prefer: "
     </View>
   );
 }
-function PropLabel({ n, text }: { n: number; text: string }) {
-  const t = useTheme();
-  return (
-    <View style={{ marginTop: SEC_TOP, marginBottom: -14, alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: t.accent }}>
-      <Text style={{ color: "#1a0b03", fontFamily: DISPLAY, fontWeight: "700", fontSize: 11, letterSpacing: 1 }}>
-        PROPOSTA {n} · {text}
-      </Text>
-    </View>
-  );
-}
-function DateChip({ i, glass }: { i: HzInfo; glass?: boolean }) {
-  const t = useTheme();
-  return (
-    <View style={{ alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 7, backgroundColor: glass ? "rgba(11,17,32,.82)" : i.day ? t.accentSoft : t.cyanSoft }}>
-      <Text style={{ color: glass ? "#ffb08a" : i.day ? t.accent : t.cyan, fontWeight: "600", fontSize: 11.5, lineHeight: 16 }}>{i.badge}</Text>
-    </View>
-  );
-}
-
-// 1 · Copertina: come "Usciti di recente", immagine in alto con la data sopra, nome sotto
-function HorizonP1({ cw, rows }: { cw: number; rows: Upcoming[][] }) {
-  const t = useTheme();
-  const w = Math.floor((cw - GAP) / 2) - 18;
-  return (
-    <>
-      <PropLabel n={1} text="COPERTINA" />
-      <Sec title="All’orizzonte" link="Calendario →" onLink={openSoon} />
-      <Carousel w={w}>
-        {rows.map((r) => {
-          const i = hz(r);
-          return (
-            <Pressable key={i.u.code} onPress={i.go} accessibilityRole="button" accessibilityLabel={i.label} style={{ width: w, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, overflow: "hidden" }}>
-              <View style={{ width: "100%", aspectRatio: 1.6 }}>
-                <ProdImg code={i.u.code} prefer="banner" />
-                {i.dp ? (
-                  <View style={{ position: "absolute", top: 7, right: 7, minWidth: 40, alignItems: "center", borderRadius: 8, backgroundColor: "rgba(11,17,32,.86)", paddingVertical: 4, paddingHorizontal: 6 }}>
-                    <Text style={{ color: "#e8edf7", fontFamily: DISPLAY, fontWeight: "700", fontSize: 17, lineHeight: 19 }}>{i.dp.big}</Text>
-                    <Text style={{ color: "#a3b1cb", fontFamily: DISPLAY, fontWeight: "600", fontSize: 9, lineHeight: 12, letterSpacing: 1 }}>{i.dp.small}</Text>
-                  </View>
-                ) : null}
-              </View>
-              <View style={{ flex: 1, paddingHorizontal: 10, paddingTop: 9, paddingBottom: 11, gap: 6 }}>
-                <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, lineHeight: 15, letterSpacing: 0.6 }} numberOfLines={1}>
-                  {i.codes}
-                </Text>
-                <Text style={{ minHeight: 36, color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 14, lineHeight: 18, textTransform: "uppercase" }} numberOfLines={2}>
-                  {i.name}
-                </Text>
-                <View style={{ marginTop: "auto" }}>
-                  <DateChip i={i} />
-                </View>
-              </View>
-            </Pressable>
-          );
-        })}
-      </Carousel>
-    </>
-  );
-}
-
-// 2 · Confezione: la scatola del prodotto grande a sinistra, data e nome a destra
-function HorizonP2({ cw, rows }: { cw: number; rows: Upcoming[][] }) {
-  const t = useTheme();
-  const w = Math.min(300, cw - 40);
-  return (
-    <>
-      <PropLabel n={2} text="CONFEZIONE" />
-      <Sec title="All’orizzonte" link="Calendario →" onLink={openSoon} />
-      <Carousel w={w}>
-        {rows.map((r) => {
-          const i = hz(r);
-          return (
-            <Pressable key={i.u.code} onPress={i.go} accessibilityRole="button" accessibilityLabel={i.label} style={{ width: w, flexDirection: "row", gap: 12, padding: 10, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface }}>
-              <View style={{ width: 92, height: 128, borderRadius: 9, overflow: "hidden" }}>
-                <ProdImg code={i.u.code} prefer="pack" pos={{ left: "60%", top: "40%" }} />
-              </View>
-              <View style={{ flex: 1, paddingVertical: 2 }}>
-                {i.dp ? (
-                  <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
-                    <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "700", fontSize: 24, lineHeight: 27 }}>{i.dp.big}</Text>
-                    <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11, letterSpacing: 1 }}>{i.dp.small}</Text>
-                  </View>
-                ) : (
-                  <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11, lineHeight: 27, letterSpacing: 0.8 }}>DA DEFINIRE</Text>
-                )}
-                <View style={{ marginTop: 4 }}>
-                  <DateChip i={i} />
-                </View>
-                <View style={{ marginTop: "auto" }}>
-                  <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 14.5, lineHeight: 19 }} numberOfLines={2}>
-                    {i.name}
-                  </Text>
-                  <Text style={{ color: t.ink2, fontSize: 11.8, lineHeight: 17 }} numberOfLines={1}>
-                    {i.codes}
-                    {i.u.kind ? " · " + i.u.kind : ""}
-                  </Text>
-                </View>
-              </View>
-            </Pressable>
-          );
-        })}
-      </Carousel>
-    </>
-  );
-}
-
-// 3 · Locandina: scheda verticale tutta immagine, sfumatura in basso con nome e data (un piccolo "In evidenza")
-function HorizonP3({ cw, rows }: { cw: number; rows: Upcoming[][] }) {
-  const w = Math.floor((cw - GAP) / 2) - 18;
-  return (
-    <>
-      <PropLabel n={3} text="LOCANDINA" />
-      <Sec title="All’orizzonte" link="Calendario →" onLink={openSoon} />
-      <Carousel w={w}>
-        {rows.map((r) => {
-          const i = hz(r);
-          return (
-            <Pressable key={i.u.code} onPress={i.go} accessibilityRole="button" accessibilityLabel={i.label} style={{ width: w, height: Math.round(w * 1.42), borderRadius: 14, overflow: "hidden", backgroundColor: HERO.bg, padding: 10, justifyContent: "space-between" }}>
-              <ProdImg code={i.u.code} prefer="banner" pos={{ left: "45%", top: "30%" }} />
-              <View pointerEvents="none" style={FILL}>
-                <Svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 100">
-                  <Defs>
-                    <LinearGradient id={"hz3" + i.u.code} x1="0" y1="0" x2="0" y2="1">
-                      <Stop offset="0" stopColor={HERO.bg} stopOpacity={0.1} />
-                      <Stop offset="0.45" stopColor={HERO.bg} stopOpacity={0.2} />
-                      <Stop offset="0.75" stopColor={HERO.bg} stopOpacity={0.92} />
-                      <Stop offset="1" stopColor={HERO.bg} stopOpacity={1} />
-                    </LinearGradient>
-                  </Defs>
-                  <Rect width="10" height="100" fill={`url(#hz3${i.u.code})`} />
-                </Svg>
-              </View>
-              <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-                {i.dp ? (
-                  <View style={{ minWidth: 42, alignItems: "center", borderRadius: 8, borderWidth: 1, borderColor: HERO.edge, backgroundColor: HERO.glass, paddingVertical: 4, paddingHorizontal: 6 }}>
-                    <Text style={{ color: HERO.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 18, lineHeight: 20 }}>{i.dp.big}</Text>
-                    <Text style={{ color: HERO.soft, fontFamily: DISPLAY, fontWeight: "600", fontSize: 9, lineHeight: 12, letterSpacing: 1 }}>{i.dp.small}</Text>
-                  </View>
-                ) : null}
-              </View>
-              <View style={{ gap: 4 }}>
-                <Text style={{ color: HERO.eyebrow, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10, letterSpacing: 1, textTransform: "uppercase" }} numberOfLines={1}>
-                  {i.codes}
-                </Text>
-                <Text style={{ color: HERO.title, fontFamily: DISPLAY, fontWeight: "700", fontSize: 15, lineHeight: 18 }} numberOfLines={3}>
-                  {i.name}
-                </Text>
-                <View style={{ marginTop: 3 }}>
-                  <DateChip i={i} glass />
-                </View>
-              </View>
-            </Pressable>
-          );
-        })}
-      </Carousel>
-    </>
-  );
-}
-
-// 4 · Linea del tempo: in alto una linea con un punto per ogni data, sotto la scheda con immagine quadrata e nome
-function HorizonP4({ cw, rows }: { cw: number; rows: Upcoming[][] }) {
+// in alto una linea con un punto per ogni data (arancione: giorno esatto, azzurro: solo il mese), sotto l'immagine
+// quadrata del prodotto (illustrazione, altrimenti confezione, logo o codice), codici, nome e conto alla rovescia
+function HorizonLine({ cw, rows }: { cw: number; rows: Upcoming[][] }) {
   const t = useTheme();
   const w = Math.floor((cw - GAP) / 2.3);
   return (
     <>
-      <PropLabel n={4} text="LINEA DEL TEMPO" />
       <Sec title="All’orizzonte" link="Calendario →" onLink={openSoon} />
       <Carousel w={w}>
         {rows.map((r, k) => {
