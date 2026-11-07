@@ -138,8 +138,14 @@ def tabs():
 
 
 def home():
-    tabs()
-    tap("^Home$", wait=2)
+    # tocca Home nella barra in basso finché in alto non c'è il titolo "Home" (una pagina aperta sopra, come il mazzo,
+    # va chiusa prima con indietro)
+    for _ in range(6):
+        tabs()
+        tap("^Home$", wait=2, ymin=0.85)
+        if finds("^Home$", 0.0, 0.3):
+            break
+        back()
     top()
 
 
