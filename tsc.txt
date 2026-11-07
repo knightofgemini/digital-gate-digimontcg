@@ -1,0 +1,5 @@
+src/data.ts(8,25): error TS2307: Cannot find module '../data/data.json' or its corresponding type declarations.
+src/data.ts(9,29): error TS2307: Cannot find module '../data/products.json' or its corresponding type declarations.
+src/dataupd.ts(11,24): error TS2307: Cannot find module '../data/ver.json' or its corresponding type declarations.
+src/prices.ts(7,17): error TS2307: Cannot find module '../data/prices.json' or its corresponding type declarations.
+TSC ERRORI
