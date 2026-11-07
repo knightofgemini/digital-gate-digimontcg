@@ -176,7 +176,9 @@ mem=collections.defaultdict(set)    # set id -> numeri carta presenti (qualsiasi
 for k in src:
     n=k["cardNumber"].strip(); vid=k["id"].strip()
     if n not in home or "Errata" in vid: continue
-    suf=vid[len(n):]
+    # id della versione: di solito numero + suffisso (BT27-067_P1); a volte (novembre 2026) TakaOtaku scrive solo "_P1"
+    suf=vid[len(n):] if vid.startswith(n) else (vid if re.match(r"_P\d+$",vid) else None)
+    if suf is None: continue
     if n+suf in FIX.get("_remove_versions",[])+FIX.get("_hold_versions",[]): continue   # versioni tolte su richiesta o ancora senza immagine
     for part in re.split(r'\n|\u25b9',k.get("notes") or ""):
         for pid in prod_ids(part):
