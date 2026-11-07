@@ -286,6 +286,18 @@
    "rarity": "R",
    "_post": 8453,
    "cardNumber": "BT27-089"
+  },
+  {
+   "id": "AD1-018_PT27",
+   "cardNumber": "AD1-018",
+   "name": {
+    "english": "LordKnightmon"
+   },
+   "version": "Alternative Art",
+   "notes": "PB-27 Premium Battle Set Ver. Royal Knights",
+   "_prod": "PB27",
+   "_post": 8455,
+   "_src": "telegram"
   }
  ]
 }
