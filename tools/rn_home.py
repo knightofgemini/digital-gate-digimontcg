@@ -146,7 +146,7 @@ def home():
 def full(name):
     # pagina intera: schermo virtuale alto, la Home si ridisegna senza riavvio
     global W, H
-    adb("shell", "wm", "size", "1080x5600")
+    adb("shell", "wm", "size", "1080x7200")
     time.sleep(4)
     W, H = size()
     top()
@@ -215,7 +215,7 @@ back()
 home()
 
 # 5) Home con collezione e mazzo, tema scuro e chiaro (anche a pagina intera)
-pages("h02_scura")
+pages("h02_scura", 3 if FULL else 7)
 full("h91_intera_scura")
 if FULL:
     adb("shell", "cmd", "uimode", "night", "no")
