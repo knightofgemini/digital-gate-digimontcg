@@ -10,6 +10,21 @@ def cl(v):
 best={}
 def placeholder(k): return (k["name"]["english"] or "").strip().startswith("[[")   # carta non ancora svelata (spoiler)
 src=[k for k in src if not placeholder(k)]
+# carte trascritte dalle foto del canale Telegram DigimonExpanseTCG (tools/telegram_cards.json, 7 novembre 2026): entrano
+# solo finché TakaOtaku non ha la stessa carta (testo di TakaOtaku al loro posto appena c'è). Versioni alternative di un
+# prodotto (es. ristampe dei PB): id con suffisso "_PT" + numero del prodotto, tolte quando TakaOtaku elenca la carta in
+# quel prodotto.
+_TGP=__import__("os").path.join(__import__("os").path.dirname(__import__("os").path.abspath(__file__)),"telegram_cards.json")
+TG=json.load(open(_TGP,encoding="utf-8")) if __import__("os").path.exists(_TGP) else {}
+_nums={k["cardNumber"].strip() for k in src}
+for e in TG.get("cards",[]):
+    n=e["cardNumber"]
+    if e["id"]==n:
+        if n in _nums: continue
+    else:
+        pn=int(re.sub(r"\D","",e["_prod"]))
+        if any(k["cardNumber"].strip()==n and re.search(r"\bPB-?0*%d\b"%pn,k.get("notes") or "",re.I) for k in src): continue
+    src.append({k:v for k,v in e.items() if not k.startswith("_")})
 for k in src:
     n=k["cardNumber"].strip()
     if n not in best or (k["id"]==n and best[n]["id"]!=n): best[n]=k
@@ -28,6 +43,7 @@ NAMES={ # prefix -> set name
  "ST13":"Ragnaloardmon","ST14":"Beelzemon Advanced Deck Set","ST15":"Dragon of Courage","ST16":"Wolf of Friendship",
  "ST17":"Double Typhoon Advanced Deck Set","ST18":"Guardian Vortex","ST19":"Fable Waltz","ST20":"Protector of Light","ST21":"Hero of Hope",
  "ST22":"Amethyst Mandala Advanced Deck Set","ST23":"Beatbreak","ST24":"Data Squad",
+ "ST25":"Digimon Alysion · Rubeusdramon","ST26":"Digimon Alysion · Yukinamon",
  "LM01-05":"Special Limited Set","LM03":"Limited Card Set 2024","LM04":"Torridvice","LM06":"Billion Bullet","LM07":"Another Knight","LM08":"Final Crest","AD1":"Digimon Generation","RB1":"Resurgence Booster","P":"Promotional Cards"}
 def gtype(p):
     if p.startswith("BT"): return "BT"
@@ -55,6 +71,7 @@ def fix_card(n,r):
         if old in (r[i] or ""): r[i]=r[i].replace(old,new)
         else: print("errata non applicata",n,old[:40])  # testo ufficiale: lato Option delle Digimon/Option e spiegazione Overflow
 rows=[]; cnt=collections.Counter(); missing=set()
+PREFIX={"BD01":"ST25","BD02":"ST26"}
 for n,k in best.items():
     if n in FIX.get("_remove",[]) or n in FIX.get("_hold",{}): continue   # tolte su richiesta o tenute da parte (spoiler da controllare)
     p=n.split("-")[0]
@@ -62,6 +79,7 @@ for n,k in best.items():
         num=int(n.split("-")[1])
         if num>62: continue  # LM-09 Distancia Cero: non ancora uscito
         p="LM01-05" if num<=44 else "LM06" if num<=50 else "LM07" if num<=56 else "LM08"
+    p=PREFIX.get(p,p)   # carte con numeri di un'altra serie (ST25/ST26: BD01/BD02)
     if p not in NAMES: missing.add(p); continue   # prodotto senza nome (es. spoiler di un set non ancora aggiunto): si salta
     evo=[]
     for c in k.get("digivolveCondition") or []:
@@ -98,7 +116,9 @@ PB=[("PB1","Tamer's Evolution Box","2021-02-01"),("PB2","Tamer's Set","2021-05-0
  ("PB13","Royal Knights Binder Set","2023-06-01"),("PB14","Tamer Goods Set Angewomon & LadyDevimon","2023-06-01"),("PB16","Tamer Goods Set Diaboromon","2023-07-01"),
  ("PB17","Digimon Adventure 02: The Beginning Set","2024-06-01"),("PB18","Premium Heroines Set","2024-10-01"),("PB19","Omnimon Binder Set","2025-02-01"),
  ("PB20","Digimon Animation Series 25th Anniversary Set","2025-05-01"),("PB21","Tamer's Evolution Box -Rise of Digimon-","2025-12-01"),
- ("PB22","Digimon Liberator Debuggers Set","2026-02-01"),("PB23","Premium Heroines Set Ver.2","2026-03-01")]
+ ("PB22","Digimon Liberator Debuggers Set","2026-02-01"),("PB23","Premium Heroines Set Ver.2","2026-03-01"),
+ # in arrivo (giugno 2027: ultimo giorno del mese, così restano "in arrivo"); carte dal canale Telegram
+ ("PB27","Premium Battle Set Ver. Royal Knights","2027-06-30"),("PB28","Premium Battle Set Ver. Seven Great Demon Lords","2027-06-30")]
 for code,name,date in PB:
     sets.append({"id":"pb"+re.sub(r"\D","",code),"code":code,"name":name,"type":"PB","n":0,"date":date})
 # Date di uscita internazionali (inglese). "~" = stimata. P (promo) non ha una data: va in fondo.
@@ -113,7 +133,7 @@ DATES={"BT1":"2021-02-12","BT2":"2021-02-12","BT3":"2021-03-12","BT4":"2021-06-1
  "ST1":"2021-01-29","ST2":"2021-01-29","ST3":"2021-01-29","ST4":"2021-06-11","ST5":"2021-06-11","ST6":"2021-06-11",
  "ST7":"2021-10-15","ST8":"2021-10-15","ST9":"2022-05-13","ST10":"2022-05-13","ST12":"2022-10-14","ST13":"2022-10-14",
  "ST14":"2023-03-24","ST15":"2023-10-13","ST16":"2023-10-13","ST17":"2024-03-08","ST18":"2024-09-13","ST19":"2024-09-13",
- "ST20":"2025-04-18","ST21":"2025-04-18","ST22":"2025-12-05","ST23":"2026-05-15","ST24":"2026-05-15",
+ "ST20":"2025-04-18","ST21":"2025-04-18","ST22":"2025-12-05","ST23":"2026-05-15","ST24":"2026-05-15","ST25":"2026-12-04","ST26":"2026-12-04",
  "RB1":"2023-09-29","AD1":"2026-03-27","LM01-05":"2024-12-13","LM06":"2025-10-01","LM07":"2026-03-01","LM08":"2026-08-04","P":"0000-00-00"}
 for x in sets: x["date"]=x.get("date") or DATES.get(x["code"],"0000-00-00")
 missing_dates=[x["code"] for x in sets if x["date"]=="0000-00-00" and x["code"]!="P"]

@@ -1,0 +1,30 @@
+name: Canale Telegram (spoiler)
+# Legge il canale Telegram DigimonExpanseTCG (tools/telegram_fetch.py) e salva messaggi e foto delle carte nel ramo
+# "telegram" (posts.json + foto/). Lo avvia l'attività programmata di Claude (più volte al giorno, 7 novembre 2026), che
+# poi trascrive le carte nuove (tools/telegram_todo.py, tools/telegram_cards.json) e avvia spoiler.yml.
+on:
+  workflow_dispatch:
+    inputs:
+      pagine: { description: "Pagine del canale da leggere al massimo (20 messaggi circa ognuna)", default: "12" }
+permissions:
+  contents: write
+concurrency:
+  group: telegram
+  cancel-in-progress: false
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Messaggi già salvati
+        run: |
+          mkdir -p "$RUNNER_TEMP/tg"
+          if git fetch -q --depth 1 origin telegram 2>/dev/null; then git archive FETCH_HEAD | tar -x -C "$RUNNER_TEMP/tg"; fi
+      - name: Leggi il canale
+        run: python3 tools/telegram_fetch.py "$RUNNER_TEMP/tg" DigimonExpanseTCG "${{ inputs.pagine || '12' }}" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Salva nel ramo telegram
+        run: |
+          cd "$RUNNER_TEMP/tg" && rm -rf .git && git init -q && git add -A
+          git -c user.name=github-actions -c user.email=actions@github.com commit -qm "Canale Telegram $(date -u +%Y-%m-%dT%H:%M)"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/telegram

@@ -1,0 +1,291 @@
+{
+ "_nota": "Carte trascritte dalle foto del canale Telegram DigimonExpanseTCG (tools/telegram_todo.py). Valgono finché TakaOtaku non ha la stessa carta: poi make_data2.py usa il testo di TakaOtaku. Versioni _PTnn = alternative art dei Premium Bandai PBnn.",
+ "cards": [
+  {
+   "id": "BT13-007_PT27",
+   "cardNumber": "BT13-007",
+   "name": {
+    "english": "King Drasil_7D6"
+   },
+   "version": "Alternative Art",
+   "notes": "PB-27 Premium Battle Set Ver. Royal Knights",
+   "_prod": "PB27",
+   "_post": 8401,
+   "_src": "telegram"
+  },
+  {
+   "id": "EX10-052_PT28",
+   "cardNumber": "EX10-052",
+   "name": {
+    "english": "Lucemon: Chaos Mode"
+   },
+   "version": "Alternative Art",
+   "notes": "PB-28 Premium Battle Set Ver. Seven Great Demon Lords",
+   "_prod": "PB28",
+   "_post": 8402,
+   "_src": "telegram"
+  },
+  {
+   "id": "EX12-037_PT27",
+   "cardNumber": "EX12-037",
+   "name": {
+    "english": "Omnimon"
+   },
+   "version": "Alternative Art",
+   "notes": "PB-27 Premium Battle Set Ver. Royal Knights",
+   "_prod": "PB27",
+   "_post": 8408,
+   "_src": "telegram"
+  },
+  {
+   "id": "EX5-063_PT28",
+   "cardNumber": "EX5-063",
+   "name": {
+    "english": "Leviamon"
+   },
+   "version": "Alternative Art",
+   "notes": "PB-28 Premium Battle Set Ver. Seven Great Demon Lords",
+   "_prod": "PB28",
+   "_post": 8409,
+   "_src": "telegram"
+  },
+  {
+   "id": "BT23-013_PT27",
+   "cardNumber": "BT23-013",
+   "name": {
+    "english": "Jesmon"
+   },
+   "version": "Alternative Art",
+   "notes": "PB-27 Premium Battle Set Ver. Royal Knights",
+   "_prod": "PB27",
+   "_post": 8415,
+   "_src": "telegram"
+  },
+  {
+   "id": "EX10-009_PT28",
+   "cardNumber": "EX10-009",
+   "name": {
+    "english": "Creepymon"
+   },
+   "version": "Alternative Art",
+   "notes": "PB-28 Premium Battle Set Ver. Seven Great Demon Lords",
+   "_prod": "PB28",
+   "_post": 8416,
+   "_src": "telegram"
+  },
+  {
+   "id": "BT20-057_PT27",
+   "cardNumber": "BT20-057",
+   "name": {
+    "english": "Gankoomon"
+   },
+   "version": "Alternative Art",
+   "notes": "PB-27 Premium Battle Set Ver. Royal Knights",
+   "_prod": "PB27",
+   "_post": 8423,
+   "_src": "telegram"
+  },
+  {
+   "id": "EX10-022_PT28",
+   "cardNumber": "EX10-022",
+   "name": {
+    "english": "Belphemon: Rage Mode"
+   },
+   "version": "Alternative Art",
+   "notes": "PB-28 Premium Battle Set Ver. Seven Great Demon Lords",
+   "_prod": "PB28",
+   "_post": 8424,
+   "_src": "telegram"
+  },
+  {
+   "id": "BT11-032_PT27",
+   "cardNumber": "BT11-032",
+   "name": {
+    "english": "UlforceVeedramon"
+   },
+   "version": "Alternative Art",
+   "notes": "PB-27 Premium Battle Set Ver. Royal Knights",
+   "_prod": "PB27",
+   "_post": 8432,
+   "_src": "telegram"
+  },
+  {
+   "id": "BT23-054_PT27",
+   "cardNumber": "BT23-054",
+   "name": {
+    "english": "Magnamon"
+   },
+   "version": "Alternative Art",
+   "notes": "PB-27 Premium Battle Set Ver. Royal Knights",
+   "_prod": "PB27",
+   "_post": 8437,
+   "_src": "telegram"
+  },
+  {
+   "id": "ST22-14_PT28",
+   "cardNumber": "ST22-14",
+   "name": {
+    "english": "Barbamon"
+   },
+   "version": "Alternative Art",
+   "notes": "PB-28 Premium Battle Set Ver. Seven Great Demon Lords",
+   "_prod": "PB28",
+   "_post": 8438,
+   "_src": "telegram"
+  },
+  {
+   "id": "BT13-056_PT27",
+   "cardNumber": "BT13-056",
+   "name": {
+    "english": "Leopardmon"
+   },
+   "version": "Alternative Art",
+   "notes": "PB-27 Premium Battle Set Ver. Royal Knights",
+   "_prod": "PB27",
+   "_post": 8441,
+   "_src": "telegram"
+  },
+  {
+   "id": "AD1-017_PT27",
+   "cardNumber": "AD1-017",
+   "name": {
+    "english": "Dynasmon"
+   },
+   "version": "Alternative Art",
+   "notes": "PB-27 Premium Battle Set Ver. Royal Knights",
+   "_prod": "PB27",
+   "_post": 8448,
+   "_src": "telegram"
+  },
+  {
+   "id": "EX6-056_PT28",
+   "cardNumber": "EX6-056",
+   "name": {
+    "english": "Beelzemon"
+   },
+   "version": "Alternative Art",
+   "notes": "PB-28 Premium Battle Set Ver. Seven Great Demon Lords",
+   "_prod": "PB28",
+   "_post": 8449,
+   "_src": "telegram"
+  },
+  {
+   "cardType": "Digimon",
+   "color": "Blue",
+   "cardLv": "Lv.3",
+   "form": "Rookie",
+   "attribute": "Data",
+   "type": "Beast/DATA SQUAD",
+   "dp": "1000",
+   "playCost": "3",
+   "digivolveCondition": [
+    {
+     "color": "Blue",
+     "cost": "0",
+     "level": "2"
+    }
+   ],
+   "effect": "[When Moving] [On Play] By placing 1 card from your hand face down under any of your [Thomas H. Norstein]s, both players ＜Draw 1＞.",
+   "digivolveEffect": "[When Attacking] [Once Per Turn] Both players ＜Draw 1＞.",
+   "securityEffect": "-",
+   "specialDigivolve": "[Digivolve] [Wanyamon]/Lv.2 w/[DATA SQUAD] trait: Cost 0",
+   "version": "Normal",
+   "notes": "▹BOOSTER IGNITION OF X [BT-27]",
+   "_src": "telegram",
+   "id": "BT27-019",
+   "name": {
+    "english": "Gaomon"
+   },
+   "rarity": "U",
+   "_post": 8450,
+   "cardNumber": "BT27-019"
+  },
+  {
+   "cardType": "Digimon",
+   "color": "Blue",
+   "cardLv": "Lv.4",
+   "form": "Champion",
+   "attribute": "Data",
+   "type": "Beast/DATA SQUAD",
+   "dp": "5000",
+   "playCost": "5",
+   "digivolveCondition": [
+    {
+     "color": "Blue",
+     "cost": "2",
+     "level": "3"
+    }
+   ],
+   "effect": "＜Jamming＞ \n[On Play] [When Digivolving] For every 4 cards your opponent's hand has, trash any 2 digivolution cards from their Digimon. Then, 1 of their Digimon with no digivolution cards can't suspend until their turn ends.",
+   "digivolveEffect": "[When Attacking] [Once Per Turn] Both players ＜Draw 1＞.",
+   "securityEffect": "-",
+   "specialDigivolve": "[Digivolve] Lv.3 w/[DATA SQUAD] trait: Cost 2",
+   "version": "Normal",
+   "notes": "▹BOOSTER IGNITION OF X [BT-27]",
+   "_src": "telegram",
+   "id": "BT27-024",
+   "name": {
+    "english": "Gaogamon"
+   },
+   "rarity": "C",
+   "_post": 8451,
+   "cardNumber": "BT27-024"
+  },
+  {
+   "cardType": "Digimon",
+   "color": "Blue",
+   "cardLv": "Lv.5",
+   "form": "Ultimate",
+   "attribute": "Data",
+   "type": "Cyborg/DATA SQUAD",
+   "dp": "7000",
+   "playCost": "7",
+   "digivolveCondition": [
+    {
+     "color": "Blue",
+     "cost": "3",
+     "level": "4"
+    }
+   ],
+   "effect": "[On Play] [When Digivolving] [When Attacking] [Once Per Turn] You may return 1 of your opponent's level 4 or lower Digimon to the hand. Then, by trashing 2 bottom face-down cards from under any of your Tamers, you may play or use 1 [DATA SQUAD] trait card with a play or use cost of 5 or less from your hand without paying the cost.",
+   "digivolveEffect": "[All Turns] [Once Per Turn] When this Digimon with [Gaogamon] in its name or the [DATA SQUAD] trait would leave the battle area, by trashing the bottom face-down card from under any of your Tamers, it doesn't leave.",
+   "securityEffect": "-",
+   "specialDigivolve": "[Digivolve] Lv.4 w/[DATA SQUAD] trait: Cost 3",
+   "version": "Normal",
+   "notes": "▹BOOSTER IGNITION OF X [BT-27]",
+   "_src": "telegram",
+   "id": "BT27-030",
+   "name": {
+    "english": "MachGaogamon"
+   },
+   "rarity": "U",
+   "_post": 8452,
+   "cardNumber": "BT27-030"
+  },
+  {
+   "cardType": "Tamer",
+   "color": "Blue",
+   "cardLv": "-",
+   "form": "-",
+   "attribute": "-",
+   "type": "DATA SQUAD",
+   "dp": "-",
+   "playCost": "3",
+   "digivolveCondition": [],
+   "effect": "[Start of Your Main Phase] By placing 1 Digimon card with [Gaomon] or [Gaogamon] in its name from your hand face down under this Tamer, ＜Draw 1＞ and gain 1 memory.\n[All Turns] When effects add to your opponent's hand, by suspending this Tamer, you may place the top card of your deck face down under this Tamer. After, 1 of your Digimon with [Gaogamon] in its name can't be deleted in battle for the turn.",
+   "digivolveEffect": "-",
+   "securityEffect": "[Security] Play this card without paying the cost.",
+   "specialDigivolve": "-",
+   "version": "Normal",
+   "notes": "▹BOOSTER IGNITION OF X [BT-27]",
+   "_src": "telegram",
+   "id": "BT27-089",
+   "name": {
+    "english": "Thomas H. Norstein"
+   },
+   "rarity": "R",
+   "_post": 8453,
+   "cardNumber": "BT27-089"
+  }
+ ]
+}

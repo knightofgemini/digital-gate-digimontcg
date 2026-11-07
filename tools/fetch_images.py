@@ -16,6 +16,8 @@ SRC = ["https://world.digimoncard.com/images/cardlist/card/{}.png", "https://en.
 # "-Sample" (951x1295, con la scritta SAMPLE). Si usa come ultimo ripiego e l'immagine resta segnata "spoiler" in sample.json:
 # a ogni build si riprovano le fonti normali e appena una risponde l'immagine viene sostituita.
 SRC_SPOILER = "https://web-garage.takaotaku.de/{}-Sample.webp"
+# carte svelate sul canale Telegram DigimonExpanseTCG e non ancora altrove: foto in src/telegram/CODICE.jpg (7 novembre 2026)
+SRC_TELEGRAM = "telegram"
 # l'anteprima ha un margine bianco e gli angoli arrotondati: si ritaglia la sola carta (tools/spoiler_trim.py).
 # SPV = versione del ritaglio: cambiandola, le anteprime già salvate nella cache di Actions vengono riscaricate.
 sys.path.insert(0, str(root / "tools"))
@@ -64,7 +66,11 @@ def one(code):
                 save(Image.open(io.BytesIO(get(tpl.format(q)))).convert("RGB"), f, t); SST.pop(code, None); return "ufficiale"
             except Exception: pass
         SPOIL.add(code); return "cache"
-    for tpl in (SRC_ALT if "_P" in code else SRC) + [SRC_SPOILER]:
+    for tpl in (SRC_ALT if "_P" in code else SRC) + [SRC_SPOILER, SRC_TELEGRAM]:
+        if tpl == SRC_TELEGRAM:   # foto del canale Telegram salvata nel progetto (ultimo ripiego, poi si riprova il resto)
+            tg = root / "src" / "telegram" / (code + ".jpg")
+            if not tg.exists(): continue
+            save(spoiler_trim(Image.open(tg).convert("RGB")), f, t); SPOIL.add(code); return "spoiler"
         for _ in range(2):
             try:
                 im = Image.open(io.BytesIO(get(tpl.format(q)))).convert("RGB")

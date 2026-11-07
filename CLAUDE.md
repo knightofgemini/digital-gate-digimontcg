@@ -68,6 +68,24 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
 - **BT27, spoiler del 25 ottobre 2026**: pubblicate dopo il controllo sulle immagini BT27-008, 009, 013, 015, 015_P1 (★), 087, 101 (corretti: BT27-008 "[Kyokyomon]" nella Digievoluzione speciale, BT27-015 "trash their", BT27-087 spazio prima della virgola, con ` `). **`_hold` in `card_fixes.json`** ({codice: motivo}): carte svelate ma tenute da parte, saltate da `make_data2.py` come `_remove`; `spoiler_check.py` segnala quando arriva l'immagine (se il motivo contiene "sbagliata" conta solo l'immagine ufficiale). Tenute da parte: BT27-074, 078, 081, 083, 085 (senza immagine, testo incompleto), BT27-096 (senza immagine), BT27-097 (l'anteprima TakaOtaku `BT27-097-Sample` è in realtà Keenan Crier BT27-096); in `_hold_versions` anche BT27-035_P2.
 - **BT27, spoiler del 3 novembre 2026**: il controllo automatico ha pubblicato 35 carte/alternative (tra cui le tenute da parte BT27-074, 078, 081, 083, 085, 096); ★ di BT27-034_P1, 052_P1, 085_P1 controllate sulle anteprime TakaOtaku (riquadro del numero: una stella) e aggiunte in `alt_marks.json` e, a mano, nelle voci del set in `src/data.json`. Tenute da parte: BT27-032 (senza immagine), BT27-052_P2 e 085_P2.
 - **Controllo giornaliero degli spoiler, pubblicazione automatica con filtro** (31 ottobre 2026, scelta dell'utente: niente più "vai" per gli spoiler). `.github/workflows/spoiler.yml` (ogni giorno alle 05:37 UTC, o a mano; con "prova" i dati vanno solo nel ramo `spoiler-auto-prova`, senza pubblicazione né avviso) clona TakaOtaku in `$TAKA` e lancia `tools/spoiler_check.py --apply --auto`: per i prodotti con data futura entrano nel catalogo **solo** le carte con immagine (anteprima TakaOtaku o ufficiale) e testo che supera il controllo automatico (`incompleta`: nome/tipo/colore/rarità, livello/DP/costo/digievoluzione delle Digimon, Lv.3/4 senza effetti, segnaposto tipo `??`/TBA, parentesi non chiuse, righe che finiscono a metà). Le altre vanno in `_hold` con motivo e data ("senza immagine (dal AAAA-MM-GG)"), le alternative senza immagine in `_hold_versions`; ogni giorno si ricontrollano ed entrano da sole quando l'immagine c'è e il testo passa il controllo (con immagine ma testo "incompleto" da 5 giorni entrano comunque; con "sbagliata" nel motivo conta solo l'immagine ufficiale). Se cambia qualcosa: commit di `src/data.json` + `card_fixes.json` su **main** e avvio di `build.yml` (`gh workflow run`, perché i push fatti con il token di Actions non avviano altri workflow) → deposito del sito (`www/dati`), che l'app scarica da sola: niente APK nuovo. Avviso via mail: segnalazione "Spoiler del GG/MM/AAAA" con l'elenco (pubblicate, tenute da parte, entrate) aperta e subito chiusa; stato nel ramo `spoiler-stato` per non ripetere lo stesso avviso. Restano a mano: prodotti nuovi senza nome in `NAMES`, segni ★ in `alt_marks.json`, correzioni del testo segnalate dall'utente. Prova locale: `--noimg` / `--allimg` al posto delle immagini vere. Prima del 31 ottobre i dati andavano nel ramo `spoiler-nuove` e si pubblicavano dopo il controllo sulle immagini e il "vai".
+- **Canale Telegram come fonte degli spoiler (7 novembre 2026, scelta dell'utente)**: https://t.me/DigimonExpanseTCG
+  pubblica ogni carta svelata come "Nome [Alternative Art] (CODICE)" + "#PRODOTTO #NomeProdotto" + una foto (inglese,
+  con SAMPLE), di solito verso l'1:30, le 7, le 13:30 e le 16 (ora italiana). `telegram.yml` (a mano) legge la pagina
+  pubblica `t.me/s/…` con `tools/telegram_fetch.py` e salva `posts.json` + `foto/` nel ramo `telegram`.
+  `tools/telegram_todo.py TGDIR [--apply]` (con `TAKA`): alternative art dei **Premium Bandai** (ristampe, testo già
+  noto) aggiunte da sole in `tools/telegram_cards.json` con id `CODICE_PTnn` (nn = numero del PB) e foto in
+  `src/telegram/`; foto alle carte tenute da parte "senza immagine"; carte nuove che TakaOtaku non ha ancora: foto
+  copiata e carta **da trascrivere a mano** (Claude, dalla foto, testo esatto) in `telegram_cards.json` (formato
+  TakaOtaku, modello stampato dallo script); alternative di BT/EX/ST solo segnalate. `make_data2.py` usa le voci di
+  `telegram_cards.json` **solo finché TakaOtaku non ha la stessa carta** (le `_PTnn` finché TakaOtaku non elenca la carta
+  in quel PB): poi vale il testo di TakaOtaku. `fetch_images.py` usa `src/telegram/CODICE.jpg` come ultimo ripiego
+  (ritagliata con `spoiler_trim`, segnata `spoiler`, sostituita appena c'è l'immagine ufficiale); `spoiler_check.py`
+  la conta come immagine (non come ufficiale). Prodotti aggiunti per questo: **ST25/ST26** (carte numerate BD01/BD02,
+  `PREFIX` in `make_data2.py`, uscita 4 dicembre 2026), **PB27/PB28** (nella lista `PB`, data `2027-06-30`).
+  **Attività programmata di Claude** "Spoiler Digital Gate" (4 volte al giorno: 2:00, 8:00, 14:00, 17:00 ora italiana,
+  orari scelti dall'utente perché il cron di `spoiler.yml` partiva con 5-8 ore di ritardo): avvia `telegram.yml`,
+  esegue `telegram_todo.py --apply`, trascrive le carte nuove, fa il commit su main e avvia `spoiler.yml` (filtro e
+  pubblicazione automatica di sempre); `spoiler.yml` resta anche col suo orario come riserva.
 - `tools/card_fixes.json` – 96 correzioni verificate sulle immagini ufficiali (livello, costi, digievoluzioni, attribute, trait, rarità, DP…), testi delle **errata Bandai** (`text`: sostituzioni; attenzione agli spazi non separabili `\u00a0` della fonte) e voci da rimuovere (`_remove`; versioni alternative in `_remove_versions`, es. ST24-11_P2/_P3 in BT26, tolte su richiesta il 24 ottobre 2026 perché senza immagine).
 - `tools/official_extra.json` – dalla lista carte ufficiale EN: lato Option delle Digimon/Option (10 BT26/EX13 trascritti dalle immagini) e testo Overflow.
 - `tools/banlist.json` – lista ban/restrizioni (in vigore dal 1 set 2026, fonte https://world.digimoncard.com/rule/restriction_card/). Va aggiornata a mano quando Bandai la cambia.
@@ -100,9 +118,9 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
 - `prova-emulatore.yml`: APK x86_64 su emulatore Android 14; foto delle schede in `tools/rn_shots.txt` e prova dei
   gesti a ogni invio sul ramo `rn-tag`; prova della scansione senza rete (`tools/rn_scan.py`) con "scansione" o
   inviando sul ramo `rn-scan`. Risultati nel ramo `rn-shots`.
-- `spoiler.yml` (ogni mattina), `prezzi.yml` (ogni notte, ramo `prezzi`), `set-assets.yml` (ogni lunedì, ramo
+- `spoiler.yml` (ogni mattina, più l'attività programmata di Claude 4 volte al giorno), `telegram.yml` (canale Telegram, ramo `telegram`), `prezzi.yml` (ogni notte, ramo `prezzi`), `set-assets.yml` (ogni lunedì, ramo
   `set-assets`), `analysis.yml` (script a richiesta, risultati nel ramo `analysis-out`).
-- Rami che devono restare: `main`, `prezzi`, `set-assets`, `spoiler-stato`, `analysis-out`, `rn-check`, `rn-shots`.
+- Rami che devono restare: `main`, `prezzi`, `set-assets`, `spoiler-stato`, `telegram`, `analysis-out`, `rn-check`, `rn-shots`.
   Esperimenti scartati della vecchia app: etichette `archivio/<nome>` (pulizia del 3 novembre 2026: 75 rami già
   confluiti cancellati, 15 archiviati, con un flusso `pulizia.yml` usato una volta e poi tolto; si ritrova nella storia).
 - Commit con autore `Claude <noreply@anthropic.com>`.
