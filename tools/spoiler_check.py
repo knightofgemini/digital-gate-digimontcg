@@ -39,6 +39,8 @@ def has_img(k, official_only=False):
     """indirizzo dell'immagine della versione k (es. BT27-015 o BT27-015_P1), se c'è"""
     if a.noimg: return None
     if a.allimg: return "prova"
+    tg = root / "src" / "telegram" / (k + ".jpg")   # foto del canale Telegram (vale come anteprima, non come ufficiale)
+    if tg.exists() and not official_only: return "https://raw.githubusercontent.com/knightofgemini/digital-gate-digimontcg/main/src/telegram/%s.jpg" % k
     srcs = ("https://web-garage.takaotaku.de/%s-Sample.webp", "https://world.digimoncard.com/images/cardlist/card/%s.png")
     for u in srcs[1:] if official_only else srcs:
         if (u, k) in IMG:
@@ -156,7 +158,7 @@ for s in soon:
         REP.append("- **%s** %s%s · %s%s · %s%s" % (k, r[1], " (alternative art)" if alt else "", r[15], ("" if not r[2] else " · " + r[2]), r[4], new))
     if add:
         REP.append("")
-        REP.append(" ".join('<img src="https://web-garage.takaotaku.de/%s-Sample.webp" width="150" alt="%s">' % (k, k) for k in add))
+        REP.append(" ".join('<img src="%s" width="150" alt="%s">' % ((has_img(k) if not (a.noimg or a.allimg) else None) or "https://web-garage.takaotaku.de/%s-Sample.webp" % k, k) for k in add))
     for k in rem: REP.append("- tolta dalla fonte: %s %s" % (k, a0[k][1]))
     for k in mod:
         d = [F[i] for i in range(max(len(a0[k]), len(b0[k]))) if (a0[k][i] if i < len(a0[k]) else None) != (b0[k][i] if i < len(b0[k]) else None)]
