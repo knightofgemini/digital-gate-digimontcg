@@ -298,6 +298,18 @@
    "_prod": "PB27",
    "_post": 8455,
    "_src": "telegram"
+  },
+  {
+   "id": "P-186_PT27",
+   "cardNumber": "P-186",
+   "name": {
+    "english": "Gallantmon"
+   },
+   "version": "Alternative Art",
+   "notes": "PB-27 Premium Battle Set Ver. Royal Knights",
+   "_prod": "PB27",
+   "_post": 8459,
+   "_src": "telegram"
   }
  ]
 }
