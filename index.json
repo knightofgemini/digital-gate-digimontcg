@@ -1073,6 +1073,35 @@
   }
  },
  {
+  "codice": "EX14",
+  "codici_app": [
+   "EX14"
+  ],
+  "nome": "EXTRA BOOSTER MALEVOLENT VII [EX-14]",
+  "uscita": "January 22, 2027",
+  "tipo": "Extra / Theme Booster",
+  "pagina": "https://world.digimoncard.com/products/pack/ex-14/",
+  "sito": "world",
+  "file": {
+   "banner": {
+    "file": "EX14/banner.jpg",
+    "url": "https://world.digimoncard.com/images/products/pack/ex-14/bnr.jpg",
+    "fonte": "world",
+    "w": 800,
+    "h": 600,
+    "kb": 274
+   },
+   "confezione": {
+    "file": "EX14/confezione.png",
+    "url": "https://world.digimoncard.com/images/products/pack/ex-14/img_pkg.png",
+    "fonte": "world",
+    "w": 248,
+    "h": 418,
+    "kb": 72
+   }
+  }
+ },
+ {
   "codice": "EX13",
   "codici_app": [
    "EX13"

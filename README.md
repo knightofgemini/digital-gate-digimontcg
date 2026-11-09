@@ -39,6 +39,7 @@ Il sito Bandai non pubblica i **loghi trasparenti** (`logo.*`) come file separat
 
 | Set | Logo | Artwork | Confezione |
 |---|---|---|---|
+| **EX14**<br>EXTRA BOOSTER MALEVOLENT VII [EX-14]<br>January 22, 2027<br>[banner](EX14/banner.jpg), [confezione](EX14/confezione.png) | — | <img src="EX14/banner.jpg" width="320"> | <img src="EX14/confezione.png" width="70"> |
 | **EX13**<br>EXTRA BOOSTER CHIVALROUS XIII [EX-13]<br>October 2, 2026<br>[keyvisual](EX13/keyvisual.webp), [keyvisual-verticale](EX13/keyvisual-verticale.webp), [banner](EX13/banner.jpg), [confezione](EX13/confezione.webp), [logo](EX13/logo.webp) | <img src="EX13/logo.webp" width="200"> | <img src="EX13/keyvisual.webp" width="320"> | <img src="EX13/confezione.webp" width="70"> |
 | **EX12**<br>EXTRA BOOSTER DIGITAL WORLD SHAMBALA [EX-12]<br>July 3, 2026<br>[keyvisual](EX12/keyvisual.jpg), [keyvisual-verticale](EX12/keyvisual-verticale.jpg), [banner](EX12/banner.jpg), [confezione](EX12/confezione.png), [logo](EX12/logo.webp) | <img src="EX12/logo.webp" width="200"> | <img src="EX12/keyvisual.jpg" width="320"> | <img src="EX12/confezione.png" width="70"> |
 | **EX11**<br>EXTRA BOOSTER DAWN OF LIBERATOR [EX-11]<br>February 13, 2026<br>[keyvisual](EX11/keyvisual.jpg), [keyvisual-verticale](EX11/keyvisual-verticale.jpg), [banner](EX11/banner.jpg), [confezione](EX11/confezione.png), [logo](EX11/logo.webp) | <img src="EX11/logo.webp" width="200"> | <img src="EX11/keyvisual.jpg" width="320"> | <img src="EX11/confezione.png" width="70"> |
