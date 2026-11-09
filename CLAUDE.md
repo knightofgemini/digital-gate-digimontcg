@@ -179,6 +179,13 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   proposte: copertina, confezione, locandina, linea del tempo): in alto una linea con un punto per data (arancione se il
   giorno è esatto, azzurro se si sa solo il mese), sotto l'immagine quadrata del prodotto (`ProdImg`: illustrazione,
   altrimenti confezione, logo o codice), codici, nome e conto alla rovescia (`HorizonLine`).
+- **Taglio dei banner scelto a mano (9 novembre 2026, ramo `home-tagli`, segnalato dall'utente: le illustrazioni non
+  combaciavano con i riquadri)**: i banner sono larghi (circa 16:9) e nei riquadri quadrati di "All'orizzonte" e in
+  quelli formato carta di "Set da completare" ne resta una striscia. Scelta dell'utente tra tre proposte (riquadri a
+  misura, immagine intera con sfondo sfocato, taglio a mano): per ogni banner `rn/src/bannerFocus.json` ha `x` = punto
+  da tenere al centro (frazione della larghezza) e `r` = larghezza/altezza; `focusPos` in `homeLogic.ts` lo converte in
+  `contentPosition` (prova in `home-logic.test.mjs`). Senza voce resta il taglio di prima. Banner nuovi: scaricarli con
+  `analysis.yml` (`script` = `tools/probe_home_banners.py`, `ids` = `tutti` o i codici), guardarli e aggiungere la voce.
 - **Prove più veloci (7 novembre 2026)**: in `apk.yml` e `prova-emulatore.yml` si conservano tra una build e l'altra i
   file di Gradle, i suoi risultati riutilizzabili (`org.gradle.caching=true`) e le parti in C++ (ccache, finora poche
   riuse); emulatore salvato dopo il primo avvio (cache `avd-…`). APK di prova da 18 a 11 minuti. `prova-emulatore.yml`

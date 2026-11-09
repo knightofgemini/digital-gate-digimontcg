@@ -93,3 +93,24 @@ export function dateParts(u: { from?: string; prec?: string }): { big: string; s
   if (u.prec === "day" && p[2]) return { big: p[2].padStart(2, "0"), small: MON[m], label: +p[2] + " " + MONTH[m] + " " + p[0] };
   return { big: MON[m], small: p[0], label: MONTH[m] + " " + p[0] };
 }
+
+// Taglio scelto a mano per i riquadri di "All'orizzonte" (quadrati) e "Set da completare" (formato carta) (9 novembre
+// 2026, scelta dell'utente): per ogni banner il punto da tenere al centro, `x`/`y` in frazioni dell'immagine, e `r` =
+// larghezza/altezza del banner (src/bannerFocus.json). Restituisce la posizione per contentPosition di expo-image
+// (come object-position: "30%" allinea il 30% dell'immagine al 30% del riquadro), fermata ai bordi dell'immagine.
+export type Focus = { x?: number; y?: number; r: number };
+const pct = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * 1000) / 10 + "%";
+export function focusPos(f: Focus | undefined, box: number, def = { left: "50%", top: "40%" }) {
+  if (!f || !(f.r > 0) || !(box > 0)) return def;
+  const fx = f.x ?? 0.5;
+  const fy = f.y ?? 0.4;
+  if (f.r > box) {
+    // immagine più larga del riquadro: si sceglie solo il taglio di lato
+    return { left: pct((fx * f.r - box / 2) / (f.r - box)), top: "50%" };
+  }
+  if (f.r < box) {
+    // immagine più alta del riquadro: si sceglie solo il taglio in alto/basso
+    return { left: "50%", top: pct((fy / f.r - 1 / (2 * box)) / (1 / f.r - 1 / box)) };
+  }
+  return { left: "50%", top: "50%" };
+}

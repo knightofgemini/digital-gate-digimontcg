@@ -17,7 +17,11 @@ import { Btn, Glow, ICO_ARROW, ICO_PLUS, Progress } from "./visual";
 import { Deck, S, owned, setStats } from "./store";
 import { deckCover, deckState, deckStats, newDeck } from "./decks";
 import { DBadge } from "./deckui";
-import { dateParts, goals, groupName, heroSlides, upRows } from "./homeLogic";
+import { Focus, dateParts, focusPos, goals, groupName, heroSlides, upRows } from "./homeLogic";
+import FOCUS from "./bannerFocus.json";
+
+// punto da inquadrare scelto a mano per ogni banner (vedi focusPos in homeLogic.ts)
+const focusOf = (code: string) => (FOCUS as Record<string, Focus | string>)[code] as Focus | undefined;
 
 const FILL = { position: "absolute" as const, top: 0, left: 0, right: 0, bottom: 0 };
 // banner in evidenza: stessi colori nei due temi (illustrazione che sfuma nel blu notte, testo chiaro)
@@ -442,7 +446,7 @@ function HorizonLine({ cw, rows }: { cw: number; rows: Upcoming[][] }) {
                 </View>
               </View>
               <View style={{ width: w, height: w, borderRadius: 12, overflow: "hidden" }}>
-                <ProdImg code={i.u.code} prefer="banner" pos={{ left: "50%", top: "35%" }} />
+                <ProdImg code={i.u.code} prefer="banner" pos={focusPos(focusOf(i.u.code), 1, { left: "50%", top: "35%" })} />
               </View>
               <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, letterSpacing: 0.6, marginTop: 7 }} numberOfLines={1}>
                 {i.codes}
@@ -471,7 +475,7 @@ function SetArt({ code, w, h }: { code: string; w: number; h: number }) {
   return (
     <View style={{ width: w, height: h, borderRadius: 9, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: b ? "#1a2540" : t.surface2 }}>
       {b ? (
-        <Image source={b} style={FILL} contentFit="cover" contentPosition={{ left: "58%", top: "50%" }} cachePolicy="disk" transition={120} />
+        <Image source={b} style={FILL} contentFit="cover" contentPosition={focusPos(focusOf(code), w / h, { left: "58%", top: "50%" }) as any} cachePolicy="disk" transition={120} />
       ) : pk ? (
         <Image source={pk} style={{ width: "92%", height: "92%" }} contentFit="contain" cachePolicy="disk" />
       ) : lg ? (
