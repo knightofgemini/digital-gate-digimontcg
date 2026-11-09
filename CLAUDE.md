@@ -186,6 +186,9 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   da tenere al centro (frazione della larghezza) e `r` = larghezza/altezza; `focusPos` in `homeLogic.ts` lo converte in
   `contentPosition` (prova in `home-logic.test.mjs`). Senza voce resta il taglio di prima. Banner nuovi: scaricarli con
   `analysis.yml` (`script` = `tools/probe_home_banners.py`, `ids` = `tutti` o i codici), guardarli e aggiungere la voce.
+  **Copertine verticali** (9 novembre 2026, richiesta dell'utente, prima BT25 con un'immagine data da lui): in "Set da
+  completare" `rn/src/covers.ts` (`COVERS`, immagini in `rn/assets/covers/CODICE.webp`, larghe circa 300 px, dentro
+  l'APK) ha la precedenza sul banner tagliato.
 - **Prove più veloci (7 novembre 2026)**: in `apk.yml` e `prova-emulatore.yml` si conservano tra una build e l'altra i
   file di Gradle, i suoi risultati riutilizzabili (`org.gradle.caching=true`) e le parti in C++ (ccache, finora poche
   riuse); emulatore salvato dopo il primo avvio (cache `avd-…`). APK di prova da 18 a 11 minuti. `prova-emulatore.yml`

@@ -19,6 +19,7 @@ import { deckCover, deckState, deckStats, newDeck } from "./decks";
 import { DBadge } from "./deckui";
 import { Focus, dateParts, focusPos, goals, groupName, heroSlides, upRows } from "./homeLogic";
 import FOCUS from "./bannerFocus.json";
+import { COVERS } from "./covers";
 
 // punto da inquadrare scelto a mano per ogni banner (vedi focusPos in homeLogic.ts)
 const focusOf = (code: string) => (FOCUS as Record<string, Focus | string>)[code] as Focus | undefined;
@@ -469,12 +470,16 @@ function HorizonLine({ cw, rows }: { cw: number; rows: Upcoming[][] }) {
 // ritaglio dell'illustrazione del prodotto; senza: confezione, logo o codice
 function SetArt({ code, w, h }: { code: string; w: number; h: number }) {
   const t = useTheme();
-  const b = bannerUrl(code);
-  const pk = !b ? packUrl(code) : null;
-  const lg = !b && !pk ? logoUrl(code) : null;
+  // copertina verticale scelta dall'utente (covers.ts), altrimenti il banner tagliato
+  const cv = COVERS[code];
+  const b = !cv ? bannerUrl(code) : null;
+  const pk = !cv && !b ? packUrl(code) : null;
+  const lg = !cv && !b && !pk ? logoUrl(code) : null;
   return (
-    <View style={{ width: w, height: h, borderRadius: 9, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: b ? "#1a2540" : t.surface2 }}>
-      {b ? (
+    <View style={{ width: w, height: h, borderRadius: 9, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: cv || b ? "#1a2540" : t.surface2 }}>
+      {cv ? (
+        <Image source={cv} style={FILL} contentFit="cover" contentPosition={{ left: "50%", top: "30%" }} transition={120} />
+      ) : b ? (
         <Image source={b} style={FILL} contentFit="cover" contentPosition={focusPos(focusOf(code), w / h, { left: "58%", top: "50%" }) as any} cachePolicy="disk" transition={120} />
       ) : pk ? (
         <Image source={pk} style={{ width: "92%", height: "92%" }} contentFit="contain" cachePolicy="disk" />
