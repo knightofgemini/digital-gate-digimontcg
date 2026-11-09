@@ -203,6 +203,11 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
     ritaglio x 488-1462, y 229-971 dell'originale 1462×1076).
   - Le immagini si salvano **già ritagliate** con l'inquadratura scelta (`rn/assets/covers/`, `rn/assets/hero/`),
     posizione 50%/50%.
+  - "All'orizzonte" (riquadro quadrato): `HORIZON_ART` in `covers.ts`, immagini 600×600 in `rn/assets/horizon/`.
+  - Immagini date dall'utente per un prodotto: metterle **in tutte le sezioni dove il prodotto può comparire** (scelta
+    dell'utente "ovunque necessario"): uscito → Set da completare (e In evidenza se è l'ultimo del suo tipo); in arrivo →
+    All'orizzonte, In evidenza e Set da completare (per dopo l'uscita). 9 novembre 2026: LM06, LM07 (Set da completare),
+    LM09 (tutte e tre).
 - **Prove più veloci (7 novembre 2026)**: in `apk.yml` e `prova-emulatore.yml` si conservano tra una build e l'altra i
   file di Gradle, i suoi risultati riutilizzabili (`org.gradle.caching=true`) e le parti in C++ (ccache, finora poche
   riuse); emulatore salvato dopo il primo avvio (cache `avd-…`). APK di prova da 18 a 11 minuti. `prova-emulatore.yml`

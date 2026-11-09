@@ -19,7 +19,7 @@ import { deckCover, deckState, deckStats, newDeck } from "./decks";
 import { DBadge } from "./deckui";
 import { Focus, dateParts, focusPos, goals, groupName, heroSlides, upRows } from "./homeLogic";
 import FOCUS from "./bannerFocus.json";
-import { COVERS, HERO_ART } from "./covers";
+import { COVERS, HERO_ART, HORIZON_ART } from "./covers";
 
 // punto da inquadrare scelto a mano per ogni banner (vedi focusPos in homeLogic.ts)
 const focusOf = (code: string) => (FOCUS as Record<string, Focus | string>)[code] as Focus | undefined;
@@ -455,7 +455,11 @@ function HorizonLine({ cw, rows }: { cw: number; rows: Upcoming[][] }) {
                 </View>
               </View>
               <View style={{ width: w, height: w, borderRadius: 12, overflow: "hidden" }}>
-                <ProdImg code={i.u.code} prefer="banner" pos={focusPos(focusOf(i.u.code), 1, { left: "50%", top: "35%" })} />
+                {HORIZON_ART[i.u.code] ? (
+                  <Image source={HORIZON_ART[i.u.code]} style={FILL} contentFit="cover" transition={120} />
+                ) : (
+                  <ProdImg code={i.u.code} prefer="banner" pos={focusPos(focusOf(i.u.code), 1, { left: "50%", top: "35%" })} />
+                )}
               </View>
               <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, letterSpacing: 0.6, marginTop: 7 }} numberOfLines={1}>
                 {i.codes}
