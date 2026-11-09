@@ -189,8 +189,9 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   **Copertine verticali** (9 novembre 2026, richiesta dell'utente, prima BT25 con un'immagine data da lui): in "Set da
   completare" `rn/src/covers.ts` (`COVERS`, immagini in `rn/assets/covers/CODICE.webp`, larghe circa 300 px, dentro
   l'APK) ha la precedenza sul banner tagliato.
-  **LM08 Final Crest**: banner sostituito con l'illustrazione senza scritte data dall'utente
-  (`src/banners/digimon_final_crest_art.webp`, 1462×1076; voce in `bannerFocus.json` con `x` 0.66, sul cavaliere).
+  **Illustrazioni solo per "In evidenza"**: `HERO_ART` in `covers.ts` (immagini in `rn/assets/hero/CODICE.webp`,
+  dentro l'APK): prima LM08 Final Crest con l'illustrazione senza scritte data dall'utente; nelle altre sezioni resta il
+  banner del prodotto (scelta dell'utente).
 - **Prove più veloci (7 novembre 2026)**: in `apk.yml` e `prova-emulatore.yml` si conservano tra una build e l'altra i
   file di Gradle, i suoi risultati riutilizzabili (`org.gradle.caching=true`) e le parti in C++ (ccache, finora poche
   riuse); emulatore salvato dopo il primo avvio (cache `avd-…`). APK di prova da 18 a 11 minuti. `prova-emulatore.yml`

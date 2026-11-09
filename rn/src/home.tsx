@@ -19,7 +19,7 @@ import { deckCover, deckState, deckStats, newDeck } from "./decks";
 import { DBadge } from "./deckui";
 import { Focus, dateParts, focusPos, goals, groupName, heroSlides, upRows } from "./homeLogic";
 import FOCUS from "./bannerFocus.json";
-import { COVERS } from "./covers";
+import { COVERS, HERO_ART } from "./covers";
 
 // punto da inquadrare scelto a mano per ogni banner (vedi focusPos in homeLogic.ts)
 const focusOf = (code: string) => (FOCUS as Record<string, Focus | string>)[code] as Focus | undefined;
@@ -202,10 +202,18 @@ function HeroFallback({ code }: { code: string }) {
 }
 
 function HeroSlide({ h, w }: { h: HeroData; w: number }) {
+  const art = HERO_ART[h.code];
   const b = bannerUrl(h.code);
   return (
     <Pressable onPress={h.go} accessibilityRole="button" accessibilityLabel={h.badge.toLowerCase() + ": " + h.code + " " + h.name + ", " + h.when + ". " + h.cta} style={{ width: w, minHeight: 276, borderRadius: 16, overflow: "hidden", backgroundColor: HERO.bg, padding: 15, justifyContent: "space-between" }}>
-      {b ? <Image source={b} style={FILL} contentFit="cover" contentPosition={{ left: "42%", top: "27%" }} cachePolicy="disk" transition={120} /> : <HeroFallback code={h.code} />}
+      {/* illustrazione scelta dall'utente solo per questo riquadro (covers.ts), altrimenti il banner del prodotto */}
+      {art ? (
+        <Image source={art.src} style={FILL} contentFit="cover" contentPosition={art.pos as any} transition={120} />
+      ) : b ? (
+        <Image source={b} style={FILL} contentFit="cover" contentPosition={{ left: "42%", top: "27%" }} cachePolicy="disk" transition={120} />
+      ) : (
+        <HeroFallback code={h.code} />
+      )}
       {/* sfumatura in una vista a tutta superficie: con width/height "100%" sull'Svg la misura sarebbe quella
           interna (meno il margine di 15) e la sfumatura non arriverebbe al bordo destro e in fondo */}
       <View pointerEvents="none" style={FILL}>
