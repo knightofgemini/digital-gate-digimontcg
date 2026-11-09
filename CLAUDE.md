@@ -192,6 +192,17 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   **Illustrazioni solo per "In evidenza"**: `HERO_ART` in `covers.ts` (immagini in `rn/assets/hero/CODICE.webp`,
   dentro l'APK): prima LM08 Final Crest con l'illustrazione senza scritte data dall'utente; nelle altre sezioni resta il
   banner del prodotto (scelta dell'utente).
+  **Modello per i banner delle varie sezioni (9 novembre 2026, scelta dell'utente tra 3 proposte per sezione; da seguire
+  per le prossime immagini)**: si preparano sempre **3 proposte con zoom diversi** come foto composte (foto vera
+  dell'emulatore con l'immagine sostituita), senza rifare l'app, e si applica quella scelta.
+  - "Set da completare" (riquadro formato carta 65×91): **zoom medio**, testa e busto del soggetto, **senza scritte né
+    logo** (lo zoom minimo che toglie del tutto la scritta: mai scritte tagliate a metà). Prima: BT25 (zoom 1,62 rispetto
+    all'immagine intera, ritaglio x 199-843, y 0-910 dell'originale 1044×1506).
+  - "In evidenza" (riquadro grande, circa 1,31:1): **zoom forte, soggetto centrato e sollevato** (casco/viso a circa un
+    terzo dell'altezza, sopra la sfumatura scura e il nome; non sotto le etichette in alto). Prima: LM08 (zoom 1,45,
+    ritaglio x 488-1462, y 229-971 dell'originale 1462×1076).
+  - Le immagini si salvano **già ritagliate** con l'inquadratura scelta (`rn/assets/covers/`, `rn/assets/hero/`),
+    posizione 50%/50%.
 - **Prove più veloci (7 novembre 2026)**: in `apk.yml` e `prova-emulatore.yml` si conservano tra una build e l'altra i
   file di Gradle, i suoi risultati riutilizzabili (`org.gradle.caching=true`) e le parti in C++ (ccache, finora poche
   riuse); emulatore salvato dopo il primo avvio (cache `avd-…`). APK di prova da 18 a 11 minuti. `prova-emulatore.yml`

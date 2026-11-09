@@ -486,7 +486,7 @@ function SetArt({ code, w, h }: { code: string; w: number; h: number }) {
   return (
     <View style={{ width: w, height: h, borderRadius: 9, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: cv || b ? "#1a2540" : t.surface2 }}>
       {cv ? (
-        <Image source={cv} style={FILL} contentFit="cover" contentPosition={{ left: "50%", top: "30%" }} transition={120} />
+        <Image source={cv} style={FILL} contentFit="cover" contentPosition={{ left: "50%", top: "50%" }} transition={120} />
       ) : b ? (
         <Image source={b} style={FILL} contentFit="cover" contentPosition={focusPos(focusOf(code), w / h, { left: "58%", top: "50%" }) as any} cachePolicy="disk" transition={120} />
       ) : pk ? (
