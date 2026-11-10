@@ -527,8 +527,8 @@ button.b:disabled { opacity: .45; cursor: default; }
       }
 
       // D-pad e zoom fine
-      // un tocco = 2 pixel dell'immagine originale (tenendo premuto accelera); zoom a passi esatti di 0,01
-      const STEP_PX = 2;
+      // un tocco = 1 pixel dell'immagine originale (tenendo premuto accelera); zoom a passi esatti di 0,01
+      const STEP_PX = 1;
       const move = (dx, dy) => (k) => { const st = target().st; st.cx -= dx * STEP_PX * k / img.w; st.cy -= dy * STEP_PX * k / img.h; touch(); };
       const zoom = (d) => (k) => { const st = target().st; st.z = Math.max(1, Math.min(ZMAX, Math.round((st.z + d * 0.01 * k) * 100) / 100)); touch(); };
       const pad = document.createElement("div"); pad.className = "pad"; pad.setAttribute("role", "group"); pad.setAttribute("aria-label", "Sposta l'immagine");
@@ -640,7 +640,7 @@ button.b:disabled { opacity: .45; cursor: default; }
       sync();
     }
     const tip = document.createElement("p"); tip.className = "hint";
-    tip.textContent = "Trascina con un dito o col mouse, oppure usa le frecce: un tocco sposta di 2 pixel, tenendo premuto continua. Lo zoom si regola con − e + (0,01 a tocco), col cursore o pizzicando. In \"In evidenza\" la catena tiene tutti i telefoni insieme: sganciala per sistemare solo il telefono scelto. I tagli salvati arrivano nell'app di tutti in pochi minuti.";
+    tip.textContent = "Trascina con un dito o col mouse, oppure usa le frecce: un tocco sposta di 1 pixel, tenendo premuto continua. Lo zoom si regola con − e + (0,01 a tocco), col cursore o pizzicando. In \"In evidenza\" la catena tiene tutti i telefoni insieme: sganciala per sistemare solo il telefono scelto. I tagli salvati arrivano nell'app di tutti in pochi minuti.";
     list.append(tip);
     ed.append(list);
   }
