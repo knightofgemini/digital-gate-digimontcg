@@ -4,7 +4,7 @@
 // Ultimi spoiler: sezione a sé (SpoilerRow, scelta dell'utente tra due proposte; scartate le miniature nel banner).
 // Stili solo di questa pagina: i componenti condivisi (Banner, SecHead, Progress…) restano come sono.
 import { ReactNode, useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { Pressable, ScrollView, View, useWindowDimensions } from "react-native";
 import { Image } from "expo-image";
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { DISPLAY, Text } from "./Text";
@@ -19,7 +19,7 @@ import { deckCover, deckState, deckStats, newDeck } from "./decks";
 import { DBadge } from "./deckui";
 import { Focus, dateParts, focusPos, goals, groupName, heroSlides, upRows } from "./homeLogic";
 import FOCUS from "./bannerFocus.json";
-import { COVERS, HERO_ART, HORIZON_ART } from "./covers";
+import { COVERS, HERO_ART, HORIZON_ART, heroSrc } from "./covers";
 
 // punto da inquadrare scelto a mano per ogni banner (vedi focusPos in homeLogic.ts)
 const focusOf = (code: string) => (FOCUS as Record<string, Focus | string>)[code] as Focus | undefined;
@@ -203,12 +203,13 @@ function HeroFallback({ code }: { code: string }) {
 
 function HeroSlide({ h, w }: { h: HeroData; w: number }) {
   const art = HERO_ART[h.code];
+  const sw = useWindowDimensions().width;
   const b = bannerUrl(h.code);
   return (
     <Pressable onPress={h.go} accessibilityRole="button" accessibilityLabel={h.badge.toLowerCase() + ": " + h.code + " " + h.name + ", " + h.when + ". " + h.cta} style={{ width: w, minHeight: 276, borderRadius: 16, overflow: "hidden", backgroundColor: HERO.bg, padding: 15, justifyContent: "space-between" }}>
       {/* illustrazione scelta dall'utente solo per questo riquadro (covers.ts), altrimenti il banner del prodotto */}
       {art ? (
-        <Image source={art.src} style={FILL} contentFit="cover" contentPosition={art.pos as any} transition={120} />
+        <Image source={heroSrc(art, sw)} style={FILL} contentFit="cover" contentPosition={art.pos as any} transition={120} />
       ) : b ? (
         <Image source={b} style={FILL} contentFit="cover" contentPosition={{ left: "42%", top: "27%" }} cachePolicy="disk" transition={120} />
       ) : (

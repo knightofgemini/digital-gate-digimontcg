@@ -219,6 +219,12 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
     larga attorno allo stesso centro (fino a 2:1, senza uscire dall'originale): ogni telefono vede lo stesso centro e
     la stessa altezza, i più larghi vedono di più ai lati. Se il centro è vicino al bordo dell'originale (LM08) non si
     può allargare e sui telefoni larghi si perde un po' in alto e in basso: le anteprime della pagina lo mostrano.
+    Versione 3 (10 novembre 2026, richiesta dell'utente): **catena** in "In evidenza". Di base i telefoni sono
+    collegati (una posizione per tutti, documento `tagli/CODICE__hero`); sganciando la catena il telefono scelto ha
+    la sua posizione (`tagli/CODICE__hero@s|m|l|f`, con `phone`, `dp`, `ar`), e "Salva" salva solo quella;
+    ricollegandolo, al "Salva" successivo il suo documento si cancella. Nell'app: `HERO_ART[CODICE].by[x]` =
+    `rn/assets/hero/CODICE@x.webp` (ritaglio esatto alla forma di quel telefono), scelto da `heroPhone(larghezza)`
+    (< 385 dp s, < 430 m, < 524 l, altrimenti f); senza voce vale l'immagine comune.
   - Immagini date dall'utente per un prodotto: metterle **in tutte le sezioni dove il prodotto può comparire** (scelta
     dell'utente "ovunque necessario"): uscito → Set da completare (e In evidenza se è l'ultimo del suo tipo); in arrivo →
     All'orizzonte, In evidenza e Set da completare (per dopo l'uscita). 9 novembre 2026: LM06, LM07 (Set da completare),

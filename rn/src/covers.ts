@@ -10,7 +10,10 @@ export const COVERS: Record<string, number> = {
   LM07: require("../assets/covers/LM07.webp"),
   LM09: require("../assets/covers/LM09.webp"),
 };
-export const HERO_ART: Record<string, { src: number; pos: { left: string; top: string } }> = {
+// `by`: posizione propria per una larghezza di telefono (catena sganciata nella pagina "Tagli della Home"), chiave
+// s/m/l/f come i telefoni della pagina (360/411/448/600 dp): si usa al posto di `src` su quella larghezza (heroPhone).
+export type HeroArt = { src: number; pos: { left: string; top: string }; by?: Partial<Record<"s" | "m" | "l" | "f", number>> };
+export const HERO_ART: Record<string, HeroArt> = {
   LM08: { src: require("../assets/hero/LM08.webp"), pos: { left: "50%", top: "50%" } },
   LM09: { src: require("../assets/hero/LM09.webp"), pos: { left: "50%", top: "50%" } },
 };
@@ -18,3 +21,11 @@ export const HERO_ART: Record<string, { src: number; pos: { left: string; top: s
 export const HORIZON_ART: Record<string, number> = {
   LM09: require("../assets/horizon/LM09.webp"),
 };
+
+// telefono della pagina "Tagli della Home" più vicino alla larghezza dello schermo (dp)
+export function heroPhone(width: number): "s" | "m" | "l" | "f" {
+  return width < 385 ? "s" : width < 430 ? "m" : width < 524 ? "l" : "f";
+}
+export function heroSrc(art: HeroArt, width: number): number {
+  return (art.by && art.by[heroPhone(width)]) || art.src;
+}
