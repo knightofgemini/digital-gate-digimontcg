@@ -242,6 +242,24 @@ if h:
     for i in range(1, 6):
         shot("h15_evidenza_%d" % i)
         hswipe(h[0][1])
+# 1b) "In evidenza" sui pieghevoli aperti (10 novembre 2026, segnalato dall'utente: pulsante tagliato): 600 dp, Galaxy Z
+# Fold (circa 690 dp) e Pixel Fold (circa 840 dp, schermo più largo che alto)
+for name, sz, dens in (("600dp", "1080x2400", 288), ("fold690", "1812x2176", 420), ("fold840", "2208x1840", 420)):
+    adb("shell", "wm", "size", sz)
+    adb("shell", "wm", "density", str(dens))
+    time.sleep(3)
+    W, H = size()
+    launch(12)
+    h = finds("^(nuovi spoiler|in arrivo|uscito di recente):")
+    for i in range(1, 4):
+        shot("h17_%s_%d" % (name, i))
+        if not h:
+            break
+        hswipe(h[0][1])
+adb("shell", "wm", "size", "reset")
+adb("shell", "wm", "density", "reset")
+time.sleep(3)
+W, H = size()
 if not FULL:
     sys.exit(0)
 home()
