@@ -14,10 +14,10 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
 ## Come lavorare con l'utente
 
 - **Rispondere sempre in italiano.** Tutta l'interfaccia è in italiano.
-- **Mostrare un'anteprima prima di pubblicare**: lavorare su un ramo (es. `feature-x`) e far provare un **APK di prova**
-  (`apk-prova.yml`, oppure `build.yml` avviato a mano sul ramo con "prova" e "apk": release `rn-prova`); per vedere le
-  schermate senza telefono, foto su emulatore (`prova-emulatore.yml`). Fondere in `main` e pubblicare **solo dopo
-  l'ok** ("vai", "pubblica", "okay").
+- **Mostrare un'anteprima prima di pubblicare**: lavorare su un ramo (es. `feature-x`) e mostrare **le foto su
+  emulatore** (`prova-emulatore.yml`). **Niente APK di prova di propria iniziativa** (scelta dell'utente, 11 novembre
+  2026: "bastano le foto"): `apk-prova.yml` solo se lo chiede lui. Fondere in `main` e pubblicare **solo dopo l'ok**
+  ("vai", "pubblica", "okay").
 - Dopo la pubblicazione, aspettare che il flusso finisca e confermare (APK dal link sopra; l'app propone da sola
   l'aggiornamento).
 - Spiegazioni semplici, senza gergo tecnico; l'utente non è uno sviluppatore.
