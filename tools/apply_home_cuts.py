@@ -28,6 +28,14 @@ for f in sorted(src.rglob("*.json")):
     box = tuple(round(v) for v in (d["x0"] * W, d["y0"] * H, d["x1"] * W, d["y1"] * H))
     folder, size = OUT[sec]
     out = root / "rn/assets" / folder / (code + ".webp"); out.parent.mkdir(parents=True, exist_ok=True)
+    if sec == "hero":
+        # "In evidenza" cambia forma col telefono (larghezza schermo − 50, alta 276): si tiene l'altezza scelta e si
+        # allarga l'immagine attorno allo stesso centro fino a 2:1 (pieghevoli aperti), senza uscire dall'originale,
+        # così con posizione 50%/50% ogni telefono vede lo stesso centro (come le anteprime della pagina).
+        cx, cy = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
+        h = box[3] - box[1]; w = min(h * 2.0, 2 * min(cx, W - cx))
+        box = tuple(round(v) for v in (cx - w / 2, box[1], cx + w / 2, box[3]))
+        size = (round(size[1] * (box[2] - box[0]) / h), size[1])
     im.crop(box).resize(size, Image.LANCZOS).save(out, quality=86, method=6)
     print(code, sec, box, "->", out.relative_to(root))
     if f'assets/{folder}/{code}.webp' not in covers:

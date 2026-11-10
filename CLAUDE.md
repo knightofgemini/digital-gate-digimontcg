@@ -212,6 +212,13 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
     caricare immagini nuove (codice + file). Per applicare: `ArtifactData list` di `tagli` con `out_dir`, originali in
     `tools/home_art/CODICE.webp` (le immagini nuove caricate dall'utente si scaricano con `Artifact read` + `path` =
     id dell'asset), poi `python3 tools/apply_home_cuts.py CARTELLA` e le voci mancanti in `covers.ts`.
+    Versione 2 (10 novembre 2026, richiesta dell'utente): D-pad (un tocco = 0,4% dell'immagine, tenuto premuto ripete e
+    accelera) e zoom − / + per ogni riquadro; per "In evidenza" scelta del telefono (360/411/448/600 dp) e anteprime
+    di tutti e quattro. **Il riquadro "In evidenza" cambia forma col telefono** (larghezza schermo − 50 × 276; 411 dp
+    = 1,31:1, 600 dp = 2:1); gli altri due no. Per questo `apply_home_cuts.py` prepara l'immagine di In evidenza più
+    larga attorno allo stesso centro (fino a 2:1, senza uscire dall'originale): ogni telefono vede lo stesso centro e
+    la stessa altezza, i più larghi vedono di più ai lati. Se il centro è vicino al bordo dell'originale (LM08) non si
+    può allargare e sui telefoni larghi si perde un po' in alto e in basso: le anteprime della pagina lo mostrano.
   - Immagini date dall'utente per un prodotto: metterle **in tutte le sezioni dove il prodotto può comparire** (scelta
     dell'utente "ovunque necessario"): uscito → Set da completare (e In evidenza se è l'ultimo del suo tipo); in arrivo →
     All'orizzonte, In evidenza e Set da completare (per dopo l'uscita). 9 novembre 2026: LM06, LM07 (Set da completare),
