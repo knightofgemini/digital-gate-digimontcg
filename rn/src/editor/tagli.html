@@ -556,7 +556,7 @@ button.b:disabled { opacity: .45; cursor: default; }
       const sync = () => {
         const t = target();
         clamp(img, t.ar, t.st);
-        rng.value = String(t.st.z); zv.textContent = t.st.z.toFixed(2) + "×";
+        rng.value = String(t.st.z); zv.textContent = t.st.z.toFixed(2).replace(".", ",") + "×";
         {
           const r = isHero ? rectFor(phone) : rectFor(null);
           const ox = Math.round(img.w / 2 - (r.x0 + r.x1) / 2), oy = Math.round(img.h / 2 - (r.y0 + r.y1) / 2);
@@ -718,7 +718,8 @@ button.b:disabled { opacity: .45; cursor: default; }
   const heroRow = (p) => ({ name: "In evidenza · " + p.name + " (" + p.dp + " dp)", cells: (c, img, ok) => {
     const ar = heroAr(p.dp), own = CUTS[c + "__hero@" + p.id], com = CUTS[c + "__hero"];
     if (ok(own)) return [cmpThumb(img, own, c, "posizione propria · " + zTxt(zoomOf(img, own, ar)))];
-    if (ok(com)) { const r = fitFrac(img, com, ar); return [cmpThumb(img, r, c, "collegato · " + zTxt(zoomOf(img, r, ar)))]; }
+    // zoom comune, lo stesso che si vede in Taglia (misurato sul riquadro di riferimento, come lo stato dell'editor)
+    if (ok(com)) { const r = fitFrac(img, com, ar); return [cmpThumb(img, r, c, "collegato · " + zTxt(zoomOf(img, com, SECS[0].ar)))]; }
     return [cmpEmpty(c, ar, "da fare")];
   } });
   const fixRow = (id, name, ar) => ({ name, cells: (c, img, ok) => {
