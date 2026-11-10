@@ -66,7 +66,7 @@ h1 { font-family: var(--display); font-weight: 700; font-size: 26px; margin: 0; 
 .mini-f.hero { border-radius: 8px; }
 .hero .fade { position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(to bottom, rgba(11,17,32,.15) 0%, rgba(11,17,32,.15) 18%, rgba(11,17,32,.25) 35%, rgba(11,17,32,.91) 66%, #0b1120 100%); }
-.hero .over { position: absolute; inset: 0; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; }
+.hero .over { position: absolute; inset: 0; padding: 15px; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; }
 .hero .top { display: flex; justify-content: space-between; align-items: flex-start; }
 .glass { border: 1px solid rgba(232,237,247,.17); background: rgba(11,17,32,.86); border-radius: 6px; padding: 4px 8px;
   font-family: var(--display); font-weight: 600; font-size: 10.5px; letter-spacing: 1.4px; color: var(--ink); }
@@ -74,8 +74,8 @@ h1 { font-family: var(--display); font-weight: 700; font-size: 26px; margin: 0; 
 .date b { display: block; font-size: 20px; line-height: 22px; letter-spacing: 0; }
 .date span { font-size: 9.5px; color: #a3b1cb; }
 .hero .eb { font-family: var(--display); font-weight: 600; font-size: 10.5px; letter-spacing: 1.2px; color: var(--cyan); text-transform: uppercase; }
-.hero .nm { font-family: var(--display); font-weight: 700; font-size: 26px; line-height: 30px; margin: 2px 0 10px; color: #f4f7fd; }
-.hero .btn { height: 40px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 14px;
+.hero .nm { font-family: var(--display); font-weight: 700; font-size: 29px; line-height: 32px; margin: 3px 0 12px; color: #f4f7fd; }
+.hero .btn { height: 44px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 14px;
   display: flex; align-items: center; justify-content: center; }
 
 /* Set da completare: come GoalCard */
@@ -454,11 +454,23 @@ button.b:disabled { opacity: .45; cursor: default; }
       head.append(h, badge);
       const rule = document.createElement("div"); rule.className = "hint"; rule.textContent = "Modello: " + sec.rule;
       const frame = frameFor(sec, img);
-      const view = overlay(sec, img, frame);
+      const holder = isHero ? document.createElement("div") : null;
+      if (holder) holder.style.overflow = "hidden";
+      const view0 = overlay(sec, img, frame);
+      const view = holder ? (holder.append(view0), holder) : view0;
 
       // telefoni e catena (solo In evidenza)
       let phoneRow = null, chainBtn = null, chainTxt = null, minis = [];
-      const sizeHero = () => { const p = phoneOf(phone); frame.style.aspectRatio = String(heroAr(p.dp)); frame.style.maxWidth = Math.round((p.dp - 50) * 1.15) + "px"; };
+      // In evidenza: il riquadro ha le misure vere dell'app (larghezza del telefono − 50, alto 276) con scritte e pulsante
+      // della stessa grandezza, e si rimpicciolisce tutto insieme se non sta nello schermo (prima si rimpiccioliva solo
+      // il riquadro e su "Pieghevole aperto" il pulsante restava tagliato)
+      const sizeHero = () => {
+        const p = phoneOf(phone), bw = p.dp - 50, avail = holder ? holder.clientWidth : 0;
+        const k = avail > 0 ? Math.min(1, avail / bw) : 1;
+        frame.style.width = bw + "px"; frame.style.height = "276px"; frame.style.maxWidth = "none"; frame.style.aspectRatio = "auto";
+        frame.style.transformOrigin = "0 0"; frame.style.transform = k < 1 ? "scale(" + k + ")" : "";
+        if (holder) holder.style.height = Math.round(276 * k) + "px";
+      };
       const refreshPhones = () => {
         if (!phoneRow) return;
         phoneRow.querySelectorAll("button.ph").forEach((x, i) => {
@@ -591,7 +603,7 @@ button.b:disabled { opacity: .45; cursor: default; }
         pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
         const st = target().st;
         if (pts.size >= 2 && pinch) { const [a, b] = [...pts.values()]; st.z = Math.max(1, Math.min(ZMAX, pinch.z * Math.hypot(a.x - b.x, a.y - b.y) / pinch.d)); touch(); return; }
-        const r = isHero ? rectFor(phone) : rectFor(null), s = frame.clientWidth / (r.x1 - r.x0);
+        const r = isHero ? rectFor(phone) : rectFor(null), s = frame.getBoundingClientRect().width / (r.x1 - r.x0);
         st.cx -= (e.clientX - last.x) / s / img.w; st.cy -= (e.clientY - last.y) / s / img.h;
         last = { x: e.clientX, y: e.clientY }; touch();
       });
@@ -624,6 +636,7 @@ button.b:disabled { opacity: .45; cursor: default; }
       if (im.complete) sync(); else im.onload = sync;
       for (const m of minis) { const mi = m.f.querySelector("img"); if (!mi.complete) mi.onload = sync; }
       new ResizeObserver(() => sync()).observe(frame);
+      if (holder) new ResizeObserver(() => { sizeHero(); }).observe(holder);
       sync();
     }
     const tip = document.createElement("p"); tip.className = "hint";
