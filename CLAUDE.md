@@ -247,6 +247,15 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
     dell'utente "ovunque necessario"): uscito → Set da completare (e In evidenza se è l'ultimo del suo tipo); in arrivo →
     All'orizzonte, In evidenza e Set da completare (per dopo l'uscita). 9 novembre 2026: LM06, LM07 (Set da completare),
     LM09 (tutte e tre).
+- **Usciti di recente e In arrivo con le misure della Home nuova (11 novembre 2026, ramo `recenti-proposte`, segnalato
+  dall'utente: le sezioni nate agli inizi non erano coerenti con la Home nuova)**: scelta dell'utente tra proposte fotografate
+  sull'emulatore. "Usciti di recente" = **locandina** (`RecentWide` in `home.tsx`: banner intero 16:9, larga 1/1,25 della
+  pagina, etichetta in vetro NUOVO, codice/nome/avanzamento sopra la sfumatura; scartate copertina e quadrato). "In
+  arrivo" della pagina Prodotti = **righe** senza riquadro (`SoonRow` in `prodotti.tsx`: immagine quadrata 84 con
+  `SquareArt` di `home.tsx`, cioè tagli "All'orizzonte" dell'editor → APK → banner; codice e tipo in azzurro, nome,
+  data arancione se il giorno è esatto o azzurra se solo il mese, conto alla rovescia di `upBadge`, carte svelate)
+  **dentro la linea del tempo per mese di prima** (linea a sinistra, punto e titolo del mese; scartate le tessere su due
+  colonne). `tools/rn_home.py` fotografa anche In arrivo a pagina intera (`h18_inarrivo_intera`).
 - **Prove più veloci (7 novembre 2026)**: in `apk.yml` e `prova-emulatore.yml` si conservano tra una build e l'altra i
   file di Gradle, i suoi risultati riutilizzabili (`org.gradle.caching=true`) e le parti in C++ (ccache, finora poche
   riuse); emulatore salvato dopo il primo avvio (cache `avd-…`). APK di prova da 18 a 11 minuti. `prova-emulatore.yml`

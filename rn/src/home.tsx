@@ -329,69 +329,19 @@ export function SpoilerRow({ sp }: { sp: Spoil[] }) {
 }
 
 // ---- usciti di recente: recentSets (stessa scelta e stesso ordine di prima), a scorrimento
-function RecentCard({ x, st, w }: { x: CardSet; st?: { n: number; h: number }; w: number }) {
-  const t = useTheme();
-  const isNew = daysTo(x.date) >= -60;
-  const has = !!st && st.n > 0;
-  const done = has && st!.h === st!.n;
-  const b = bannerUrl(x.code);
-  return (
-    <Pressable onPress={() => openSet(x.id, "home")} accessibilityRole="button" accessibilityLabel={x.code + " " + x.name + (isNew ? ", nuovo" : "") + (has ? ": " + st!.h + " su " + st!.n + " carte" : "")} style={{ width: w, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, overflow: "hidden" }}>
-      <View style={{ width: "100%", aspectRatio: 1.6, alignItems: "center", justifyContent: "center", backgroundColor: "#1a2540" }}>
-        {b ? (
-          <Image source={b} style={FILL} contentFit="cover" contentPosition={{ left: "50%", top: "40%" }} cachePolicy="disk" transition={120} />
-        ) : (
-          <Text style={{ color: "#c7d2e8", fontFamily: DISPLAY, fontWeight: "700", fontStyle: "italic", fontSize: 22 }}>{x.code}</Text>
-        )}
-      </View>
-      <View style={{ flex: 1, paddingHorizontal: 10, paddingTop: 10, paddingBottom: 11 }}>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 5 }}>
-          <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, lineHeight: 15, letterSpacing: 0.6 }}>{x.code}</Text>
-          {isNew ? (
-            <View style={{ borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1, backgroundColor: t.dark ? "#163329" : "#eaf6ed" }}>
-              <Text style={{ color: t.ok, fontFamily: DISPLAY, fontWeight: "600", fontSize: 9.5, lineHeight: 13 }}>NUOVO</Text>
-            </View>
-          ) : null}
-        </View>
-        <Text style={{ minHeight: 36, color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 14, lineHeight: 18, letterSpacing: 0.05, textTransform: "uppercase", marginTop: 5, marginBottom: 8 }}>{x.name}</Text>
-        {has ? (
-          <View style={{ marginTop: "auto" }}>
-            <Progress h={st!.h} n={st!.n} height={5} color={done ? t.ok : t.cyan} />
-            <Text style={{ color: done ? t.ok : t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, marginTop: 5, fontVariant: ["tabular-nums"] }}>
-              {st!.h} / {st!.n} carte
-            </Text>
-          </View>
-        ) : null}
-      </View>
-    </Pressable>
-  );
-}
-
 export function Recent({ cw }: { cw: number }) {
   const stats = setStats();
   const list = recentSets(10);
   if (!list.length) return null;
-  // PROPOSTE (ramo recenti-proposte): le tre versioni una sotto l'altra per le foto di confronto
-  const w = Math.floor((cw - GAP) / 2.3);
-  const wl = Math.floor((cw - GAP) / 1.25);
+  // locandina larga (11 novembre 2026, scelta dell'utente tra copertina, quadrato e locandina): una intera e l'inizio
+  // della successiva, banner intero con nome e avanzamento sopra la sfumatura, come un piccolo In evidenza
+  const w = Math.floor((cw - GAP) / 1.25);
   return (
     <>
-      <Sec title="Recenti · A copertina" link="Tutti →" onLink={() => goTab("sets")} />
+      <Sec title="Usciti di recente" link="Tutti →" onLink={() => goTab("sets")} />
       <Carousel w={w}>
         {list.map((x) => (
-          <RecentTile key={x.id} x={x} st={stats[x.id]} w={w} kind="cover" />
-        ))}
-      </Carousel>
-      <Sec title="Recenti · B quadrato" link="Tutti →" onLink={() => goTab("sets")} />
-      <Carousel w={w}>
-        {list.map((x) => (
-          <RecentTile key={x.id} x={x} st={stats[x.id]} w={w} kind="square" />
-        ))}
-      </Carousel>
-      <Sec title="Recenti · C locandina" link="Tutti →" onLink={() => goTab("sets")} />
-      <Carousel w={wl}>
-        {list.map((x) => (
-          <RecentWide key={x.id} x={x} st={stats[x.id]} w={wl} />
+          <RecentWide key={x.id} x={x} st={stats[x.id]} w={w} />
         ))}
       </Carousel>
     </>
@@ -406,56 +356,14 @@ function GlassTag({ text, color }: { text: string; color: string }) {
     </View>
   );
 }
-// immagine quadrata di un prodotto: taglio dell'editor, poi immagine dentro l'APK, poi banner tagliato (come All'orizzonte)
+// immagine quadrata di un prodotto: taglio dell'editor, poi immagine dentro l'APK, poi banner tagliato (come All'orizzonte;
+// usata anche dalle righe di "In arrivo" nella pagina Prodotti)
 export function SquareArt({ code }: { code: string }) {
   useHomeArt();
   const cut = artFor(code, "square");
   if (cut) return <CutImg a={cut} />;
   if (HORIZON_ART[code]) return <Image source={HORIZON_ART[code]} style={FILL} contentFit="cover" transition={120} />;
   return <ProdImg code={code} prefer="banner" pos={focusPos(focusOf(code), 1, { left: "50%", top: "35%" })} />;
-}
-// scritte sotto le immagini, uguali in tutte le file della Home: codice, nome, riga in grigio
-function TileText({ code, name, children }: { code: string; name: string; children?: ReactNode }) {
-  const t = useTheme();
-  return (
-    <>
-      <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, letterSpacing: 0.6, marginTop: 7 }} numberOfLines={1}>
-        {code}
-      </Text>
-      <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 13, lineHeight: 17 }} numberOfLines={2}>
-        {name}
-      </Text>
-      {children}
-    </>
-  );
-}
-function RecentProg({ st }: { st?: { n: number; h: number } }) {
-  const t = useTheme();
-  if (!st || !st.n) return null;
-  const done = st.h === st.n;
-  return (
-    <View style={{ marginTop: 6 }}>
-      <Progress h={st.h} n={st.n} height={4} color={done ? t.ok : t.cyan} />
-      <Text style={{ color: done ? t.ok : t.ink2, fontSize: 11.5, lineHeight: 16, marginTop: 3, fontVariant: ["tabular-nums"] }}>
-        {st.h} / {st.n} carte
-      </Text>
-    </View>
-  );
-}
-function RecentTile({ x, st, w, kind }: { x: CardSet; st?: { n: number; h: number }; w: number; kind: "cover" | "square" }) {
-  const isNew = daysTo(x.date) >= -60;
-  const h = kind === "cover" ? Math.round((w * 91) / 65) : w;
-  return (
-    <Pressable onPress={() => openSet(x.id, "home")} accessibilityRole="button" accessibilityLabel={x.code + " " + x.name + (isNew ? ", nuovo" : "")} style={{ width: w }}>
-      <View style={{ width: w, height: h, borderRadius: 12, overflow: "hidden", backgroundColor: "#1a2540" }}>
-        {kind === "cover" ? <SetArt code={x.code} w={w} h={h} /> : <SquareArt code={x.code} />}
-        {isNew ? <GlassTag text="NUOVO" color="#4ade80" /> : null}
-      </View>
-      <TileText code={x.code} name={x.name}>
-        <RecentProg st={st} />
-      </TileText>
-    </Pressable>
-  );
 }
 // locandina larga: banner intero (già largo), nome sopra la sfumatura e avanzamento in fondo
 function RecentWide({ x, st, w }: { x: CardSet; st?: { n: number; h: number }; w: number }) {
