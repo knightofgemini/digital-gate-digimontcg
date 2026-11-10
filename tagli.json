@@ -39,9 +39,17 @@
    "h": 1136,
    "name": "Distancia Cero",
    "w": 1385
+  },
+  "EX9": {
+   "code": "EX9",
+   "name": "Versus Monsters",
+   "asset": "EX9-mwb6kiai.webp",
+   "w": 1600,
+   "h": 1473,
+   "at": "2026-11-10T21:06:49.913Z"
   }
  },
- "t": "2026-11-10T21:02:44.151Z",
+ "t": "2026-11-10T21:06:50.465Z",
  "tagli": {
   "BT25__cover": {
    "code": "BT25",
