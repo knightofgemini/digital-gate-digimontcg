@@ -322,6 +322,18 @@
    "_prod": "PB27",
    "_post": 8466,
    "_src": "telegram"
+  },
+  {
+   "id": "EX6-057_PT28",
+   "cardNumber": "EX6-057",
+   "name": {
+    "english": "Lilithmon"
+   },
+   "version": "Alternative Art",
+   "notes": "PB-28 Premium Battle Set Ver. Seven Great Demon Lords",
+   "_prod": "PB28",
+   "_post": 8468,
+   "_src": "telegram"
   }
  ]
 }
