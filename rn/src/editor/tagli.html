@@ -165,18 +165,24 @@ button.b:disabled { opacity: .45; cursor: default; }
 .sel:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
 
 /* confronto: per serie, poi per tipo di banner, con scorrimento a destra */
-.cmp-series { display: flex; flex-direction: column; gap: 16px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
-.cmp-cat { font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--cyan); }
+.cmp-wrap { display: flex; flex-direction: column; gap: 18px; }
+#cmp { display: flex; flex-direction: column; gap: 28px; }
+.cmp-series { display: flex; flex-direction: column; gap: 26px; padding: 18px 16px 8px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.cmp-cat { font-family: var(--display); font-weight: 700; font-size: 16px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--cyan); }
 .cmp-cat small { font-family: var(--body); font-weight: 500; font-size: 12.5px; letter-spacing: 0; text-transform: none; color: var(--ink2); margin-left: 8px; }
-.cmp-type { display: flex; flex-direction: column; gap: 8px; }
+.cmp-type { display: flex; flex-direction: column; gap: 10px; }
 .cmp-tname { font-family: var(--display); font-weight: 600; font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--ink2); }
-.cmp-scroll { display: flex; gap: 14px; align-items: flex-end; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x proximity; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
-.cmp-cell { display: flex; flex-direction: column; gap: 6px; flex: none; scroll-snap-align: start; }
-.cmp-box { position: relative; overflow: hidden; border-radius: 8px; background: #1a2540; border: 1px solid var(--line); }
+/* immagini allineate in alto: le scritte sotto non le spostano */
+.cmp-scroll { display: flex; gap: 18px; align-items: flex-start; overflow-x: auto; padding-bottom: 14px; scroll-snap-type: x proximity; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+.cmp-cell { display: flex; flex-direction: column; gap: 7px; flex: none; scroll-snap-align: start; }
+.cmp-box { position: relative; overflow: hidden; border-radius: 9px; background: #1a2540; border: 1px solid var(--line); }
 .cmp-box img { position: absolute; max-width: none; pointer-events: none; }
 .cmp-box.none { display: flex; align-items: center; justify-content: center; padding: 6px; text-align: center; border-style: dashed; color: var(--ink2); font-size: 11.5px; background: transparent; }
-.cmp-cap { font-size: 12px; color: var(--ink2); line-height: 1.3; max-width: 190px; }
+/* scritte larghe quanto l'immagine, una riga ciascuna (puntini se non ci stanno) */
+.cmp-cap { font-size: 12px; color: var(--ink2); line-height: 17px; min-width: 96px; }
+.cmp-cap div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cmp-cap b { color: var(--ink); font-weight: 600; }
+.cmp-cap .st { font-size: 11.5px; }
 </style>
 </head>
 <body>
@@ -217,9 +223,9 @@ button.b:disabled { opacity: .45; cursor: default; }
   </div>
 
   <div class="view" id="viewCmp" hidden>
-    <section class="sec" aria-labelledby="cmpT">
+    <section class="cmp-wrap" aria-labelledby="cmpT">
       <div class="sec-head"><h2 id="cmpT">Tutto quello che hai caricato</h2><span class="rule">Per serie e tipo di banner · scorri a destra</span></div>
-      <div id="cmp" style="display:flex;flex-direction:column;gap:16px"></div>
+      <div id="cmp"></div>
     </section>
   </div>
 </div>
@@ -675,33 +681,39 @@ button.b:disabled { opacity: .45; cursor: default; }
     return a.localeCompare(b, undefined, { numeric: true });
   }
   // ritaglio salvato -> miniatura alla stessa altezza; posizione in percentuali (nessuna misura del browser)
-  function cmpThumb(img, d, label, sub) {
+  function cmpCap(w, code, zoom, state) {
+    const cap = document.createElement("div"); cap.className = "cmp-cap"; cap.style.width = w + "px";
+    // righe fisse: codice, zoom (anche nei riquadri stretti), stato (solo In evidenza)
+    const l1 = document.createElement("div"), b = document.createElement("b"); b.textContent = code; l1.append(b);
+    const l2 = document.createElement("div"); l2.textContent = zoom || "\u00a0";
+    cap.append(l1, l2);
+    if (state !== undefined) { const l2 = document.createElement("div"); l2.className = "st"; l2.textContent = state; cap.append(l2); }
+    cap.title = [code, zoom, state].filter(Boolean).join(" · ");
+    return cap;
+  }
+  function cmpThumb(img, d, code, zoom, state) {
     const dw = d.x1 - d.x0;
     const ar = (dw * img.w) / ((d.y1 - d.y0) * img.h);
+    const w = Math.round(CMP_H * ar);
     const cell = document.createElement("div"); cell.className = "cmp-cell";
     const box = document.createElement("div"); box.className = "cmp-box";
-    box.style.width = Math.round(CMP_H * ar) + "px"; box.style.height = CMP_H + "px";
+    box.style.width = w + "px"; box.style.height = CMP_H + "px";
     const im = document.createElement("img"); im.alt = ""; im.draggable = false; im.loading = "lazy";
     im.src = BLOB(img.asset);
     im.style.width = (100 / dw) + "%";
     im.style.left = (-d.x0 / dw * 100) + "%";
     im.style.top = (-(d.y0 / dw) * (img.h / img.w) * ar * 100) + "%";
     box.append(im);
-    const cap = document.createElement("div"); cap.className = "cmp-cap";
-    const b = document.createElement("b"); b.textContent = label; cap.append(b);
-    if (sub) cap.append(" · " + sub);
-    cell.append(box, cap);
+    cell.append(box, cmpCap(w, code, zoom, state));
     return cell;
   }
-  function cmpEmpty(name, ar, sub) {
+  function cmpEmpty(code, ar, state) {
+    const w = Math.round(CMP_H * ar);
     const cell = document.createElement("div"); cell.className = "cmp-cell";
     const box = document.createElement("div"); box.className = "cmp-box none";
-    box.style.width = Math.round(CMP_H * ar) + "px"; box.style.height = CMP_H + "px";
+    box.style.width = w + "px"; box.style.height = CMP_H + "px";
     box.textContent = "non ancora tagliata";
-    const cap = document.createElement("div"); cap.className = "cmp-cap";
-    const b = document.createElement("b"); b.textContent = name; cap.append(b);
-    if (sub) cap.append(" · " + sub);
-    cell.append(box, cap);
+    cell.append(box, cmpCap(w, code, "", state));
     return cell;
   }
   // zoom di un taglio (frazioni dell'originale) in un riquadro di forma ar: 1 = l'immagine riempie appena il riquadro
@@ -717,14 +729,14 @@ button.b:disabled { opacity: .45; cursor: default; }
   }
   const heroRow = (p) => ({ name: "In evidenza · " + p.name + " (" + p.dp + " dp)", cells: (c, img, ok) => {
     const ar = heroAr(p.dp), own = CUTS[c + "__hero@" + p.id], com = CUTS[c + "__hero"];
-    if (ok(own)) return [cmpThumb(img, own, c, "posizione propria · " + zTxt(zoomOf(img, own, ar)))];
+    if (ok(own)) return [cmpThumb(img, own, c, zTxt(zoomOf(img, own, ar)), "posizione propria")];
     // zoom comune, lo stesso che si vede in Taglia (misurato sul riquadro di riferimento, come lo stato dell'editor)
-    if (ok(com)) { const r = fitFrac(img, com, ar); return [cmpThumb(img, r, c, "collegato · " + zTxt(zoomOf(img, com, SECS[0].ar)))]; }
+    if (ok(com)) { const r = fitFrac(img, com, ar); return [cmpThumb(img, r, c, zTxt(zoomOf(img, com, SECS[0].ar)), "collegato")]; }
     return [cmpEmpty(c, ar, "da fare")];
   } });
   const fixRow = (id, name, ar) => ({ name, cells: (c, img, ok) => {
     const d = CUTS[c + "__" + id];
-    return [ok(d) ? cmpThumb(img, d, c, zTxt(zoomOf(img, d, ar))) : cmpEmpty(c, ar, "da fare")];
+    return [ok(d) ? cmpThumb(img, d, c, zTxt(zoomOf(img, d, ar))) : cmpEmpty(c, ar)];
   } });
   const CMP_TYPES = [
     ...PHONES.map(heroRow),
