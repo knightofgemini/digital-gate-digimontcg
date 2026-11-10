@@ -120,7 +120,7 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   inviando sul ramo `rn-scan`. Risultati nel ramo `rn-shots`.
 - `spoiler.yml` (ogni mattina, più l'attività programmata di Claude 4 volte al giorno), `telegram.yml` (canale Telegram, ramo `telegram`), `prezzi.yml` (ogni notte, ramo `prezzi`), `set-assets.yml` (ogni lunedì, ramo
   `set-assets`), `analysis.yml` (script a richiesta, risultati nel ramo `analysis-out`).
-- Rami che devono restare: `main`, `prezzi`, `set-assets`, `spoiler-stato`, `telegram`, `analysis-out`, `rn-check`, `rn-shots`.
+- Rami che devono restare: `main`, `prezzi`, `set-assets`, `spoiler-stato`, `telegram`, `home-art`, `analysis-out`, `rn-check`, `rn-shots`.
   Esperimenti scartati della vecchia app: etichette `archivio/<nome>` (pulizia del 3 novembre 2026: 75 rami già
   confluiti cancellati, 15 archiviati, con un flusso `pulizia.yml` usato una volta e poi tolto; si ritrova nella storia).
 - Commit con autore `Claude <noreply@anthropic.com>`.
@@ -179,6 +179,74 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   proposte: copertina, confezione, locandina, linea del tempo): in alto una linea con un punto per data (arancione se il
   giorno è esatto, azzurro se si sa solo il mese), sotto l'immagine quadrata del prodotto (`ProdImg`: illustrazione,
   altrimenti confezione, logo o codice), codici, nome e conto alla rovescia (`HorizonLine`).
+- **Taglio dei banner scelto a mano (9 novembre 2026, ramo `home-tagli`, segnalato dall'utente: le illustrazioni non
+  combaciavano con i riquadri)**: i banner sono larghi (circa 16:9) e nei riquadri quadrati di "All'orizzonte" e in
+  quelli formato carta di "Set da completare" ne resta una striscia. Scelta dell'utente tra tre proposte (riquadri a
+  misura, immagine intera con sfondo sfocato, taglio a mano): per ogni banner `rn/src/bannerFocus.json` ha `x` = punto
+  da tenere al centro (frazione della larghezza) e `r` = larghezza/altezza; `focusPos` in `homeLogic.ts` lo converte in
+  `contentPosition` (prova in `home-logic.test.mjs`). Senza voce resta il taglio di prima. Banner nuovi: scaricarli con
+  `analysis.yml` (`script` = `tools/probe_home_banners.py`, `ids` = `tutti` o i codici), guardarli e aggiungere la voce.
+  **Copertine verticali** (9 novembre 2026, richiesta dell'utente, prima BT25 con un'immagine data da lui): in "Set da
+  completare" `rn/src/covers.ts` (`COVERS`, immagini in `rn/assets/covers/CODICE.webp`, larghe circa 300 px, dentro
+  l'APK) ha la precedenza sul banner tagliato.
+  **Illustrazioni solo per "In evidenza"**: `HERO_ART` in `covers.ts` (immagini in `rn/assets/hero/CODICE.webp`,
+  dentro l'APK): prima LM08 Final Crest con l'illustrazione senza scritte data dall'utente; nelle altre sezioni resta il
+  banner del prodotto (scelta dell'utente).
+  **Modello per i banner delle varie sezioni (9 novembre 2026, scelta dell'utente tra 3 proposte per sezione; da seguire
+  per le prossime immagini)**: si preparano sempre **3 proposte con zoom diversi** come foto composte (foto vera
+  dell'emulatore con l'immagine sostituita), senza rifare l'app, e si applica quella scelta.
+  - "Set da completare" (riquadro formato carta 65×91): **zoom medio**, testa e busto del soggetto, **senza scritte né
+    logo** (lo zoom minimo che toglie del tutto la scritta: mai scritte tagliate a metà). Prima: BT25 (zoom 1,62 rispetto
+    all'immagine intera, ritaglio x 199-843, y 0-910 dell'originale 1044×1506).
+  - "In evidenza" (riquadro grande, circa 1,31:1): **zoom forte, soggetto centrato e sollevato** (casco/viso a circa un
+    terzo dell'altezza, sopra la sfumatura scura e il nome; non sotto le etichette in alto). Prima: LM08 (zoom 1,45,
+    ritaglio x 488-1462, y 229-971 dell'originale 1462×1076).
+  - Le immagini si salvano **già ritagliate** con l'inquadratura scelta (`rn/assets/covers/`, `rn/assets/hero/`),
+    posizione 50%/50%.
+  - "All'orizzonte" (riquadro quadrato): `HORIZON_ART` in `covers.ts`, immagini 600×600 in `rn/assets/horizon/`.
+  - **Pagina "Tagli della Home" (10 novembre 2026, richiesta dell'utente: centrare a mano da sé)**:
+    https://claude.ai/artifact/2cEEKREWpca3JhpVyXeeDX (sorgente nella sessione; capacità `db` + `assets`). L'utente
+    sceglie il prodotto, trascina/ingrandisce l'immagine nei tre riquadri (stesse proporzioni dell'app, con nome,
+    sfumatura e pulsante sopra) e preme "Salva". Database: `immagini/<CODICE>` (`asset` = id del file caricato, `w`,
+    `h`, `name`), `tagli/<CODICE>__<cover|hero|square>` (`x0,y0,x1,y1` in frazioni, `px` in pixel, `asset`). Può anche
+    caricare immagini nuove (codice + file). Per applicare: `ArtifactData list` di `tagli` con `out_dir`, originali in
+    `tools/home_art/CODICE.webp` (le immagini nuove caricate dall'utente si scaricano con `Artifact read` + `path` =
+    id dell'asset), poi `python3 tools/apply_home_cuts.py CARTELLA` e le voci mancanti in `covers.ts`.
+    Versione 2 (10 novembre 2026, richiesta dell'utente): D-pad (un tocco = 0,4% dell'immagine, tenuto premuto ripete e
+    accelera) e zoom − / + per ogni riquadro; per "In evidenza" scelta del telefono (360/411/448/600 dp) e anteprime
+    di tutti e quattro. **Il riquadro "In evidenza" cambia forma col telefono** (larghezza schermo − 50 × 276; 411 dp
+    = 1,31:1, 600 dp = 2:1); gli altri due no. Per questo `apply_home_cuts.py` prepara l'immagine di In evidenza più
+    larga attorno allo stesso centro (fino a 2:1, senza uscire dall'originale): ogni telefono vede lo stesso centro e
+    la stessa altezza, i più larghi vedono di più ai lati. Se il centro è vicino al bordo dell'originale (LM08) non si
+    può allargare e sui telefoni larghi si perde un po' in alto e in basso: le anteprime della pagina lo mostrano.
+    Versione 3 (10 novembre 2026, richiesta dell'utente): **catena** in "In evidenza". Di base i telefoni sono
+    collegati (una posizione per tutti, documento `tagli/CODICE__hero`); sganciando la catena il telefono scelto ha
+    la sua posizione (`tagli/CODICE__hero@s|m|l|f`, con `phone`, `dp`, `ar`), e "Salva" salva solo quella;
+    ricollegandolo, al "Salva" successivo il suo documento si cancella. Nell'app: `HERO_ART[CODICE].by[x]` =
+    `rn/assets/hero/CODICE@x.webp` (ritaglio esatto alla forma di quel telefono), scelto da `heroPhone(larghezza)`
+    (< 385 dp s, < 430 m, < 524 l, altrimenti f); senza voce vale l'immagine comune.
+  - **Editor dei tagli dentro l'app (10 novembre 2026, richiesta dell'utente: "senza passare da te ogni volta")**:
+    schermata `rn/src/app/tagli.tsx` (da Altro: voce "Tagli della Home" visibile solo con la chiave; per la prima volta
+    tenere premuta la riga del copyright in fondo ad Altro). Senza chiave: guida per creare su GitHub un
+    *fine-grained token* (solo questo progetto, Contents: Read and write) e campo per incollarlo, salvato solo nel
+    telefono (`gh-key.txt` nei documenti dell'app, `ghArt.ts`). Con la chiave: la stessa pagina della versione su
+    claude.ai (`rn/src/editor/tagli.html`, testo dentro l'app in `src/editor/html.ts`: **dopo ogni modifica della
+    pagina** `node scripts/editor-html.js` dalla cartella `rn`) in una WebView, con un ponte (`window.__recv`,
+    `ReactNativeWebView.postMessage`: `ready`, `set`/`del` di `tagli/…` e `immagini/…`, `upload`) al posto di db e
+    assets di claude.ai. L'app scrive con l'API di GitHub (`editArt`: rilegge, modifica, salva; una modifica alla
+    volta) nel ramo **`home-art`**: `tagli.json` (`t` = ultimo salvataggio, `immagini`, `tagli` con lo stesso formato
+    della pagina, `asset` = nome del file) e `img/` (originali; quelli nuovi ridotti a 1600 px e in WebP dalla pagina,
+    nome nuovo a ogni caricamento). **Tutti i telefoni** scaricano `tagli.json` da raw.githubusercontent.com
+    all'avvio e tornando nell'app (`homeArt.tsx`, `startArt`, salvato in `home-art.json`) e mostrano l'originale
+    ritagliato al momento (`CutImg`, `fitRect`/`cutLayout` in `homeLogic.ts`: stesso centro e altezza, più o meno
+    largo secondo il riquadro vero, come le anteprime della pagina); In evidenza usa prima il taglio del telefono
+    (`__hero@s|m|l|f`, `heroPhone`). Precedenza: tagli di `home-art` → immagini dentro l'APK (`covers.ts`) → banner.
+    Niente APK nuovo né passaggio da Claude per i tagli. Ramo creato con i 12 tagli e le 5 immagini della pagina su
+    claude.ai (che resta, ma non è più la fonte).
+  - Immagini date dall'utente per un prodotto: metterle **in tutte le sezioni dove il prodotto può comparire** (scelta
+    dell'utente "ovunque necessario"): uscito → Set da completare (e In evidenza se è l'ultimo del suo tipo); in arrivo →
+    All'orizzonte, In evidenza e Set da completare (per dopo l'uscita). 9 novembre 2026: LM06, LM07 (Set da completare),
+    LM09 (tutte e tre).
 - **Prove più veloci (7 novembre 2026)**: in `apk.yml` e `prova-emulatore.yml` si conservano tra una build e l'altra i
   file di Gradle, i suoi risultati riutilizzabili (`org.gradle.caching=true`) e le parti in C++ (ccache, finora poche
   riuse); emulatore salvato dopo il primo avvio (cache `avd-…`). APK di prova da 18 a 11 minuti. `prova-emulatore.yml`

@@ -115,3 +115,33 @@ test("In evidenza: spoiler più recenti, poi un prodotto per tipo", () => {
   // nessuno spoiler: solo gli ultimi usciti
   assert.deepEqual(heroSlides([], rel, ["BT", "EX"]).map((x) => x.code), ["BT26", "EX13"]);
 });
+
+test("taglio scelto a mano: il punto scelto resta al centro del riquadro", async () => {
+  const { focusPos } = await import("../src/homeLogic.ts");
+  // banner 16:9 in un quadrato: centro sul 50% → 50%; sul 70% → oltre la metà; ai bordi fermo a 0% / 100%
+  assert.equal(focusPos({ x: 0.5, r: 16 / 9 }, 1).left, "50%");
+  const l = parseFloat(focusPos({ x: 0.7, r: 16 / 9 }, 1).left);
+  assert.ok(Math.abs((l / 100) * (16 / 9 - 1) + 0.5 - 0.7 * (16 / 9)) < 0.01);
+  assert.equal(focusPos({ x: 0.05, r: 16 / 9 }, 65 / 91).left, "0%");
+  assert.equal(focusPos({ x: 0.99, r: 16 / 9 }, 65 / 91).left, "100%");
+  // senza dati: la posizione di sempre
+  assert.deepEqual(focusPos(undefined, 1, { left: "50%", top: "35%" }), { left: "50%", top: "35%" });
+  // immagine più alta del riquadro: taglio in verticale
+  assert.equal(focusPos({ y: 0.5, r: 0.5 }, 1).top, "50%");
+});
+
+test("tagli dell'editor: stesso centro e stessa altezza su riquadri di forma diversa", async () => {
+  const { fitRect, cutLayout } = await import("../src/homeLogic.ts");
+  const near = (a, b) => Math.abs(a - b) < 1e-9;
+  // taglio 1,313:1 al centro di un'immagine 2000×1000, mostrato su un riquadro 2:1: più largo, stessa altezza
+  const r = { x0: 0.5 - 0.1313 * 1.0, y0: 0.3, x1: 0.5 + 0.1313, y1: 0.7 };
+  const f = fitRect(r, 2, 2000, 1000);
+  assert.ok(near(f.y0, 0.3) && near(f.y1, 0.7));
+  assert.ok(near((f.x1 - f.x0) * 2000, 400 * 2));
+  // centro vicino al bordo: non esce dall'originale, si riduce attorno allo stesso centro
+  const e = fitRect({ x0: 0.8, y0: 0.2, x1: 0.96, y1: 0.8 }, 2, 1000, 1000);
+  assert.ok(e.x1 <= 1 + 1e-9 && near((e.x0 + e.x1) / 2, 0.88) && near((e.y0 + e.y1) / 2, 0.5));
+  // posizione: il rettangolo riempie esattamente il riquadro
+  const L = cutLayout({ x0: 0.25, y0: 0.5, x1: 0.75, y1: 1 }, 1000, 1000, 200);
+  assert.deepEqual(L, { width: 400, height: 400, left: -100, top: -200 });
+});

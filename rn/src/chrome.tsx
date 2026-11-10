@@ -1,6 +1,6 @@
 // Cornice dell'app, come nell'app attuale sul telefono (body.mob): barra in alto con il marchio Digivice e il pulsante ⋯,
 // foglio "Altro" (Prossime uscite, Immagini offline, Informazioni, tema), barra di navigazione in basso.
-import { ReactNode, createContext, useContext, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { ReactNode, createContext, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Animated, Easing, Keyboard, Platform, Pressable, View } from "react-native";
 import { Sheet } from "./Sheet";
 import { router, usePathname, useGlobalSearchParams } from "expo-router";
@@ -14,6 +14,7 @@ import { owned, useStore } from "./store";
 import { setThemePref, useTheme } from "./theme";
 import { Icon } from "./ui";
 import { RUN, useOffline } from "./offline";
+import { hasKey, onKey } from "./ghArt";
 
 export const TABH = 64; // altezza della barra in basso (senza il bordo inferiore del telefono)
 
@@ -61,6 +62,9 @@ export function MoreSheet() {
   useStore();
   openMore = setOpen;
   useOffline();
+  // voce "Tagli della Home" solo sul telefono con la chiave GitHub dell'editor (ghArt.ts)
+  const [, keyTick] = useState(0);
+  useEffect(() => onKey(() => keyTick((n) => n + 1)), []);
   const offRun = RUN;
   // contato solo con il menu aperto; in chiusura resta l'ultimo valore mentre il foglio scende
   const uq = useRef(0);
@@ -112,8 +116,19 @@ export function MoreSheet() {
           }
         />
         <Row icon={<Icon name="info" color={t.ink2} size={20} />} label="Informazioni" onPress={() => go("/info")} />
+        {hasKey() ? (
+          <Row
+            icon={
+              <Svg width={20} height={20} viewBox="0 0 24 24">
+                <Path d="M6 2v14a2 2 0 0 0 2 2h14M2 6h14a2 2 0 0 1 2 2v14" stroke={t.ink2} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              </Svg>
+            }
+            label="Tagli della Home"
+            onPress={() => go("/tagli")}
+          />
+        ) : null}
         <Row icon={<ThemeIcon dark={t.dark} color={t.ink2} />} label={t.dark ? "Tema chiaro" : "Tema scuro"} onPress={() => setThemePref(t.dark ? "light" : "dark")} />
-        <Text style={{ color: t.ink2, fontSize: 11.8, marginTop: 14, lineHeight: 17 }}>Digital Gate - Digimon TCG · catalogo non ufficiale. Immagini e marchi © Bandai, Akiyoshi Hongo, Toei Animation.</Text>
+        <Text onLongPress={() => go("/tagli")} suppressHighlighting style={{ color: t.ink2, fontSize: 11.8, marginTop: 14, lineHeight: 17 }}>Digital Gate - Digimon TCG · catalogo non ufficiale. Immagini e marchi © Bandai, Akiyoshi Hongo, Toei Animation.</Text>
         <View style={{ marginTop: 16, padding: 12, borderRadius: 12, backgroundColor: t.surface, borderWidth: 1, borderColor: t.line }}>
           <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 13.6, marginBottom: 8 }}>
             <Text style={{ color: t.accent, fontFamily: DISPLAY, fontWeight: "600" }}>{uniq}</Text> / {CARDS.length} carte
