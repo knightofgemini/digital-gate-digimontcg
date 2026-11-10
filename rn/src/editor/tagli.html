@@ -704,17 +704,31 @@ button.b:disabled { opacity: .45; cursor: default; }
     cell.append(box, cap);
     return cell;
   }
-  const CMP_FULL = { x0: 0, y0: 0, x1: 1, y1: 1 };
+  // zoom di un taglio (frazioni dell'originale) in un riquadro di forma ar: 1 = l'immagine riempie appena il riquadro
+  const zoomOf = (img, d, ar) => viewSize(img, ar, 1).w / ((d.x1 - d.x0) * img.w);
+  const zTxt = (z) => "zoom " + z.toFixed(2).replace(".", ",") + "×";
+  // taglio comune mostrato su un telefono: stesso centro e stessa altezza, più o meno largo (come l'app, fitRect)
+  function fitFrac(img, d, ar) {
+    const cx = (d.x0 + d.x1) / 2 * img.w, cy = (d.y0 + d.y1) / 2 * img.h;
+    let h = (d.y1 - d.y0) * img.h, w = h * ar;
+    const lim = 2 * Math.min(cx, img.w - cx);
+    if (w > lim) { w = lim; h = w / ar; }
+    return { x0: (cx - w / 2) / img.w, y0: (cy - h / 2) / img.h, x1: (cx + w / 2) / img.w, y1: (cy + h / 2) / img.h };
+  }
+  const heroRow = (p) => ({ name: "In evidenza · " + p.name + " (" + p.dp + " dp)", cells: (c, img, ok) => {
+    const ar = heroAr(p.dp), own = CUTS[c + "__hero@" + p.id], com = CUTS[c + "__hero"];
+    if (ok(own)) return [cmpThumb(img, own, c, "posizione propria · " + zTxt(zoomOf(img, own, ar)))];
+    if (ok(com)) { const r = fitFrac(img, com, ar); return [cmpThumb(img, r, c, "collegato · " + zTxt(zoomOf(img, r, ar)))]; }
+    return [cmpEmpty(c, ar, "da fare")];
+  } });
+  const fixRow = (id, name, ar) => ({ name, cells: (c, img, ok) => {
+    const d = CUTS[c + "__" + id];
+    return [ok(d) ? cmpThumb(img, d, c, zTxt(zoomOf(img, d, ar))) : cmpEmpty(c, ar, "da fare")];
+  } });
   const CMP_TYPES = [
-    { name: "Originali", cells: (c, img) => [cmpThumb(img, CMP_FULL, c, img.name || (img.w + " × " + img.h))] },
-    { name: "In evidenza", cells: (c, img, ok) => {
-      const out = [], d = CUTS[c + "__hero"];
-      out.push(ok(d) ? cmpThumb(img, d, c, "comune") : cmpEmpty(c, 1.313, "comune: da fare"));
-      for (const p of PHONES) { const dp = CUTS[c + "__hero@" + p.id]; if (ok(dp)) out.push(cmpThumb(img, dp, c, p.name)); }
-      return out;
-    } },
-    { name: "Set da completare", cells: (c, img, ok) => { const d = CUTS[c + "__cover"]; return [ok(d) ? cmpThumb(img, d, c, img.name) : cmpEmpty(c, 65 / 91, "da fare")]; } },
-    { name: "All'orizzonte", cells: (c, img, ok) => { const d = CUTS[c + "__square"]; return [ok(d) ? cmpThumb(img, d, c, img.name) : cmpEmpty(c, 1, "da fare")]; } },
+    ...PHONES.map(heroRow),
+    fixRow("cover", "Set da completare", 65 / 91),
+    fixRow("square", "All'orizzonte", 1),
   ];
   function renderCompare() {
     const wrap = $("cmp");
