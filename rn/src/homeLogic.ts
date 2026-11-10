@@ -114,3 +114,26 @@ export function focusPos(f: Focus | undefined, box: number, def = { left: "50%",
   }
   return { left: "50%", top: "50%" };
 }
+
+// ---- tagli della Home scelti nell'editor (ramo home-art, vedi homeArt.tsx)
+// rettangolo in frazioni dell'originale (x0,y0,x1,y1); W×H = misure dell'originale in pixel.
+export type CutRect = { x0: number; y0: number; x1: number; y1: number };
+// Taglio salvato adattato a un riquadro di forma `ar` (larghezza/altezza), come le anteprime dell'editor: stesso centro e
+// stessa altezza, più o meno largo; se ai lati l'originale non basta si riduce tutto attorno allo stesso centro.
+export function fitRect(r: CutRect, ar: number, W: number, H: number): CutRect {
+  const cx = ((r.x0 + r.x1) / 2) * W,
+    cy = ((r.y0 + r.y1) / 2) * H;
+  let h = (r.y1 - r.y0) * H,
+    w = h * ar;
+  const lim = 2 * Math.min(cx, W - cx);
+  if (w > lim) {
+    w = lim;
+    h = w / ar;
+  }
+  return { x0: (cx - w / 2) / W, y0: (cy - h / 2) / H, x1: (cx + w / 2) / W, y1: (cy + h / 2) / H };
+}
+// posizione dell'immagine intera (W×H) dentro un riquadro bw×bh perché si veda esattamente il rettangolo r
+export function cutLayout(r: CutRect, W: number, H: number, bw: number) {
+  const s = bw / ((r.x1 - r.x0) * W);
+  return { width: W * s, height: H * s, left: -r.x0 * W * s, top: -r.y0 * H * s };
+}

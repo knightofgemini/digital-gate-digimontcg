@@ -10,6 +10,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { loadStore } from "../store";
 import { ToastHost } from "../toast";
 import { startDataUpdates } from "../dataupd";
+import { startArt } from "../homeArt";
+import { loadKey } from "../ghArt";
 import { NewsHost, showNews } from "../News";
 import { FavSheetHost } from "../FavSheet";
 import { UpdateCheck } from "../Update";
@@ -39,6 +41,7 @@ function Root() {
         <Stack.Screen name="scansiona" options={{ animation: "fade", presentation: "fullScreenModal", contentStyle: { backgroundColor: "#000" } }} />
         <Stack.Screen name="offline" />
         <Stack.Screen name="info" />
+        <Stack.Screen name="tagli" />
       </Stack>
       <TabBar />
       <MoreSheet />
@@ -64,6 +67,9 @@ export default function RootLayout() {
       setReady(true);
       if (!m) startOffline();
       refreshPrices();
+      // tagli della Home scelti nell'editor (ramo home-art) e chiave GitHub dell'editor, se c'è
+      startArt();
+      loadKey();
       // carte nuove pubblicate sul sito (es. spoiler): scaricate subito all'apertura e messe in uso senza riavviare, poi
       // il riquadro "Carte nuove" con l'elenco (News.tsx). Durante il recupero dei dati dell'app vecchia niente
       // riquadro: comparirà all'apertura successiva

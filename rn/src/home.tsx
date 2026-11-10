@@ -20,6 +20,7 @@ import { DBadge } from "./deckui";
 import { Focus, dateParts, focusPos, goals, groupName, heroSlides, upRows } from "./homeLogic";
 import FOCUS from "./bannerFocus.json";
 import { COVERS, HERO_ART, HORIZON_ART, heroSrc } from "./covers";
+import { CutImg, artFor, useHomeArt } from "./homeArt";
 
 // punto da inquadrare scelto a mano per ogni banner (vedi focusPos in homeLogic.ts)
 const focusOf = (code: string) => (FOCUS as Record<string, Focus | string>)[code] as Focus | undefined;
@@ -202,13 +203,18 @@ function HeroFallback({ code }: { code: string }) {
 }
 
 function HeroSlide({ h, w }: { h: HeroData; w: number }) {
-  const art = HERO_ART[h.code];
+  useHomeArt();
   const sw = useWindowDimensions().width;
+  const cut = artFor(h.code, "hero", sw);
+  const art = HERO_ART[h.code];
   const b = bannerUrl(h.code);
   return (
     <Pressable onPress={h.go} accessibilityRole="button" accessibilityLabel={h.badge.toLowerCase() + ": " + h.code + " " + h.name + ", " + h.when + ". " + h.cta} style={{ width: w, minHeight: 276, borderRadius: 16, overflow: "hidden", backgroundColor: HERO.bg, padding: 15, justifyContent: "space-between" }}>
       {/* illustrazione scelta dall'utente solo per questo riquadro (covers.ts), altrimenti il banner del prodotto */}
-      {art ? (
+      {/* taglio scelto nell'editor dell'app (homeArt.tsx), poi l'illustrazione dentro l'APK (covers.ts), poi il banner */}
+      {cut ? (
+        <CutImg a={cut} />
+      ) : art ? (
         <Image source={heroSrc(art, sw)} style={FILL} contentFit="cover" contentPosition={art.pos as any} transition={120} />
       ) : b ? (
         <Image source={b} style={FILL} contentFit="cover" contentPosition={{ left: "42%", top: "27%" }} cachePolicy="disk" transition={120} />
@@ -435,6 +441,7 @@ function ProdImg({ code, prefer, fit = "cover", pos }: { code: string; prefer: "
 // quadrata del prodotto (illustrazione, altrimenti confezione, logo o codice), codici, nome e conto alla rovescia
 function HorizonLine({ cw, rows }: { cw: number; rows: Upcoming[][] }) {
   const t = useTheme();
+  useHomeArt();
   const w = Math.floor((cw - GAP) / 2.3);
   return (
     <>
@@ -456,7 +463,9 @@ function HorizonLine({ cw, rows }: { cw: number; rows: Upcoming[][] }) {
                 </View>
               </View>
               <View style={{ width: w, height: w, borderRadius: 12, overflow: "hidden" }}>
-                {HORIZON_ART[i.u.code] ? (
+                {artFor(i.u.code, "square") ? (
+                  <CutImg a={artFor(i.u.code, "square")!} />
+                ) : HORIZON_ART[i.u.code] ? (
                   <Image source={HORIZON_ART[i.u.code]} style={FILL} contentFit="cover" transition={120} />
                 ) : (
                   <ProdImg code={i.u.code} prefer="banner" pos={focusPos(focusOf(i.u.code), 1, { left: "50%", top: "35%" })} />
@@ -483,14 +492,18 @@ function HorizonLine({ cw, rows }: { cw: number; rows: Upcoming[][] }) {
 // ritaglio dell'illustrazione del prodotto; senza: confezione, logo o codice
 function SetArt({ code, w, h }: { code: string; w: number; h: number }) {
   const t = useTheme();
-  // copertina verticale scelta dall'utente (covers.ts), altrimenti il banner tagliato
-  const cv = COVERS[code];
-  const b = !cv ? bannerUrl(code) : null;
-  const pk = !cv && !b ? packUrl(code) : null;
-  const lg = !cv && !b && !pk ? logoUrl(code) : null;
+  useHomeArt();
+  // taglio scelto nell'editor dell'app (homeArt.tsx), poi la copertina verticale dentro l'APK (covers.ts), poi il banner
+  const cut = artFor(code, "cover");
+  const cv = !cut ? COVERS[code] : undefined;
+  const b = !cut && !cv ? bannerUrl(code) : null;
+  const pk = !cut && !cv && !b ? packUrl(code) : null;
+  const lg = !cut && !cv && !b && !pk ? logoUrl(code) : null;
   return (
-    <View style={{ width: w, height: h, borderRadius: 9, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: cv || b ? "#1a2540" : t.surface2 }}>
-      {cv ? (
+    <View style={{ width: w, height: h, borderRadius: 9, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: cut || cv || b ? "#1a2540" : t.surface2 }}>
+      {cut ? (
+        <CutImg a={cut} />
+      ) : cv ? (
         <Image source={cv} style={FILL} contentFit="cover" contentPosition={{ left: "50%", top: "50%" }} transition={120} />
       ) : b ? (
         <Image source={b} style={FILL} contentFit="cover" contentPosition={focusPos(focusOf(code), w / h, { left: "58%", top: "50%" }) as any} cachePolicy="disk" transition={120} />

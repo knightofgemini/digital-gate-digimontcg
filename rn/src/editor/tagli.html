@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Tagli della Home</title>
+<style>
+/* Layout: banco di lavoro a una colonna — scelta del prodotto in alto, poi le tre cornici della Home una sotto l'altra,
+   ognuna con l'anteprima com'è nell'app, lo zoom e "Salva". Stessa palette blu notte dell'app Digital Gate. */
+:root {
+  --bg: #0b1120;
+  --surface: #121a2e;
+  --surface2: #1a2540;
+  --line: #26324d;
+  --ink: #e8edf7;
+  --ink2: #9aa8c4;
+  --cyan: #63d5ee;
+  --cyan-soft: rgba(99, 213, 238, .14);
+  --accent: #ff7a3d;
+  --accent-ink: #1a0b03;
+  --ok: #5fd39a;
+  --warn: #ffb86b;
+  --display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 760px; margin: 0 auto; padding-block: 20px 60px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 22px; }
+h1 { font-family: var(--display); font-weight: 700; font-size: 26px; margin: 0; letter-spacing: -.2px; }
+.lead { color: var(--ink2); margin: 4px 0 0; max-width: 60ch; }
+.eyebrow { font-family: var(--display); font-weight: 600; font-size: 12px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--ink2); }
+.status { font-size: 13px; color: var(--ink2); min-height: 18px; }
+.status.warn { color: var(--warn); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-family: var(--display); font-weight: 600; font-size: 14px; letter-spacing: .6px; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px; }
+.chip small { font-family: var(--body); font-weight: 500; font-size: 12px; color: var(--ink2); letter-spacing: 0; }
+.chip[aria-pressed="true"] { border-color: var(--cyan); background: var(--cyan-soft); color: var(--cyan); }
+.chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+.chip:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+.sec { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.sec-head h2 { font-family: var(--display); font-weight: 700; font-size: 18px; margin: 0; }
+.sec-head .rule { font-size: 13px; color: var(--ink2); }
+.saved { font-size: 12.5px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: rgba(95, 211, 154, .14); color: var(--ok); }
+.saved.changed { background: rgba(255, 184, 107, .14); color: var(--warn); }
+
+/* cornici: la zona dove si trascina */
+.frame { position: relative; overflow: hidden; background: #1a2540; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+.frame.drag { cursor: grabbing; }
+.frame img { position: absolute; left: 0; top: 0; max-width: none; transform-origin: 0 0; pointer-events: none; }
+.guides { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .15s; }
+.frame.drag .guides, .frame:hover .guides { opacity: 1; }
+.guides::before, .guides::after { content: ""; position: absolute; background: rgba(255, 255, 255, .35); }
+.guides::before { left: 33.33%; right: 33.33%; top: 0; bottom: 0; border-left: 1px solid rgba(255,255,255,.35); border-right: 1px solid rgba(255,255,255,.35); background: none; }
+.guides::after { top: 33.33%; bottom: 33.33%; left: 0; right: 0; border-top: 1px solid rgba(255,255,255,.35); border-bottom: 1px solid rgba(255,255,255,.35); background: none; }
+
+/* In evidenza: come HeroSlide */
+.hero { width: 100%; max-width: 440px; aspect-ratio: 1.313; border-radius: 16px; }
+.mini-f.hero { border-radius: 8px; }
+.hero .fade { position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(to bottom, rgba(11,17,32,.15) 0%, rgba(11,17,32,.15) 18%, rgba(11,17,32,.25) 35%, rgba(11,17,32,.91) 66%, #0b1120 100%); }
+.hero .over { position: absolute; inset: 0; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; }
+.hero .top { display: flex; justify-content: space-between; align-items: flex-start; }
+.glass { border: 1px solid rgba(232,237,247,.17); background: rgba(11,17,32,.86); border-radius: 6px; padding: 4px 8px;
+  font-family: var(--display); font-weight: 600; font-size: 10.5px; letter-spacing: 1.4px; color: var(--ink); }
+.date { border-radius: 9px; text-align: center; padding: 5px 8px; }
+.date b { display: block; font-size: 20px; line-height: 22px; letter-spacing: 0; }
+.date span { font-size: 9.5px; color: #a3b1cb; }
+.hero .eb { font-family: var(--display); font-weight: 600; font-size: 10.5px; letter-spacing: 1.2px; color: var(--cyan); text-transform: uppercase; }
+.hero .nm { font-family: var(--display); font-weight: 700; font-size: 26px; line-height: 30px; margin: 2px 0 10px; color: #f4f7fd; }
+.hero .btn { height: 40px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 14px;
+  display: flex; align-items: center; justify-content: center; }
+
+/* Set da completare: come GoalCard */
+.goal { display: flex; align-items: center; gap: 12px; padding: 13px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); max-width: 440px; position: relative; }
+.goal::before { content: ""; position: absolute; left: -1px; top: 18px; bottom: 18px; width: 3px; border-radius: 2px; background: var(--cyan); }
+.cover { width: 104px; aspect-ratio: 65 / 91; border-radius: 10px; flex: none; }
+.goal .txt { flex: 1; min-width: 0; }
+.tag { display: inline-block; border-radius: 4px; padding: 1px 5px; background: var(--cyan-soft); color: var(--cyan); font-family: var(--display); font-weight: 600; font-size: 11px; letter-spacing: .6px; }
+.goal .nm { font-family: var(--display); font-weight: 700; font-size: 16px; margin: 4px 0 8px; }
+.bar { height: 5px; border-radius: 3px; background: var(--surface2); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 34%; background: var(--cyan); }
+.goal .miss { color: var(--cyan); font-weight: 600; font-size: 12.8px; margin-top: 9px; }
+
+/* All'orizzonte: come HorizonLine */
+.hz { width: 190px; }
+.hz .when { font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: .6px; color: var(--cyan); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.hz .when::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--cyan); }
+.square { width: 190px; aspect-ratio: 1; border-radius: 12px; }
+.hz .cd { font-family: var(--display); font-weight: 600; font-size: 10.5px; letter-spacing: .6px; color: var(--cyan); margin-top: 7px; }
+.hz .nm { font-family: var(--display); font-weight: 600; font-size: 13px; }
+
+.controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.controls label { font-size: 13px; color: var(--ink2); }
+.controls input[type=range] { flex: 1; min-width: 140px; accent-color: var(--cyan); }
+.zv { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--ink2); width: 44px; }
+button.b { font-family: var(--body); font-weight: 600; font-size: 14px; border-radius: 10px; padding: 9px 14px; cursor: pointer; border: 1px solid var(--line); background: var(--surface2); color: var(--ink); }
+button.b.pri { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button.b:disabled { opacity: .45; cursor: default; }
+.hint { font-size: 12.5px; color: var(--ink2); }
+
+.add { display: flex; flex-direction: column; gap: 10px; }
+.add .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.add input[type=text] { font: inherit; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; min-width: 0; flex: 1 1 140px; }
+.empty { color: var(--ink2); padding: 24px; text-align: center; border: 1px dashed var(--line); border-radius: 14px; }
+
+/* telefoni e anteprime piccole (In evidenza) */
+.phones { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip.ph { font-size: 13px; padding: 6px 10px; }
+.minis { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+.mini { display: flex; flex-direction: column; gap: 5px; }
+.mini-f { border-radius: 8px; max-width: 100%; }
+.mini-nm { position: absolute; left: 7px; bottom: 6px; right: 7px; font-family: var(--display); font-weight: 700; font-size: 11px; color: #f4f7fd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* D-pad e zoom */
+.tools { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.pad { display: grid; grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(3, 44px); gap: 4px; flex: none; }
+.pad-e { display: block; }
+.pad-b { font: 600 17px/1 var(--body); color: var(--ink); background: var(--surface2); border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; touch-action: none; user-select: none; -webkit-user-select: none; }
+.pad-b:active { background: var(--cyan-soft); border-color: var(--cyan); color: var(--cyan); }
+.pad-c { font-size: 12px; color: var(--ink2); }
+.tools-r { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 180px; }
+.zpad { display: flex; align-items: center; gap: 8px; }
+.zpad .pad-b { width: 44px; height: 40px; font-size: 20px; }
+.zpad .zv { width: 52px; text-align: center; }
+.tools-r input[type=range] { width: 100%; accent-color: var(--cyan); }
+.tools-r .b.pri { align-self: flex-start; }
+.pad-b:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+/* catena: telefoni collegati o sganciati */
+.chain-row { display: flex; align-items: center; gap: 10px; flex-basis: 100%; margin-top: 4px; }
+.chain { width: 40px; height: 36px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--cyan); background: var(--cyan-soft); color: var(--cyan); }
+.chain.off { border-color: var(--warn); background: rgba(255, 184, 107, .14); color: var(--warn); }
+.chain:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.chip.ph.solo { border-style: dashed; border-color: var(--warn); }
+.chip.ph.solo[aria-pressed="true"] { color: var(--warn); background: rgba(255, 184, 107, .14); border-style: solid; }
+.mini-f.cur { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+/* indicatore in pixel */
+.meter { border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; background: var(--bg); display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.m-h { font-family: var(--display); font-weight: 600; font-size: 10.5px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--ink2); }
+.m-move { color: var(--ink); font-variant-numeric: tabular-nums; margin-bottom: 4px; }
+.m-grid { display: grid; grid-template-columns: repeat(4, auto); gap: 4px 12px; justify-content: start; color: var(--ink2); font-variant-numeric: tabular-nums; }
+.m-grid b { color: var(--ink); font-weight: 600; }
+.m-note { color: var(--ink2); font-size: 11.5px; margin-top: 2px; }
+@media (max-width: 420px) { .m-grid { grid-template-columns: repeat(2, auto); } }
+@media (prefers-reduced-motion: reduce) { .guides { transition: none; } }
+
+/* [hidden] vince sempre sulle regole di display delle classi */
+[hidden] { display: none !important; }
+.view { display: flex; flex-direction: column; gap: 22px; }
+.tabs { display: flex; gap: 8px; }
+.tabs .chip { font-size: 15px; padding: 10px 18px; }
+.sel { font-family: var(--display); font-weight: 600; font-size: 15px; letter-spacing: .3px; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%; max-width: 460px; cursor: pointer; }
+.sel:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+/* confronto: per serie, poi per tipo di banner, con scorrimento a destra */
+.cmp-series { display: flex; flex-direction: column; gap: 16px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
+.cmp-cat { font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--cyan); }
+.cmp-cat small { font-family: var(--body); font-weight: 500; font-size: 12.5px; letter-spacing: 0; text-transform: none; color: var(--ink2); margin-left: 8px; }
+.cmp-type { display: flex; flex-direction: column; gap: 8px; }
+.cmp-tname { font-family: var(--display); font-weight: 600; font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--ink2); }
+.cmp-scroll { display: flex; gap: 14px; align-items: flex-end; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x proximity; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+.cmp-cell { display: flex; flex-direction: column; gap: 6px; flex: none; scroll-snap-align: start; }
+.cmp-box { position: relative; overflow: hidden; border-radius: 8px; background: #1a2540; border: 1px solid var(--line); }
+.cmp-box img { position: absolute; max-width: none; pointer-events: none; }
+.cmp-box.none { display: flex; align-items: center; justify-content: center; padding: 6px; text-align: center; border-style: dashed; color: var(--ink2); font-size: 11.5px; background: transparent; }
+.cmp-cap { font-size: 12px; color: var(--ink2); line-height: 1.3; max-width: 190px; }
+.cmp-cap b { color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Digital Gate · Home</div>
+    <h1>Tagli della Home</h1>
+    <p class="lead">Scegli un prodotto, sposta l'immagine dentro ogni riquadro e regola lo zoom. Con "Salva" il taglio va sul tuo GitHub e arriva nell'app di tutti in pochi minuti.</p>
+  </header>
+
+  <div class="tabs" role="group" aria-label="Vista">
+    <button type="button" class="chip" id="tabEdit" aria-pressed="true">Taglia</button>
+    <button type="button" class="chip" id="tabCmp" aria-pressed="false">Confronto</button>
+  </div>
+
+  <div class="view" id="viewEdit">
+    <section aria-labelledby="pk">
+      <div class="eyebrow" id="pk" style="margin-bottom:10px">Prodotto</div>
+      <div id="chips"><span class="hint">Caricamento delle immagini…</span></div>
+      <div class="status" id="status" role="status"></div>
+    </section>
+
+    <div id="editor"></div>
+
+    <section class="sec add" id="addBox" hidden aria-labelledby="addT">
+      <div class="sec-head"><h2 id="addT">Aggiungi un'immagine</h2><span class="rule">Per un prodotto nuovo o per sostituirne una</span></div>
+      <div class="row">
+        <input type="text" id="addCode" placeholder="Codice, es. EX14" autocomplete="off" aria-label="Codice del prodotto">
+        <input type="text" id="addName" placeholder="Nome, es. Malevolent VII" autocomplete="off" aria-label="Nome del prodotto">
+      </div>
+      <div class="row">
+        <input type="file" id="addFile" accept="image/png,image/jpeg,image/webp" aria-label="Immagine">
+        <button class="b pri" id="addBtn" type="button">Carica</button>
+      </div>
+      <div class="status" id="addStatus" role="status"></div>
+    </section>
+  </div>
+
+  <div class="view" id="viewCmp" hidden>
+    <section class="sec" aria-labelledby="cmpT">
+      <div class="sec-head"><h2 id="cmpT">Tutto quello che hai caricato</h2><span class="rule">Per serie e tipo di banner · scorri a destra</span></div>
+      <div id="cmp" style="display:flex;flex-direction:column;gap:16px"></div>
+    </section>
+  </div>
+</div>
+
+<script>
+// Ponte con l'app (rn/src/app/tagli.tsx): stessa interfaccia della pagina su claude.ai (db e assets), ma i dati
+// arrivano dall'app e i salvataggi passano all'app, che li scrive sul ramo home-art di GitHub.
+(() => {
+  const RN = window.ReactNativeWebView;
+  let n = 0, DATA = null;
+  const wait = {}, subs = {}, LOCAL = {};
+  const post = (m) => RN && RN.postMessage(JSON.stringify(m));
+  const call = (m) => new Promise((ok, ko) => { const id = ++n; wait[id] = { ok, ko }; post(Object.assign({ id }, m)); });
+  const snap = (c) => ({ metadata: { fromCache: false }, docs: Object.keys((DATA && DATA[c]) || {}).map((id) => ({ id, data: () => DATA[c][id] })) });
+  window.__recv = (m) => {
+    if (m.t === "data") { DATA = m.data; Object.keys(subs).forEach((c) => subs[c].forEach((f) => f(snap(c)))); return; }
+    const w = wait[m.id]; if (!w) return; delete wait[m.id];
+    if (m.err) w.ko(new Error(m.err)); else w.ok(m.res);
+  };
+  window.BLOB = (id) => LOCAL[id] || ((window.__BLOB || "img/") + encodeURIComponent(id));
+  const db = {
+    collection: (c) => ({ onSnapshot: (cb) => { (subs[c] = subs[c] || []).push(cb); if (DATA) cb(snap(c)); return () => {}; } }),
+    doc: (p) => ({ set: (body) => call({ t: "set", path: p, body }), delete: () => call({ t: "del", path: p }) }),
+  };
+  // immagine nuova: ridotta a 1600 px sul lato lungo e convertita in WebP (o JPEG) prima di mandarla all'app
+  const assets = { upload: async (file, code) => {
+    const url = URL.createObjectURL(file);
+    const im = await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ko(new Error("immagine non leggibile")); i.src = url; });
+    const k = Math.min(1, 1600 / Math.max(im.naturalWidth, im.naturalHeight));
+    const w = Math.round(im.naturalWidth * k), h = Math.round(im.naturalHeight * k);
+    const cv = document.createElement("canvas"); cv.width = w; cv.height = h; cv.getContext("2d").drawImage(im, 0, 0, w, h);
+    URL.revokeObjectURL(url);
+    let du = cv.toDataURL("image/webp", 0.9), ext = "webp";
+    if (du.indexOf("data:image/webp") !== 0) { du = cv.toDataURL("image/jpeg", 0.9); ext = "jpg"; }
+    const id = await call({ t: "upload", code: code || "", b64: du.slice(du.indexOf(",") + 1), ext });
+    LOCAL[id] = du;
+    return { id, w, h };
+  } };
+  window.claude = { use: async (x) => (x === "db" ? db : x === "assets" ? assets : null) };
+  post({ t: "ready" });
+})();
+</script>
+<script>
+(() => {
+  // Riquadri dell'app (stesse proporzioni di rn/src/home.tsx)
+  const SECS = [
+    { id: "hero", name: "In evidenza", ar: 1.313, rule: "Zoom forte, soggetto al centro e sollevato sopra il nome. Il riquadro cambia forma con la larghezza del telefono: controlla le anteprime in fondo." },
+    { id: "cover", name: "Set da completare", ar: 65 / 91, rule: "Zoom medio, testa e busto, niente scritte tagliate" },
+    { id: "square", name: "All'orizzonte", ar: 1, rule: "Riquadro quadrato della linea del tempo" },
+  ];
+  const ZMAX = 3.5;
+  let db = null, assets = null;
+  let IMGS = {};   // code -> {code, name, asset, w, h}
+  let CUTS = {};   // code__sec -> {x0,y0,x1,y1, asset}
+  let cur = null;  // codice scelto
+  const state = {}; // sec -> {cx, cy, z, dirty}
+  const $ = (id) => document.getElementById(id);
+  const status = (t, warn) => { const s = $("status"); s.textContent = t || ""; s.classList.toggle("warn", !!warn); };
+
+  // ---- geometria: cx, cy = centro della vista in frazioni dell'immagine; z = 1 riempie il riquadro
+  function viewSize(img, ar, z) { // larghezza/altezza della vista in pixel dell'immagine
+    let w, h;
+    if (img.w / img.h > ar) { h = img.h; w = h * ar; } else { w = img.w; h = w / ar; }
+    return { w: w / z, h: h / z };
+  }
+  function clamp(img, ar, st) {
+    const v = viewSize(img, ar, st.z);
+    const hx = v.w / 2 / img.w, hy = v.h / 2 / img.h;
+    st.cx = Math.min(1 - hx, Math.max(hx, st.cx));
+    st.cy = Math.min(1 - hy, Math.max(hy, st.cy));
+  }
+  function rectOf(img, ar, st) {
+    const v = viewSize(img, ar, st.z);
+    const x0 = st.cx * img.w - v.w / 2, y0 = st.cy * img.h - v.h / 2;
+    return { x0, y0, x1: x0 + v.w, y1: y0 + v.h };
+  }
+  // In evidenza: nell'app il riquadro è largo (schermo − 50) e alto 276, quindi cambia forma da telefono a telefono.
+  // Il taglio salvato fissa centro e altezza (sul telefono medio); sugli altri si vede più o meno ai lati,
+  // sempre con lo stesso centro, come fa l'app con l'immagine preparata da tools/apply_home_cuts.py.
+  const PHONES = [
+    { id: "s", name: "Piccolo", dp: 360 },
+    { id: "m", name: "Medio", dp: 411 },
+    { id: "l", name: "Grande", dp: 448 },
+    { id: "f", name: "Pieghevole aperto", dp: 600 },
+  ];
+  const heroAr = (dp) => (dp - 50) / 276;
+  let phone = "m";
+  function shownRect(img, sec, st, ar) {
+    const ref = rectOf(img, sec.ar, st);
+    if (sec.id !== "hero" || !ar || Math.abs(ar - sec.ar) < 1e-3) return ref;
+    const cx = st.cx * img.w, cy = st.cy * img.h;
+    let h = ref.y1 - ref.y0, w = h * ar;
+    const lim = 2 * Math.min(cx, img.w - cx);
+    if (w > lim) { w = lim; h = w / ar; }
+    return { x0: cx - w / 2, y0: cy - h / 2, x1: cx + w / 2, y1: cy + h / 2 };
+  }
+  function fromRect(img, ar, r) { // rettangolo salvato (frazioni) -> stato
+    const x0 = r.x0 * img.w, x1 = r.x1 * img.w, y0 = r.y0 * img.h, y1 = r.y1 * img.h;
+    const full = viewSize(img, ar, 1);
+    return { cx: (x0 + x1) / 2 / img.w, cy: (y0 + y1) / 2 / img.h, z: Math.max(1, Math.min(ZMAX, full.w / (x1 - x0))) };
+  }
+
+  // ---- scelta del prodotto: menu a tendina, raggruppato per serie
+  function renderChips() {
+    const codes = Object.keys(IMGS).sort(cmpSort);
+    const box = $("chips");
+    if (!codes.length) { box.textContent = ""; const s = document.createElement("span"); s.className = "hint"; s.textContent = "Nessuna immagine ancora."; box.append(s); return; }
+    let sel = box.querySelector("select");
+    if (!sel) {
+      box.textContent = "";
+      sel = document.createElement("select"); sel.id = "prodSel"; sel.className = "sel"; sel.setAttribute("aria-label", "Prodotto");
+      sel.onchange = () => { cur = sel.value; renderChips(); renderEditor(); };
+      box.append(sel);
+    }
+    sel.textContent = "";
+    let grp = null, lastCat = null;
+    for (const c of codes) {
+      const cat = seriesOf(c);
+      if (cat !== lastCat) { grp = document.createElement("optgroup"); grp.label = "Serie " + cat; sel.append(grp); lastCat = cat; }
+      const n = SECS.filter((s) => CUTS[c + "__" + s.id] && CUTS[c + "__" + s.id].asset === IMGS[c].asset).length;
+      const o = document.createElement("option"); o.value = c;
+      o.textContent = c + (IMGS[c].name ? " · " + IMGS[c].name : "") + (n ? " · tagli " + n + "/" + SECS.length : "");
+      grp.append(o);
+    }
+    if (cur) sel.value = cur;
+  }
+
+  // ---- editor: le tre cornici
+  function frameFor(sec, img) {
+    const f = document.createElement("div");
+    f.className = "frame " + sec.id;
+    f.tabIndex = 0;
+    f.setAttribute("role", "img");
+    f.setAttribute("aria-label", "Inquadratura per " + sec.name + ". Trascina per spostare, frecce per spostare, + e − per lo zoom.");
+    const im = document.createElement("img");
+    im.alt = ""; im.draggable = false; im.src = BLOB(img.asset);
+    const g = document.createElement("div"); g.className = "guides";
+    f.append(im, g);
+    return f;
+  }
+  function overlay(sec, img, frame) {
+    const name = img.name || img.code;
+    if (sec.id === "hero") {
+      const fade = document.createElement("div"); fade.className = "fade";
+      const o = document.createElement("div"); o.className = "over";
+      o.innerHTML = '<div class="top"><span class="glass">USCITO DI RECENTE</span><span class="glass date"><b>04</b><span>AGO</span></span></div><div><div class="eb"></div><div class="nm"></div><div class="btn">Scopri il prodotto →</div></div>';
+      o.querySelector(".eb").textContent = img.code + " · prodotto";
+      o.querySelector(".nm").textContent = name;
+      frame.append(fade, o);
+      return frame;
+    }
+    if (sec.id === "cover") {
+      const card = document.createElement("div"); card.className = "goal";
+      const t = document.createElement("div"); t.className = "txt";
+      t.innerHTML = '<span class="tag"></span><div class="nm"></div><div class="bar"><i></i></div><div class="miss">Ti mancano 104 carte</div>';
+      t.querySelector(".tag").textContent = img.code; t.querySelector(".nm").textContent = name;
+      card.append(frame, t);
+      return card;
+    }
+    const hz = document.createElement("div"); hz.className = "hz";
+    hz.innerHTML = '<div class="when">DIC 2026</div>';
+    hz.append(frame);
+    const cd = document.createElement("div"); cd.className = "cd"; cd.textContent = img.code;
+    const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = name;
+    hz.append(cd, nm);
+    return hz;
+  }
+  function paint(sec, img, frame, ar) {
+    const st = state[sec.id];
+    clamp(img, sec.ar, st);
+    const r = shownRect(img, sec, st, ar);
+    const W = frame.clientWidth, s = W / (r.x1 - r.x0);
+    const im = frame.querySelector("img");
+    im.style.width = img.w + "px"; im.style.height = img.h + "px";
+    im.style.transform = "translate(" + (-r.x0 * s) + "px," + (-r.y0 * s) + "px) scale(" + s + ")";
+  }
+  // tasto che ripete finché resta premuto (prima un passo, poi sempre più veloce)
+  function holdButton(label, title, act) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "pad-b"; b.textContent = label; b.title = title; b.setAttribute("aria-label", title);
+    let t = null, n = 0;
+    const stop = () => { clearTimeout(t); t = null; };
+    const tick = () => { n++; act(n > 12 ? 3 : 1); t = setTimeout(tick, n > 6 ? 35 : 70); };
+    b.addEventListener("pointerdown", (e) => { e.preventDefault(); b.setPointerCapture(e.pointerId); n = 0; act(1); t = setTimeout(tick, 350); });
+    b.addEventListener("pointerup", stop); b.addEventListener("pointercancel", stop); b.addEventListener("lostpointercapture", stop);
+    b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); act(1); } });
+    return b;
+  }
+
+  const CHAIN = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5"/></svg>';
+  const CHAIN_OFF = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 0 1 4 8"/><path d="M8 12h3"/><path d="M3 3l18 18"/></svg>';
+
+  function renderEditor() {
+    const ed = $("editor");
+    ed.textContent = "";
+    if (!cur || !IMGS[cur]) { const e = document.createElement("div"); e.className = "empty"; e.textContent = "Scegli un prodotto qui sopra."; ed.append(e); return; }
+    const img = IMGS[cur];
+    const list = document.createElement("div"); list.style.cssText = "display:flex;flex-direction:column;gap:18px";
+    for (const sec of SECS) {
+      const isHero = sec.id === "hero";
+      const saved = CUTS[cur + "__" + sec.id];
+      const okCut = (c) => c && c.asset === img.asset;
+      state[sec.id] = okCut(saved) ? fromRect(img, sec.ar, saved) : { cx: 0.5, cy: 0.42, z: 1 };
+      state[sec.id].dirty = false;
+      // In evidenza: posizione propria per ogni telefono sganciato dalla catena
+      const own = {}, drop = {};
+      if (isHero) for (const p of PHONES) {
+        const c = CUTS[cur + "__hero@" + p.id];
+        if (okCut(c)) { own[p.id] = fromRect(img, heroAr(p.dp), c); own[p.id].dirty = false; }
+      }
+      const phoneOf = (id) => PHONES.find((p) => p.id === id);
+      // il "bersaglio" delle modifiche: tutti i telefoni (catena) o solo quello scelto
+      const target = () => {
+        if (isHero && own[phone]) return { st: own[phone], ar: heroAr(phoneOf(phone).dp), doc: cur + "__hero@" + phone, solo: true };
+        return { st: state[sec.id], ar: sec.ar, doc: cur + "__" + sec.id, solo: false };
+      };
+      const rectFor = (pid) => { // rettangolo visto su un telefono
+        if (own[pid]) { const ar = heroAr(phoneOf(pid).dp); clamp(img, ar, own[pid]); return rectOf(img, ar, own[pid]); }
+        clamp(img, sec.ar, state[sec.id]);
+        return shownRect(img, sec, state[sec.id], isHero ? heroAr(phoneOf(pid).dp) : sec.ar);
+      };
+      const paintR = (frame, r) => {
+        const s = frame.clientWidth / (r.x1 - r.x0), im = frame.querySelector("img");
+        im.style.width = img.w + "px"; im.style.height = img.h + "px";
+        im.style.transform = "translate(" + (-r.x0 * s) + "px," + (-r.y0 * s) + "px) scale(" + s + ")";
+      };
+
+      const box = document.createElement("section"); box.className = "sec";
+      const head = document.createElement("div"); head.className = "sec-head";
+      const h = document.createElement("h2"); h.textContent = sec.name;
+      const badge = document.createElement("span"); badge.className = "saved";
+      head.append(h, badge);
+      const rule = document.createElement("div"); rule.className = "hint"; rule.textContent = "Modello: " + sec.rule;
+      const frame = frameFor(sec, img);
+      const view = overlay(sec, img, frame);
+
+      // telefoni e catena (solo In evidenza)
+      let phoneRow = null, chainBtn = null, chainTxt = null, minis = [];
+      const sizeHero = () => { const p = phoneOf(phone); frame.style.aspectRatio = String(heroAr(p.dp)); frame.style.maxWidth = Math.round((p.dp - 50) * 1.15) + "px"; };
+      const refreshPhones = () => {
+        if (!phoneRow) return;
+        phoneRow.querySelectorAll("button.ph").forEach((x, i) => {
+          const p = PHONES[i]; x.setAttribute("aria-pressed", String(p.id === phone));
+          x.classList.toggle("solo", !!own[p.id]);
+        });
+        const solo = !!own[phone];
+        chainBtn.innerHTML = solo ? CHAIN_OFF : CHAIN;
+        chainBtn.classList.toggle("off", solo);
+        chainBtn.setAttribute("aria-pressed", String(!solo));
+        chainBtn.setAttribute("aria-label", solo ? "Ricollega questo telefono agli altri" : "Sgancia questo telefono dagli altri");
+        chainTxt.textContent = solo ? "Solo " + phoneOf(phone).name.toLowerCase() + ": le modifiche valgono solo per questo telefono" : "Collegati: le modifiche valgono per tutti i telefoni collegati";
+      };
+      if (isHero) {
+        sizeHero();
+        phoneRow = document.createElement("div"); phoneRow.className = "phones"; phoneRow.setAttribute("role", "group"); phoneRow.setAttribute("aria-label", "Larghezza del telefono");
+        for (const p of PHONES) {
+          const b = document.createElement("button"); b.type = "button"; b.className = "chip ph";
+          b.append(p.name); const sm = document.createElement("small"); sm.textContent = p.dp + " dp"; b.append(sm);
+          b.onclick = () => { phone = p.id; sizeHero(); refreshPhones(); sync(); };
+          phoneRow.append(b);
+        }
+        const chainRow = document.createElement("div"); chainRow.className = "chain-row";
+        chainBtn = document.createElement("button"); chainBtn.type = "button"; chainBtn.className = "chain";
+        chainTxt = document.createElement("span"); chainTxt.className = "hint";
+        chainBtn.onclick = () => {
+          if (own[phone]) { // ricollega: torna alla posizione comune; quella propria si cancella al prossimo "Salva"
+            if (CUTS[cur + "__hero@" + phone]) drop[phone] = true;
+            delete own[phone];
+          } else { // sgancia: parte da quello che si vede ora su questo telefono
+            const ar = heroAr(phoneOf(phone).dp), r = rectFor(phone);
+            own[phone] = fromRect(img, ar, { x0: r.x0 / img.w, y0: r.y0 / img.h, x1: r.x1 / img.w, y1: r.y1 / img.h });
+            own[phone].dirty = !CUTS[cur + "__hero@" + phone]; delete drop[phone];
+          }
+          refreshPhones(); sync();
+        };
+        chainRow.append(chainBtn, chainTxt);
+        phoneRow.append(chainRow);
+        const miniRow = document.createElement("div"); miniRow.className = "minis";
+        for (const p of PHONES) {
+          const cell = document.createElement("div"); cell.className = "mini";
+          const f = document.createElement("div"); f.className = "frame hero mini-f";
+          f.style.width = Math.round((p.dp - 50) * 0.42) + "px"; f.style.aspectRatio = String(heroAr(p.dp)); f.style.cursor = "pointer";
+          f.title = "Modifica " + p.name.toLowerCase();
+          const im = document.createElement("img"); im.alt = ""; im.draggable = false; im.src = BLOB(img.asset);
+          const fade = document.createElement("div"); fade.className = "fade";
+          const nm = document.createElement("div"); nm.className = "mini-nm"; nm.textContent = img.name || img.code;
+          f.append(im, fade, nm);
+          f.onclick = () => { phone = p.id; sizeHero(); refreshPhones(); sync(); };
+          const cap = document.createElement("div"); cap.className = "hint mini-cap";
+          cell.append(f, cap); miniRow.append(cell); minis.push({ f, p, cap });
+        }
+        box._minis = miniRow;
+      }
+
+      // D-pad e zoom fine
+      // un tocco = 2 pixel dell'immagine originale (tenendo premuto accelera); zoom a passi esatti di 0,01
+      const STEP_PX = 2;
+      const move = (dx, dy) => (k) => { const st = target().st; st.cx -= dx * STEP_PX * k / img.w; st.cy -= dy * STEP_PX * k / img.h; touch(); };
+      const zoom = (d) => (k) => { const st = target().st; st.z = Math.max(1, Math.min(ZMAX, Math.round((st.z + d * 0.01 * k) * 100) / 100)); touch(); };
+      const pad = document.createElement("div"); pad.className = "pad"; pad.setAttribute("role", "group"); pad.setAttribute("aria-label", "Sposta l'immagine");
+      const cells = [null, holdButton("▲", "Sposta l'immagine su", move(0, -1)), null,
+        holdButton("◀", "Sposta l'immagine a sinistra", move(-1, 0)), null, holdButton("▶", "Sposta l'immagine a destra", move(1, 0)),
+        null, holdButton("▼", "Sposta l'immagine giù", move(0, 1)), null];
+      const center = document.createElement("button"); center.type = "button"; center.className = "pad-b pad-c"; center.textContent = "●"; center.title = "Al centro"; center.setAttribute("aria-label", "Rimetti al centro");
+      center.onclick = () => { const st = target().st; st.cx = 0.5; st.cy = 0.5; touch(); };
+      cells[4] = center;
+      cells.forEach((c) => pad.append(c || Object.assign(document.createElement("span"), { className: "pad-e" })));
+      const zpad = document.createElement("div"); zpad.className = "zpad"; zpad.setAttribute("role", "group"); zpad.setAttribute("aria-label", "Zoom");
+      const zv = document.createElement("span"); zv.className = "zv";
+      zpad.append(holdButton("−", "Riduci lo zoom", zoom(-1)), zv, holdButton("+", "Aumenta lo zoom", zoom(1)));
+      const rng = document.createElement("input"); rng.type = "range"; rng.id = "z-" + sec.id; rng.min = "1"; rng.max = String(ZMAX); rng.step = "0.01"; rng.setAttribute("aria-label", "Zoom");
+      const save = document.createElement("button"); save.type = "button"; save.className = "b pri"; save.textContent = "Salva";
+      const tools = document.createElement("div"); tools.className = "tools";
+      const right = document.createElement("div"); right.className = "tools-r";
+      // indicatore: spostamento dal centro e margini rispetto ai bordi dell'immagine originale, in pixel
+      const meter = document.createElement("div"); meter.className = "meter"; meter.setAttribute("aria-live", "polite");
+      meter.innerHTML = '<div class="m-h">Spostamento dal centro</div><div class="m-move"></div><div class="m-h">Spazio ai bordi</div><div class="m-grid"><span>◀ <b data-k="l"></b></span><span>▶ <b data-k="r"></b></span><span>▲ <b data-k="t"></b></span><span>▼ <b data-k="b"></b></span></div><div class="m-note"></div>';
+      right.append(zpad, rng, meter, save);
+      tools.append(pad, right);
+
+      const pending = () => { const t = target(); return t.st.dirty || !okCut(CUTS[t.doc]) || Object.keys(drop).length > 0; };
+      const sync = () => {
+        const t = target();
+        clamp(img, t.ar, t.st);
+        rng.value = String(t.st.z); zv.textContent = t.st.z.toFixed(2) + "×";
+        {
+          const r = isHero ? rectFor(phone) : rectFor(null);
+          const ox = Math.round(img.w / 2 - (r.x0 + r.x1) / 2), oy = Math.round(img.h / 2 - (r.y0 + r.y1) / 2);
+          const hx = ox === 0 ? "centrata in orizzontale" : Math.abs(ox) + " px " + (ox > 0 ? "a destra" : "a sinistra");
+          const hy = oy === 0 ? "centrata in verticale" : Math.abs(oy) + " px " + (oy > 0 ? "in giù" : "in su");
+          meter.querySelector(".m-move").textContent = hx + " · " + hy;
+          const v = { l: r.x0, r: img.w - r.x1, t: r.y0, b: img.h - r.y1 };
+          meter.querySelectorAll("b[data-k]").forEach((el) => { el.textContent = Math.max(0, Math.round(v[el.dataset.k])) + " px"; });
+          meter.querySelector(".m-note").textContent = "Pixel dell'immagine originale (" + img.w + " × " + img.h + "); si vede un riquadro di " + Math.round(r.x1 - r.x0) + " × " + Math.round(r.y1 - r.y0) + ". Un tocco sulle frecce = " + STEP_PX + " px.";
+        }
+        paintR(frame, isHero ? rectFor(phone) : rectFor(null));
+        for (const m of minis) {
+          paintR(m.f, rectFor(m.p.id));
+          m.cap.textContent = m.p.name + " · " + (own[m.p.id] ? "posizione propria" : "collegato");
+          m.f.classList.toggle("cur", m.p.id === phone);
+        }
+        if (pending()) { badge.className = "saved changed"; badge.textContent = t.st.dirty || Object.keys(drop).length ? "Da salvare" : "Non ancora salvato"; }
+        else { badge.className = "saved"; badge.textContent = t.solo ? "Salvato per " + phoneOf(phone).name.toLowerCase() : "Salvato"; }
+        save.textContent = t.solo ? "Salva per " + phoneOf(phone).name.toLowerCase() : "Salva";
+        save.disabled = !db || !pending();
+      };
+      const touch = () => { target().st.dirty = true; sync(); };
+      rng.oninput = () => { target().st.z = Math.round(+rng.value * 100) / 100; touch(); };
+      save.onclick = async () => {
+        const t = target(); clamp(img, t.ar, t.st); const r = rectOf(img, t.ar, t.st);
+        const body = { code: cur, sec: sec.id, asset: img.asset, w: img.w, h: img.h,
+          x0: r.x0 / img.w, y0: r.y0 / img.h, x1: r.x1 / img.w, y1: r.y1 / img.h, cx: t.st.cx, cy: t.st.cy,
+          px: [Math.round(r.x0), Math.round(r.y0), Math.round(r.x1), Math.round(r.y1)], zoom: +t.st.z.toFixed(3), at: new Date().toISOString() };
+        if (t.solo) { body.phone = phone; body.dp = phoneOf(phone).dp; body.ar = +t.ar.toFixed(4); }
+        save.disabled = true; save.textContent = "Salvo…";
+        try {
+          for (const pid of Object.keys(drop)) { await db.doc("tagli/" + cur + "__hero@" + pid).delete(); delete CUTS[cur + "__hero@" + pid]; delete drop[pid]; }
+          await db.doc("tagli/" + t.doc).set(body); t.st.dirty = false; CUTS[t.doc] = body;
+          status(sec.name + " di " + cur + (t.solo ? " salvato solo per " + phoneOf(phone).name.toLowerCase() + "." : " salvato."));
+        } catch (e) { status("Non sono riuscito a salvare: " + (e && e.message || "errore") + ". Riprova tra poco.", true); }
+        sync(); renderChips();
+      };
+
+      // trascinamento e pizzico
+      const pts = new Map(); let last = null, pinch = null;
+      frame.addEventListener("pointerdown", (e) => { frame.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); frame.classList.add("drag"); last = { x: e.clientX, y: e.clientY }; if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: target().st.z }; } });
+      frame.addEventListener("pointermove", (e) => {
+        if (!pts.has(e.pointerId)) return;
+        pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        const st = target().st;
+        if (pts.size >= 2 && pinch) { const [a, b] = [...pts.values()]; st.z = Math.max(1, Math.min(ZMAX, pinch.z * Math.hypot(a.x - b.x, a.y - b.y) / pinch.d)); touch(); return; }
+        const r = isHero ? rectFor(phone) : rectFor(null), s = frame.clientWidth / (r.x1 - r.x0);
+        st.cx -= (e.clientX - last.x) / s / img.w; st.cy -= (e.clientY - last.y) / s / img.h;
+        last = { x: e.clientX, y: e.clientY }; touch();
+      });
+      const up = (e) => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null; if (!pts.size) frame.classList.remove("drag"); else { const p = [...pts.values()][0]; last = { x: p.x, y: p.y }; } };
+      frame.addEventListener("pointerup", up); frame.addEventListener("pointercancel", up);
+      frame.addEventListener("wheel", (e) => { e.preventDefault(); const st = target().st; st.z = Math.max(1, Math.min(ZMAX, st.z * Math.exp(-e.deltaY * 0.0015))); touch(); }, { passive: false });
+      frame.addEventListener("keydown", (e) => {
+        const k = e.key;
+        if (k === "ArrowLeft") move(-1, 0)(1); else if (k === "ArrowRight") move(1, 0)(1);
+        else if (k === "ArrowUp") move(0, -1)(1); else if (k === "ArrowDown") move(0, 1)(1);
+        else if (k === "+" || k === "=") zoom(1)(1); else if (k === "-") zoom(-1)(1);
+        else return;
+        e.preventDefault();
+      });
+
+      box.append(head, rule);
+      if (phoneRow) box.append(phoneRow);
+      box.append(view, tools);
+      if (box._minis) {
+        const mh = document.createElement("div"); mh.className = "eyebrow"; mh.textContent = "Tutti i telefoni · tocca per modificarne uno";
+        box.append(mh, box._minis);
+      } else {
+        const same = document.createElement("div"); same.className = "hint";
+        same.textContent = "Questo riquadro ha la stessa forma su tutti i telefoni: cambia solo la grandezza.";
+        box.append(same);
+      }
+      list.append(box);
+      refreshPhones();
+      const im = frame.querySelector("img");
+      if (im.complete) sync(); else im.onload = sync;
+      for (const m of minis) { const mi = m.f.querySelector("img"); if (!mi.complete) mi.onload = sync; }
+      new ResizeObserver(() => sync()).observe(frame);
+      sync();
+    }
+    const tip = document.createElement("p"); tip.className = "hint";
+    tip.textContent = "Trascina con un dito o col mouse, oppure usa le frecce: un tocco sposta di 2 pixel, tenendo premuto continua. Lo zoom si regola con − e + (0,01 a tocco), col cursore o pizzicando. In \"In evidenza\" la catena tiene tutti i telefoni insieme: sganciala per sistemare solo il telefono scelto. I tagli salvati arrivano nell'app di tutti in pochi minuti.";
+    list.append(tip);
+    ed.append(list);
+  }
+
+  // ---- caricamento di un'immagine nuova (solo chi può modificare)
+  async function addImage() {
+    const st = $("addStatus");
+    const code = $("addCode").value.trim().toUpperCase().replace(/[^A-Z0-9-]/g, "");
+    const name = $("addName").value.trim();
+    const file = $("addFile").files[0];
+    if (!code) { st.textContent = "Scrivi il codice del prodotto, per esempio EX14."; return; }
+    if (!file) { st.textContent = "Scegli un'immagine dal telefono o dal computer."; return; }
+    $("addBtn").disabled = true; st.textContent = "Carico l'immagine…";
+    try {
+      const url = URL.createObjectURL(file);
+      const dim = await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok({ w: i.naturalWidth, h: i.naturalHeight }); i.onerror = ko; i.src = url; });
+      URL.revokeObjectURL(url);
+      const up = await assets.upload(file, code);
+      await db.doc("immagini/" + code).set({ code, name: name || (IMGS[code] && IMGS[code].name) || "", asset: up.id, w: up.w || dim.w, h: up.h || dim.h, at: new Date().toISOString() });
+      cur = code; st.textContent = "Caricata: ora puoi tagliarla.";
+      $("addCode").value = ""; $("addName").value = ""; $("addFile").value = "";
+    } catch (e) { st.textContent = "Caricamento non riuscito: " + (e && e.message || "errore") + "."; }
+    $("addBtn").disabled = false;
+  }
+
+  // ---- confronto: per serie (prefisso del codice), poi per tipo di banner, con scorrimento a destra
+  const CMP_H = 150;
+  function seriesOf(c) { return (c.match(/^[A-Z]*/) || [""])[0] || "Altro"; }
+  function cmpSort(a, b) {
+    const pa = seriesOf(a), pb = seriesOf(b);
+    if (pa !== pb) return pa < pb ? -1 : 1;
+    return a.localeCompare(b, undefined, { numeric: true });
+  }
+  // ritaglio salvato -> miniatura alla stessa altezza; posizione in percentuali (nessuna misura del browser)
+  function cmpThumb(img, d, label, sub) {
+    const dw = d.x1 - d.x0;
+    const ar = (dw * img.w) / ((d.y1 - d.y0) * img.h);
+    const cell = document.createElement("div"); cell.className = "cmp-cell";
+    const box = document.createElement("div"); box.className = "cmp-box";
+    box.style.width = Math.round(CMP_H * ar) + "px"; box.style.height = CMP_H + "px";
+    const im = document.createElement("img"); im.alt = ""; im.draggable = false; im.loading = "lazy";
+    im.src = BLOB(img.asset);
+    im.style.width = (100 / dw) + "%";
+    im.style.left = (-d.x0 / dw * 100) + "%";
+    im.style.top = (-(d.y0 / dw) * (img.h / img.w) * ar * 100) + "%";
+    box.append(im);
+    const cap = document.createElement("div"); cap.className = "cmp-cap";
+    const b = document.createElement("b"); b.textContent = label; cap.append(b);
+    if (sub) cap.append(" · " + sub);
+    cell.append(box, cap);
+    return cell;
+  }
+  function cmpEmpty(name, ar, sub) {
+    const cell = document.createElement("div"); cell.className = "cmp-cell";
+    const box = document.createElement("div"); box.className = "cmp-box none";
+    box.style.width = Math.round(CMP_H * ar) + "px"; box.style.height = CMP_H + "px";
+    box.textContent = "non ancora tagliata";
+    const cap = document.createElement("div"); cap.className = "cmp-cap";
+    const b = document.createElement("b"); b.textContent = name; cap.append(b);
+    if (sub) cap.append(" · " + sub);
+    cell.append(box, cap);
+    return cell;
+  }
+  const CMP_FULL = { x0: 0, y0: 0, x1: 1, y1: 1 };
+  const CMP_TYPES = [
+    { name: "Originali", cells: (c, img) => [cmpThumb(img, CMP_FULL, c, img.name || (img.w + " × " + img.h))] },
+    { name: "In evidenza", cells: (c, img, ok) => {
+      const out = [], d = CUTS[c + "__hero"];
+      out.push(ok(d) ? cmpThumb(img, d, c, "comune") : cmpEmpty(c, 1.313, "comune: da fare"));
+      for (const p of PHONES) { const dp = CUTS[c + "__hero@" + p.id]; if (ok(dp)) out.push(cmpThumb(img, dp, c, p.name)); }
+      return out;
+    } },
+    { name: "Set da completare", cells: (c, img, ok) => { const d = CUTS[c + "__cover"]; return [ok(d) ? cmpThumb(img, d, c, img.name) : cmpEmpty(c, 65 / 91, "da fare")]; } },
+    { name: "All'orizzonte", cells: (c, img, ok) => { const d = CUTS[c + "__square"]; return [ok(d) ? cmpThumb(img, d, c, img.name) : cmpEmpty(c, 1, "da fare")]; } },
+  ];
+  function renderCompare() {
+    const wrap = $("cmp");
+    if (!wrap) return;
+    wrap.textContent = "";
+    const codes = Object.keys(IMGS).sort(cmpSort);
+    if (!codes.length) { const e = document.createElement("p"); e.className = "hint"; e.textContent = "Nessuna immagine ancora."; wrap.append(e); return; }
+    const bySeries = new Map();
+    for (const c of codes) { const k = seriesOf(c); if (!bySeries.has(k)) bySeries.set(k, []); bySeries.get(k).push(c); }
+    for (const [cat, list] of bySeries) {
+      const blk = document.createElement("section"); blk.className = "cmp-series";
+      const h = document.createElement("div"); h.className = "cmp-cat"; h.textContent = "Serie " + cat;
+      const cnt = document.createElement("small"); cnt.textContent = list.length + (list.length === 1 ? " prodotto" : " prodotti");
+      h.append(cnt); blk.append(h);
+      for (const t of CMP_TYPES) {
+        const type = document.createElement("div"); type.className = "cmp-type";
+        const nm = document.createElement("div"); nm.className = "cmp-tname"; nm.textContent = t.name;
+        const row = document.createElement("div"); row.className = "cmp-scroll"; row.tabIndex = 0;
+        row.setAttribute("role", "group"); row.setAttribute("aria-label", t.name + " · serie " + cat);
+        for (const c of list) { const img = IMGS[c]; const ok = (d) => !!d && d.asset === img.asset; for (const cell of t.cells(c, img, ok)) row.append(cell); }
+        type.append(nm, row); blk.append(type);
+      }
+      wrap.append(blk);
+    }
+  }
+
+  // ---- avvio
+  function showTab(t) {
+    const c = t === "cmp";
+    $("viewEdit").hidden = c; $("viewCmp").hidden = !c;
+    $("tabEdit").setAttribute("aria-pressed", String(!c)); $("tabCmp").setAttribute("aria-pressed", String(c));
+  }
+  async function start() {
+    $("tabEdit").onclick = () => showTab("edit"); $("tabCmp").onclick = () => showTab("cmp");
+    renderEditor();
+    if (!window.claude || !window.claude.use) { status("Ponte con l'app non disponibile.", true); return; }
+    db = await window.claude.use("db");
+    if (!db) { status("Il salvataggio non è disponibile.", true); $("chips").textContent = ""; return; }
+    assets = await window.claude.use("assets");
+    if (assets) { $("addBox").hidden = false; $("addBtn").onclick = addImage; }
+    let gotImgs = false;
+    const timer = setTimeout(() => { if (!gotImgs) status("Le immagini non arrivano ancora: controlla la connessione.", true); }, 10000);
+    db.collection("immagini").onSnapshot((snap) => {
+      gotImgs = true; if (!snap.metadata.fromCache) { clearTimeout(timer); status(""); }
+      const next = {}; snap.docs.forEach((d) => { const v = d.data(); if (v && v.asset) next[d.id] = Object.assign({ code: d.id }, v); });
+      const changed = !cur || !IMGS[cur] || !next[cur] || IMGS[cur].asset !== (next[cur] && next[cur].asset);
+      IMGS = next;
+      if (!cur || !IMGS[cur]) cur = Object.keys(IMGS).sort()[0] || null;
+      renderChips(); renderCompare(); if (changed) renderEditor();
+    }, (e) => { clearTimeout(timer); status("Non riesco a leggere le immagini (" + e.code + ").", true); });
+    db.collection("tagli").onSnapshot((snap) => {
+      const next = {}; snap.docs.forEach((d) => { next[d.id] = d.data(); });
+      const first = !Object.keys(CUTS).length;
+      CUTS = next; renderChips(); renderCompare();
+      // al primo arrivo dei tagli salvati ridisegno con quelli; dopo, non tocco quello che si sta regolando
+      if (first && cur) renderEditor();
+    }, (e) => status("Non riesco a leggere i tagli salvati (" + e.code + ").", true));
+  }
+  start();
+})();
+</script>
+</body>
+</html>

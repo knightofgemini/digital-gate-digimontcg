@@ -120,7 +120,7 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   inviando sul ramo `rn-scan`. Risultati nel ramo `rn-shots`.
 - `spoiler.yml` (ogni mattina, più l'attività programmata di Claude 4 volte al giorno), `telegram.yml` (canale Telegram, ramo `telegram`), `prezzi.yml` (ogni notte, ramo `prezzi`), `set-assets.yml` (ogni lunedì, ramo
   `set-assets`), `analysis.yml` (script a richiesta, risultati nel ramo `analysis-out`).
-- Rami che devono restare: `main`, `prezzi`, `set-assets`, `spoiler-stato`, `telegram`, `analysis-out`, `rn-check`, `rn-shots`.
+- Rami che devono restare: `main`, `prezzi`, `set-assets`, `spoiler-stato`, `telegram`, `home-art`, `analysis-out`, `rn-check`, `rn-shots`.
   Esperimenti scartati della vecchia app: etichette `archivio/<nome>` (pulizia del 3 novembre 2026: 75 rami già
   confluiti cancellati, 15 archiviati, con un flusso `pulizia.yml` usato una volta e poi tolto; si ritrova nella storia).
 - Commit con autore `Claude <noreply@anthropic.com>`.
@@ -225,6 +225,24 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
     ricollegandolo, al "Salva" successivo il suo documento si cancella. Nell'app: `HERO_ART[CODICE].by[x]` =
     `rn/assets/hero/CODICE@x.webp` (ritaglio esatto alla forma di quel telefono), scelto da `heroPhone(larghezza)`
     (< 385 dp s, < 430 m, < 524 l, altrimenti f); senza voce vale l'immagine comune.
+  - **Editor dei tagli dentro l'app (10 novembre 2026, richiesta dell'utente: "senza passare da te ogni volta")**:
+    schermata `rn/src/app/tagli.tsx` (da Altro: voce "Tagli della Home" visibile solo con la chiave; per la prima volta
+    tenere premuta la riga del copyright in fondo ad Altro). Senza chiave: guida per creare su GitHub un
+    *fine-grained token* (solo questo progetto, Contents: Read and write) e campo per incollarlo, salvato solo nel
+    telefono (`gh-key.txt` nei documenti dell'app, `ghArt.ts`). Con la chiave: la stessa pagina della versione su
+    claude.ai (`rn/src/editor/tagli.html`, testo dentro l'app in `src/editor/html.ts`: **dopo ogni modifica della
+    pagina** `node scripts/editor-html.js` dalla cartella `rn`) in una WebView, con un ponte (`window.__recv`,
+    `ReactNativeWebView.postMessage`: `ready`, `set`/`del` di `tagli/…` e `immagini/…`, `upload`) al posto di db e
+    assets di claude.ai. L'app scrive con l'API di GitHub (`editArt`: rilegge, modifica, salva; una modifica alla
+    volta) nel ramo **`home-art`**: `tagli.json` (`t` = ultimo salvataggio, `immagini`, `tagli` con lo stesso formato
+    della pagina, `asset` = nome del file) e `img/` (originali; quelli nuovi ridotti a 1600 px e in WebP dalla pagina,
+    nome nuovo a ogni caricamento). **Tutti i telefoni** scaricano `tagli.json` da raw.githubusercontent.com
+    all'avvio e tornando nell'app (`homeArt.tsx`, `startArt`, salvato in `home-art.json`) e mostrano l'originale
+    ritagliato al momento (`CutImg`, `fitRect`/`cutLayout` in `homeLogic.ts`: stesso centro e altezza, più o meno
+    largo secondo il riquadro vero, come le anteprime della pagina); In evidenza usa prima il taglio del telefono
+    (`__hero@s|m|l|f`, `heroPhone`). Precedenza: tagli di `home-art` → immagini dentro l'APK (`covers.ts`) → banner.
+    Niente APK nuovo né passaggio da Claude per i tagli. Ramo creato con i 12 tagli e le 5 immagini della pagina su
+    claude.ai (che resta, ma non è più la fonte).
   - Immagini date dall'utente per un prodotto: metterle **in tutte le sezioni dove il prodotto può comparire** (scelta
     dell'utente "ovunque necessario"): uscito → Set da completare (e In evidenza se è l'ultimo del suo tipo); in arrivo →
     All'orizzonte, In evidenza e Set da completare (per dopo l'uscita). 9 novembre 2026: LM06, LM07 (Set da completare),

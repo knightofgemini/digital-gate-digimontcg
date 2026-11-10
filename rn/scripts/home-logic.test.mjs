@@ -129,3 +129,19 @@ test("taglio scelto a mano: il punto scelto resta al centro del riquadro", async
   // immagine più alta del riquadro: taglio in verticale
   assert.equal(focusPos({ y: 0.5, r: 0.5 }, 1).top, "50%");
 });
+
+test("tagli dell'editor: stesso centro e stessa altezza su riquadri di forma diversa", async () => {
+  const { fitRect, cutLayout } = await import("../src/homeLogic.ts");
+  const near = (a, b) => Math.abs(a - b) < 1e-9;
+  // taglio 1,313:1 al centro di un'immagine 2000×1000, mostrato su un riquadro 2:1: più largo, stessa altezza
+  const r = { x0: 0.5 - 0.1313 * 1.0, y0: 0.3, x1: 0.5 + 0.1313, y1: 0.7 };
+  const f = fitRect(r, 2, 2000, 1000);
+  assert.ok(near(f.y0, 0.3) && near(f.y1, 0.7));
+  assert.ok(near((f.x1 - f.x0) * 2000, 400 * 2));
+  // centro vicino al bordo: non esce dall'originale, si riduce attorno allo stesso centro
+  const e = fitRect({ x0: 0.8, y0: 0.2, x1: 0.96, y1: 0.8 }, 2, 1000, 1000);
+  assert.ok(e.x1 <= 1 + 1e-9 && near((e.x0 + e.x1) / 2, 0.88) && near((e.y0 + e.y1) / 2, 0.5));
+  // posizione: il rettangolo riempie esattamente il riquadro
+  const L = cutLayout({ x0: 0.25, y0: 0.5, x1: 0.75, y1: 1 }, 1000, 1000, 200);
+  assert.deepEqual(L, { width: 400, height: 400, left: -100, top: -200 });
+});
