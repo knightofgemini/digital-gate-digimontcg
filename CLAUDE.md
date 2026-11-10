@@ -204,6 +204,14 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   - Le immagini si salvano **già ritagliate** con l'inquadratura scelta (`rn/assets/covers/`, `rn/assets/hero/`),
     posizione 50%/50%.
   - "All'orizzonte" (riquadro quadrato): `HORIZON_ART` in `covers.ts`, immagini 600×600 in `rn/assets/horizon/`.
+  - **Pagina "Tagli della Home" (10 novembre 2026, richiesta dell'utente: centrare a mano da sé)**:
+    https://claude.ai/artifact/2cEEKREWpca3JhpVyXeeDX (sorgente nella sessione; capacità `db` + `assets`). L'utente
+    sceglie il prodotto, trascina/ingrandisce l'immagine nei tre riquadri (stesse proporzioni dell'app, con nome,
+    sfumatura e pulsante sopra) e preme "Salva". Database: `immagini/<CODICE>` (`asset` = id del file caricato, `w`,
+    `h`, `name`), `tagli/<CODICE>__<cover|hero|square>` (`x0,y0,x1,y1` in frazioni, `px` in pixel, `asset`). Può anche
+    caricare immagini nuove (codice + file). Per applicare: `ArtifactData list` di `tagli` con `out_dir`, originali in
+    `tools/home_art/CODICE.webp` (le immagini nuove caricate dall'utente si scaricano con `Artifact read` + `path` =
+    id dell'asset), poi `python3 tools/apply_home_cuts.py CARTELLA` e le voci mancanti in `covers.ts`.
   - Immagini date dall'utente per un prodotto: metterle **in tutte le sezioni dove il prodotto può comparire** (scelta
     dell'utente "ovunque necessario"): uscito → Set da completare (e In evidenza se è l'ultimo del suo tipo); in arrivo →
     All'orizzonte, In evidenza e Set da completare (per dopo l'uscita). 9 novembre 2026: LM06, LM07 (Set da completare),
