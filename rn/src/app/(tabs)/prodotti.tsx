@@ -7,7 +7,8 @@ import { useLocalSearchParams, router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Svg, { Path, Rect } from "react-native-svg";
 import { DISPLAY, Text } from "../../Text";
-import { CardSet, PRODUCTS, SETBY, SETS, TYPES, UPCOMING, Upcoming, cardsOfSet, cdParts, daysTo, fold, monthLabel, normQ, numOf, soonSet, spoilerSet, upSorted, upWhen, useData } from "../../data";
+import { CardSet, PRODUCTS, SETBY, SETS, TYPES, UPCOMING, Upcoming, cardsOfSet, cdParts, daysTo, fold, monthLabel, normQ, numOf, soonSet, spoilerSet, upBadge, upSorted, upWhen, useData } from "../../data";
+import { SquareArt } from "../../home";
 import { setStats, useStore } from "../../store";
 import { openUpcoming } from "../../nav";
 import { useTheme } from "../../theme";
@@ -131,8 +132,61 @@ function SoonItem({ u }: { u: Upcoming }) {
   );
 }
 
+// PROPOSTE (ramo recenti-proposte) per "In arrivo", con le misure e le scritte delle file della Home
+function SoonRowA({ u }: { u: Upcoming }) {
+  const t = useTheme();
+  const sps = spoilerSet(u.code);
+  const can = !!(PRODUCTS[u.code] || sps);
+  const day = u.prec === "day";
+  return (
+    <Pressable disabled={!can} onPress={() => openUpcoming(u.code)} style={{ flexDirection: "row", gap: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: t.line }}>
+      <View style={{ width: 84, height: 84, borderRadius: 12, overflow: "hidden" }}>
+        <SquareArt code={u.code} />
+      </View>
+      <View style={{ flex: 1, minWidth: 0, justifyContent: "center" }}>
+        <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, letterSpacing: 0.6 }} numberOfLines={1}>
+          {u.code} · {u.kind}
+        </Text>
+        <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 15, lineHeight: 19, marginTop: 2 }} numberOfLines={2}>
+          {u.name}
+        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 5 }}>
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: day ? t.accent : t.cyan }} />
+          <Text style={{ color: day ? t.accent : t.cyan, fontFamily: DISPLAY, fontWeight: "700", fontSize: 12 }}>{u.prec === "none" ? "Da definire" : upWhen(u)}</Text>
+          <Text style={{ color: t.ink2, fontSize: 11.5 }}>· {upBadge(u)}</Text>
+        </View>
+        {sps ? <Text style={{ color: t.accent, fontSize: 12, fontWeight: "600", marginTop: 3 }}>{spoilerN(sps)} carte svelate</Text> : null}
+      </View>
+    </Pressable>
+  );
+}
+function SoonTileB({ u, w }: { u: Upcoming; w: number }) {
+  const t = useTheme();
+  const sps = spoilerSet(u.code);
+  const can = !!(PRODUCTS[u.code] || sps);
+  const day = u.prec === "day";
+  return (
+    <Pressable disabled={!can} onPress={() => openUpcoming(u.code)} style={{ width: w, marginBottom: 18 }}>
+      <View style={{ width: w, height: w, borderRadius: 12, overflow: "hidden" }}>
+        <SquareArt code={u.code} />
+      </View>
+      <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, letterSpacing: 0.6, marginTop: 7 }} numberOfLines={1}>
+        {u.code} · {u.kind}
+      </Text>
+      <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 13, lineHeight: 17 }} numberOfLines={2}>
+        {u.name}
+      </Text>
+      <Text style={{ color: day ? t.accent : t.ink2, fontSize: 11.5, lineHeight: 16, marginTop: 2 }} numberOfLines={1}>
+        {u.prec === "none" ? "Da definire" : upWhen(u)} · {upBadge(u)}
+      </Text>
+      {sps ? <Text style={{ color: t.accent, fontSize: 11.5, fontWeight: "600" }}>{spoilerN(sps)} carte svelate</Text> : null}
+    </Pressable>
+  );
+}
 function SoonList() {
   const t = useTheme();
+  const { width: winW } = useWindowDimensions();
+  const tw = Math.floor((winW - 28 - 14) / 2);
   const groups: { k: string; label: string; items: Upcoming[] }[] = [];
   const byKey: Record<string, (typeof groups)[0]> = {};
   upSorted().forEach((u) => {
@@ -140,16 +194,30 @@ function SoonList() {
     if (!byKey[k]) groups.push((byKey[k] = { k, label: k === "tbd" ? "Senza data" : monthLabel(u.from), items: [] }));
     byKey[k].items.push(u);
   });
+  const few = groups.slice(0, 3);
+  const Head = ({ children }: { children: string }) => <Text style={{ color: t.accent, fontFamily: DISPLAY, fontWeight: "700", fontSize: 14, letterSpacing: 1.5, textTransform: "uppercase", marginTop: 18, marginBottom: 6 }}>{children}</Text>;
+  const Month = ({ label }: { label: string }) => <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 12.5, letterSpacing: 2, textTransform: "uppercase", marginTop: 16, marginBottom: 4 }}>{label}</Text>;
   return (
     <>
-      <Text style={{ color: t.ink2, fontSize: 13.6, marginBottom: 12 }}>Dalla più vicina. Le date possono riferirsi all'uscita giapponese: quella inglese può arrivare più tardi.</Text>
-      {groups.map((g) => (
-        <View key={g.k} style={{ paddingLeft: 18, borderLeftWidth: 2, borderLeftColor: t.line, marginLeft: 5, paddingBottom: 10 }}>
-          <View style={{ position: "absolute", left: -7, top: 8, width: 12, height: 12, borderRadius: 6, backgroundColor: t.cyan, boxShadow: `0 0 0 4px ${t.bg}` }} />
-          <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16.8, marginBottom: 10, paddingTop: 2 }}>{g.label}</Text>
+      <Text style={{ color: t.ink2, fontSize: 13.6, marginBottom: 4 }}>Dalla più vicina. Le date possono riferirsi all'uscita giapponese: quella inglese può arrivare più tardi.</Text>
+      <Head>Proposta A · righe</Head>
+      {few.map((g) => (
+        <View key={"a" + g.k}>
+          <Month label={g.label} />
           {g.items.map((u) => (
-            <SoonItem key={u.code} u={u} />
+            <SoonRowA key={u.code} u={u} />
           ))}
+        </View>
+      ))}
+      <Head>Proposta B · tessere</Head>
+      {few.map((g) => (
+        <View key={"b" + g.k}>
+          <Month label={g.label} />
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14, marginTop: 6 }}>
+            {g.items.map((u) => (
+              <SoonTileB key={u.code} u={u} w={tw} />
+            ))}
+          </View>
         </View>
       ))}
     </>

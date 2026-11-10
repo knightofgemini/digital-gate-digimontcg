@@ -371,17 +371,131 @@ export function Recent({ cw }: { cw: number }) {
   const stats = setStats();
   const list = recentSets(10);
   if (!list.length) return null;
-  // due schede intere e l'inizio della terza
-  const w = Math.floor((cw - GAP) / 2) - 18;
+  // PROPOSTE (ramo recenti-proposte): le tre versioni una sotto l'altra per le foto di confronto
+  const w = Math.floor((cw - GAP) / 2.3);
+  const wl = Math.floor((cw - GAP) / 1.25);
   return (
     <>
-      <Sec title="Usciti di recente" link="Tutti →" onLink={() => goTab("sets")} />
+      <Sec title="Recenti · A copertina" link="Tutti →" onLink={() => goTab("sets")} />
       <Carousel w={w}>
         {list.map((x) => (
-          <RecentCard key={x.id} x={x} st={stats[x.id]} w={w} />
+          <RecentTile key={x.id} x={x} st={stats[x.id]} w={w} kind="cover" />
+        ))}
+      </Carousel>
+      <Sec title="Recenti · B quadrato" link="Tutti →" onLink={() => goTab("sets")} />
+      <Carousel w={w}>
+        {list.map((x) => (
+          <RecentTile key={x.id} x={x} st={stats[x.id]} w={w} kind="square" />
+        ))}
+      </Carousel>
+      <Sec title="Recenti · C locandina" link="Tutti →" onLink={() => goTab("sets")} />
+      <Carousel w={wl}>
+        {list.map((x) => (
+          <RecentWide key={x.id} x={x} st={stats[x.id]} w={wl} />
         ))}
       </Carousel>
     </>
+  );
+}
+
+// etichetta in vetro sopra le immagini (come quelle di In evidenza)
+function GlassTag({ text, color }: { text: string; color: string }) {
+  return (
+    <View style={{ position: "absolute", top: 8, left: 8, borderRadius: 6, borderWidth: 1, borderColor: HERO.edge, backgroundColor: HERO.glass, paddingVertical: 3, paddingHorizontal: 6 }}>
+      <Text style={{ color, fontFamily: DISPLAY, fontWeight: "600", fontSize: 9.5, lineHeight: 13, letterSpacing: 1.2 }}>{text}</Text>
+    </View>
+  );
+}
+// immagine quadrata di un prodotto: taglio dell'editor, poi immagine dentro l'APK, poi banner tagliato (come All'orizzonte)
+export function SquareArt({ code }: { code: string }) {
+  useHomeArt();
+  const cut = artFor(code, "square");
+  if (cut) return <CutImg a={cut} />;
+  if (HORIZON_ART[code]) return <Image source={HORIZON_ART[code]} style={FILL} contentFit="cover" transition={120} />;
+  return <ProdImg code={code} prefer="banner" pos={focusPos(focusOf(code), 1, { left: "50%", top: "35%" })} />;
+}
+// scritte sotto le immagini, uguali in tutte le file della Home: codice, nome, riga in grigio
+function TileText({ code, name, children }: { code: string; name: string; children?: ReactNode }) {
+  const t = useTheme();
+  return (
+    <>
+      <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, letterSpacing: 0.6, marginTop: 7 }} numberOfLines={1}>
+        {code}
+      </Text>
+      <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 13, lineHeight: 17 }} numberOfLines={2}>
+        {name}
+      </Text>
+      {children}
+    </>
+  );
+}
+function RecentProg({ st }: { st?: { n: number; h: number } }) {
+  const t = useTheme();
+  if (!st || !st.n) return null;
+  const done = st.h === st.n;
+  return (
+    <View style={{ marginTop: 6 }}>
+      <Progress h={st.h} n={st.n} height={4} color={done ? t.ok : t.cyan} />
+      <Text style={{ color: done ? t.ok : t.ink2, fontSize: 11.5, lineHeight: 16, marginTop: 3, fontVariant: ["tabular-nums"] }}>
+        {st.h} / {st.n} carte
+      </Text>
+    </View>
+  );
+}
+function RecentTile({ x, st, w, kind }: { x: CardSet; st?: { n: number; h: number }; w: number; kind: "cover" | "square" }) {
+  const isNew = daysTo(x.date) >= -60;
+  const h = kind === "cover" ? Math.round((w * 91) / 65) : w;
+  return (
+    <Pressable onPress={() => openSet(x.id, "home")} accessibilityRole="button" accessibilityLabel={x.code + " " + x.name + (isNew ? ", nuovo" : "")} style={{ width: w }}>
+      <View style={{ width: w, height: h, borderRadius: 12, overflow: "hidden", backgroundColor: "#1a2540" }}>
+        {kind === "cover" ? <SetArt code={x.code} w={w} h={h} /> : <SquareArt code={x.code} />}
+        {isNew ? <GlassTag text="NUOVO" color="#4ade80" /> : null}
+      </View>
+      <TileText code={x.code} name={x.name}>
+        <RecentProg st={st} />
+      </TileText>
+    </Pressable>
+  );
+}
+// locandina larga: banner intero (già largo), nome sopra la sfumatura e avanzamento in fondo
+function RecentWide({ x, st, w }: { x: CardSet; st?: { n: number; h: number }; w: number }) {
+  const t = useTheme();
+  const isNew = daysTo(x.date) >= -60;
+  const b = bannerUrl(x.code);
+  const h = Math.round((w * 9) / 16);
+  const has = !!st && st.n > 0;
+  return (
+    <Pressable onPress={() => openSet(x.id, "home")} accessibilityRole="button" accessibilityLabel={x.code + " " + x.name} style={{ width: w, height: h, borderRadius: 12, overflow: "hidden", backgroundColor: "#1a2540", justifyContent: "flex-end" }}>
+      {b ? <Image source={b} style={FILL} contentFit="cover" contentPosition={{ left: "50%", top: "40%" }} cachePolicy="disk" transition={120} /> : <HeroFallback code={x.code} />}
+      <View pointerEvents="none" style={FILL}>
+        <Svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 100">
+          <Defs>
+            <LinearGradient id={"rw" + x.id} x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0.35" stopColor={HERO.bg} stopOpacity={0} />
+              <Stop offset="1" stopColor={HERO.bg} stopOpacity={0.94} />
+            </LinearGradient>
+          </Defs>
+          <Rect width="10" height="100" fill={`url(#rw${x.id})`} />
+        </Svg>
+      </View>
+      {isNew ? <GlassTag text="NUOVO" color="#4ade80" /> : null}
+      <View style={{ padding: 12 }}>
+        <Text style={{ color: HERO.eyebrow, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, letterSpacing: 0.6 }}>{x.code}</Text>
+        <Text style={{ color: HERO.title, fontFamily: DISPLAY, fontWeight: "700", fontSize: 18, lineHeight: 21 }} numberOfLines={1}>
+          {x.name}
+        </Text>
+        {has ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 }}>
+            <View style={{ flex: 1 }}>
+              <Progress h={st!.h} n={st!.n} height={4} color={st!.h === st!.n ? t.ok : "#63d5ee"} />
+            </View>
+            <Text style={{ color: HERO.soft, fontSize: 11.5, fontVariant: ["tabular-nums"] }}>
+              {st!.h} / {st!.n}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+    </Pressable>
   );
 }
 
