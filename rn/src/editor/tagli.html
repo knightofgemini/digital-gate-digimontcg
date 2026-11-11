@@ -243,6 +243,19 @@ button.b:disabled { opacity: .45; cursor: default; }
       <div class="status" id="banStatus" role="status"></div>
     </section>
     <div id="banEd"></div>
+
+    <section class="sec add" id="banAdd" hidden aria-labelledby="banAddT">
+      <div class="sec-head"><h2 id="banAddT">Carica un'immagine per il banner</h2><span class="rule">Vale solo per il banner: i riquadri della Home restano come sono</span></div>
+      <div class="row">
+        <input type="text" id="banCode" placeholder="Codice (vuoto = prodotto scelto)" autocomplete="off" aria-label="Codice del prodotto">
+        <input type="text" id="banName" placeholder="Nome, es. Dual Revolution" autocomplete="off" aria-label="Nome del prodotto">
+      </div>
+      <div class="row">
+        <input type="file" id="banFile" accept="image/png,image/jpeg,image/webp" aria-label="Immagine del banner">
+        <button class="b pri" id="banBtn" type="button">Carica</button>
+      </div>
+      <div class="status" id="banAddStatus" role="status"></div>
+    </section>
   </div>
 
   <div class="view" id="viewCmp" hidden>
@@ -752,7 +765,7 @@ button.b:disabled { opacity: .45; cursor: default; }
     ...PHONES.map(heroRow),
     fixRow("cover", "Set da completare", 65 / 91),
     fixRow("square", "All'orizzonte", 1),
-    { name: "Banner prodotti", cells: (c, img, ok) => {
+    { name: "Banner prodotti", ban: true, cells: (c, img, ok) => {
       const d = CUTS[c + "__prod"];
       if (!ok(d)) return [cmpEmpty(c, BAN_AR, "da fare")];
       const url = (window.LOGOS || {})[c], lg = d.logo;
@@ -765,7 +778,7 @@ button.b:disabled { opacity: .45; cursor: default; }
     const wrap = $("cmp");
     if (!wrap) return;
     wrap.textContent = "";
-    const codes = Object.keys(IMGS).sort(cmpSort);
+    const codes = banCodes();
     if (!codes.length) { const e = document.createElement("p"); e.className = "hint"; e.textContent = "Nessuna immagine ancora."; wrap.append(e); return; }
     const bySeries = new Map();
     for (const c of codes) { const k = seriesOf(c); if (!bySeries.has(k)) bySeries.set(k, []); bySeries.get(k).push(c); }
@@ -779,7 +792,7 @@ button.b:disabled { opacity: .45; cursor: default; }
         const nm = document.createElement("div"); nm.className = "cmp-tname"; nm.textContent = t.name;
         const row = document.createElement("div"); row.className = "cmp-scroll"; row.tabIndex = 0;
         row.setAttribute("role", "group"); row.setAttribute("aria-label", t.name + " · serie " + cat);
-        for (const c of list) { const img = IMGS[c]; const ok = (d) => !!d && d.asset === img.asset; for (const cell of t.cells(c, img, ok)) row.append(cell); }
+        for (const c of list) { const img = t.ban ? bimg(c) : IMGS[c]; const ok = (d) => !!d && !!img && d.asset === img.asset; for (const cell of t.cells(c, img, ok)) row.append(cell); }
         type.append(nm, row); blk.append(type);
       }
       wrap.append(blk);
@@ -793,6 +806,9 @@ button.b:disabled { opacity: .45; cursor: default; }
   const POS = [["tl", "In alto a sinistra"], ["tc", "In alto al centro"], ["tr", "In alto a destra"], ["ml", "Al centro a sinistra"], ["mc", "Al centro"], ["mr", "Al centro a destra"], ["bl", "In basso a sinistra"], ["bc", "In basso al centro"], ["br", "In basso a destra"]];
   const posName = (p) => (POS.find((x) => x[0] === p) || POS[7])[1].toLowerCase();
   let curB = null;
+  let BIMGS = {}; // codice -> immagine caricata solo per il banner (immagini/CODICE@ban)
+  const bimg = (c) => BIMGS[c] || IMGS[c];
+  const banCodes = () => [...new Set([...Object.keys(IMGS), ...Object.keys(BIMGS)])].sort(cmpSort);
   // logo sopra un riquadro largo W pixel: margine del 5% della larghezza, posizione per righe/colonne, larghezza s·W
   function logoLay(url, p, s, W) {
     const lay = document.createElement("div"); lay.className = "logo-lay";
@@ -808,8 +824,8 @@ button.b:disabled { opacity: .45; cursor: default; }
   }
   function fillBanPick() {
     const box = $("banPick");
-    const codes = Object.keys(IMGS).sort(cmpSort);
-    if (!codes.length) { box.textContent = "Nessuna immagine ancora: caricala da Taglia."; return; }
+    const codes = banCodes();
+    if (!codes.length) { box.textContent = "Nessuna immagine ancora: caricane una qui sotto."; return; }
     let sel = box.querySelector("select");
     if (!sel) {
       box.textContent = "";
@@ -822,19 +838,19 @@ button.b:disabled { opacity: .45; cursor: default; }
     for (const c of codes) {
       const cat = seriesOf(c);
       if (cat !== lastCat) { grp = document.createElement("optgroup"); grp.label = "Serie " + cat; sel.append(grp); lastCat = cat; }
-      const d = CUTS[c + "__prod"], done = d && d.asset === IMGS[c].asset;
+      const d = CUTS[c + "__prod"], bi = bimg(c), done = d && d.asset === bi.asset;
       const o = document.createElement("option"); o.value = c;
-      o.textContent = c + (IMGS[c].name ? " · " + IMGS[c].name : "") + (done ? " · banner fatto" : "");
+      o.textContent = c + (bi.name ? " · " + bi.name : "") + (BIMGS[c] ? " · immagine sua" : "") + (done ? " · banner fatto" : "");
       grp.append(o);
     }
     if (curB) sel.value = curB;
   }
   function renderBanner() {
     const ed = $("banEd"); ed.textContent = "";
-    if (!curB || !IMGS[curB]) curB = Object.keys(IMGS).sort(cmpSort)[0] || null;
+    if (!curB || !bimg(curB)) curB = banCodes()[0] || null;
     fillBanPick();
     if (!curB) return;
-    const img = IMGS[curB], code = curB;
+    const img = bimg(curB), code = curB;
     const saved = CUTS[code + "__prod"], ok = !!saved && saved.asset === img.asset;
     const st = ok ? fromRect(img, BAN_AR, saved) : { cx: 0.5, cy: 0.45, z: 1 };
     st.dirty = false;
@@ -938,6 +954,26 @@ button.b:disabled { opacity: .45; cursor: default; }
     sync();
   }
 
+  // immagine solo per il banner: immagini/CODICE@ban (il codice proposto è quello scelto qui sopra)
+  async function addBanImage() {
+    const st = $("banAddStatus");
+    const code = ($("banCode").value.trim() || curB || "").toUpperCase().replace(/[^A-Z0-9-]/g, "");
+    const name = $("banName").value.trim();
+    const file = $("banFile").files[0];
+    if (!code) { st.textContent = "Scrivi il codice del prodotto, per esempio BT25."; return; }
+    if (!file) { st.textContent = "Scegli un'immagine dal telefono o dal computer."; return; }
+    $("banBtn").disabled = true; st.textContent = "Carico l'immagine…";
+    try {
+      const up = await assets.upload(file, code + "@ban");
+      const old = bimg(code);
+      await db.doc("immagini/" + code + "@ban").set({ code, name: name || (old && old.name) || "", asset: up.id, w: up.w, h: up.h, at: new Date().toISOString() });
+      if (!BIMGS[code] || BIMGS[code].asset !== up.id) BIMGS[code] = { code, name: name || (old && old.name) || "", asset: up.id, w: up.w, h: up.h };
+      curB = code; renderBanner(); renderCompare(); st.textContent = "Caricata: ora puoi sistemare il banner di " + code + ".";
+      $("banCode").value = ""; $("banName").value = ""; $("banFile").value = "";
+    } catch (e) { st.textContent = "Caricamento non riuscito: " + (e && e.message || "errore") + "."; }
+    $("banBtn").disabled = false;
+  }
+
   // ---- avvio
   function showTab(t) {
     $("viewEdit").hidden = t !== "edit"; $("viewBan").hidden = t !== "ban"; $("viewCmp").hidden = t !== "cmp";
@@ -950,16 +986,20 @@ button.b:disabled { opacity: .45; cursor: default; }
     db = await window.claude.use("db");
     if (!db) { status("Il salvataggio non è disponibile.", true); $("chips").textContent = ""; return; }
     assets = await window.claude.use("assets");
-    if (assets) { $("addBox").hidden = false; $("addBtn").onclick = addImage; }
+    if (assets) { $("addBox").hidden = false; $("addBtn").onclick = addImage; $("banAdd").hidden = false; $("banBtn").onclick = addBanImage; }
     let gotImgs = false;
     const timer = setTimeout(() => { if (!gotImgs) status("Le immagini non arrivano ancora: controlla la connessione.", true); }, 10000);
     db.collection("immagini").onSnapshot((snap) => {
       gotImgs = true; if (!snap.metadata.fromCache) { clearTimeout(timer); status(""); }
-      const next = {}; snap.docs.forEach((d) => { const v = d.data(); if (v && v.asset) next[d.id] = Object.assign({ code: d.id }, v); });
+      // immagini/CODICE = riquadri della Home; immagini/CODICE@ban = immagine solo per il banner dei prodotti
+      const next = {}, nextB = {};
+      snap.docs.forEach((d) => { const v = d.data(); if (!v || !v.asset) return; if (d.id.endsWith("@ban")) { const c = d.id.slice(0, -4); nextB[c] = Object.assign({}, v, { code: c }); } else next[d.id] = Object.assign({ code: d.id }, v); });
       const changed = !cur || !IMGS[cur] || !next[cur] || IMGS[cur].asset !== (next[cur] && next[cur].asset);
-      IMGS = next;
+      const oldB = curB ? bimg(curB) : null;
+      IMGS = next; BIMGS = nextB;
       if (!cur || !IMGS[cur]) cur = Object.keys(IMGS).sort()[0] || null;
-      const bch = !curB || !IMGS[curB] || !next[curB] || IMGS[curB].asset !== (next[curB] && next[curB].asset);
+      const nb = curB ? bimg(curB) : null;
+      const bch = !curB || !oldB || !nb || oldB.asset !== nb.asset;
       renderChips(); renderCompare(); if (changed) renderEditor(); if (bch) renderBanner(); else fillBanPick();
     }, (e) => { clearTimeout(timer); status("Non riesco a leggere le immagini (" + e.code + ").", true); });
     db.collection("tagli").onSnapshot((snap) => {

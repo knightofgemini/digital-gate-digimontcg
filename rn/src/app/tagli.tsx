@@ -108,7 +108,8 @@ function Editor() {
     const s = artState();
     // loghi delle espansioni dal sito (per la pagina "Banner prodotti")
     const logos: Record<string, string> = {};
-    Object.keys(s.immagini).forEach((c) => {
+    Object.keys(s.immagini).forEach((k) => {
+      const c = k.replace(/@ban$/, "");
       const u = NET.logo(c);
       if (u) logos[c] = u;
     });
