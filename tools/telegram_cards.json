@@ -414,6 +414,93 @@
    "digivolveEffect": "[Your Turn] This Digimon gets +2000 DP.",
    "rarity": "R",
    "_post": 8479
+  },
+  {
+   "id": "ST25-03",
+   "cardNumber": "ST25-03",
+   "name": {
+    "english": "Liskmon"
+   },
+   "cardType": "Digimon",
+   "color": "Red",
+   "cardLv": "Lv.4",
+   "form": "Champion",
+   "attribute": "Vaccine",
+   "type": "Bird Dragon/ALYSION",
+   "dp": "5000",
+   "playCost": "4",
+   "digivolveCondition": [
+    {
+     "color": "Red",
+     "cost": "2",
+     "level": "3"
+    }
+   ],
+   "effect": "[On Play] [When Digivolving] If you have 1 or fewer Tamers, you may play 1 [Kanata Hondo] from your hand without paying the cost.",
+   "digivolveEffect": "＜Raid＞ ",
+   "securityEffect": "-",
+   "specialDigivolve": "[Digivolve] Lv.3 w/[Gemmon] in text: Cost 2",
+   "rarity": "C",
+   "version": "Normal",
+   "notes": "STARTER DECK DIGIMON ALYSION RUBEUSDRAMON [ST-25]",
+   "_post": 8480,
+   "_src": "telegram"
+  },
+  {
+   "id": "ST25-04",
+   "cardNumber": "ST25-04",
+   "name": {
+    "english": "Reptilimon"
+   },
+   "cardType": "Digimon",
+   "color": "Red",
+   "cardLv": "Lv.5",
+   "form": "Ultimate",
+   "attribute": "Vaccine",
+   "type": "Dragon Warrior/ALYSION",
+   "dp": "7000",
+   "playCost": "7",
+   "digivolveCondition": [
+    {
+     "color": "Red",
+     "cost": "3",
+     "level": "4"
+    }
+   ],
+   "effect": "＜Engage＞ \n[On Play] [When Digivolving] 1 of your Digimon gets +3000 DP for the turn. Then, if that Digimon has 12000 DP or more, it also gains ＜Security A. +1＞ ",
+   "digivolveEffect": "[Your Turn] This Digimon with [Gemmon] in its text gains ＜Engage＞ ",
+   "securityEffect": "-",
+   "specialDigivolve": "[Digivolve] Lv.4 w/[Gemmon] in text: Cost 3",
+   "rarity": "U",
+   "version": "Normal",
+   "notes": "STARTER DECK DIGIMON ALYSION RUBEUSDRAMON [ST-25]",
+   "_post": 8481,
+   "_src": "telegram"
+  },
+  {
+   "id": "ST25-06",
+   "cardNumber": "ST25-06",
+   "name": {
+    "english": "Kanata Hondo"
+   },
+   "cardType": "Tamer",
+   "color": "Red",
+   "cardLv": "-",
+   "form": "-",
+   "attribute": "-",
+   "type": "ALYSION",
+   "dp": "-",
+   "playCost": "4",
+   "digivolveCondition": [],
+   "effect": "[Start of Your Turn] If you have 2 or less memory, set it to 3.\n[Your Turn] When your Digimon are played or digivolve, if any of them have the [ALYSION] trait, by suspending this Tamer, for the turn, 1 of your Digimon isn't affected by your opponent's Option effects and gets +3000 DP.",
+   "digivolveEffect": "-",
+   "securityEffect": "[Security] Play this card without paying the cost.",
+   "specialDigivolve": "-",
+   "rarity": "R",
+   "version": "Normal",
+   "notes": "STARTER DECK DIGIMON ALYSION RUBEUSDRAMON [ST-25]",
+   "_post": 8482,
+   "_src": "telegram"
   }
  ]
 }
