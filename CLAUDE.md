@@ -14,10 +14,10 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
 ## Come lavorare con l'utente
 
 - **Rispondere sempre in italiano.** Tutta l'interfaccia è in italiano.
-- **Mostrare un'anteprima prima di pubblicare**: lavorare su un ramo (es. `feature-x`) e far provare un **APK di prova**
-  (`apk-prova.yml`, oppure `build.yml` avviato a mano sul ramo con "prova" e "apk": release `rn-prova`); per vedere le
-  schermate senza telefono, foto su emulatore (`prova-emulatore.yml`). Fondere in `main` e pubblicare **solo dopo
-  l'ok** ("vai", "pubblica", "okay").
+- **Mostrare un'anteprima prima di pubblicare**: lavorare su un ramo (es. `feature-x`) e mostrare **le foto su
+  emulatore** (`prova-emulatore.yml`). **Niente APK di prova di propria iniziativa** (scelta dell'utente, 11 novembre
+  2026: "bastano le foto"): `apk-prova.yml` solo se lo chiede lui. Fondere in `main` e pubblicare **solo dopo l'ok**
+  ("vai", "pubblica", "okay").
 - Dopo la pubblicazione, aspettare che il flusso finisca e confermare (APK dal link sopra; l'app propone da sola
   l'aggiornamento).
 - Spiegazioni semplici, senza gergo tecnico; l'utente non è uno sviluppatore.
@@ -247,6 +247,17 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
     dell'utente "ovunque necessario"): uscito → Set da completare (e In evidenza se è l'ultimo del suo tipo); in arrivo →
     All'orizzonte, In evidenza e Set da completare (per dopo l'uscita). 9 novembre 2026: LM06, LM07 (Set da completare),
     LM09 (tutte e tre).
+- **Usciti di recente e In arrivo con le misure della Home nuova (11 novembre 2026, ramo `recenti-proposte`, segnalato
+  dall'utente: le sezioni nate agli inizi non erano coerenti con la Home nuova)**: scelta dell'utente tra proposte fotografate
+  sull'emulatore. "Usciti di recente" = **copertina** (`RecentCover` in `home.tsx`: formato carta 65:91 come "Set da
+  completare" con gli stessi tagli dell'editor (`SetArt`: taglio cover → `COVERS` → banner), larga come le schede di
+  All'orizzonte (1/2,3), etichetta in vetro NUOVO, sotto codice, nome e avanzamento; provata anche la locandina con la
+  forma di In evidenza, poi scelta la copertina; scartato il quadrato). "In
+  arrivo" della pagina Prodotti = **righe** senza riquadro (`SoonRow` in `prodotti.tsx`: immagine quadrata 84 con
+  `SquareArt` di `home.tsx`, cioè tagli "All'orizzonte" dell'editor → APK → banner; codice e tipo in azzurro, nome,
+  data arancione se il giorno è esatto o azzurra se solo il mese, conto alla rovescia di `upBadge`, carte svelate)
+  **dentro la linea del tempo per mese di prima** (linea a sinistra, punto e titolo del mese; scartate le tessere su due
+  colonne). `tools/rn_home.py` fotografa anche In arrivo a pagina intera (`h18_inarrivo_intera`).
 - **Prove più veloci (7 novembre 2026)**: in `apk.yml` e `prova-emulatore.yml` si conservano tra una build e l'altra i
   file di Gradle, i suoi risultati riutilizzabili (`org.gradle.caching=true`) e le parti in C++ (ccache, finora poche
   riuse); emulatore salvato dopo il primo avvio (cache `avd-…`). APK di prova da 18 a 11 minuti. `prova-emulatore.yml`

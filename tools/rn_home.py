@@ -242,6 +242,14 @@ if h:
     for i in range(1, 6):
         shot("h15_evidenza_%d" % i)
         hswipe(h[0][1])
+# 1a) Prodotti → In arrivo, pagina intera (dal collegamento "Calendario" di All'orizzonte)
+home()
+for _ in range(5):
+    if tap("^Calendario", wait=3, ymax=0.9):
+        break
+    swipe(0.35)
+full("h18_inarrivo_intera")
+home()
 # 1b) "In evidenza" sui pieghevoli aperti (10 novembre 2026, segnalato dall'utente: pulsante tagliato): 600 dp, Galaxy Z
 # Fold (circa 690 dp) e Pixel Fold (circa 840 dp, schermo più largo che alto)
 for name, sz, dens in (("600dp", "1080x2400", 288), ("fold690", "1812x2176", 420), ("fold840", "2208x1840", 420)):

@@ -329,60 +329,71 @@ export function SpoilerRow({ sp }: { sp: Spoil[] }) {
 }
 
 // ---- usciti di recente: recentSets (stessa scelta e stesso ordine di prima), a scorrimento
-function RecentCard({ x, st, w }: { x: CardSet; st?: { n: number; h: number }; w: number }) {
-  const t = useTheme();
-  const isNew = daysTo(x.date) >= -60;
-  const has = !!st && st.n > 0;
-  const done = has && st!.h === st!.n;
-  const b = bannerUrl(x.code);
-  return (
-    <Pressable onPress={() => openSet(x.id, "home")} accessibilityRole="button" accessibilityLabel={x.code + " " + x.name + (isNew ? ", nuovo" : "") + (has ? ": " + st!.h + " su " + st!.n + " carte" : "")} style={{ width: w, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, overflow: "hidden" }}>
-      <View style={{ width: "100%", aspectRatio: 1.6, alignItems: "center", justifyContent: "center", backgroundColor: "#1a2540" }}>
-        {b ? (
-          <Image source={b} style={FILL} contentFit="cover" contentPosition={{ left: "50%", top: "40%" }} cachePolicy="disk" transition={120} />
-        ) : (
-          <Text style={{ color: "#c7d2e8", fontFamily: DISPLAY, fontWeight: "700", fontStyle: "italic", fontSize: 22 }}>{x.code}</Text>
-        )}
-      </View>
-      <View style={{ flex: 1, paddingHorizontal: 10, paddingTop: 10, paddingBottom: 11 }}>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 5 }}>
-          <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, lineHeight: 15, letterSpacing: 0.6 }}>{x.code}</Text>
-          {isNew ? (
-            <View style={{ borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1, backgroundColor: t.dark ? "#163329" : "#eaf6ed" }}>
-              <Text style={{ color: t.ok, fontFamily: DISPLAY, fontWeight: "600", fontSize: 9.5, lineHeight: 13 }}>NUOVO</Text>
-            </View>
-          ) : null}
-        </View>
-        <Text style={{ minHeight: 36, color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 14, lineHeight: 18, letterSpacing: 0.05, textTransform: "uppercase", marginTop: 5, marginBottom: 8 }}>{x.name}</Text>
-        {has ? (
-          <View style={{ marginTop: "auto" }}>
-            <Progress h={st!.h} n={st!.n} height={5} color={done ? t.ok : t.cyan} />
-            <Text style={{ color: done ? t.ok : t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, marginTop: 5, fontVariant: ["tabular-nums"] }}>
-              {st!.h} / {st!.n} carte
-            </Text>
-          </View>
-        ) : null}
-      </View>
-    </Pressable>
-  );
-}
-
 export function Recent({ cw }: { cw: number }) {
   const stats = setStats();
   const list = recentSets(10);
   if (!list.length) return null;
-  // due schede intere e l'inizio della terza
-  const w = Math.floor((cw - GAP) / 2) - 18;
+  // copertina (11 novembre 2026, scelta dell'utente tra copertina, quadrato e locandina): formato carta come "Set da
+  // completare" (stessi tagli dell'editor), larga come le schede di All'orizzonte, scritte uguali alle altre file
+  const w = Math.floor((cw - GAP) / 2.3);
+  const h = Math.round((w * 91) / 65);
   return (
     <>
       <Sec title="Usciti di recente" link="Tutti →" onLink={() => goTab("sets")} />
       <Carousel w={w}>
         {list.map((x) => (
-          <RecentCard key={x.id} x={x} st={stats[x.id]} w={w} />
+          <RecentCover key={x.id} x={x} st={stats[x.id]} w={w} h={h} />
         ))}
       </Carousel>
     </>
   );
+}
+
+function RecentCover({ x, st, w, h }: { x: CardSet; st?: { n: number; h: number }; w: number; h: number }) {
+  const t = useTheme();
+  const isNew = daysTo(x.date) >= -60;
+  const has = !!st && st.n > 0;
+  const done = has && st!.h === st!.n;
+  return (
+    <Pressable onPress={() => openSet(x.id, "home")} accessibilityRole="button" accessibilityLabel={x.code + " " + x.name + (isNew ? ", nuovo" : "") + (has ? ": " + st!.h + " su " + st!.n + " carte" : "")} style={{ width: w }}>
+      <View style={{ width: w, height: h, borderRadius: 12, overflow: "hidden", backgroundColor: "#1a2540" }}>
+        <SetArt code={x.code} w={w} h={h} />
+        {isNew ? <GlassTag text="NUOVO" color="#4ade80" /> : null}
+      </View>
+      <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, letterSpacing: 0.6, marginTop: 7 }} numberOfLines={1}>
+        {x.code}
+      </Text>
+      <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 13, lineHeight: 17 }} numberOfLines={2}>
+        {x.name}
+      </Text>
+      {has ? (
+        <View style={{ marginTop: 6 }}>
+          <Progress h={st!.h} n={st!.n} height={4} color={done ? t.ok : t.cyan} />
+          <Text style={{ color: done ? t.ok : t.ink2, fontSize: 11.5, lineHeight: 16, marginTop: 3, fontVariant: ["tabular-nums"] }}>
+            {st!.h} / {st!.n} carte
+          </Text>
+        </View>
+      ) : null}
+    </Pressable>
+  );
+}
+
+// etichetta in vetro sopra le immagini (come quelle di In evidenza)
+function GlassTag({ text, color }: { text: string; color: string }) {
+  return (
+    <View style={{ position: "absolute", top: 8, left: 8, borderRadius: 6, borderWidth: 1, borderColor: HERO.edge, backgroundColor: HERO.glass, paddingVertical: 3, paddingHorizontal: 6 }}>
+      <Text style={{ color, fontFamily: DISPLAY, fontWeight: "600", fontSize: 9.5, lineHeight: 13, letterSpacing: 1.2 }}>{text}</Text>
+    </View>
+  );
+}
+// immagine quadrata di un prodotto: taglio dell'editor, poi immagine dentro l'APK, poi banner tagliato (come All'orizzonte;
+// usata anche dalle righe di "In arrivo" nella pagina Prodotti)
+export function SquareArt({ code }: { code: string }) {
+  useHomeArt();
+  const cut = artFor(code, "square");
+  if (cut) return <CutImg a={cut} />;
+  if (HORIZON_ART[code]) return <Image source={HORIZON_ART[code]} style={FILL} contentFit="cover" transition={120} />;
+  return <ProdImg code={code} prefer="banner" pos={focusPos(focusOf(code), 1, { left: "50%", top: "35%" })} />;
 }
 
 // ---- All'orizzonte: una scheda per data; i prodotti dello stesso giorno (data esatta, stesso tipo, stesse uscite
