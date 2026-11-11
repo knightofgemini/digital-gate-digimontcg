@@ -18,6 +18,7 @@ import { S, owned, setStats, useStore } from "../../store";
 import { useTheme } from "../../theme";
 import { Screen, useBarState } from "../../chrome";
 import { ProdVisual, Progress } from "../../visual";
+import { artFor } from "../../homeArt";
 import { BOTTOM_PAD, BottomBar, FltChip } from "../../BottomBar";
 
 const REGIONS: Record<string, string> = { Europe: "Europa", "North America": "Nord America", "Latin America": "America Latina", Oceania: "Oceania", "United States": "Stati Uniti", "Other regions": "Altre regioni" };
@@ -131,7 +132,7 @@ export default function Prodotto() {
   const head = q ? null : (
     <View>
       <BackLink label={from === "home" ? "← Home" : fromColl ? "← La mia collezione" : "← Tutti i set"} />
-      {BANNERS[s.code] || (p && (p.lg || p.pk)) ? (
+      {BANNERS[s.code] || (p && (p.lg || p.pk)) || artFor(s.code, "prod") ? (
         <View style={{ borderRadius: 14, overflow: "hidden", marginTop: 6 }}>
           <ProdVisual code={s.code} />
         </View>

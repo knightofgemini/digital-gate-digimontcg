@@ -14,12 +14,13 @@ import { useTheme } from "../theme";
 import { Btn } from "../visual";
 import { EDITOR_HTML } from "../editor/html";
 import { RAW, artState } from "../homeArt";
+import { NET } from "../data";
 import { checkKey, editArt, fetchFresh, getKey, onKey, saveKey, uploadImage } from "../ghArt";
 
 // (i tipi della WebView non vanno d'accordo con React 19: si usa come componente generico, come in scan/Engine.tsx)
 const WV: any = WebView;
 const NEW_TOKEN = "https://github.com/settings/personal-access-tokens/new";
-const SEC_NAME: Record<string, string> = { hero: "In evidenza", cover: "Set da completare", square: "All'orizzonte" };
+const SEC_NAME: Record<string, string> = { hero: "In evidenza", cover: "Set da completare", square: "All'orizzonte", prod: "Banner prodotti" };
 
 function Top({ title, right }: { title: string; right?: ReactNode }) {
   const t = useTheme();
@@ -105,7 +106,13 @@ function Editor() {
   const send = (m: any) => ref.current?.injectJavaScript("window.__recv(" + JSON.stringify(m) + ");true;");
   const sendData = () => {
     const s = artState();
-    send({ t: "data", data: { immagini: s.immagini, tagli: s.tagli } });
+    // loghi delle espansioni dal sito (per la pagina "Banner prodotti")
+    const logos: Record<string, string> = {};
+    Object.keys(s.immagini).forEach((c) => {
+      const u = NET.logo(c);
+      if (u) logos[c] = u;
+    });
+    send({ t: "data", data: { immagini: s.immagini, tagli: s.tagli, logos } });
   };
   const onMessage = async (e: any) => {
     let m: any;

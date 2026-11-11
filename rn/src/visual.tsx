@@ -7,6 +7,7 @@ import Svg, { Circle, Defs, Path, RadialGradient, LinearGradient, Rect, Stop } f
 import { DISPLAY, Text } from "./Text";
 import { PRODUCTS, SITE, bannerUrl, logoUrl, packUrl } from "./data";
 import { useTheme } from "./theme";
+import { CutImg, LogoLay, artFor, useHomeArt } from "./homeArt";
 
 const stroke = (color: string, w = 2) => ({ stroke: color, strokeWidth: w, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, fill: "none" });
 export const Clock = ({ color, size = 10 }: { color: string; size?: number }) => (
@@ -86,15 +87,24 @@ export function Banner({ code, name, ratio = 16 / 9, radius = 12, ring = true, c
 // riquadro del prodotto (.pv): banner, altrimenti logo, confezione o codice
 export function ProdVisual({ code, radius = 0, codeSize = 32, children }: { code: string; radius?: number; codeSize?: number; children?: ReactNode }) {
   const p = PRODUCTS[code];
+  useHomeArt();
+  // banner scelto nell'editor (pagina "Banner prodotti": taglio 16:9 e logo dell'espansione), prima di tutto il resto
+  const cut = artFor(code, "prod");
+  const cl = cut && cut.logo ? logoUrl(code) : null;
   const b = bannerUrl(code);
   // dalle funzioni dei dati: così valgono le immagini salvate (Immagini offline) e le versioni aggiornate
   const lg = !b ? logoUrl(code) : null;
   const pk = !b && !lg ? packUrl(code) : null;
   return (
     // con l'illustrazione lo sfondo sfumato (disegnato) resterebbe coperto: un colore pieno basta ed è molto più leggero
-    <View style={{ width: "100%", aspectRatio: 16 / 9, borderRadius: radius, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: b ? "#1a2540" : undefined }}>
-      {b ? null : <Glow id={"pv" + code} kind="pv" />}
-      {b ? (
+    <View style={{ width: "100%", aspectRatio: 16 / 9, borderRadius: radius, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: cut || b ? "#1a2540" : undefined }}>
+      {cut || b ? null : <Glow id={"pv" + code} kind="pv" />}
+      {cut ? (
+        <>
+          <CutImg a={cut} />
+          {cl && cut.logo ? <LogoLay uri={cl} p={cut.logo.p} s={cut.logo.s} /> : null}
+        </>
+      ) : b ? (
         <Image source={b} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" contentPosition={{ left: "50%", top: "40%" }} cachePolicy="disk" transition={120} />
       ) : lg ? (
         <Image source={lg} style={{ width: "80%", height: "64%" }} contentFit="contain" cachePolicy="disk" />

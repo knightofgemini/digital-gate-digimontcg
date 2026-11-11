@@ -243,6 +243,15 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
     (`__hero@s|m|l|f`, `heroPhone`). Precedenza: tagli di `home-art` → immagini dentro l'APK (`covers.ts`) → banner.
     Niente APK nuovo né passaggio da Claude per i tagli. Ramo creato con i 12 tagli e le 5 immagini della pagina su
     claude.ai (che resta, ma non è più la fonte).
+  - **Editor senza tocco e pagina "Banner prodotti" (11 novembre 2026, richieste dell'utente)**: in Taglia niente più
+    trascinamento né pizzico sui riquadri (solo frecce, − / + e cursore: così il dito sopra i riquadri fa scorrere la
+    pagina). Nuova scheda **"Banner prodotti"** (pagina a parte, scelta dell'utente) per il riquadro 16:9 della pagina
+    Prodotti e del dettaglio dell'edizione (`ProdVisual` in `visual.tsx`, stesso formato): taglio dell'immagine caricata
+    con anteprima grande e piccola, **logo dell'espansione** in uno dei 9 punti (`tl tc tr ml mc mr bl bc br`) e
+    grandezza `s` (15-90% della larghezza del banner, margine 5% della larghezza). Documento `tagli/CODICE__prod` con
+    `logo: {p, s}`; i loghi arrivano dall'app (`logos` nel messaggio `data`, `NET.logo`). Nell'app `ProdVisual` usa
+    prima `artFor(code, "prod")` (`CutImg` + `LogoLay` in `homeArt.tsx`), poi banner/logo/confezione come prima; il
+    dettaglio dell'edizione mostra il riquadro anche se c'è solo il taglio. Nel Confronto la fila "Banner prodotti".
   - Immagini date dall'utente per un prodotto: metterle **in tutte le sezioni dove il prodotto può comparire** (scelta
     dell'utente "ovunque necessario"): uscito → Set da completare (e In evidenza se è l'ultimo del suo tipo); in arrivo →
     All'orizzonte, In evidenza e Set da completare (per dopo l'uscita). 9 novembre 2026: LM06, LM07 (Set da completare),
