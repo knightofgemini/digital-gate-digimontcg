@@ -334,6 +334,86 @@
    "_prod": "PB28",
    "_post": 8468,
    "_src": "telegram"
+  },
+  {
+   "id": "BT23-047_PT27",
+   "cardNumber": "BT23-047",
+   "name": {
+    "english": "Examon"
+   },
+   "version": "Alternative Art",
+   "notes": "PB-27 Premium Battle Set Ver. Royal Knights",
+   "_prod": "PB27",
+   "_post": 8474,
+   "_src": "telegram"
+  },
+  {
+   "id": "EX6-073_PT28",
+   "cardNumber": "EX6-073",
+   "name": {
+    "english": "Ogudomon"
+   },
+   "version": "Alternative Art",
+   "notes": "PB-28 Premium Battle Set Ver. Seven Great Demon Lords",
+   "_prod": "PB28",
+   "_post": 8477,
+   "_src": "telegram"
+  },
+  {
+   "attribute": "-",
+   "dp": "-",
+   "playCost": "-",
+   "digivolveCondition": [],
+   "effect": "-",
+   "securityEffect": "-",
+   "specialDigivolve": "-",
+   "version": "Normal",
+   "notes": "STARTER DECK DIGIMON ALYSION RUBEUSDRAMON [ST-25]",
+   "_src": "telegram",
+   "id": "ST25-01",
+   "cardNumber": "ST25-01",
+   "name": {
+    "english": "Tokomon"
+   },
+   "cardType": "Digi-Egg",
+   "color": "Red",
+   "cardLv": "Lv.2",
+   "form": "In-Training",
+   "type": "Lesser/ALYSION",
+   "digivolveEffect": "[Your Turn] While your opponent has 3 or more memory, this Digimon with [Gemmon] in its text gets +3000 DP.",
+   "rarity": "C",
+   "_post": 8478
+  },
+  {
+   "attribute": "Vaccine",
+   "dp": "1000",
+   "playCost": "3",
+   "digivolveCondition": [
+    {
+     "color": "Red",
+     "cost": "0",
+     "level": "2"
+    }
+   ],
+   "effect": "[When Moving] [On Play] 1 of your Digimon gets +3000 DP for the turn.",
+   "securityEffect": "-",
+   "specialDigivolve": "[Digivolve] Lv.2 w/[Gemmon] in text: Cost 0",
+   "version": "Normal",
+   "notes": "STARTER DECK DIGIMON ALYSION RUBEUSDRAMON [ST-25]",
+   "_src": "telegram",
+   "id": "ST25-02",
+   "cardNumber": "ST25-02",
+   "name": {
+    "english": "Gemmon"
+   },
+   "cardType": "Digimon",
+   "color": "Red",
+   "cardLv": "Lv.3",
+   "form": "Rookie",
+   "type": "Mythical Beast/ALYSION",
+   "digivolveEffect": "[Your Turn] This Digimon gets +2000 DP.",
+   "rarity": "R",
+   "_post": 8479
   }
  ]
 }
