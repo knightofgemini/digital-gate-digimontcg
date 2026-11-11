@@ -333,15 +333,17 @@ export function Recent({ cw }: { cw: number }) {
   const stats = setStats();
   const list = recentSets(10);
   if (!list.length) return null;
-  // locandina larga (11 novembre 2026, scelta dell'utente tra copertina, quadrato e locandina): una intera e l'inizio
-  // della successiva, banner intero con nome e avanzamento sopra la sfumatura, come un piccolo In evidenza
+  // locandina (11 novembre 2026, scelta dell'utente tra copertina, quadrato e locandina): una intera e l'inizio della
+  // successiva, con la stessa forma del riquadro "In evidenza" di questo telefono (largo cw − 22, alto 276) e gli
+  // stessi tagli dell'editor, nome e avanzamento sopra la sfumatura
   const w = Math.floor((cw - GAP) / 1.25);
+  const hh = Math.round((w * 276) / (cw - 22));
   return (
     <>
       <Sec title="Usciti di recente" link="Tutti →" onLink={() => goTab("sets")} />
       <Carousel w={w}>
         {list.map((x) => (
-          <RecentWide key={x.id} x={x} st={stats[x.id]} w={w} />
+          <RecentWide key={x.id} x={x} st={stats[x.id]} w={w} h={hh} />
         ))}
       </Carousel>
     </>
@@ -365,16 +367,28 @@ export function SquareArt({ code }: { code: string }) {
   if (HORIZON_ART[code]) return <Image source={HORIZON_ART[code]} style={FILL} contentFit="cover" transition={120} />;
   return <ProdImg code={code} prefer="banner" pos={focusPos(focusOf(code), 1, { left: "50%", top: "35%" })} />;
 }
-// locandina larga: banner intero (già largo), nome sopra la sfumatura e avanzamento in fondo
-function RecentWide({ x, st, w }: { x: CardSet; st?: { n: number; h: number }; w: number }) {
+// locandina: come In evidenza in piccolo (taglio "In evidenza" dell'editor → illustrazione dentro l'APK → banner),
+// nome sopra la sfumatura e avanzamento in fondo
+function RecentWide({ x, st, w, h }: { x: CardSet; st?: { n: number; h: number }; w: number; h: number }) {
   const t = useTheme();
+  useHomeArt();
+  const sw = useWindowDimensions().width;
   const isNew = daysTo(x.date) >= -60;
+  const cut = artFor(x.code, "hero", sw);
+  const art = HERO_ART[x.code];
   const b = bannerUrl(x.code);
-  const h = Math.round((w * 9) / 16);
   const has = !!st && st.n > 0;
   return (
     <Pressable onPress={() => openSet(x.id, "home")} accessibilityRole="button" accessibilityLabel={x.code + " " + x.name} style={{ width: w, height: h, borderRadius: 12, overflow: "hidden", backgroundColor: "#1a2540", justifyContent: "flex-end" }}>
-      {b ? <Image source={b} style={FILL} contentFit="cover" contentPosition={{ left: "50%", top: "40%" }} cachePolicy="disk" transition={120} /> : <HeroFallback code={x.code} />}
+      {cut ? (
+        <CutImg a={cut} />
+      ) : art ? (
+        <Image source={heroSrc(art, sw)} style={FILL} contentFit="cover" contentPosition={art.pos as any} transition={120} />
+      ) : b ? (
+        <Image source={b} style={FILL} contentFit="cover" contentPosition={{ left: "42%", top: "27%" }} cachePolicy="disk" transition={120} />
+      ) : (
+        <HeroFallback code={x.code} />
+      )}
       <View pointerEvents="none" style={FILL}>
         <Svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 100">
           <Defs>
