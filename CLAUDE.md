@@ -249,9 +249,10 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
     LM09 (tutte e tre).
 - **Usciti di recente e In arrivo con le misure della Home nuova (11 novembre 2026, ramo `recenti-proposte`, segnalato
   dall'utente: le sezioni nate agli inizi non erano coerenti con la Home nuova)**: scelta dell'utente tra proposte fotografate
-  sull'emulatore. "Usciti di recente" = **locandina** (`RecentWide` in `home.tsx`: larga 1/1,25 della pagina, **stessa forma
-  del riquadro In evidenza** di quel telefono e stessi tagli: taglio "In evidenza" dell'editor → `HERO_ART` → banner,
-  richiesta dell'utente; etichetta in vetro NUOVO, codice/nome/avanzamento sopra la sfumatura; scartate copertina e quadrato). "In
+  sull'emulatore. "Usciti di recente" = **copertina** (`RecentCover` in `home.tsx`: formato carta 65:91 come "Set da
+  completare" con gli stessi tagli dell'editor (`SetArt`: taglio cover → `COVERS` → banner), larga come le schede di
+  All'orizzonte (1/2,3), etichetta in vetro NUOVO, sotto codice, nome e avanzamento; provata anche la locandina con la
+  forma di In evidenza, poi scelta la copertina; scartato il quadrato). "In
   arrivo" della pagina Prodotti = **righe** senza riquadro (`SoonRow` in `prodotti.tsx`: immagine quadrata 84 con
   `SquareArt` di `home.tsx`, cioè tagli "All'orizzonte" dell'editor → APK → banner; codice e tipo in azzurro, nome,
   data arancione se il giorno è esatto o azzurra se solo il mese, conto alla rovescia di `upBadge`, carte svelate)
