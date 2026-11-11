@@ -254,6 +254,9 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
     `logo: {p, s}`; i loghi arrivano dall'app (`logos` nel messaggio `data`, `NET.logo`). Nell'app `ProdVisual` usa
     prima `artFor(code, "prod")` (`CutImg` + `LogoLay` in `homeArt.tsx`), poi banner/logo/confezione come prima; il
     dettaglio dell'edizione mostra il riquadro anche se c'è solo il taglio. Nel Confronto la fila "Banner prodotti".
+    **Immagini solo per il banner** (11 novembre 2026, richiesta dell'utente): nella pagina Banner prodotti si carica
+    un'immagine che vale solo per il banner (`immagini/CODICE@ban`; nella pagina `BIMGS`/`bimg`, nell'app `artFor(…,
+    "prod")` la preferisce a `immagini/CODICE`), così i tagli della Home restano validi.
   - Immagini date dall'utente per un prodotto: metterle **in tutte le sezioni dove il prodotto può comparire** (scelta
     dell'utente "ovunque necessario"): uscito → Set da completare (e In evidenza se è l'ultimo del suo tipo); in arrivo →
     All'orizzonte, In evidenza e Set da completare (per dopo l'uscita). 9 novembre 2026: LM06, LM07 (Set da completare),

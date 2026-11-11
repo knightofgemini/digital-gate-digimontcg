@@ -81,7 +81,8 @@ export type Logo = { p: string; s: number };
 export type Art = { uri: string; r: CutRect; w: number; h: number; logo?: Logo };
 // taglio per un prodotto e una sezione; In evidenza: prima quello proprio della larghezza del telefono, poi il comune
 export function artFor(code: string, sec: "hero" | "cover" | "square" | "prod", width?: number): Art | null {
-  const img = ART.immagini[code];
+  // il banner dei prodotti può avere un'immagine sua (immagini/CODICE@ban, caricata nella pagina "Banner prodotti")
+  const img = (sec === "prod" && ART.immagini[code + "@ban"]) || ART.immagini[code];
   if (!img || !img.asset) return null;
   const ok = (c?: ArtCut) => (c && c.asset === img.asset ? c : null);
   const c = (sec === "hero" && width ? ok(ART.tagli[code + "__hero@" + heroPhone(width)]) : null) || ok(ART.tagli[code + "__" + sec]);
