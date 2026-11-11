@@ -20,6 +20,8 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   ("vai", "pubblica", "okay").
 - Dopo la pubblicazione, aspettare che il flusso finisca e confermare (APK dal link sopra; l'app propone da sola
   l'aggiornamento).
+  **Niente messaggi intermedi** ("è partita", "sto aspettando"): rispondere solo a lavoro finito (scelta dell'utente,
+  11 novembre 2026).
 - Spiegazioni semplici, senza gergo tecnico; l'utente non è uno sviluppatore.
 - L'utente non può fare test qui: chiedere conferma quando qualcosa va provato su telefono (aggiornamento, gesti, scansione).
 - Obiettivo dell'utente: **app autonoma**. Catalogo dentro l'APK; da internet solo ciò che è troppo pesante o cambia
