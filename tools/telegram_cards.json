@@ -501,6 +501,40 @@
    "notes": "STARTER DECK DIGIMON ALYSION RUBEUSDRAMON [ST-25]",
    "_post": 8482,
    "_src": "telegram"
+  },
+  {
+   "id": "ST25-05",
+   "cardNumber": "ST25-05",
+   "name": {
+    "english": "Rubeusdramon/Burning Drive"
+   },
+   "cardType": "Digimon/Option",
+   "color": "Red",
+   "cardLv": "Lv.6",
+   "form": "Mega",
+   "attribute": "Vaccine",
+   "type": "Dragon Warrior/ALYSION",
+   "dp": "12000",
+   "playCost": "5",
+   "digivolveCondition": [
+    {
+     "color": "Red",
+     "cost": "3",
+     "level": "5"
+    }
+   ],
+   "effect": "＜Progress＞ \n＜Piercing＞ \n[When Digivolving] Delete up to 7000 DP total worth of your opponent's Digimon. For every 8000 DP this Digimon has, add 4000 to this DP deletion effect's maximum.\n[Your Turn] For every 8000 DP this Digimon has, it gains ＜Security A. +1＞ ",
+   "digivolveEffect": "-",
+   "securityEffect": "-",
+   "specialDigivolve": "[Digivolve] Lv.5 w/[Gemmon] in text: Cost 3",
+   "dualEffect": "[Arts Digivolve] ",
+   "optionCardColourRequirement": "Red",
+   "optionCardEffect": "[Main] 1 of your [ALYSION] trait Digimon gets +10000 DP for the turn. Then, delete 1 of your opponent's Digimon with as much DP as 1 of your Digimon or less.",
+   "rarity": "SR",
+   "version": "Normal",
+   "notes": "STARTER DECK DIGIMON ALYSION RUBEUSDRAMON [ST-25]",
+   "_post": 8483,
+   "_src": "telegram"
   }
  ]
 }
