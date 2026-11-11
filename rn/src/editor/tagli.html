@@ -52,7 +52,7 @@ h1 { font-family: var(--display); font-weight: 700; font-size: 26px; margin: 0; 
 .saved.changed { background: rgba(255, 184, 107, .14); color: var(--warn); }
 
 /* cornici: la zona dove si trascina */
-.frame { position: relative; overflow: hidden; background: #1a2540; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+.frame { position: relative; overflow: hidden; background: #1a2540; user-select: none; -webkit-user-select: none; }
 .frame.drag { cursor: grabbing; }
 .frame img { position: absolute; left: 0; top: 0; max-width: none; transform-origin: 0 0; pointer-events: none; }
 .guides { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .15s; }
@@ -155,6 +155,19 @@ button.b:disabled { opacity: .45; cursor: default; }
 @media (max-width: 420px) { .m-grid { grid-template-columns: repeat(2, auto); } }
 @media (prefers-reduced-motion: reduce) { .guides { transition: none; } }
 
+/* Banner prodotti: riquadro 16:9 della pagina Prodotti e del dettaglio dell'edizione, con il logo sopra */
+.frame.ban { width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; }
+.frame.ban.small { width: 48%; border-radius: 12px; }
+.frame .logo-lay, .cmp-box .logo-lay { position: absolute; inset: 0; display: flex; flex-direction: column; pointer-events: none; }
+.frame .logo-lay img, .cmp-box .logo-lay img { position: static; transform: none; height: auto; max-width: none; }
+.posgrid { display: grid; grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(3, 34px); gap: 4px; flex: none; }
+.posgrid button { border-radius: 8px; border: 1px solid var(--line); background: var(--surface2); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.posgrid button i { width: 10px; height: 10px; border-radius: 3px; background: var(--ink2); }
+.posgrid button[aria-pressed="true"] { border-color: var(--cyan); background: var(--cyan-soft); }
+.posgrid button[aria-pressed="true"] i { background: var(--cyan); }
+.posgrid button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.ban-prev { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.ban-prev .cap { font-size: 12px; color: var(--ink2); margin-top: 5px; }
 /* [hidden] vince sempre sulle regole di display delle classi */
 [hidden] { display: none !important; }
 .view { display: flex; flex-direction: column; gap: 22px; }
@@ -196,6 +209,7 @@ button.b:disabled { opacity: .45; cursor: default; }
 
   <div class="tabs" role="group" aria-label="Vista">
     <button type="button" class="chip" id="tabEdit" aria-pressed="true">Taglia</button>
+    <button type="button" class="chip" id="tabBan" aria-pressed="false">Banner prodotti</button>
     <button type="button" class="chip" id="tabCmp" aria-pressed="false">Confronto</button>
   </div>
 
@@ -222,6 +236,15 @@ button.b:disabled { opacity: .45; cursor: default; }
     </section>
   </div>
 
+  <div class="view" id="viewBan" hidden>
+    <section aria-labelledby="banP">
+      <div class="eyebrow" id="banP" style="margin-bottom:10px">Prodotto</div>
+      <div id="banPick"></div>
+      <div class="status" id="banStatus" role="status"></div>
+    </section>
+    <div id="banEd"></div>
+  </div>
+
   <div class="view" id="viewCmp" hidden>
     <section class="cmp-wrap" aria-labelledby="cmpT">
       <div class="sec-head"><h2 id="cmpT">Tutto quello che hai caricato</h2><span class="rule">Per serie e tipo di banner · scorri a destra</span></div>
@@ -241,7 +264,7 @@ button.b:disabled { opacity: .45; cursor: default; }
   const call = (m) => new Promise((ok, ko) => { const id = ++n; wait[id] = { ok, ko }; post(Object.assign({ id }, m)); });
   const snap = (c) => ({ metadata: { fromCache: false }, docs: Object.keys((DATA && DATA[c]) || {}).map((id) => ({ id, data: () => DATA[c][id] })) });
   window.__recv = (m) => {
-    if (m.t === "data") { DATA = m.data; Object.keys(subs).forEach((c) => subs[c].forEach((f) => f(snap(c)))); return; }
+    if (m.t === "data") { DATA = m.data; window.LOGOS = m.data.logos || {}; Object.keys(subs).forEach((c) => subs[c].forEach((f) => f(snap(c)))); return; }
     const w = wait[m.id]; if (!w) return; delete wait[m.id];
     if (m.err) w.ko(new Error(m.err)); else w.ok(m.res);
   };
@@ -359,7 +382,7 @@ button.b:disabled { opacity: .45; cursor: default; }
     f.className = "frame " + sec.id;
     f.tabIndex = 0;
     f.setAttribute("role", "img");
-    f.setAttribute("aria-label", "Inquadratura per " + sec.name + ". Trascina per spostare, frecce per spostare, + e − per lo zoom.");
+    f.setAttribute("aria-label", "Inquadratura per " + sec.name + ". Frecce per spostare, + e − per lo zoom.");
     const im = document.createElement("img");
     im.alt = ""; im.draggable = false; im.src = BLOB(img.asset);
     const g = document.createElement("div"); g.className = "guides";
@@ -601,21 +624,8 @@ button.b:disabled { opacity: .45; cursor: default; }
         sync(); renderChips();
       };
 
-      // trascinamento e pizzico
-      const pts = new Map(); let last = null, pinch = null;
-      frame.addEventListener("pointerdown", (e) => { frame.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); frame.classList.add("drag"); last = { x: e.clientX, y: e.clientY }; if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: target().st.z }; } });
-      frame.addEventListener("pointermove", (e) => {
-        if (!pts.has(e.pointerId)) return;
-        pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-        const st = target().st;
-        if (pts.size >= 2 && pinch) { const [a, b] = [...pts.values()]; st.z = Math.max(1, Math.min(ZMAX, pinch.z * Math.hypot(a.x - b.x, a.y - b.y) / pinch.d)); touch(); return; }
-        const r = isHero ? rectFor(phone) : rectFor(null), s = frame.getBoundingClientRect().width / (r.x1 - r.x0);
-        st.cx -= (e.clientX - last.x) / s / img.w; st.cy -= (e.clientY - last.y) / s / img.h;
-        last = { x: e.clientX, y: e.clientY }; touch();
-      });
-      const up = (e) => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null; if (!pts.size) frame.classList.remove("drag"); else { const p = [...pts.values()][0]; last = { x: p.x, y: p.y }; } };
-      frame.addEventListener("pointerup", up); frame.addEventListener("pointercancel", up);
-      frame.addEventListener("wheel", (e) => { e.preventDefault(); const st = target().st; st.z = Math.max(1, Math.min(ZMAX, st.z * Math.exp(-e.deltaY * 0.0015))); touch(); }, { passive: false });
+      // niente trascinamento né pizzico (11 novembre 2026, richiesta dell'utente): solo frecce, − / + e cursore; così il
+      // dito sopra i riquadri fa scorrere la pagina
       frame.addEventListener("keydown", (e) => {
         const k = e.key;
         if (k === "ArrowLeft") move(-1, 0)(1); else if (k === "ArrowRight") move(1, 0)(1);
@@ -646,7 +656,7 @@ button.b:disabled { opacity: .45; cursor: default; }
       sync();
     }
     const tip = document.createElement("p"); tip.className = "hint";
-    tip.textContent = "Trascina con un dito o col mouse, oppure usa le frecce: un tocco sposta di 1 pixel, tenendo premuto continua. Lo zoom si regola con − e + (0,01 a tocco), col cursore o pizzicando. In \"In evidenza\" la catena tiene tutti i telefoni insieme: sganciala per sistemare solo il telefono scelto. I tagli salvati arrivano nell'app di tutti in pochi minuti.";
+    tip.textContent = "Usa le frecce: un tocco sposta di 1 pixel, tenendo premuto continua. Lo zoom si regola con − e + (0,01 a tocco) o col cursore. In \"In evidenza\" la catena tiene tutti i telefoni insieme: sganciala per sistemare solo il telefono scelto. I tagli salvati arrivano nell'app di tutti in pochi minuti.";
     list.append(tip);
     ed.append(list);
   }
@@ -742,6 +752,14 @@ button.b:disabled { opacity: .45; cursor: default; }
     ...PHONES.map(heroRow),
     fixRow("cover", "Set da completare", 65 / 91),
     fixRow("square", "All'orizzonte", 1),
+    { name: "Banner prodotti", cells: (c, img, ok) => {
+      const d = CUTS[c + "__prod"];
+      if (!ok(d)) return [cmpEmpty(c, BAN_AR, "da fare")];
+      const url = (window.LOGOS || {})[c], lg = d.logo;
+      const cell = cmpThumb(img, d, c, zTxt(zoomOf(img, d, BAN_AR)), url && lg ? "logo " + posName(lg.p) + " · " + Math.round(lg.s * 100) + "%" : "senza logo");
+      if (url && lg) { const b = cell.querySelector(".cmp-box"); b.append(logoLay(url, lg.p, lg.s, parseFloat(b.style.width))); }
+      return [cell];
+    } },
   ];
   function renderCompare() {
     const wrap = $("cmp");
@@ -768,15 +786,166 @@ button.b:disabled { opacity: .45; cursor: default; }
     }
   }
 
+  // ---- Banner prodotti (11 novembre 2026, richiesta dell'utente): taglio 16:9 per la pagina Prodotti e il dettaglio
+  // dell'edizione (stesso riquadro, ProdVisual nell'app) con il logo dell'espansione in uno dei 9 punti e la sua
+  // grandezza (frazione della larghezza del banner). Documento tagli/CODICE__prod con logo: { p, s }.
+  const BAN_AR = 16 / 9, LOGO_M = 0.05;
+  const POS = [["tl", "In alto a sinistra"], ["tc", "In alto al centro"], ["tr", "In alto a destra"], ["ml", "Al centro a sinistra"], ["mc", "Al centro"], ["mr", "Al centro a destra"], ["bl", "In basso a sinistra"], ["bc", "In basso al centro"], ["br", "In basso a destra"]];
+  const posName = (p) => (POS.find((x) => x[0] === p) || POS[7])[1].toLowerCase();
+  let curB = null;
+  // logo sopra un riquadro largo W pixel: margine del 5% della larghezza, posizione per righe/colonne, larghezza s·W
+  function logoLay(url, p, s, W) {
+    const lay = document.createElement("div"); lay.className = "logo-lay";
+    const im = document.createElement("img"); im.alt = ""; im.draggable = false; im.src = url;
+    lay.append(im); setLogo(lay, p, s, W);
+    return lay;
+  }
+  function setLogo(lay, p, s, W) {
+    lay.style.padding = Math.round(W * LOGO_M) + "px";
+    lay.style.justifyContent = p[0] === "t" ? "flex-start" : p[0] === "m" ? "center" : "flex-end";
+    lay.style.alignItems = p[1] === "l" ? "flex-start" : p[1] === "c" ? "center" : "flex-end";
+    lay.querySelector("img").style.width = Math.round(W * s) + "px";
+  }
+  function fillBanPick() {
+    const box = $("banPick");
+    const codes = Object.keys(IMGS).sort(cmpSort);
+    if (!codes.length) { box.textContent = "Nessuna immagine ancora: caricala da Taglia."; return; }
+    let sel = box.querySelector("select");
+    if (!sel) {
+      box.textContent = "";
+      sel = document.createElement("select"); sel.className = "sel"; sel.setAttribute("aria-label", "Prodotto del banner");
+      sel.onchange = () => { curB = sel.value; renderBanner(); };
+      box.append(sel);
+    }
+    sel.textContent = "";
+    let grp = null, lastCat = null;
+    for (const c of codes) {
+      const cat = seriesOf(c);
+      if (cat !== lastCat) { grp = document.createElement("optgroup"); grp.label = "Serie " + cat; sel.append(grp); lastCat = cat; }
+      const d = CUTS[c + "__prod"], done = d && d.asset === IMGS[c].asset;
+      const o = document.createElement("option"); o.value = c;
+      o.textContent = c + (IMGS[c].name ? " · " + IMGS[c].name : "") + (done ? " · banner fatto" : "");
+      grp.append(o);
+    }
+    if (curB) sel.value = curB;
+  }
+  function renderBanner() {
+    const ed = $("banEd"); ed.textContent = "";
+    if (!curB || !IMGS[curB]) curB = Object.keys(IMGS).sort(cmpSort)[0] || null;
+    fillBanPick();
+    if (!curB) return;
+    const img = IMGS[curB], code = curB;
+    const saved = CUTS[code + "__prod"], ok = !!saved && saved.asset === img.asset;
+    const st = ok ? fromRect(img, BAN_AR, saved) : { cx: 0.5, cy: 0.45, z: 1 };
+    st.dirty = false;
+    let lp = (ok && saved.logo && saved.logo.p) || "bc", ls = (ok && saved.logo && saved.logo.s) || 0.45;
+    const url = (window.LOGOS || {})[code];
+
+    const box = document.createElement("section"); box.className = "sec";
+    const head = document.createElement("div"); head.className = "sec-head";
+    const h = document.createElement("h2"); h.textContent = "Banner prodotti";
+    const badge = document.createElement("span"); badge.className = "saved";
+    head.append(h, badge);
+    const rule = document.createElement("div"); rule.className = "hint";
+    rule.textContent = "Lo stesso riquadro 16:9 si vede nella pagina Prodotti (piccolo) e in cima al dettaglio dell'edizione (grande).";
+    const big = frameFor({ id: "ban", name: "Banner prodotti" }, img);
+    const small = frameFor({ id: "ban small", name: "Banner prodotti, riquadro piccolo" }, img);
+    const lays = url ? [big, small].map((f) => { const l = logoLay(url, lp, ls, 300); f.append(l); return l; }) : [];
+    const prev = document.createElement("div"); prev.className = "ban-prev";
+    const capB = document.createElement("div"); capB.className = "cap"; capB.textContent = "Dettaglio dell'edizione";
+    const capS = document.createElement("div"); capS.className = "cap"; capS.textContent = "Pagina Prodotti";
+    const wb = document.createElement("div"); wb.style.width = "100%"; wb.append(big, capB);
+    const ws = document.createElement("div"); ws.style.width = "100%"; ws.append(small, capS);
+    prev.append(wb, ws);
+
+    const sync = () => {
+      clamp(img, BAN_AR, st);
+      const r = rectOf(img, BAN_AR, st);
+      for (const f of [big, small]) {
+        const W = f.clientWidth, sc = W / (r.x1 - r.x0), im = f.querySelector("img");
+        im.style.width = img.w + "px"; im.style.height = img.h + "px";
+        im.style.transform = "translate(" + (-r.x0 * sc) + "px," + (-r.y0 * sc) + "px) scale(" + sc + ")";
+      }
+      lays.forEach((l, i) => setLogo(l, lp, ls, [big, small][i].clientWidth));
+      zv.textContent = st.z.toFixed(2).replace(".", ",") + "×"; rng.value = String(st.z);
+      if (url) { sv.textContent = Math.round(ls * 100) + "%"; srng.value = String(ls); grid.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.p === lp))); }
+      const pend = st.dirty || !ok;
+      badge.className = pend ? "saved changed" : "saved"; badge.textContent = st.dirty ? "Da salvare" : ok ? "Salvato" : "Non ancora salvato";
+      save.disabled = !db || !pend;
+    };
+    const touch = () => { st.dirty = true; sync(); };
+    // spostamento e zoom come in Taglia
+    const move = (dx, dy) => (k) => { st.cx -= dx * k / img.w; st.cy -= dy * k / img.h; touch(); };
+    const zoom = (d) => (k) => { st.z = Math.max(1, Math.min(ZMAX, Math.round((st.z + d * 0.01 * k) * 100) / 100)); touch(); };
+    const pad = document.createElement("div"); pad.className = "pad"; pad.setAttribute("role", "group"); pad.setAttribute("aria-label", "Sposta l'immagine");
+    const cells = [null, holdButton("▲", "Sposta l'immagine su", move(0, -1)), null, holdButton("◀", "Sposta l'immagine a sinistra", move(-1, 0)), null, holdButton("▶", "Sposta l'immagine a destra", move(1, 0)), null, holdButton("▼", "Sposta l'immagine giù", move(0, 1)), null];
+    const center = document.createElement("button"); center.type = "button"; center.className = "pad-b pad-c"; center.textContent = "●"; center.setAttribute("aria-label", "Rimetti al centro");
+    center.onclick = () => { st.cx = 0.5; st.cy = 0.5; touch(); };
+    cells[4] = center;
+    cells.forEach((c) => pad.append(c || Object.assign(document.createElement("span"), { className: "pad-e" })));
+    const zpad = document.createElement("div"); zpad.className = "zpad"; zpad.setAttribute("role", "group"); zpad.setAttribute("aria-label", "Zoom");
+    const zv = document.createElement("span"); zv.className = "zv";
+    zpad.append(holdButton("−", "Riduci lo zoom", zoom(-1)), zv, holdButton("+", "Aumenta lo zoom", zoom(1)));
+    const rng = document.createElement("input"); rng.type = "range"; rng.min = "1"; rng.max = String(ZMAX); rng.step = "0.01"; rng.setAttribute("aria-label", "Zoom");
+    rng.oninput = () => { st.z = Math.round(+rng.value * 100) / 100; touch(); };
+    const tools = document.createElement("div"); tools.className = "tools";
+    const right = document.createElement("div"); right.className = "tools-r";
+    const zl = document.createElement("div"); zl.className = "m-h"; zl.textContent = "Immagine";
+    right.append(zl, zpad, rng);
+    tools.append(pad, right);
+
+    // logo: 9 punti e grandezza
+    const ltools = document.createElement("div"); ltools.className = "tools";
+    const grid = document.createElement("div"); grid.className = "posgrid"; grid.setAttribute("role", "group"); grid.setAttribute("aria-label", "Posizione del logo");
+    const sv = document.createElement("span"); sv.className = "zv";
+    const srng = document.createElement("input"); srng.type = "range"; srng.min = "0.15"; srng.max = "0.9"; srng.step = "0.01"; srng.setAttribute("aria-label", "Grandezza del logo");
+    if (url) {
+      for (const [p, name] of POS) {
+        const b = document.createElement("button"); b.type = "button"; b.dataset.p = p; b.title = name; b.setAttribute("aria-label", "Logo " + name.toLowerCase());
+        b.append(document.createElement("i"));
+        b.onclick = () => { lp = p; touch(); };
+        grid.append(b);
+      }
+      const size = (d) => (k) => { ls = Math.max(0.15, Math.min(0.9, Math.round((ls + d * 0.01 * k) * 100) / 100)); touch(); };
+      srng.oninput = () => { ls = Math.round(+srng.value * 100) / 100; touch(); };
+      const spad = document.createElement("div"); spad.className = "zpad"; spad.setAttribute("role", "group"); spad.setAttribute("aria-label", "Grandezza del logo");
+      spad.append(holdButton("−", "Logo più piccolo", size(-1)), sv, holdButton("+", "Logo più grande", size(1)));
+      const lr = document.createElement("div"); lr.className = "tools-r";
+      const ll = document.createElement("div"); ll.className = "m-h"; ll.textContent = "Logo · posizione e grandezza";
+      lr.append(ll, spad, srng);
+      ltools.append(grid, lr);
+    } else {
+      const n = document.createElement("p"); n.className = "hint"; n.textContent = "Per questo prodotto l'app non ha il logo dell'espansione: il banner si vede senza logo.";
+      ltools.append(n);
+    }
+    const save = document.createElement("button"); save.type = "button"; save.className = "b pri"; save.textContent = "Salva banner";
+    save.onclick = async () => {
+      clamp(img, BAN_AR, st); const r = rectOf(img, BAN_AR, st);
+      const body = { code, sec: "prod", asset: img.asset, w: img.w, h: img.h, x0: r.x0 / img.w, y0: r.y0 / img.h, x1: r.x1 / img.w, y1: r.y1 / img.h, cx: st.cx, cy: st.cy,
+        px: [Math.round(r.x0), Math.round(r.y0), Math.round(r.x1), Math.round(r.y1)], zoom: +st.z.toFixed(3), logo: { p: lp, s: ls }, at: new Date().toISOString() };
+      save.disabled = true; save.textContent = "Salvo…";
+      try {
+        await db.doc("tagli/" + code + "__prod").set(body); CUTS[code + "__prod"] = body; st.dirty = false;
+        $("banStatus").textContent = "Banner di " + code + " salvato.";
+        renderBanner(); renderCompare();
+        return;
+      } catch (e) { $("banStatus").textContent = "Non sono riuscito a salvare: " + (e && e.message || "errore") + ". Riprova tra poco."; }
+      save.textContent = "Salva banner"; sync();
+    };
+    box.append(head, rule, prev, tools, ltools, save);
+    ed.append(box);
+    for (const f of [big, small]) { const im = f.querySelector("img"); if (!im.complete) im.onload = sync; new ResizeObserver(() => sync()).observe(f); }
+    sync();
+  }
+
   // ---- avvio
   function showTab(t) {
-    const c = t === "cmp";
-    $("viewEdit").hidden = c; $("viewCmp").hidden = !c;
-    $("tabEdit").setAttribute("aria-pressed", String(!c)); $("tabCmp").setAttribute("aria-pressed", String(c));
+    $("viewEdit").hidden = t !== "edit"; $("viewBan").hidden = t !== "ban"; $("viewCmp").hidden = t !== "cmp";
+    $("tabEdit").setAttribute("aria-pressed", String(t === "edit")); $("tabBan").setAttribute("aria-pressed", String(t === "ban")); $("tabCmp").setAttribute("aria-pressed", String(t === "cmp"));
   }
   async function start() {
-    $("tabEdit").onclick = () => showTab("edit"); $("tabCmp").onclick = () => showTab("cmp");
-    renderEditor();
+    $("tabEdit").onclick = () => showTab("edit"); $("tabBan").onclick = () => showTab("ban"); $("tabCmp").onclick = () => showTab("cmp");
+    renderEditor(); renderBanner();
     if (!window.claude || !window.claude.use) { status("Ponte con l'app non disponibile.", true); return; }
     db = await window.claude.use("db");
     if (!db) { status("Il salvataggio non è disponibile.", true); $("chips").textContent = ""; return; }
@@ -790,7 +959,8 @@ button.b:disabled { opacity: .45; cursor: default; }
       const changed = !cur || !IMGS[cur] || !next[cur] || IMGS[cur].asset !== (next[cur] && next[cur].asset);
       IMGS = next;
       if (!cur || !IMGS[cur]) cur = Object.keys(IMGS).sort()[0] || null;
-      renderChips(); renderCompare(); if (changed) renderEditor();
+      const bch = !curB || !IMGS[curB] || !next[curB] || IMGS[curB].asset !== (next[curB] && next[curB].asset);
+      renderChips(); renderCompare(); if (changed) renderEditor(); if (bch) renderBanner(); else fillBanPick();
     }, (e) => { clearTimeout(timer); status("Non riesco a leggere le immagini (" + e.code + ").", true); });
     db.collection("tagli").onSnapshot((snap) => {
       const next = {}; snap.docs.forEach((d) => { next[d.id] = d.data(); });
@@ -798,6 +968,7 @@ button.b:disabled { opacity: .45; cursor: default; }
       CUTS = next; renderChips(); renderCompare();
       // al primo arrivo dei tagli salvati ridisegno con quelli; dopo, non tocco quello che si sta regolando
       if (first && cur) renderEditor();
+      if (first) renderBanner(); else fillBanPick();
     }, (e) => status("Non riesco a leggere i tagli salvati (" + e.code + ").", true));
   }
   start();
