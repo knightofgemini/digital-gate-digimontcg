@@ -147,13 +147,13 @@
   "ST7@ban": {
    "code": "ST7",
    "name": "Starter Deck Gallantmon",
-   "asset": "ST7BAN-mwdyg96s.webp",
-   "w": 800,
-   "h": 800,
-   "at": "2026-11-12T19:42:53.110Z"
+   "asset": "ST7BAN-mwdyjzy2.webp",
+   "w": 1600,
+   "h": 1195,
+   "at": "2026-11-12T19:45:47.465Z"
   }
  },
- "t": "2026-11-12T19:43:31.099Z",
+ "t": "2026-11-12T19:45:48.014Z",
  "tagli": {
   "BT25__cover": {
    "code": "BT25",
