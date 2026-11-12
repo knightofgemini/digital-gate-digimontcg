@@ -414,10 +414,22 @@ onData(() => {
   LISTS = {};
   if (booted) loadVersions().then(() => ((LISTS = {}), auto(false)));
 });
+let bootT: ReturnType<typeof setTimeout> | null = null;
+const boot = () => {
+  if (booted) return;
+  if (bootT) clearTimeout(bootT);
+  booted = true;
+  loadVersions().then((ch) => (ch && (LISTS = {}), auto(true)));
+};
+// riquadro delle carte nuove in attesa delle immagini (News.tsx): il primo giro parte subito, durante l'intro, invece
+// che dopo 8 s (12 novembre 2026, richiesta dell'utente: il riquadro pronto appena finisce l'animazione di avvio)
+export function bootNow() {
+  if (started) boot();
+}
 export function startOffline() {
   if (started) return;
   started = true;
-  setTimeout(() => ((booted = true), loadVersions().then((ch) => (ch && (LISTS = {}), auto(true)))), 8000);
+  bootT = setTimeout(boot, 8000);
   let away = 0;
   AppState.addEventListener("change", (s) => {
     if (s !== "active") {

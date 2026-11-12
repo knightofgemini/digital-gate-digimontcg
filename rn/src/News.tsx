@@ -15,7 +15,7 @@ import { useTheme } from "./theme";
 import { BYKEY, Card, MONTHS, SETBY, thumbUrl } from "./data";
 import { News, NewsCard, NewsGroup, newsSeen, startupNews } from "./dataupd";
 import { openCard, openSet } from "./nav";
-import { NEWS_HOOK, autoOn } from "./offline";
+import { NEWS_HOOK, autoOn, bootNow } from "./offline";
 import { whenIntroDone } from "./Intro";
 
 const MAXROWS = 60; // per prodotto (es. dopo una correzione di molte carte): le altre si contano soltanto
@@ -46,6 +46,7 @@ export function showNews(n: News) {
       if (!on) return deliver(n);
       held = held ? mergeNews(held, n) : n;
       if (!heldT) heldT = setTimeout(() => flush(), 120e3);
+      bootNow();
     })
     .catch(() => deliver(n));
 }
