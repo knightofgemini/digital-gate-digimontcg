@@ -676,6 +676,18 @@
    "notes": "▹BOOSTER IGNITION OF X [BT-27]",
    "_post": 8490,
    "_src": "telegram"
+  },
+  {
+   "id": "BT20-056_PT27",
+   "cardNumber": "BT20-056",
+   "name": {
+    "english": "Alphamon"
+   },
+   "version": "Alternative Art",
+   "notes": "PB-27 Premium Battle Set Ver. Royal Knights",
+   "_prod": "PB27",
+   "_post": 8491,
+   "_src": "telegram"
   }
  ]
 }
