@@ -9,8 +9,8 @@
 #  n5  dati dell'APK di nuovo (pm clear) → riquadro → "Vai a BT27" → pagina del prodotto con le carte nuove
 #  n6  di nuovo, app chiusa senza toccare il riquadro → riaperta: riquadro subito
 #  n7  tema chiaro
-#  n0  controllo in sottofondo ad app chiusa (bgTask.ts, 12 novembre 2026): notifica (n0_notifica), tocco → app aperta
-#      con il riquadro già pronto (n0b_riquadro)
+#  n0  controllo in sottofondo ad app chiusa (bgTask.ts, 12 novembre 2026): notifica (n0_notifica), tocco senza rete →
+#      app aperta (n0t_2s…6s) con il riquadro e le miniature scaricate in sottofondo (n0b_riquadro)
 # Uso: python3 tools/rn_news.py OUT  (adb già collegato all'emulatore, APK installato)
 import os, re, subprocess, sys, time
 
@@ -172,13 +172,24 @@ log("notifica: " + ("sì" if note else "NESSUNA") + " · processo " + (pid() or 
 logcat("logcat0")
 shot("n0_notifica")
 if note:
+    # senza rete: le miniature del riquadro devono venire dalle immagini scaricate in sottofondo; foto a 2, 3, 4 e 6 s
+    # dal tocco per vedere quando compare il riquadro rispetto all'intro
+    time.sleep(20)
+    net(False)
+    adb("shell", "cmd", "statusbar", "expand-notifications")
+    time.sleep(2)
+    note = find(NOTE) or note
     adb("shell", "input", "tap", str(note[0]), str(note[1]))
     t0 = time.time()
+    for sec in (2, 3, 4, 6):
+        time.sleep(max(0, t0 + sec - time.time()))
+        shot("n0t_%ds" % sec)
     if wait_for(GO, 60):
         log("riquadro dopo il tocco sulla notifica: %.1f s" % (time.time() - t0))
         time.sleep(1.5)
         shot("n0b_riquadro")
 adb("shell", "cmd", "statusbar", "collapse")
+net(True)
 
 # 1) apertura con l'app già usata: dati dell'APK vecchi, quelli del sito più recenti → carte in uso e riquadro, nello
 # stesso processo (niente riavvio)

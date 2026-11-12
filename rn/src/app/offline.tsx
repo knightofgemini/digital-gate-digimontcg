@@ -1,15 +1,15 @@
 // Immagini offline (come renderOffline dell'app attuale sul telefono): riquadro con le immagini salvate e l'avanzamento,
 // "Cosa scaricare" (Solo miniature / Tutto in HD con peso stimato, quante sono salvate, cestino del tipo e "Scarica"),
 // la spunta "Scarica in sottofondo le immagini nuove e aggiornate", "Per prodotto" (codice, nome, percentuale, cestino e
-// pulsante per scaricare) ed "Elimina tutte le immagini salvate". Le eliminazioni chiedono conferma; con i dati mobili
-// la scelta generale chiede conferma prima di scaricare.
+// pulsante per scaricare) ed "Elimina tutte le immagini salvate". Le eliminazioni chiedono conferma; nessun limite né
+// domanda con i dati mobili (12 novembre 2026, scelta dell'utente).
 import { useEffect, useMemo, useState } from "react";
 import { AppState, Pressable, ScrollView, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { DISPLAY, Text } from "../Text";
 import { SETBY, SETS, numOf, useData } from "../data";
 import { haveStats } from "../imgstore";
-import { AVG, OFF, PAGE, RUN, cell, choose, count, deleteAll, deleteKind, deleteSet, items, label, mb, missing, pause, setAuto, start, useOffline } from "../offline";
+import { AVG, OFF, PAGE, RUN, choose, count, deleteAll, deleteKind, deleteSet, items, label, mb, missing, pause, setAuto, start, useOffline } from "../offline";
 import { useTheme } from "../theme";
 import { PageTitle } from "../ui";
 import { Screen, useBarState } from "../chrome";
@@ -65,11 +65,8 @@ export default function Offline() {
   const nAll = S.nT + S.nF + S.nO;
   const pc = R && R.total ? Math.floor((R.done / R.total) * 100) : 100;
 
-  // scelta generale: con i dati mobili prima chiede
-  const pick = async (sc: string) => {
-    if (await cell()) setAsk({ title: ["Scaricare circa " + mb(items(sc).w || 0) + "?"], text: "Sei connesso con i dati mobili: ti consigliamo di usare il Wi-Fi.", ok: "Scarica", go: () => choose(sc) });
-    else choose(sc);
-  };
+  // scelta generale: si scarica subito, anche con i dati mobili
+  const pick = async (sc: string) => choose(sc);
 
   return (
     <Screen bs={bar}>
@@ -184,7 +181,7 @@ export default function Offline() {
           </View>
           <View style={{ flex: 1, gap: 3 }}>
             <Text style={{ color: t.ink, fontWeight: "600", fontSize: 15.2 }}>Scarica in sottofondo le immagini nuove e aggiornate</Text>
-            <Text style={{ color: t.ink2, fontSize: 13.1, lineHeight: 19 }}>All'uscita di carte nuove o quando vengono aggiornate le immagini (es. le ufficiali al posto delle anteprime degli spoiler, artwork e banner aggiornati), per la scelta qui sopra e per i prodotti che hai scaricato. Con i dati mobili solo aggiornamenti piccoli (fino a 10 MB).</Text>
+            <Text style={{ color: t.ink2, fontSize: 13.1, lineHeight: 19 }}>All'uscita di carte nuove o quando vengono aggiornate le immagini (es. le ufficiali al posto delle anteprime degli spoiler, artwork e banner aggiornati), per la scelta qui sopra e per i prodotti che hai scaricato. Anche con i dati mobili.</Text>
           </View>
         </Pressable>
 

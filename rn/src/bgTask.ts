@@ -3,15 +3,19 @@
 // minuti e solo con internet: il momento esatto lo decide il telefono). Il compito legge ver.json del sito; se ci sono
 // carte nuove le scarica e le salva come all'apertura (dataupd.ts → bgCheck) e manda una notifica, per esempio
 // "12 carte nuove in BT27". All'apertura le carte sono già pronte e il riepilogo compare nel solito riquadro, insieme
-// alle immagini (News.tsx → startupNews). Le immagini non si scaricano in sottofondo: arrivano all'apertura.
+// alle immagini (News.tsx → startupNews). Dopo la notifica scarica anche le immagini delle carte nuove (miniature
+// sempre; grandi con lo scaricamento automatico in HD, anche con i dati mobili: scelta dell'utente), così all'apertura il riquadro è pronto
+// appena finisce l'intro (12 novembre 2026, richiesta dell'utente).
 // Questo file si carica prima dell'app (index.js): Android avvia il compito anche senza aprire nessuna schermata.
 import { AppState, Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as TaskManager from "expo-task-manager";
 import * as BackgroundTask from "expo-background-task";
 import * as Notifications from "expo-notifications";
 import bundledData from "../data/data.json";
 import bundledProducts from "../data/products.json";
 import { News, bgCheck, dataInUse, notified, pickData } from "./dataupd";
+import { loadImages, saveImg, vurl } from "./imgstore";
 
 export const BG_TASK = "dg-carte-nuove";
 const CHANNEL = "novita";
@@ -61,6 +65,32 @@ async function notify(n: News) {
   notified(n.h, true);
 }
 
+// immagini delle carte del riepilogo nella cartella delle immagini (imgstore): le stesse che lo scaricamento automatico
+// dell'apertura (offline.ts) cercherebbe, che così le trova già salvate e finisce subito
+async function prefetch(n: News) {
+  await loadImages();
+  let off: any = {};
+  try {
+    off = JSON.parse((await AsyncStorage.getItem("dg-offline")) || "{}") || {};
+  } catch (e) {}
+  const on = !!off.auto && !off.paused;
+  const urls = new Set<string>();
+  n.groups.forEach((g) => {
+    const hd = on && (off.m === "hd" ? !(off.x || []).includes(g.id) : (off.ps || []).includes(g.id));
+    g.cards.forEach((c) => {
+      if (!c.u) return;
+      urls.add(vurl(c.u));
+      if (hd) urls.add(vurl(c.u.replace("/img/t/", "/img/f/")));
+    });
+  });
+  const todo = [...urls].slice(0, 600);
+  let i = 0;
+  const one = async () => {
+    while (i < todo.length) await saveImg(todo[i++]).catch(() => {});
+  };
+  await Promise.all([one(), one(), one(), one()]);
+}
+
 if (ANDROID)
   TaskManager.defineTask(BG_TASK, async () => {
     try {
@@ -70,6 +100,7 @@ if (ANDROID)
       if (n === false) return BackgroundTask.BackgroundTaskResult.Failed;
       // con l'app davanti agli occhi basta il riquadro
       if (n && n.groups.length && AppState.currentState !== "active") await notify(n).catch(() => {});
+      if (n && n.groups.length) await prefetch(n).catch(() => {});
       return BackgroundTask.BackgroundTaskResult.Success;
     } catch (e) {
       return BackgroundTask.BackgroundTaskResult.Failed;
