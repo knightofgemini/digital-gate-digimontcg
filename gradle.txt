@@ -1,0 +1,50 @@
+> Task :app:processReleaseManifest
+> Task :app:extractProguardFiles
+> Task :app:processReleaseJavaRes
+> Task :app:mergeReleaseStartupProfile
+> Task :app:processReleaseManifestForPackage
+> Task :app:mergeReleaseNativeDebugMetadata
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :app:mergeReleaseAssets
+> Task :app:extractReleaseVersionControlInfo
+> Task :app:generateReleaseLintVitalReportModel
+> Task :app:mergeReleaseJavaResource
+> Task :app:compressReleaseAssets
+> Task :app:collectReleaseDependencies
+> Task :app:sdkReleaseDependencyData
+> Task :app:validateSigningRelease
+> Task :app:writeReleaseAppMetadata
+> Task :app:processReleaseResources
+> Task :app:writeReleaseSigningConfigVersions
+> Task :app:mergeReleaseGeneratedProguardFiles
+> Task :app:expandReleaseArtProfileWildcards
+> Task :app:optimizeReleaseResources
+> Task :app:lintVitalAnalyzeRelease
+> Task :app:lintVitalReportRelease
+> Task :app:lintVitalRelease
+> Task :app:minifyReleaseWithR8
+> Task :app:compileReleaseArtProfile
+> Task :app:packageRelease
+> Task :app:createReleaseApkListingFileRedirect
+> Task :app:assembleRelease
+
+[Incubating] Problems report is available at: file:///home/runner/work/digital-gate-digimontcg/digital-gate-digimontcg/rn/android/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 15m 15s
+723 actionable tasks: 634 executed, 89 from cache
+Cacheable calls:   342 / 347 (98.56%)
+  Hits:              8 / 342 ( 2.34%)
+    Direct:          8 /   8 (100.0%)
+    Preprocessed:    0 /   8 ( 0.00%)
+  Misses:          334 / 342 (97.66%)
+Uncacheable calls:   5 / 347 ( 1.44%)
+Local storage:
+  Cache size (GB): 0.1 / 2.0 ( 6.98%)
+  Hits:              8 / 342 ( 2.34%)
+  Misses:          334 / 342 (97.66%)
