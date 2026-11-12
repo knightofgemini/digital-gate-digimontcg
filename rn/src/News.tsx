@@ -15,7 +15,7 @@ import { useTheme } from "./theme";
 import { BYKEY, Card, MONTHS, SETBY, thumbUrl } from "./data";
 import { News, NewsCard, NewsGroup, newsSeen, startupNews } from "./dataupd";
 import { openCard, openSet } from "./nav";
-import { NEWS_HOOK } from "./offline";
+import { NEWS_HOOK, autoOn } from "./offline";
 import { whenIntroDone } from "./Intro";
 
 const MAXROWS = 60; // per prodotto (es. dopo una correzione di molte carte): le altre si contano soltanto
@@ -23,12 +23,35 @@ const MAXROWS = 60; // per prodotto (es. dopo una correzione di molte carte): le
 let host: ((n: News) => void) | null = null;
 let queued: News | null = null;
 // chiamata da _layout.tsx quando dataupd.ts ha scaricato e messo in uso carte nuove
-export function showNews(n: News) {
+function deliver(n: News) {
   if (host) host(n);
-  else queued = n;
+  else queued = queued ? mergeNews(queued, n) : n;
 }
-// riepilogo delle immagini scaricate in automatico (offline.ts)
-NEWS_HOOK.show = showNews;
+// tutto insieme (12 novembre 2026, richiesta dell'utente): con lo scaricamento automatico delle immagini attivo il
+// riepilogo delle carte nuove aspetta la fine del giro delle immagini e compare in un riquadro solo con quelle
+// (al massimo 2 minuti: poi compare comunque, e le immagini che arrivano dopo si aggiungono al riquadro se è aperto)
+let held: News | null = null;
+let heldT: ReturnType<typeof setTimeout> | null = null;
+function flush(extra?: News) {
+  if (heldT) clearTimeout(heldT);
+  heldT = null;
+  const n = held && extra ? mergeNews(held, extra) : held || extra;
+  held = null;
+  if (n) deliver(n);
+}
+// chiamata da _layout.tsx quando dataupd.ts ha scaricato e messo in uso carte nuove
+export function showNews(n: News) {
+  autoOn()
+    .then((on) => {
+      if (!on) return deliver(n);
+      held = held ? mergeNews(held, n) : n;
+      if (!heldT) heldT = setTimeout(() => flush(), 120e3);
+    })
+    .catch(() => deliver(n));
+}
+// immagini scaricate in automatico (offline.ts): insieme alle carte in attesa, se ci sono
+NEWS_HOOK.show = (n) => flush(n);
+NEWS_HOOK.idle = () => held && flush();
 
 // un riquadro solo (12 novembre 2026, richiesta dell'utente): le immagini aggiornate che arrivano mentre il riquadro
 // delle carte nuove è aperto (o viceversa) si aggiungono allo stesso riquadro, prodotto per prodotto, senza ripetere carte

@@ -168,7 +168,14 @@ function notify(R: Run, force?: boolean, msg?: string) {
 
 // riepilogo delle immagini nuove o aggiornate (12 novembre 2026, richiesta dell'utente: al posto dell'avviso in basso,
 // lo stesso riquadro "Carte nuove" con le carte e l'etichetta IMMAGINE). Lo mostra News.tsx (NEWS_HOOK.show).
-export const NEWS_HOOK: { show: ((n: News) => void) | null } = { show: null };
+// show: immagini scaricate da mostrare; idle: giro delle immagini finito (o non partito) senza niente da mostrare
+export const NEWS_HOOK: { show: ((n: News) => void) | null; idle: (() => void) | null } = { show: null, idle: null };
+const idle = () => NEWS_HOOK.idle && NEWS_HOOK.idle();
+// lo scaricamento automatico delle immagini è attivo: il riquadro delle carte nuove aspetta le immagini (News.tsx)
+export async function autoOn() {
+  await load();
+  return !!(OFF.auto && !OFF.paused && (OFF.m || OFF.ps.length));
+}
 function imageNews(urls: string[]): News | null {
   const want = new Set(urls);
   const byUrl = new Map<string, Card>();
@@ -206,6 +213,7 @@ export async function start(scope: string, quiet = false, newN?: number) {
   if (scope === "upd") delete LISTS.upd;
   const list = items(scope);
   const R: Run = (RUN = { scope, total: list.length, done: 0, fail: 0, row: 0, stop: false, end: false, quiet, newN });
+  let shown = false;
   if (scope === "t" || scope === "hd") {
     OFF.paused = false;
     save();
@@ -299,10 +307,13 @@ export async function start(scope: string, quiet = false, newN?: number) {
       // immagini delle carte: riquadro con l'elenco; solo banner, confezioni o loghi: l'avviso in basso di prima
       const got = todo.filter((x) => !miss0.has(x.u) && HAVE.has(x.n)).map((x) => x.u);
       const n = NEWS_HOOK.show ? imageNews(got) : null;
-      if (n) NEWS_HOOK.show!(n);
-      else toast(R.newN.toLocaleString("it-IT") + (R.newN === 1 ? " immagine nuova o aggiornata scaricata" : " immagini nuove o aggiornate scaricate"));
+      if (n) {
+        NEWS_HOOK.show!(n);
+        shown = true;
+      } else toast(R.newN.toLocaleString("it-IT") + (R.newN === 1 ? " immagine nuova o aggiornata scaricata" : " immagini nuove o aggiornate scaricate"));
     }
   }
+  if (!shown) idle();
   save();
   emit();
 }
@@ -377,15 +388,15 @@ export async function auto(startUp: boolean) {
   if (startUp && OFF.run && (OFF.run === "t" || OFF.run === "hd" || OFF.run === "upd" || SETBY[OFF.run]) && !(mob && OFF.run === "hd")) return start(OFF.run, true);
   // scaricamento generale lasciato a metà (non in pausa): riparte, ma non con i dati mobili
   if (startUp && OFF.m && !OFF.paused && !OFF.full && OFF.done !== items(OFF.m).sig && !mob) return start(OFF.m, true);
-  if (!OFF.auto || OFF.paused || !(OFF.m || OFF.ps.length)) return;
+  if (!OFF.auto || OFF.paused || !(OFF.m || OFF.ps.length)) return idle();
   delete LISTS.upd;
   const L = items("upd");
   const todo = L.filter((x) => !HAVE.has(x.n));
-  if (!todo.length) return;
+  if (!todo.length) return idle();
   const miss: Record<string, 1> = {};
   OFF.miss.forEach((u) => (miss[u] = 1));
   const w = todo.reduce((a, x) => a + x.w, 0);
-  if (mob && w > 10 * 1048576) return;
+  if (mob && w > 10 * 1048576) return idle();
   const newN = todo.filter((x) => !miss[x.u]).length;
   start("upd", true, newN);
 }
