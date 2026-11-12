@@ -70,7 +70,8 @@
         }
       ],
       "./plugins/withBackupRules",
-      "./plugins/withOcrAssets"
+      "./plugins/withOcrAssets",
+      "./plugins/withKeepRules"
     ],
     "extra": {
       "build": 0
