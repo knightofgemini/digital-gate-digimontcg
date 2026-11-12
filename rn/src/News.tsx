@@ -30,6 +30,35 @@ export function showNews(n: News) {
 // riepilogo delle immagini scaricate in automatico (offline.ts)
 NEWS_HOOK.show = showNews;
 
+// un riquadro solo (12 novembre 2026, richiesta dell'utente): le immagini aggiornate che arrivano mentre il riquadro
+// delle carte nuove è aperto (o viceversa) si aggiungono allo stesso riquadro, prodotto per prodotto, senza ripetere carte
+function mergeNews(a: News, b: News): News {
+  const base = a.h === "img" && b.h !== "img" ? b : a,
+    add = base === a ? b : a;
+  const groups: NewsGroup[] = base.groups.map((g) => ({ ...g, cards: g.cards.slice() }));
+  const byId: Record<string, NewsGroup> = {};
+  groups.forEach((g) => (byId[g.id] = g));
+  add.groups.forEach((g) => {
+    const t = byId[g.id];
+    if (!t) {
+      groups.push((byId[g.id] = { ...g, cards: g.cards.slice() }));
+      return;
+    }
+    const have = new Set(t.cards.map((x) => x.k));
+    g.cards.forEach((x) => {
+      if (have.has(x.k)) return;
+      t.cards.push(x);
+      if (x.kind === "n") t.n++;
+      else if (x.kind === "c") t.c++;
+      else t.i = (t.i || 0) + 1;
+    });
+  });
+  const dk = (g: NewsGroup) => (g.date && g.date.charAt(0) !== "0" ? g.date : "");
+  groups.sort((x, y) => (dk(x) < dk(y) ? 1 : dk(x) > dk(y) ? -1 : 0));
+  const sum = (k: "n" | "c" | "i") => groups.reduce((t, g) => t + (g[k] || 0), 0);
+  return { ...base, n: sum("n"), c: sum("c"), i: sum("i"), groups };
+}
+
 const plural = (n: number, one: string, many: string) => n + " " + (n === 1 ? one : many);
 function summary(n: News) {
   const p: string[] = [];
@@ -50,9 +79,8 @@ export function NewsHost() {
   const ins = useSafeAreaInsets();
   const [n, setN] = useState<News | null>(null);
   const [vis, setVis] = useState(false);
-  // un riquadro alla volta: se ne arriva un altro mentre uno è aperto (es. immagini dopo le carte nuove) aspetta
+  // un riquadro solo: se arriva un altro riepilogo mentre è aperto (es. immagini dopo le carte nuove) si unisce a quello
   const open = useRef(false);
-  const pending = useRef<News[]>([]);
   const openNow = (x: News) => {
     open.current = true;
     setN(x);
@@ -62,7 +90,7 @@ export function NewsHost() {
   useEffect(() => {
     const show = (x: News) =>
       whenIntroDone(() => {
-        if (open.current) pending.current.push(x);
+        if (open.current) setN((cur) => (cur ? mergeNews(cur, x) : x));
         else openNow(x);
       });
     host = show;
@@ -81,8 +109,6 @@ export function NewsHost() {
     setVis(false);
     newsSeen(n);
     open.current = false;
-    const next = pending.current.shift();
-    if (next) setTimeout(() => openNow(next), 450);
   };
   // si chiude il riquadro e si apre la pagina (le carte sono già in uso)
   const goGroup = (g: NewsGroup) => {

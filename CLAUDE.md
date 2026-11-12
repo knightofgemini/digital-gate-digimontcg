@@ -157,8 +157,9 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   automatico delle immagini (`offline.ts`, fine del giro "upd") non mostra più l'avviso in basso ma lo stesso riquadro
   "Carte nuove" con titolo **"Immagini aggiornate"** e le carte con l'immagine nuova o aggiornata (`imageNews`, kind
   `"i"`, etichetta verde IMMAGINE NUOVA O AGGIORNATA; `h: "img"`, non si salva in `dg-news.json`); esclude le carte
-  appena segnalate come nuove (`NEWKEYS`); se sono solo banner/confezioni/loghi resta l'avviso in basso. `NewsHost`
-  mostra un riquadro alla volta (`pending`: il secondo compare dopo la chiusura del primo).
+  appena segnalate come nuove (`NEWKEYS`); se sono solo banner/confezioni/loghi resta l'avviso in basso. **Un riquadro
+  solo** (richiesta dell'utente): se un riepilogo arriva mentre l'altro è aperto, `NewsHost` lo unisce (`mergeNews`:
+  stessi prodotti insieme, niente carte ripetute, conteggi nuove/corrette/immagini).
 - **Nuova Home (6 novembre 2026, ramo `home-nuova`, dal mockup `home-proposta.html` preparato dall'utente)**: moduli in
   `rn/src/home.tsx`, scelte senza grafica in `rn/src/homeLogic.ts` (prove: `node --experimental-strip-types --test
   scripts/home-logic.test.mjs` dalla cartella `rn`). Ordine: titolo "Home" (Chakra Petch 25, non il `PageTitle` corsivo)
