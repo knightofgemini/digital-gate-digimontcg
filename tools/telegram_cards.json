@@ -535,6 +535,93 @@
    "notes": "STARTER DECK DIGIMON ALYSION RUBEUSDRAMON [ST-25]",
    "_post": 8483,
    "_src": "telegram"
+  },
+  {
+   "securityEffect": "-",
+   "specialDigivolve": "-",
+   "version": "Normal",
+   "notes": "▹BOOSTER IGNITION OF X [BT-27]",
+   "_src": "telegram",
+   "id": "BT27-005",
+   "cardNumber": "BT27-005",
+   "name": {
+    "english": "Motimon"
+   },
+   "cardType": "Digi-Egg",
+   "color": "Black",
+   "cardLv": "Lv.2",
+   "form": "In-Training",
+   "attribute": "-",
+   "type": "Lesser",
+   "dp": "-",
+   "playCost": "-",
+   "digivolveCondition": [],
+   "effect": "-",
+   "digivolveEffect": "[Your Turn] [Once Per Turn] When any of your black Digimon are played, ＜Draw 1＞.",
+   "rarity": "C",
+   "_post": 8485
+  },
+  {
+   "securityEffect": "-",
+   "specialDigivolve": "-",
+   "version": "Normal",
+   "notes": "▹BOOSTER IGNITION OF X [BT-27]",
+   "_src": "telegram",
+   "id": "BT27-059",
+   "cardNumber": "BT27-059",
+   "name": {
+    "english": "Clockmon"
+   },
+   "cardType": "Digimon",
+   "color": "Black",
+   "cardLv": "Lv.4",
+   "form": "Champion",
+   "attribute": "Data",
+   "type": "Machine",
+   "dp": "4000",
+   "playCost": "4",
+   "digivolveCondition": [
+    {
+     "color": "Black",
+     "cost": "2",
+     "level": "3"
+    }
+   ],
+   "effect": "＜Blocker＞ \n[On Play] [When Digivolving] Your opponent's ＜De-Digivolve＞ effects don't affect 1 of your Digimon until their turn ends. Then, if it's their turn, ＜De-Digivolve 1＞ 1 of their Digimon.",
+   "digivolveEffect": "[Opponent's Turn] [Once Per Turn] When any of your Digimon suspend, this Digimon may unsuspend.",
+   "rarity": "C",
+   "_post": 8486
+  },
+  {
+   "securityEffect": "-",
+   "specialDigivolve": "-",
+   "version": "Normal",
+   "notes": "▹BOOSTER IGNITION OF X [BT-27]",
+   "_src": "telegram",
+   "id": "BT27-063",
+   "cardNumber": "BT27-063",
+   "name": {
+    "english": "Andromon"
+   },
+   "cardType": "Digimon",
+   "color": "Black",
+   "cardLv": "Lv.5",
+   "form": "Ultimate",
+   "attribute": "Vaccine",
+   "type": "Cyborg",
+   "dp": "7000",
+   "playCost": "7",
+   "digivolveCondition": [
+    {
+     "color": "Black",
+     "cost": "3",
+     "level": "4"
+    }
+   ],
+   "effect": "＜Blocker＞ \n[All Turns] [Once Per Turn] When this Digimon suspends, ＜De-Digivolve 1＞ 1 of your opponent's Digimon.\n[All Turns] When any of your Digimon with ＜Blocker＞ would leave the battle area other than by your effects, by suspending this Digimon, 1 of your Digimon doesn't leave.",
+   "digivolveEffect": "[Opponent's Turn] [Once Per Turn] When any of your Digimon suspend, you may play 1 level 5 or lower black Digimon card with ＜Blocker＞ from your hand without paying the cost.",
+   "rarity": "U",
+   "_post": 8487
   }
  ]
 }
