@@ -4,12 +4,11 @@
 // carte nuove le scarica e le salva come all'apertura (dataupd.ts → bgCheck) e manda una notifica, per esempio
 // "12 carte nuove in BT27". All'apertura le carte sono già pronte e il riepilogo compare nel solito riquadro, insieme
 // alle immagini (News.tsx → startupNews). Dopo la notifica scarica anche le immagini delle carte nuove (miniature
-// sempre; grandi solo con lo scaricamento automatico in HD e senza dati mobili), così all'apertura il riquadro è pronto
+// sempre; grandi con lo scaricamento automatico in HD, anche con i dati mobili: scelta dell'utente), così all'apertura il riquadro è pronto
 // appena finisce l'intro (12 novembre 2026, richiesta dell'utente).
 // Questo file si carica prima dell'app (index.js): Android avvia il compito anche senza aprire nessuna schermata.
 import { AppState, Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Network from "expo-network";
 import * as TaskManager from "expo-task-manager";
 import * as BackgroundTask from "expo-background-task";
 import * as Notifications from "expo-notifications";
@@ -74,11 +73,7 @@ async function prefetch(n: News) {
   try {
     off = JSON.parse((await AsyncStorage.getItem("dg-offline")) || "{}") || {};
   } catch (e) {}
-  let mobile = false;
-  try {
-    mobile = (await Network.getNetworkStateAsync()).type === Network.NetworkStateType.CELLULAR;
-  } catch (e) {}
-  const on = !!off.auto && !off.paused && !mobile;
+  const on = !!off.auto && !off.paused;
   const urls = new Set<string>();
   n.groups.forEach((g) => {
     const hd = on && (off.m === "hd" ? !(off.x || []).includes(g.id) : (off.ps || []).includes(g.id));
