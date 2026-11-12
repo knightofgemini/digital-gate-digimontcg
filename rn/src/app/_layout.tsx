@@ -10,6 +10,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { loadStore } from "../store";
 import { ToastHost } from "../toast";
 import { startDataUpdates } from "../dataupd";
+import { askNotifications, startBackground } from "../bgTask";
 import { startArt } from "../homeArt";
 import { loadKey } from "../ghArt";
 import { NewsHost, showNews } from "../News";
@@ -18,7 +19,7 @@ import { UpdateCheck } from "../Update";
 import { loadThemePref, useTheme } from "../theme";
 import { FONTS } from "../Text";
 import { KbProbe, MoreSheet, TabBar, useTabPad } from "../chrome";
-import { Intro } from "../Intro";
+import { Intro, whenIntroDone } from "../Intro";
 import { loadImages } from "../imgstore";
 import { startOffline } from "../offline";
 import { Migrate, needMigration } from "../Migrate";
@@ -74,6 +75,9 @@ export default function RootLayout() {
       // il riquadro "Carte nuove" con l'elenco (News.tsx). Durante il recupero dei dati dell'app vecchia niente
       // riquadro: comparirà all'apertura successiva
       startDataUpdates((n) => !m && showNews(n));
+      // controllo delle carte nuove anche ad app chiusa, con notifica (bgTask.ts); permesso chiesto dopo l'intro
+      startBackground();
+      if (!m) whenIntroDone(() => setTimeout(askNotifications, 1200));
     });
   }, []);
   if (!ready || (!fonts && !fontErr)) return <View style={{ flex: 1, backgroundColor: t.bg }} />;

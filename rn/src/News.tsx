@@ -120,8 +120,11 @@ export function NewsHost() {
     const q = queued;
     queued = null;
     // carte arrivate l'ultima volta ma riepilogo non ancora visto (app chiusa prima): appena aperta l'app
+    // (anche quelle scaricate in sottofondo ad app chiusa, bgTask.ts): aspetta le immagini come le altre, così carte e
+    // immagini compaiono nello stesso riquadro
     const old = q ? null : startupNews();
-    if (q || old) show((q || old)!);
+    if (q) show(q);
+    else if (old) showNews(old);
     return () => {
       host = null;
     };

@@ -205,6 +205,10 @@ export function newsSeen(n: News) {
 }
 
 let busy = false;
+// ultimo riepilogo salvato da check (per la notifica del controllo in sottofondo, bgTask.ts)
+let LAST: News | null = null;
+// riquadro dell'app (registrato da startDataUpdates): se l'app è viva in sottofondo le carte si mettono in uso subito
+let ONNEW: ((n: News) => void) | null = null;
 // true = controllo fatto (con o senza novità); false = non è riuscito (rete assente o lenta all'apertura): si riprova
 async function check(onNew: (n: News) => void): Promise<boolean> {
   if (busy) return true;
@@ -229,6 +233,7 @@ async function check(onNew: (n: News) => void): Promise<boolean> {
     await writeAsStringAsync(documentDirectory + NAMES.p, p);
     if (news) await writeAsStringAsync(documentDirectory + NAMES.n, JSON.stringify(news));
     await writeAsStringAsync(documentDirectory + NAMES.v, JSON.stringify(v));
+    LAST = news;
     // in uso subito, senza riavviare l'app; se qualcosa va storto si torna ai dati di prima (quelli nuovi restano
     // salvati e si usano alla prossima apertura)
     if (!APPLY) return true;
@@ -255,10 +260,36 @@ async function check(onNew: (n: News) => void): Promise<boolean> {
 }
 
 
+// ---- controllo in sottofondo (12 novembre 2026, bgTask.ts): anche ad app chiusa
+// dati in uso già scelti (data.ts → pickData): ad app chiusa il compito in sottofondo li sceglie da sé
+export const dataInUse = () => !!USED;
+// scarica e salva le carte nuove come all'apertura; risponde con il riepilogo (null = niente di nuovo, false = non
+// riuscito). Il riepilogo resta in dg-news.json e compare all'apertura successiva (startupNews)
+export async function bgCheck(): Promise<News | null | false> {
+  if (!NATIVE) return null;
+  LAST = null;
+  const ok = await check((n) => ONNEW && ONNEW(n));
+  return ok ? LAST : false;
+}
+// la notifica di questo riepilogo è già stata mandata (una sola volta per versione dei dati)
+export function notified(h: string, mark?: boolean): boolean {
+  try {
+    const f = new File(Paths.document, "dg-notified.txt");
+    if (mark) {
+      writeAsStringAsync(documentDirectory + "dg-notified.txt", h).catch(() => {});
+      return true;
+    }
+    return f.exists && f.textSync().trim() === h;
+  } catch (e) {
+    return false;
+  }
+}
+
 let started = false;
 export function startDataUpdates(onNew: (n: News) => void) {
   if (!NATIVE || started) return;
   started = true;
+  ONNEW = onNew;
   // subito all'apertura (mentre gira l'intro): carte in uso e riquadro appena i dati sono scaricati. Se il controllo
   // non riesce (rete assente o lenta) si riprova dopo 20 s, 1 minuto e 3 minuti (12 novembre 2026: prima si aspettavano
   // 3 ore fuori dall'app e intanto arrivava solo l'avviso delle immagini)
