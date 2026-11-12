@@ -145,16 +145,17 @@ time.sleep(2)
 log("processo dopo la chiusura: " + (pid() or "nessuno"))
 net(True)
 dump = adb("shell", "dumpsys", "jobscheduler")
-jobs = sorted(set(re.findall(r"JOB #\S+/(\d+): \S+ " + re.escape(PKG) + "/", dump)))
-log("compiti di Android dell'app: " + (", ".join(jobs) or "NESSUNO"))
+# Android 14: "JOB androidx.work.systemjobscheduler:u0a192/0: … app.digimon.settracker/…" (spazio dei nomi : utente/numero)
+jobs = sorted(set(re.findall(r"JOB #?(?:([\w.]+):)?\S+?/(\d+): \S+ @?[\w.@]*?" + re.escape(PKG) + "/", dump)))
+log("compiti di Android dell'app: " + (", ".join(ns + "/" + j for ns, j in jobs) or "NESSUNO"))
 for line in dump.splitlines():
     if PKG in line:
         log("  js: " + line.strip()[:200])
 for line in adb("logcat", "-d", "-s", "ReactNativeJS:V").splitlines():
     if "[bg]" in line:
         log("  " + line[:200])
-for j in jobs:
-    log("  run " + j + ": " + adb("shell", "cmd", "jobscheduler", "run", "-f", PKG, j).strip())
+for ns, j in jobs:
+    log("  run " + j + ": " + adb("shell", "cmd", "jobscheduler", "run", "-f", *(["-n", ns] if ns else []), PKG, j).strip())
 note = ""
 for i in range(40):
     time.sleep(2)
