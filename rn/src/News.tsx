@@ -3,7 +3,7 @@
 // nuove e corrette (dataupd.ts → diffData) con miniatura, colori, codice, stelle e nome; per le corrette anche cosa è
 // cambiato. Compare appena le carte sono scaricate e già in uso (nessun riavvio): tocco su una carta = la sua scheda,
 // sul prodotto = la pagina del prodotto. Se l'app si chiude prima di vederlo, compare alla prossima apertura.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -15,6 +15,7 @@ import { useTheme } from "./theme";
 import { BYKEY, Card, MONTHS, SETBY, thumbUrl } from "./data";
 import { News, NewsCard, NewsGroup, newsSeen, startupNews } from "./dataupd";
 import { openCard, openSet } from "./nav";
+import { NEWS_HOOK } from "./offline";
 import { whenIntroDone } from "./Intro";
 
 const MAXROWS = 60; // per prodotto (es. dopo una correzione di molte carte): le altre si contano soltanto
@@ -26,12 +27,15 @@ export function showNews(n: News) {
   if (host) host(n);
   else queued = n;
 }
+// riepilogo delle immagini scaricate in automatico (offline.ts)
+NEWS_HOOK.show = showNews;
 
 const plural = (n: number, one: string, many: string) => n + " " + (n === 1 ? one : many);
 function summary(n: News) {
   const p: string[] = [];
   if (n.n) p.push(plural(n.n, "carta nuova", "carte nuove"));
   if (n.c) p.push(plural(n.c, "carta corretta", "carte corrette"));
+  if (n.i) p.push(plural(n.i, "carta con l'immagine nuova o aggiornata", "carte con l'immagine nuova o aggiornata"));
   const where = n.groups.length === 1 ? " in " + n.groups[0].code : " in " + n.groups.length + " prodotti";
   return p.join(" e ") + where;
 }
@@ -46,12 +50,20 @@ export function NewsHost() {
   const ins = useSafeAreaInsets();
   const [n, setN] = useState<News | null>(null);
   const [vis, setVis] = useState(false);
+  // un riquadro alla volta: se ne arriva un altro mentre uno è aperto (es. immagini dopo le carte nuove) aspetta
+  const open = useRef(false);
+  const pending = useRef<News[]>([]);
+  const openNow = (x: News) => {
+    open.current = true;
+    setN(x);
+    setVis(true);
+  };
 
   useEffect(() => {
     const show = (x: News) =>
       whenIntroDone(() => {
-        setN(x);
-        setVis(true);
+        if (open.current) pending.current.push(x);
+        else openNow(x);
       });
     host = show;
     const q = queued;
@@ -68,6 +80,9 @@ export function NewsHost() {
   const close = () => {
     setVis(false);
     newsSeen(n);
+    open.current = false;
+    const next = pending.current.shift();
+    if (next) setTimeout(() => openNow(next), 450);
   };
   // si chiude il riquadro e si apre la pagina (le carte sono già in uso)
   const goGroup = (g: NewsGroup) => {
@@ -89,7 +104,7 @@ export function NewsHost() {
       <View style={{ paddingTop: 8, paddingHorizontal: 16 }}>
         <View style={{ alignSelf: "center", width: 40, height: 5, borderRadius: 3, backgroundColor: t.line }} />
         <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "700", fontSize: 12, letterSpacing: 1.6, marginTop: 12 }}>{when(n.at).toUpperCase()}</Text>
-        <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontStyle: "italic", textTransform: "uppercase", fontSize: 26, lineHeight: 31, marginTop: 2 }}>{n.n ? "Carte nuove" : "Carte corrette"}</Text>
+        <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontStyle: "italic", textTransform: "uppercase", fontSize: 26, lineHeight: 31, marginTop: 2 }}>{n.n ? "Carte nuove" : n.c ? "Carte corrette" : "Immagini aggiornate"}</Text>
         <Text style={{ color: t.ink2, fontSize: 14.4, lineHeight: 20, marginTop: 2 }}>{summary(n) + "."}</Text>
       </View>
 
@@ -108,7 +123,7 @@ export function NewsHost() {
                   ) : null}
                 </View>
                 <FitText text={g.name} size={14.4} lines={1} style={{ color: t.ink, fontWeight: "600" }} />
-                <Text style={{ color: t.ink2, fontSize: 12.5, marginTop: 1 }}>{[g.n ? plural(g.n, "nuova", "nuove") : "", g.c ? plural(g.c, "corretta", "corrette") : ""].filter(Boolean).join(" · ")}</Text>
+                <Text style={{ color: t.ink2, fontSize: 12.5, marginTop: 1 }}>{[g.n ? plural(g.n, "nuova", "nuove") : "", g.c ? plural(g.c, "corretta", "corrette") : "", g.i ? plural(g.i, "immagine", "immagini") : ""].filter(Boolean).join(" · ")}</Text>
               </View>
               <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "700", fontSize: 14.4 }}>Apri ›</Text>
             </Pressable>
@@ -129,6 +144,10 @@ export function NewsHost() {
                     {x.kind === "n" ? (
                       <View style={{ alignSelf: "flex-start", marginTop: 3, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, backgroundColor: t.accentSoft }}>
                         <Text style={{ color: t.accent, fontSize: 11.5, fontWeight: "700" }}>NUOVA</Text>
+                      </View>
+                    ) : x.kind === "i" ? (
+                      <View style={{ alignSelf: "flex-start", marginTop: 3, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, backgroundColor: t.dark ? "#163329" : "#eaf6ed" }}>
+                        <Text style={{ color: t.ok, fontSize: 11.5, fontWeight: "700" }}>IMMAGINE NUOVA O AGGIORNATA</Text>
                       </View>
                     ) : (
                       <View style={{ alignSelf: "flex-start", marginTop: 3, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, backgroundColor: t.cyanSoft, maxWidth: "100%" }}>

@@ -66,9 +66,15 @@ export function pickData<D, P>(raw: D, products: P): { raw: D; products: P } {
 // Confronto tra i dati in uso e quelli scaricati, prodotto per prodotto: "n" = carta nuova nel prodotto (anche una
 // ristampa o un'alternativa appena svelata), "c" = carta già presente ma corretta (testo, DP, costo, stelle…), segnata
 // solo nel suo prodotto. Salvato in dg-news.json insieme ai dati, così si può mostrare anche all'apertura successiva.
-export type NewsCard = { k: string; code: string; name: string; u: string; mark: string; colors: string[]; kind: "n" | "c"; what?: string };
-export type NewsGroup = { id: string; code: string; name: string; date: string; soon: boolean; n: number; c: number; cards: NewsCard[] };
-export type News = { h: string; at: number; n: number; c: number; groups: NewsGroup[]; seen?: number };
+// kind: n = carta nuova, c = carta corretta, i = immagine nuova o aggiornata (scaricamento automatico, offline.ts)
+export type NewsCard = { k: string; code: string; name: string; u: string; mark: string; colors: string[]; kind: "n" | "c" | "i"; what?: string };
+export type NewsGroup = { id: string; code: string; name: string; date: string; soon: boolean; n: number; c: number; i?: number; cards: NewsCard[] };
+// h = "img" per il riepilogo delle sole immagini (non si salva: vale solo per questa apertura)
+export type News = { h: string; at: number; n: number; c: number; i?: number; groups: NewsGroup[]; seen?: number };
+
+// carte appena segnalate come nuove: il riepilogo delle immagini scaricate subito dopo non le ripete
+export const NEWKEYS = new Set<string>();
+const rememberNew = (n: News | null) => n && n.groups.forEach((g) => g.cards.forEach((x) => x.kind === "n" && NEWKEYS.add(x.k)));
 
 const IMG = "https://knightofgemini.github.io/digital-gate-digimontcg/img/";
 const FIELDS: [number, string][] = [
@@ -186,29 +192,33 @@ export function startupNews(): News | null {
     const f = new File(Paths.document, NAMES.n);
     if (!f.exists) return null;
     const n: News = JSON.parse(f.textSync());
+    if (n && n.h === CURVER.h) rememberNew(n);
     return n && n.h === CURVER.h && !n.seen && n.groups && n.groups.length ? n : null;
   } catch (e) {
     return null;
   }
 }
 export function newsSeen(n: News) {
-  if (!NATIVE) return;
+  if (!NATIVE || n.h === "img") return;
   n.seen = Date.now();
   writeAsStringAsync(documentDirectory + NAMES.n, JSON.stringify(n)).catch(() => {});
 }
 
 let busy = false;
-async function check(onNew: (n: News) => void) {
-  if (busy) return;
+// true = controllo fatto (con o senza novità); false = non è riuscito (rete assente o lenta all'apertura): si riprova
+async function check(onNew: (n: News) => void): Promise<boolean> {
+  if (busy) return true;
   busy = true;
   try {
     const v: Ver = await fetch(SITE + "ver.json", { cache: "no-store" } as any).then((r) => (r.ok ? r.json() : null));
     const have = CURVER;
-    if (!v || !v.h || v.h === have.h || !(v.t > have.t)) return;
+    if (!v || !v.h) return false;
+    if (v.h === have.h || !(v.t > have.t)) return true;
     const [d, p] = await Promise.all([SITE + "data.json", SITE + "products.json"].map((u) => fetch(u, { cache: "no-store" } as any).then((r) => (r.ok ? r.text() : ""))));
+    if (!d || !p) return false;
     const D = JSON.parse(d),
       P = JSON.parse(p);
-    if (!D || !D.cards || !D.sets || !D.cards.length || !P) return;
+    if (!D || !D.cards || !D.sets || !D.cards.length || !P) return false;
     // elenco delle carte cambiate rispetto a quelle in uso
     let news: News | null = null;
     try {
@@ -221,7 +231,7 @@ async function check(onNew: (n: News) => void) {
     await writeAsStringAsync(documentDirectory + NAMES.v, JSON.stringify(v));
     // in uso subito, senza riavviare l'app; se qualcosa va storto si torna ai dati di prima (quelli nuovi restano
     // salvati e si usano alla prossima apertura)
-    if (!APPLY) return;
+    if (!APPLY) return true;
     try {
       APPLY(D, P);
       CURVER = v;
@@ -231,11 +241,14 @@ async function check(onNew: (n: News) => void) {
       try {
         APPLY(USED, USEDP);
       } catch (e2) {}
-      return;
+      return true;
     }
     // nessuna carta cambiata (es. solo lista ban o schede dei prodotti): niente riquadro
+    rememberNew(news);
     if (news && news.groups.length) onNew(news);
+    return true;
   } catch (e) {
+    return false;
   } finally {
     busy = false;
   }
@@ -246,15 +259,23 @@ let started = false;
 export function startDataUpdates(onNew: (n: News) => void) {
   if (!NATIVE || started) return;
   started = true;
-  // subito all'apertura (mentre gira l'intro): carte in uso e riquadro appena i dati sono scaricati
-  setTimeout(() => check(onNew), 300);
+  // subito all'apertura (mentre gira l'intro): carte in uso e riquadro appena i dati sono scaricati. Se il controllo
+  // non riesce (rete assente o lenta) si riprova dopo 20 s, 1 minuto e 3 minuti (12 novembre 2026: prima si aspettavano
+  // 3 ore fuori dall'app e intanto arrivava solo l'avviso delle immagini)
+  const RETRY = [20e3, 60e3, 180e3];
+  const run = (k: number) =>
+    check(onNew).then((ok) => {
+      if (!ok && k < RETRY.length) setTimeout(() => run(k + 1), RETRY[k]);
+    });
+  setTimeout(() => run(0), 300);
   let away = 0;
   AppState.addEventListener("change", (s) => {
     if (s !== "active") {
       away = away || Date.now();
       return;
     }
-    if (away && Date.now() - away > 3 * 3600e3) check(onNew);
+    // tornando nell'app dopo almeno 30 minuti (prima 3 ore): gli spoiler arrivano più volte al giorno
+    if (away && Date.now() - away > 30 * 60e3) run(0);
     away = 0;
   });
 }
