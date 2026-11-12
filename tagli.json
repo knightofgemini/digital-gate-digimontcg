@@ -151,9 +151,17 @@
    "w": 1600,
    "h": 1195,
    "at": "2026-11-12T19:45:47.465Z"
+  },
+  "ST8@ban": {
+   "code": "ST8",
+   "name": "Starter Deck UlforceVeedramon",
+   "asset": "ST8BAN-mwdyq6wq.webp",
+   "w": 1600,
+   "h": 1195,
+   "at": "2026-11-12T19:50:37.543Z"
   }
  },
- "t": "2026-11-12T19:46:08.558Z",
+ "t": "2026-11-12T19:50:38.011Z",
  "tagli": {
   "BT25__cover": {
    "code": "BT25",
