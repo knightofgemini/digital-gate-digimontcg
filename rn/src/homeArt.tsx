@@ -90,6 +90,12 @@ export function artFor(code: string, sec: "hero" | "cover" | "square" | "prod", 
   return { uri: RAW + "img/" + encodeURIComponent(img.asset), r: c, w: img.w, h: img.h, logo: c.logo && c.logo.p ? { p: String(c.logo.p), s: +c.logo.s || 0.45 } : undefined };
 }
 
+// logo caricato a mano nell'editor (immagini/CODICE@logo), al posto di quello del sito ufficiale
+export function logoArt(code: string): string | null {
+  const img = ART.immagini[code + "@logo"];
+  return img && img.asset ? RAW + "img/" + encodeURIComponent(img.asset) : null;
+}
+
 // originale ritagliato: riempie il riquadro che lo contiene (posizione assoluta), con il taglio adattato alla sua forma
 export function CutImg({ a }: { a: Art }) {
   const [box, setBox] = useState<{ w: number; h: number } | null>(null);

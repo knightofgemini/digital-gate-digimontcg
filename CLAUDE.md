@@ -257,6 +257,12 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
     **Immagini solo per il banner** (11 novembre 2026, richiesta dell'utente): nella pagina Banner prodotti si carica
     un'immagine che vale solo per il banner (`immagini/CODICE@ban`; nella pagina `BIMGS`/`bimg`, nell'app `artFor(…,
     "prod")` la preferisce a `immagini/CODICE`), così i tagli della Home restano validi.
+    **Loghi caricati a mano** (12 novembre 2026, richiesta dell'utente: mancano i loghi di 32 prodotti su 102, quasi
+    tutti PB e prodotti in arrivo): nella pagina Banner prodotti "Carica il logo dell'espansione" → `immagini/CODICE@logo`
+    (pagina: `LIMGS`/`logoOf`, "Torna al logo ufficiale" cancella il documento; app: `logoArt` in `homeArt.tsx`, usato da
+    `ProdVisual` prima di `logoUrl`). Loghi ufficiali (ramo `set-assets`, 68 file): con la scritta "Digimon Card Game"
+    BT1-3, BT4-9, BT11, BT13-23, EX1-3, EX5-10, LM01-08, RB1 (PB21 è solo il marchio); senza: AD1, BT10, BT12, BT24-27,
+    EX4, EX11-13 e tutti gli ST.
   - Immagini date dall'utente per un prodotto: metterle **in tutte le sezioni dove il prodotto può comparire** (scelta
     dell'utente "ovunque necessario"): uscito → Set da completare (e In evidenza se è l'ultimo del suo tipo); in arrivo →
     All'orizzonte, In evidenza e Set da completare (per dopo l'uscita). 9 novembre 2026: LM06, LM07 (Set da completare),

@@ -7,7 +7,7 @@ import Svg, { Circle, Defs, Path, RadialGradient, LinearGradient, Rect, Stop } f
 import { DISPLAY, Text } from "./Text";
 import { PRODUCTS, SITE, bannerUrl, logoUrl, packUrl } from "./data";
 import { useTheme } from "./theme";
-import { CutImg, LogoLay, artFor, useHomeArt } from "./homeArt";
+import { CutImg, LogoLay, artFor, logoArt, useHomeArt } from "./homeArt";
 
 const stroke = (color: string, w = 2) => ({ stroke: color, strokeWidth: w, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, fill: "none" });
 export const Clock = ({ color, size = 10 }: { color: string; size?: number }) => (
@@ -90,10 +90,10 @@ export function ProdVisual({ code, radius = 0, codeSize = 32, children }: { code
   useHomeArt();
   // banner scelto nell'editor (pagina "Banner prodotti": taglio 16:9 e logo dell'espansione), prima di tutto il resto
   const cut = artFor(code, "prod");
-  const cl = cut && cut.logo ? logoUrl(code) : null;
+  const cl = cut && cut.logo ? logoArt(code) || logoUrl(code) : null;
   const b = bannerUrl(code);
   // dalle funzioni dei dati: così valgono le immagini salvate (Immagini offline) e le versioni aggiornate
-  const lg = !b ? logoUrl(code) : null;
+  const lg = !b ? logoArt(code) || logoUrl(code) : null;
   const pk = !b && !lg ? packUrl(code) : null;
   return (
     // con l'illustrazione lo sfondo sfumato (disegnato) resterebbe coperto: un colore pieno basta ed è molto più leggero

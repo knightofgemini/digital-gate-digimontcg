@@ -256,6 +256,18 @@ button.b:disabled { opacity: .45; cursor: default; }
       </div>
       <div class="status" id="banAddStatus" role="status"></div>
     </section>
+
+    <section class="sec add" id="logoAdd" hidden aria-labelledby="logoAddT">
+      <div class="sec-head"><h2 id="logoAddT">Carica il logo dell'espansione</h2><span class="rule">Prende il posto di quello del sito ufficiale (meglio PNG con lo sfondo trasparente)</span></div>
+      <div class="row">
+        <input type="text" id="logoCode" placeholder="Codice (vuoto = prodotto scelto)" autocomplete="off" aria-label="Codice del prodotto del logo">
+      </div>
+      <div class="row">
+        <input type="file" id="logoFile" accept="image/png,image/webp" aria-label="Logo">
+        <button class="b pri" id="logoBtn" type="button">Carica</button>
+      </div>
+      <div class="status" id="logoAddStatus" role="status"></div>
+    </section>
   </div>
 
   <div class="view" id="viewCmp" hidden>
@@ -768,7 +780,7 @@ button.b:disabled { opacity: .45; cursor: default; }
     { name: "Banner prodotti", ban: true, cells: (c, img, ok) => {
       const d = CUTS[c + "__prod"];
       if (!ok(d)) return [cmpEmpty(c, BAN_AR, "da fare")];
-      const url = (window.LOGOS || {})[c], lg = d.logo;
+      const url = logoOf(c), lg = d.logo;
       const cell = cmpThumb(img, d, c, zTxt(zoomOf(img, d, BAN_AR)), url && lg ? "logo " + posName(lg.p) + " · " + Math.round(lg.s * 100) + "%" : "senza logo");
       if (url && lg) { const b = cell.querySelector(".cmp-box"); b.append(logoLay(url, lg.p, lg.s, parseFloat(b.style.width))); }
       return [cell];
@@ -808,6 +820,8 @@ button.b:disabled { opacity: .45; cursor: default; }
   let curB = null;
   let BIMGS = {}; // codice -> immagine caricata solo per il banner (immagini/CODICE@ban)
   const bimg = (c) => BIMGS[c] || IMGS[c];
+  let LIMGS = {}; // codice -> logo caricato a mano (immagini/CODICE@logo)
+  const logoOf = (c) => (LIMGS[c] ? BLOB(LIMGS[c].asset) : (window.LOGOS || {})[c]);
   const banCodes = () => [...new Set([...Object.keys(IMGS), ...Object.keys(BIMGS)])].sort(cmpSort);
   // logo sopra un riquadro largo W pixel: margine del 5% della larghezza, posizione per righe/colonne, larghezza s·W
   function logoLay(url, p, s, W) {
@@ -855,7 +869,7 @@ button.b:disabled { opacity: .45; cursor: default; }
     const st = ok ? fromRect(img, BAN_AR, saved) : { cx: 0.5, cy: 0.45, z: 1 };
     st.dirty = false;
     let lp = (ok && saved.logo && saved.logo.p) || "bc", ls = (ok && saved.logo && saved.logo.s) || 0.45;
-    const url = (window.LOGOS || {})[code];
+    const url = logoOf(code);
 
     const box = document.createElement("section"); box.className = "sec";
     const head = document.createElement("div"); head.className = "sec-head";
@@ -931,7 +945,7 @@ button.b:disabled { opacity: .45; cursor: default; }
       lr.append(ll, spad, srng);
       ltools.append(grid, lr);
     } else {
-      const n = document.createElement("p"); n.className = "hint"; n.textContent = "Per questo prodotto l'app non ha il logo dell'espansione: il banner si vede senza logo.";
+      const n = document.createElement("p"); n.className = "hint"; n.textContent = "Per questo prodotto non c'è il logo dell'espansione: caricalo qui sotto, altrimenti il banner si vede senza logo.";
       ltools.append(n);
     }
     const save = document.createElement("button"); save.type = "button"; save.className = "b pri"; save.textContent = "Salva banner";
@@ -948,7 +962,17 @@ button.b:disabled { opacity: .45; cursor: default; }
       } catch (e) { $("banStatus").textContent = "Non sono riuscito a salvare: " + (e && e.message || "errore") + ". Riprova tra poco."; }
       save.textContent = "Salva banner"; sync();
     };
-    box.append(head, rule, prev, tools, ltools, save);
+    // logo caricato a mano: indicazione e ritorno a quello ufficiale
+    const lnote = document.createElement("p"); lnote.className = "hint";
+    if (LIMGS[code]) {
+      lnote.textContent = "Logo caricato da te. ";
+      if ((window.LOGOS || {})[code]) {
+        const back = document.createElement("button"); back.type = "button"; back.className = "b"; back.textContent = "Torna al logo ufficiale";
+        back.onclick = async () => { back.disabled = true; try { await db.doc("immagini/" + code + "@logo").delete(); delete LIMGS[code]; renderBanner(); renderCompare(); } catch (e) { back.disabled = false; $("banStatus").textContent = "Non sono riuscito: " + (e && e.message || "errore") + "."; } };
+        lnote.append(back);
+      }
+    }
+    box.append(head, rule, prev, tools, ltools, lnote, save);
     ed.append(box);
     for (const f of [big, small]) { const im = f.querySelector("img"); if (!im.complete) im.onload = sync; new ResizeObserver(() => sync()).observe(f); }
     sync();
@@ -974,6 +998,27 @@ button.b:disabled { opacity: .45; cursor: default; }
     $("banBtn").disabled = false;
   }
 
+  // logo caricato a mano: immagini/CODICE@logo (vale per tutti i banner di quel prodotto)
+  async function addLogo() {
+    const st = $("logoAddStatus");
+    const code = ($("logoCode").value.trim() || curB || "").toUpperCase().replace(/[^A-Z0-9-]/g, "");
+    const file = $("logoFile").files[0];
+    if (!code) { st.textContent = "Scrivi il codice del prodotto, per esempio PB23."; return; }
+    if (!file) { st.textContent = "Scegli il file del logo."; return; }
+    $("logoBtn").disabled = true; st.textContent = "Carico il logo…";
+    try {
+      const up = await assets.upload(file, code + "@logo");
+      const body = { code, name: "", asset: up.id, w: up.w, h: up.h, at: new Date().toISOString() };
+      await db.doc("immagini/" + code + "@logo").set(body);
+      LIMGS[code] = body;
+      if (bimg(code)) curB = code;
+      renderBanner(); renderCompare();
+      st.textContent = "Logo di " + code + " caricato" + (bimg(code) ? ": ora scegli dove metterlo." : ". Carica anche un'immagine per il banner di " + code + " per vederlo.");
+      $("logoCode").value = ""; $("logoFile").value = "";
+    } catch (e) { st.textContent = "Caricamento non riuscito: " + (e && e.message || "errore") + "."; }
+    $("logoBtn").disabled = false;
+  }
+
   // ---- avvio
   function showTab(t) {
     $("viewEdit").hidden = t !== "edit"; $("viewBan").hidden = t !== "ban"; $("viewCmp").hidden = t !== "cmp";
@@ -986,20 +1031,23 @@ button.b:disabled { opacity: .45; cursor: default; }
     db = await window.claude.use("db");
     if (!db) { status("Il salvataggio non è disponibile.", true); $("chips").textContent = ""; return; }
     assets = await window.claude.use("assets");
-    if (assets) { $("addBox").hidden = false; $("addBtn").onclick = addImage; $("banAdd").hidden = false; $("banBtn").onclick = addBanImage; }
+    if (assets) { $("addBox").hidden = false; $("addBtn").onclick = addImage; $("banAdd").hidden = false; $("banBtn").onclick = addBanImage; $("logoAdd").hidden = false; $("logoBtn").onclick = addLogo; }
     let gotImgs = false;
     const timer = setTimeout(() => { if (!gotImgs) status("Le immagini non arrivano ancora: controlla la connessione.", true); }, 10000);
     db.collection("immagini").onSnapshot((snap) => {
       gotImgs = true; if (!snap.metadata.fromCache) { clearTimeout(timer); status(""); }
-      // immagini/CODICE = riquadri della Home; immagini/CODICE@ban = immagine solo per il banner dei prodotti
-      const next = {}, nextB = {};
-      snap.docs.forEach((d) => { const v = d.data(); if (!v || !v.asset) return; if (d.id.endsWith("@ban")) { const c = d.id.slice(0, -4); nextB[c] = Object.assign({}, v, { code: c }); } else next[d.id] = Object.assign({ code: d.id }, v); });
+      // immagini/CODICE = riquadri della Home; immagini/CODICE@ban = immagine solo per il banner dei prodotti;
+      // immagini/CODICE@logo = logo caricato a mano (al posto di quello del sito ufficiale)
+      const next = {}, nextB = {}, nextL = {};
+      snap.docs.forEach((d) => { const v = d.data(); if (!v || !v.asset) return; if (d.id.endsWith("@ban")) { const c = d.id.slice(0, -4); nextB[c] = Object.assign({}, v, { code: c }); } else if (d.id.endsWith("@logo")) { const c = d.id.slice(0, -5); nextL[c] = Object.assign({}, v, { code: c }); } else next[d.id] = Object.assign({ code: d.id }, v); });
+      const oldL = curB && LIMGS[curB] ? LIMGS[curB].asset : "";
+      LIMGS = nextL;
       const changed = !cur || !IMGS[cur] || !next[cur] || IMGS[cur].asset !== (next[cur] && next[cur].asset);
       const oldB = curB ? bimg(curB) : null;
       IMGS = next; BIMGS = nextB;
       if (!cur || !IMGS[cur]) cur = Object.keys(IMGS).sort()[0] || null;
       const nb = curB ? bimg(curB) : null;
-      const bch = !curB || !oldB || !nb || oldB.asset !== nb.asset;
+      const bch = !curB || !oldB || !nb || oldB.asset !== nb.asset || oldL !== (LIMGS[curB] ? LIMGS[curB].asset : "");
       renderChips(); renderCompare(); if (changed) renderEditor(); if (bch) renderBanner(); else fillBanPick();
     }, (e) => { clearTimeout(timer); status("Non riesco a leggere le immagini (" + e.code + ").", true); });
     db.collection("tagli").onSnapshot((snap) => {
