@@ -163,6 +163,23 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   dell'utente): con lo scaricamento automatico attivo (`autoOn` in `offline.ts`) `showNews` tiene da parte il riepilogo
   delle carte (`held`) finché il giro delle immagini finisce (`NEWS_HOOK.show` con le immagini → un riquadro unico;
   `NEWS_HOOK.idle` se non c'era niente da scaricare), al massimo 2 minuti.
+- **Controllo in sottofondo con notifica (12 novembre 2026, scelta dell'utente: "il controllo prima dell'apertura")**:
+  `rn/src/bgTask.ts`, caricato prima dell'app da `rn/index.js` (`main` di `package.json`; il compito deve esistere anche
+  quando Android lo avvia ad app chiusa). `expo-background-task` + `expo-task-manager` (WorkManager, `minimumInterval`
+  30 minuti, solo con internet, il momento lo decide il telefono; iscritto da `startBackground` all'avvio): se i dati
+  non sono ancora scelti fa `pickData` con quelli dell'APK, poi `bgCheck` (stesso `check` dell'apertura: scarica e salva
+  dati e `dg-news.json`; con l'app viva in sottofondo li mette anche in uso) e, se ci sono carte e l'app non è davanti,
+  notifica locale `expo-notifications` sul canale `novita` ("98 carte nuove e 2 carte corrette in 5 prodotti" o "12 carte
+  nuove in BT27", sotto i primi nomi), una sola volta per versione dei dati (`dg-notified.txt`). Le immagini non si
+  scaricano in sottofondo: all'apertura il riepilogo salvato (`startupNews`) passa da `showNews` e aspetta il giro delle
+  immagini, così compare un riquadro solo. All'avvio si tolgono le notifiche già lette; il permesso (Android 13+) si
+  chiede una volta dopo l'intro (`askNotifications`). Icona della notifica `rn/assets/notification-icon.png` (bianca,
+  dal marchio monocromatico di `android-res`). **R8 toglieva il costruttore del database di WorkManager e l'app si
+  chiudeva all'avvio**: regole in `rn/plugins/withKeepRules.js`. Prova: `tools/rn_news.py` (prova-emulatore "novita"),
+  passo `n0`: app chiusa, compito forzato con `cmd jobscheduler run -f -n androidx.work.systemjobscheduler PKG ID`
+  (Android 14 ha lo spazio dei nomi), notifica sullo schermo, tocco → riquadro (esito del 12 novembre: notifica e
+  riquadro in ~9 s). Il ramo `deps-bg` (flusso provvisorio usato per aggiungere i pacchetti con `npx expo install`,
+  perché il registro npm da qui non si raggiunge) si può cancellare.
 - **Nuova Home (6 novembre 2026, ramo `home-nuova`, dal mockup `home-proposta.html` preparato dall'utente)**: moduli in
   `rn/src/home.tsx`, scelte senza grafica in `rn/src/homeLogic.ts` (prove: `node --experimental-strip-types --test
   scripts/home-logic.test.mjs` dalla cartella `rn`). Ordine: titolo "Home" (Chakra Petch 25, non il `PageTitle` corsivo)
