@@ -156,37 +156,23 @@ def bglog():
             log("  " + line[:200])
 
 
-note = ""
+NOTE = r"carte nuove|carta nuova|carte corrette|carta corretta"
+note = None
+adb("shell", "cmd", "statusbar", "expand-notifications")
 for tries in range(3):
     jobs = jobs_now()
     log("compiti di Android dell'app: " + (", ".join(ns + "/" + j for ns, j in jobs) or "NESSUNO"))
     for ns, j in jobs:
         log("  run " + j + ": " + adb("shell", "cmd", "jobscheduler", "run", "-f", *(["-n", ns] if ns else []), PKG, j).strip())
-    for i in range(15):
-        time.sleep(2)
-        nd = adb("shell", "dumpsys", "notification", "--noredact")
-        m = re.search(r"pkg=" + re.escape(PKG) + r"[\s\S]{0,3000}?android\.title=String \(([^)]*)\)[\s\S]{0,800}?android\.text=String \(([^)]*)\)", nd)
-        if m:
-            note = m.group(1) + " · " + m.group(2)
-            break
+    note = wait_for(NOTE, 30)
     if note:
         break
 bglog()
-log("notifica: " + (note or "NESSUNA") + " · processo " + (pid() or "nessuno"))
-# tutto quello che ha scritto il processo dell'app (anche i messaggi informativi di WorkManager e di Expo)
-p = pid()
-if p:
-    full = adb("logcat", "-d", "-v", "time", "--pid=" + p)
-    with open(os.path.join(OUT, "bg_processo.txt"), "w") as f:
-        f.write(full)
-    for line in full.splitlines():
-        if re.search(r"(?i)expo|task|WM-|work|react|exception|error", line):
-            log("  pid: " + line[:250])
+log("notifica: " + ("sì" if note else "NESSUNA") + " · processo " + (pid() or "nessuno"))
 logcat("logcat0")
-adb("shell", "cmd", "statusbar", "expand-notifications")
-time.sleep(2)
 shot("n0_notifica")
-if note and tap(re.escape(note.split(" · ")[0]), 1):
+if note:
+    adb("shell", "input", "tap", str(note[0]), str(note[1]))
     t0 = time.time()
     if wait_for(GO, 60):
         log("riquadro dopo il tocco sulla notifica: %.1f s" % (time.time() - t0))

@@ -49,9 +49,8 @@ async function channel() {
 }
 
 async function notify(n: News) {
-  if (notified(n.h)) return console.log("[bg] notifica già mandata");
+  if (notified(n.h)) return;
   const perm = await Notifications.getPermissionsAsync();
-  console.log("[bg] permesso", perm.granted, perm.status);
   if (!perm.granted) return;
   await channel();
   const { title, body } = notifText(n);
@@ -60,22 +59,17 @@ async function notify(n: News) {
     trigger: { channelId: CHANNEL } as any,
   });
   notified(n.h, true);
-  console.log("[bg] notifica mandata");
 }
 
 if (ANDROID)
   TaskManager.defineTask(BG_TASK, async () => {
-    console.log("[bg] compito partito");
     try {
       // app chiusa: i dati in uso sono quelli dell'APK o gli ultimi scaricati (gli stessi che sceglie data.ts)
       if (!dataInUse()) pickData<any, any>(bundledData, bundledProducts);
       const n = await bgCheck();
-      console.log("[bg] esito", n === false ? "non riuscito" : n ? n.n + " nuove" : "niente");
       if (n === false) return BackgroundTask.BackgroundTaskResult.Failed;
       // con l'app davanti agli occhi basta il riquadro
-      console.log("[bg] app", AppState.currentState);
-      if (n && n.groups.length && AppState.currentState !== "active")
-        await notify(n).catch((e) => console.log("[bg] errore della notifica", e && e.message));
+      if (n && n.groups.length && AppState.currentState !== "active") await notify(n).catch(() => {});
       return BackgroundTask.BackgroundTaskResult.Success;
     } catch (e) {
       return BackgroundTask.BackgroundTaskResult.Failed;
@@ -89,14 +83,10 @@ export async function startBackground() {
   Notifications.dismissAllNotificationsAsync().catch(() => {});
   try {
     const st = await BackgroundTask.getStatusAsync();
-    console.log("[bg] stato", st);
     if (st !== BackgroundTask.BackgroundTaskStatus.Available) return;
     const reg = await TaskManager.isTaskRegisteredAsync(BG_TASK);
     if (!reg) await BackgroundTask.registerTaskAsync(BG_TASK, { minimumInterval: 30 });
-    console.log("[bg] iscritto", reg ? "già" : "ora");
-  } catch (e: any) {
-    console.log("[bg] errore", e && e.message);
-  }
+  } catch (e) {}
 }
 
 // permesso delle notifiche (Android 13 e successivi): chiesto una volta, dopo l'intro
