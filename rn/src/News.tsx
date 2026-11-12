@@ -22,8 +22,54 @@ const MAXROWS = 60; // per prodotto (es. dopo una correzione di molte carte): le
 
 let host: ((n: News) => void) | null = null;
 let queued: News | null = null;
+
+// avvisi in fila (12 novembre 2026, richiesta dell'utente: l'avviso "Nuova versione disponibile" copriva il riquadro):
+// finché il riquadro delle carte nuove è in arrivo o aperto gli altri avvisi aspettano (Update.tsx → useNewsBusy)
+let waiting = 0, // showNews in corso
+  showing = false, // riquadro consegnato o aperto
+  showingT: ReturnType<typeof setTimeout> | null = null;
+const busySubs = new Set<() => void>();
+const emitBusy = () => busySubs.forEach((f) => f());
+export const newsBusy = () => waiting > 0 || !!held || !!queued || showing;
+export function useNewsBusy() {
+  const [b, setB] = useState(newsBusy());
+  useEffect(() => {
+    const f = () => setB(newsBusy());
+    busySubs.add(f);
+    f();
+    return () => {
+      busySubs.delete(f);
+    };
+  }, []);
+  return b;
+}
+// f appena non c'è nessun riquadro delle carte nuove in arrivo o aperto
+export function whenNewsIdle(f: () => void) {
+  if (!newsBusy()) return f();
+  const g = () => {
+    if (newsBusy()) return;
+    busySubs.delete(g);
+    f();
+  };
+  busySubs.add(g);
+}
+function setShowing(v: boolean) {
+  if (showingT) clearTimeout(showingT);
+  showingT = null;
+  if (v) {
+    showing = true;
+    emitBusy();
+  } else
+    // il tempo di chiudere il riquadro, poi il prossimo avviso
+    showingT = setTimeout(() => {
+      showing = false;
+      emitBusy();
+    }, 450);
+}
+
 // chiamata da _layout.tsx quando dataupd.ts ha scaricato e messo in uso carte nuove
 function deliver(n: News) {
+  setShowing(true);
   if (host) host(n);
   else queued = queued ? mergeNews(queued, n) : n;
 }
@@ -41,6 +87,12 @@ function flush(extra?: News) {
 }
 // chiamata da _layout.tsx quando dataupd.ts ha scaricato e messo in uso carte nuove
 export function showNews(n: News) {
+  waiting++;
+  emitBusy();
+  const done = () => {
+    waiting--;
+    emitBusy();
+  };
   autoOn()
     .then((on) => {
       if (!on) return deliver(n);
@@ -48,7 +100,8 @@ export function showNews(n: News) {
       if (!heldT) heldT = setTimeout(() => flush(), 120e3);
       bootNow();
     })
-    .catch(() => deliver(n));
+    .catch(() => deliver(n))
+    .finally(done);
 }
 // immagini scaricate in automatico (offline.ts): insieme alle carte in attesa, se ci sono
 NEWS_HOOK.show = (n) => flush(n);
@@ -136,6 +189,7 @@ export function NewsHost() {
     setVis(false);
     newsSeen(n);
     open.current = false;
+    setShowing(false);
   };
   // si chiude il riquadro e si apre la pagina (le carte sono già in uso)
   const goGroup = (g: NewsGroup) => {

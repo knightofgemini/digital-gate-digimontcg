@@ -9,11 +9,11 @@ import { useFonts } from "expo-font";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { loadStore } from "../store";
 import { ToastHost } from "../toast";
-import { startDataUpdates } from "../dataupd";
+import { startDataUpdates, whenFirstCheck } from "../dataupd";
 import { askNotifications, startBackground } from "../bgTask";
 import { startArt } from "../homeArt";
 import { loadKey } from "../ghArt";
-import { NewsHost, showNews } from "../News";
+import { NewsHost, showNews, whenNewsIdle } from "../News";
 import { FavSheetHost } from "../FavSheet";
 import { UpdateCheck } from "../Update";
 import { loadThemePref, useTheme } from "../theme";
@@ -77,7 +77,8 @@ export default function RootLayout() {
       startDataUpdates((n) => !m && showNews(n));
       // controllo delle carte nuove anche ad app chiusa, con notifica (bgTask.ts); permesso chiesto dopo l'intro
       startBackground();
-      if (!m) whenIntroDone(() => setTimeout(askNotifications, 1200));
+      // (anche la richiesta del permesso aspetta il riquadro delle carte nuove, se c'è)
+      if (!m) whenFirstCheck(() => whenIntroDone(() => whenNewsIdle(() => setTimeout(askNotifications, 800))));
     });
   }, []);
   if (!ready || (!fonts && !fontErr)) return <View style={{ flex: 1, backgroundColor: t.bg }} />;

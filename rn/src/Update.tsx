@@ -1,11 +1,17 @@
 // APK: all'avvio controlla se nella release "latest" c'è una build più recente e propone di installarla
 // (apre il download nel browser del telefono), come nell'app attuale. Numero di build in app.json → extra.build
 // (lo scrive la pubblicazione); in Expo Go e sul sito vale 0 e il controllo non parte.
+// Avvisi in fila (12 novembre 2026, richiesta dell'utente): prima il riquadro delle carte nuove, poi questo. Compare
+// dopo l'intro e il primo controllo delle carte (al massimo 15 s), mai mentre il riquadro è in arrivo o aperto; se il
+// riquadro arriva mentre questo è aperto, questo si toglie e torna quando il riquadro è chiuso.
 import { useEffect, useState } from "react";
 import { Linking, Modal, Platform, Pressable, View } from "react-native";
 import { Text } from "./Text";
 import Constants from "expo-constants";
 import { useTheme } from "./theme";
+import { useNewsBusy } from "./News";
+import { whenFirstCheck } from "./dataupd";
+import { whenIntroDone } from "./Intro";
 
 const APK_URL = "https://github.com/knightofgemini/digital-gate-digimontcg/releases/download/latest/DigimonSetTracker.apk";
 export const APPBUILD = +((Constants.expoConfig as any)?.extra?.build || 0);
@@ -13,6 +19,19 @@ export const APPBUILD = +((Constants.expoConfig as any)?.extra?.build || 0);
 export function UpdateCheck() {
   const t = useTheme();
   const [upd, setUpd] = useState<{ latest: number; url: string } | null>(null);
+  const busy = useNewsBusy();
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let done = false;
+    const go = () => {
+      if (done) return;
+      done = true;
+      whenIntroDone(() => setReady(true));
+    };
+    whenFirstCheck(go);
+    const tm = setTimeout(go, 15000);
+    return () => clearTimeout(tm);
+  }, []);
   useEffect(() => {
     if (Platform.OS !== "android" || !APPBUILD) return;
     const tm = setTimeout(() => {
@@ -30,7 +49,7 @@ export function UpdateCheck() {
     }, 1500);
     return () => clearTimeout(tm);
   }, []);
-  if (!upd) return null;
+  if (!upd || !ready || busy) return null;
   return (
     <Modal visible transparent animationType="fade" onRequestClose={() => setUpd(null)}>
       <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,.6)", alignItems: "center", justifyContent: "center", padding: 24 }}>

@@ -285,6 +285,20 @@ export function notified(h: string, mark?: boolean): boolean {
   }
 }
 
+// primo controllo dell'apertura finito (riuscito o no): l'avviso di una nuova versione dell'app aspetta questo, così
+// se arrivano carte nuove il loro riquadro passa per primo (Update.tsx)
+let firstDone = false;
+const firstSubs: (() => void)[] = [];
+export function whenFirstCheck(f: () => void) {
+  if (firstDone || !NATIVE) f();
+  else firstSubs.push(f);
+}
+const markFirst = () => {
+  if (firstDone) return;
+  firstDone = true;
+  firstSubs.splice(0).forEach((f) => f());
+};
+
 let started = false;
 export function startDataUpdates(onNew: (n: News) => void) {
   if (!NATIVE || started) return;
@@ -298,7 +312,7 @@ export function startDataUpdates(onNew: (n: News) => void) {
     check(onNew).then((ok) => {
       if (!ok && k < RETRY.length) setTimeout(() => run(k + 1), RETRY[k]);
     });
-  setTimeout(() => run(0), 300);
+  setTimeout(() => check(onNew).then((ok) => (markFirst(), !ok && setTimeout(() => run(1), RETRY[0])), markFirst), 300);
   let away = 0;
   AppState.addEventListener("change", (s) => {
     if (s !== "active") {

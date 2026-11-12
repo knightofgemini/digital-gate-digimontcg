@@ -188,6 +188,12 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   subito dopo l'intro con le miniature già salvate. Tolti tutti i limiti sui dati mobili: niente più aggiornamenti
   automatici fermati oltre 10 MB, ripresa degli scaricamenti interrotti anche con i dati mobili, nessuna domanda prima di
   scaricare dalla pagina Immagini offline (`cell()` resta in `offline.ts` ma non si usa).
+- **Avvisi in fila (12 novembre 2026, ramo `avvisi-in-fila`, segnalato dall'utente: "Nuova versione disponibile"
+  copriva il riquadro delle carte nuove)**: prima il riquadro, poi gli altri. `News.tsx` tiene lo stato "occupato"
+  (`newsBusy`/`useNewsBusy`/`whenNewsIdle`: `showNews` in corso, riepilogo in attesa delle immagini, in coda o aperto;
+  libero 450 ms dopo la chiusura). `Update.tsx` mostra l'avviso solo dopo l'intro e il primo controllo delle carte
+  (`whenFirstCheck` in `dataupd.ts`, al massimo 15 s) e mai con il riquadro occupato: se il riquadro arriva mentre
+  l'avviso è aperto, l'avviso si toglie e torna dopo. Anche la richiesta del permesso delle notifiche aspetta.
 - **Nuova Home (6 novembre 2026, ramo `home-nuova`, dal mockup `home-proposta.html` preparato dall'utente)**: moduli in
   `rn/src/home.tsx`, scelte senza grafica in `rn/src/homeLogic.ts` (prove: `node --experimental-strip-types --test
   scripts/home-logic.test.mjs` dalla cartella `rn`). Ordine: titolo "Home" (Chakra Petch 25, non il `PageTitle` corsivo)
