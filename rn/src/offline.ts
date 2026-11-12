@@ -383,11 +383,11 @@ export async function deleteSet(id: string) {
 export async function auto(startUp: boolean) {
   await load();
   if (RUN && !RUN.end) return;
-  const mob = await cell();
   // uno scaricamento interrotto perché l'app è stata chiusa: riprende da dove era
-  if (startUp && OFF.run && (OFF.run === "t" || OFF.run === "hd" || OFF.run === "upd" || SETBY[OFF.run]) && !(mob && OFF.run === "hd")) return start(OFF.run, true);
-  // scaricamento generale lasciato a metà (non in pausa): riparte, ma non con i dati mobili
-  if (startUp && OFF.m && !OFF.paused && !OFF.full && OFF.done !== items(OFF.m).sig && !mob) return start(OFF.m, true);
+  if (startUp && OFF.run && (OFF.run === "t" || OFF.run === "hd" || OFF.run === "upd" || SETBY[OFF.run])) return start(OFF.run, true);
+  // scaricamento generale lasciato a metà (non in pausa): riparte, anche con i dati mobili (12 novembre 2026, scelta
+  // dell'utente: nessun limite sui dati mobili)
+  if (startUp && OFF.m && !OFF.paused && !OFF.full && OFF.done !== items(OFF.m).sig) return start(OFF.m, true);
   if (!OFF.auto || OFF.paused || !(OFF.m || OFF.ps.length)) return idle();
   delete LISTS.upd;
   const L = items("upd");
@@ -395,8 +395,6 @@ export async function auto(startUp: boolean) {
   if (!todo.length) return idle();
   const miss: Record<string, 1> = {};
   OFF.miss.forEach((u) => (miss[u] = 1));
-  const w = todo.reduce((a, x) => a + x.w, 0);
-  if (mob && w > 10 * 1048576) return idle();
   const newN = todo.filter((x) => !miss[x.u]).length;
   start("upd", true, newN);
 }

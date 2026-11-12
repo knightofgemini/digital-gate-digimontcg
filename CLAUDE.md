@@ -180,6 +180,14 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   (Android 14 ha lo spazio dei nomi), notifica sullo schermo, tocco → riquadro (esito del 12 novembre: notifica e
   riquadro in ~9 s). Il ramo `deps-bg` (flusso provvisorio usato per aggiungere i pacchetti con `npx expo install`,
   perché il registro npm da qui non si raggiunge) si può cancellare.
+- **Riquadro pronto alla fine dell'intro e nessun limite sui dati mobili (12 novembre 2026, ramo `riquadro-intro`,
+  richieste dell'utente)**: il compito in sottofondo, dopo la notifica, scarica le immagini delle carte del riepilogo
+  (`prefetch` in `bgTask.ts`: miniature sempre, grandi con lo scaricamento automatico in HD o per prodotto); all'apertura,
+  se il riepilogo aspetta le immagini, `showNews` chiama `bootNow` (`offline.ts`) e il primo giro delle immagini parte
+  subito invece che dopo 8 s. Prova: in `rn_news.py` il tocco sulla notifica è fatto senza rete (foto `n0t_2s…6s`): riquadro
+  subito dopo l'intro con le miniature già salvate. Tolti tutti i limiti sui dati mobili: niente più aggiornamenti
+  automatici fermati oltre 10 MB, ripresa degli scaricamenti interrotti anche con i dati mobili, nessuna domanda prima di
+  scaricare dalla pagina Immagini offline (`cell()` resta in `offline.ts` ma non si usa).
 - **Nuova Home (6 novembre 2026, ramo `home-nuova`, dal mockup `home-proposta.html` preparato dall'utente)**: moduli in
   `rn/src/home.tsx`, scelte senza grafica in `rn/src/homeLogic.ts` (prove: `node --experimental-strip-types --test
   scripts/home-logic.test.mjs` dalla cartella `rn`). Ordine: titolo "Home" (Chakra Petch 25, non il `PageTitle` corsivo)
