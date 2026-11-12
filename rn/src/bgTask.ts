@@ -49,8 +49,9 @@ async function channel() {
 }
 
 async function notify(n: News) {
-  if (notified(n.h)) return;
+  if (notified(n.h)) return console.log("[bg] notifica già mandata");
   const perm = await Notifications.getPermissionsAsync();
+  console.log("[bg] permesso", perm.granted, perm.status);
   if (!perm.granted) return;
   await channel();
   const { title, body } = notifText(n);
@@ -59,6 +60,7 @@ async function notify(n: News) {
     trigger: { channelId: CHANNEL } as any,
   });
   notified(n.h, true);
+  console.log("[bg] notifica mandata");
 }
 
 if (ANDROID)
@@ -71,7 +73,9 @@ if (ANDROID)
       console.log("[bg] esito", n === false ? "non riuscito" : n ? n.n + " nuove" : "niente");
       if (n === false) return BackgroundTask.BackgroundTaskResult.Failed;
       // con l'app davanti agli occhi basta il riquadro
-      if (n && n.groups.length && AppState.currentState !== "active") await notify(n);
+      console.log("[bg] app", AppState.currentState);
+      if (n && n.groups.length && AppState.currentState !== "active")
+        await notify(n).catch((e) => console.log("[bg] errore della notifica", e && e.message));
       return BackgroundTask.BackgroundTaskResult.Success;
     } catch (e) {
       return BackgroundTask.BackgroundTaskResult.Failed;
