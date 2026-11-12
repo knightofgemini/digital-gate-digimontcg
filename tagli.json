@@ -159,9 +159,17 @@
    "w": 1600,
    "h": 1195,
    "at": "2026-11-12T19:50:37.543Z"
+  },
+  "ST9@ban": {
+   "code": "ST9",
+   "name": "Starter Deck Ultimate Ancient Dragon",
+   "asset": "ST9BAN-mwdz9734.webp",
+   "w": 746,
+   "h": 1600,
+   "at": "2026-11-12T20:05:23.413Z"
   }
  },
- "t": "2026-11-12T19:51:04.493Z",
+ "t": "2026-11-12T20:05:23.838Z",
  "tagli": {
   "BT25__cover": {
    "code": "BT25",
