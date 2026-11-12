@@ -144,30 +144,44 @@ adb("shell", "am", "kill", PKG)
 time.sleep(2)
 log("processo dopo la chiusura: " + (pid() or "nessuno"))
 net(True)
-dump = adb("shell", "dumpsys", "jobscheduler")
-# Android 14: "JOB androidx.work.systemjobscheduler:u0a192/0: … app.digimon.settracker/…" (spazio dei nomi : utente/numero)
-jobs = sorted(set(re.findall(r"JOB #?(?:([\w.]+):)?\S+?/(\d+): \S+ @?[\w.@]*?" + re.escape(PKG) + "/", dump)))
-log("compiti di Android dell'app: " + (", ".join(ns + "/" + j for ns, j in jobs) or "NESSUNO"))
-for line in dump.splitlines():
-    if PKG in line:
-        log("  js: " + line.strip()[:200])
-for line in adb("logcat", "-d", "-s", "ReactNativeJS:V").splitlines():
-    if "[bg]" in line:
-        log("  " + line[:200])
-for ns, j in jobs:
-    log("  run " + j + ": " + adb("shell", "cmd", "jobscheduler", "run", "-f", *(["-n", ns] if ns else []), PKG, j).strip())
+def jobs_now():
+    dump = adb("shell", "dumpsys", "jobscheduler")
+    # Android 14: "JOB androidx.work.systemjobscheduler:u0a192/0: … app.digimon.settracker/…" (spazio dei nomi : utente/numero)
+    return sorted(set(re.findall(r"JOB #?(?:([\w.]+):)?\S+?/(\d+): \S+ @?[\w.@]*?" + re.escape(PKG) + "/", dump)))
+
+
+def bglog():
+    for line in adb("logcat", "-d", "-s", "ReactNativeJS:V").splitlines():
+        if "[bg]" in line:
+            log("  " + line[:200])
+
+
 note = ""
-for i in range(40):
-    time.sleep(2)
-    nd = adb("shell", "dumpsys", "notification", "--noredact")
-    m = re.search(r"pkg=" + re.escape(PKG) + r"[\s\S]{0,3000}?android\.title=String \(([^)]*)\)[\s\S]{0,800}?android\.text=String \(([^)]*)\)", nd)
-    if m:
-        note = m.group(1) + " · " + m.group(2)
+for tries in range(3):
+    jobs = jobs_now()
+    log("compiti di Android dell'app: " + (", ".join(ns + "/" + j for ns, j in jobs) or "NESSUNO"))
+    for ns, j in jobs:
+        log("  run " + j + ": " + adb("shell", "cmd", "jobscheduler", "run", "-f", *(["-n", ns] if ns else []), PKG, j).strip())
+    for i in range(15):
+        time.sleep(2)
+        nd = adb("shell", "dumpsys", "notification", "--noredact")
+        m = re.search(r"pkg=" + re.escape(PKG) + r"[\s\S]{0,3000}?android\.title=String \(([^)]*)\)[\s\S]{0,800}?android\.text=String \(([^)]*)\)", nd)
+        if m:
+            note = m.group(1) + " · " + m.group(2)
+            break
+    if note:
         break
-for line in adb("logcat", "-d", "-s", "ReactNativeJS:V").splitlines():
-    if "[bg]" in line:
-        log("  " + line[:200])
+bglog()
 log("notifica: " + (note or "NESSUNA") + " · processo " + (pid() or "nessuno"))
+# tutto quello che ha scritto il processo dell'app (anche i messaggi informativi di WorkManager e di Expo)
+p = pid()
+if p:
+    full = adb("logcat", "-d", "-v", "time", "--pid=" + p)
+    with open(os.path.join(OUT, "bg_processo.txt"), "w") as f:
+        f.write(full)
+    for line in full.splitlines():
+        if re.search(r"(?i)expo|task|WM-|work|react|exception|error", line):
+            log("  pid: " + line[:250])
 logcat("logcat0")
 adb("shell", "cmd", "statusbar", "expand-notifications")
 time.sleep(2)
