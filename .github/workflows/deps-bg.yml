@@ -1,0 +1,22 @@
+name: Componenti per il controllo in sottofondo (una volta)
+on:
+  push:
+    branches: [deps-bg]
+    paths: [".github/workflows/deps-bg.yml"]
+permissions: { contents: write }
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: |
+          cd rn
+          npm ci --no-audit --no-fund
+          npx expo install expo-background-task expo-task-manager expo-notifications
+          git diff --stat
+      - run: |
+          git config user.name "Claude"; git config user.email "noreply@anthropic.com"
+          git add rn/package.json rn/package-lock.json
+          git commit -qm "App: expo-background-task, expo-task-manager, expo-notifications" && git push origin HEAD:deps-bg
