@@ -9,6 +9,8 @@
 #  n5  dati dell'APK di nuovo (pm clear) → riquadro → "Vai a BT27" → pagina del prodotto con le carte nuove
 #  n6  di nuovo, app chiusa senza toccare il riquadro → riaperta: riquadro subito
 #  n7  tema chiaro
+#  n0  controllo in sottofondo ad app chiusa (bgTask.ts, 12 novembre 2026): notifica (n0_notifica), tocco → app aperta
+#      con il riquadro già pronto (n0b_riquadro)
 # Uso: python3 tools/rn_news.py OUT  (adb già collegato all'emulatore, APK installato)
 import os, re, subprocess, sys, time
 
@@ -83,7 +85,7 @@ def stop():
 
 
 # testo esatto del pulsante in fondo al riquadro
-GO = r"^\s*Vai a BT27\s*$"
+GO = r"^\s*(CARTE NUOVE|Carte nuove)\s*$"
 
 
 def pid():
@@ -117,6 +119,8 @@ def prep(clear):
     if clear:
         adb("shell", "pm", "clear", PKG)
         time.sleep(2)
+    # permesso delle notifiche già dato (pm clear lo toglie), così non compare la richiesta durante le foto
+    adb("shell", "pm", "grant", PKG, "android.permission.POST_NOTIFICATIONS")
     net(False)
     launch()
     time.sleep(14)
@@ -128,9 +132,57 @@ adb("shell", "cmd", "uimode", "night", "yes")
 time.sleep(2)
 adb("logcat", "-c")
 
+# 0) controllo in sottofondo: app aperta una volta senza rete (iscrive il compito), poi in sottofondo e processo chiuso;
+# con la rete si fa partire subito il compito di Android (di solito lo decide il telefono) → notifica
+prep(True)
+net(False)
+launch()
+time.sleep(12)
+adb("shell", "input", "keyevent", "3")
+time.sleep(2)
+adb("shell", "am", "kill", PKG)
+time.sleep(2)
+log("processo dopo la chiusura: " + (pid() or "nessuno"))
+net(True)
+def jobs_now():
+    dump = adb("shell", "dumpsys", "jobscheduler")
+    # Android 14: "JOB androidx.work.systemjobscheduler:u0a192/0: … app.digimon.settracker/…" (spazio dei nomi : utente/numero)
+    return sorted(set(re.findall(r"JOB #?(?:([\w.]+):)?\S+?/(\d+): \S+ @?[\w.@]*?" + re.escape(PKG) + "/", dump)))
+
+
+def bglog():
+    for line in adb("logcat", "-d", "-s", "ReactNativeJS:V").splitlines():
+        if "[bg]" in line:
+            log("  " + line[:200])
+
+
+NOTE = r"carte nuove|carta nuova|carte corrette|carta corretta"
+note = None
+adb("shell", "cmd", "statusbar", "expand-notifications")
+for tries in range(3):
+    jobs = jobs_now()
+    log("compiti di Android dell'app: " + (", ".join(ns + "/" + j for ns, j in jobs) or "NESSUNO"))
+    for ns, j in jobs:
+        log("  run " + j + ": " + adb("shell", "cmd", "jobscheduler", "run", "-f", *(["-n", ns] if ns else []), PKG, j).strip())
+    note = wait_for(NOTE, 30)
+    if note:
+        break
+bglog()
+log("notifica: " + ("sì" if note else "NESSUNA") + " · processo " + (pid() or "nessuno"))
+logcat("logcat0")
+shot("n0_notifica")
+if note:
+    adb("shell", "input", "tap", str(note[0]), str(note[1]))
+    t0 = time.time()
+    if wait_for(GO, 60):
+        log("riquadro dopo il tocco sulla notifica: %.1f s" % (time.time() - t0))
+        time.sleep(1.5)
+        shot("n0b_riquadro")
+adb("shell", "cmd", "statusbar", "collapse")
+
 # 1) apertura con l'app già usata: dati dell'APK vecchi, quelli del sito più recenti → carte in uso e riquadro, nello
 # stesso processo (niente riavvio)
-prep(False)
+prep(True)
 t0 = time.time()
 launch()
 time.sleep(1)

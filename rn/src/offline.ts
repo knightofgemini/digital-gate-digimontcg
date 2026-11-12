@@ -11,7 +11,8 @@ import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image } from "expo-image";
 import * as Network from "expo-network";
-import { BANNERS, CARDS, Card, NET, PRODUCTS, SETBY, SETS, cardsOfSet, errataKeys, hasErrata, onData } from "./data";
+import { BANNERS, CARDS, Card, NET, PRODUCTS, SETBY, SETS, cardsOfSet, errataKeys, hasErrata, hostSet, markText, onData } from "./data";
+import { NEWKEYS, News, NewsCard, NewsGroup } from "./dataupd";
 import { HAVE, dropAll, dropImgs, dropKind, fileOf, loadImages, loadVersions, saveImg, vurl } from "./imgstore";
 import { toast } from "./toast";
 import { BGD } from "./bgdl";
@@ -165,12 +166,54 @@ function notify(R: Run, force?: boolean, msg?: string) {
   BGD.update("Scaricamento immagini · " + label(R.scope), (msg ? msg + " · " : "") + R.done.toLocaleString("it-IT") + " di " + R.total.toLocaleString("it-IT") + " · " + pc + "%", R.done, R.total);
 }
 
+// riepilogo delle immagini nuove o aggiornate (12 novembre 2026, richiesta dell'utente: al posto dell'avviso in basso,
+// lo stesso riquadro "Carte nuove" con le carte e l'etichetta IMMAGINE). Lo mostra News.tsx (NEWS_HOOK.show).
+// show: immagini scaricate da mostrare; idle: giro delle immagini finito (o non partito) senza niente da mostrare
+export const NEWS_HOOK: { show: ((n: News) => void) | null; idle: (() => void) | null } = { show: null, idle: null };
+const idle = () => NEWS_HOOK.idle && NEWS_HOOK.idle();
+// lo scaricamento automatico delle immagini è attivo: il riquadro delle carte nuove aspetta le immagini (News.tsx)
+export async function autoOn() {
+  await load();
+  return !!(OFF.auto && !OFF.paused && (OFF.m || OFF.ps.length));
+}
+function imageNews(urls: string[]): News | null {
+  const want = new Set(urls);
+  const byUrl = new Map<string, Card>();
+  const addC = (c: Card) => {
+    [NET.t(c), NET.f(c)].forEach((u) => {
+      const v = vurl(u);
+      if (want.has(v) && !byUrl.has(v)) byUrl.set(v, c);
+    });
+  };
+  SETS.forEach((s) => cardsOfSet(s.id).forEach(addC));
+  const seen = new Set<string>();
+  const groups: Record<string, NewsGroup> = {};
+  byUrl.forEach((c) => {
+    if (seen.has(c.k) || NEWKEYS.has(c.k)) return;
+    seen.add(c.k);
+    const id = hostSet(c),
+      s = SETBY[id];
+    if (!s) return;
+    const g = (groups[id] = groups[id] || { id, code: s.code, name: s.name, date: s.date || "", soon: !!s.date && s.date > new Date().toISOString().slice(0, 10), n: 0, c: 0, i: 0, cards: [] });
+    const x: NewsCard = { k: c.k, code: c.code, name: c.name, u: NET.t(c), mark: markText(c), colors: c.colors, kind: "i" };
+    g.cards.push(x);
+    g.i = (g.i || 0) + 1;
+  });
+  const list = Object.values(groups);
+  if (!list.length) return null;
+  const dk = (g: NewsGroup) => (g.date && g.date.charAt(0) !== "0" ? g.date : "");
+  list.sort((a, b) => (dk(a) < dk(b) ? 1 : dk(a) > dk(b) ? -1 : 0));
+  return { h: "img", at: Date.now(), n: 0, c: 0, i: list.reduce((a, g) => a + (g.i || 0), 0), groups: list };
+}
+
 export async function start(scope: string, quiet = false, newN?: number) {
   if (RUN && !RUN.end) return;
   await load();
+  const miss0 = new Set(OFF.miss);
   if (scope === "upd") delete LISTS.upd;
   const list = items(scope);
   const R: Run = (RUN = { scope, total: list.length, done: 0, fail: 0, row: 0, stop: false, end: false, quiet, newN });
+  let shown = false;
   if (scope === "t" || scope === "hd") {
     OFF.paused = false;
     save();
@@ -260,8 +303,17 @@ export async function start(scope: string, quiet = false, newN?: number) {
   }
   if (scope === "upd" && !R.stop) {
     OFF.updSig = list.sig || "";
-    if (R.total - R.fail > 0 && R.newN && !PAGE.open) toast(R.newN.toLocaleString("it-IT") + (R.newN === 1 ? " immagine nuova o aggiornata scaricata" : " immagini nuove o aggiornate scaricate"));
+    if (R.total - R.fail > 0 && R.newN && !PAGE.open) {
+      // immagini delle carte: riquadro con l'elenco; solo banner, confezioni o loghi: l'avviso in basso di prima
+      const got = todo.filter((x) => !miss0.has(x.u) && HAVE.has(x.n)).map((x) => x.u);
+      const n = NEWS_HOOK.show ? imageNews(got) : null;
+      if (n) {
+        NEWS_HOOK.show!(n);
+        shown = true;
+      } else toast(R.newN.toLocaleString("it-IT") + (R.newN === 1 ? " immagine nuova o aggiornata scaricata" : " immagini nuove o aggiornate scaricate"));
+    }
   }
+  if (!shown) idle();
   save();
   emit();
 }
@@ -336,15 +388,15 @@ export async function auto(startUp: boolean) {
   if (startUp && OFF.run && (OFF.run === "t" || OFF.run === "hd" || OFF.run === "upd" || SETBY[OFF.run]) && !(mob && OFF.run === "hd")) return start(OFF.run, true);
   // scaricamento generale lasciato a metà (non in pausa): riparte, ma non con i dati mobili
   if (startUp && OFF.m && !OFF.paused && !OFF.full && OFF.done !== items(OFF.m).sig && !mob) return start(OFF.m, true);
-  if (!OFF.auto || OFF.paused || !(OFF.m || OFF.ps.length)) return;
+  if (!OFF.auto || OFF.paused || !(OFF.m || OFF.ps.length)) return idle();
   delete LISTS.upd;
   const L = items("upd");
   const todo = L.filter((x) => !HAVE.has(x.n));
-  if (!todo.length) return;
+  if (!todo.length) return idle();
   const miss: Record<string, 1> = {};
   OFF.miss.forEach((u) => (miss[u] = 1));
   const w = todo.reduce((a, x) => a + x.w, 0);
-  if (mob && w > 10 * 1048576) return;
+  if (mob && w > 10 * 1048576) return idle();
   const newN = todo.filter((x) => !miss[x.u]).length;
   start("upd", true, newN);
 }
