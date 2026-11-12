@@ -63,10 +63,12 @@ async function notify(n: News) {
 
 if (ANDROID)
   TaskManager.defineTask(BG_TASK, async () => {
+    console.log("[bg] compito partito");
     try {
       // app chiusa: i dati in uso sono quelli dell'APK o gli ultimi scaricati (gli stessi che sceglie data.ts)
       if (!dataInUse()) pickData<any, any>(bundledData, bundledProducts);
       const n = await bgCheck();
+      console.log("[bg] esito", n === false ? "non riuscito" : n ? n.n + " nuove" : "niente");
       if (n === false) return BackgroundTask.BackgroundTaskResult.Failed;
       // con l'app davanti agli occhi basta il riquadro
       if (n && n.groups.length && AppState.currentState !== "active") await notify(n);
@@ -83,9 +85,14 @@ export async function startBackground() {
   Notifications.dismissAllNotificationsAsync().catch(() => {});
   try {
     const st = await BackgroundTask.getStatusAsync();
+    console.log("[bg] stato", st);
     if (st !== BackgroundTask.BackgroundTaskStatus.Available) return;
-    if (!(await TaskManager.isTaskRegisteredAsync(BG_TASK))) await BackgroundTask.registerTaskAsync(BG_TASK, { minimumInterval: 30 });
-  } catch (e) {}
+    const reg = await TaskManager.isTaskRegisteredAsync(BG_TASK);
+    if (!reg) await BackgroundTask.registerTaskAsync(BG_TASK, { minimumInterval: 30 });
+    console.log("[bg] iscritto", reg ? "già" : "ora");
+  } catch (e: any) {
+    console.log("[bg] errore", e && e.message);
+  }
 }
 
 // permesso delle notifiche (Android 13 e successivi): chiesto una volta, dopo l'intro

@@ -85,7 +85,7 @@ def stop():
 
 
 # testo esatto del pulsante in fondo al riquadro
-GO = r"^\s*Vai a BT27\s*$"
+GO = r"^\s*(CARTE NUOVE|Carte nuove)\s*$"
 
 
 def pid():
@@ -147,6 +147,12 @@ net(True)
 dump = adb("shell", "dumpsys", "jobscheduler")
 jobs = sorted(set(re.findall(r"JOB #\S+/(\d+): \S+ " + re.escape(PKG) + "/", dump)))
 log("compiti di Android dell'app: " + (", ".join(jobs) or "NESSUNO"))
+for line in dump.splitlines():
+    if PKG in line:
+        log("  js: " + line.strip()[:200])
+for line in adb("logcat", "-d", "-s", "ReactNativeJS:V").splitlines():
+    if "[bg]" in line:
+        log("  " + line[:200])
 for j in jobs:
     log("  run " + j + ": " + adb("shell", "cmd", "jobscheduler", "run", "-f", PKG, j).strip())
 note = ""
@@ -157,6 +163,9 @@ for i in range(40):
     if m:
         note = m.group(1) + " · " + m.group(2)
         break
+for line in adb("logcat", "-d", "-s", "ReactNativeJS:V").splitlines():
+    if "[bg]" in line:
+        log("  " + line[:200])
 log("notifica: " + (note or "NESSUNA") + " · processo " + (pid() or "nessuno"))
 logcat("logcat0")
 adb("shell", "cmd", "statusbar", "expand-notifications")
