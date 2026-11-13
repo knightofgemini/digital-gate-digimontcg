@@ -167,9 +167,17 @@
    "w": 1073,
    "h": 1600,
    "at": "2026-11-12T20:16:28.786Z"
+  },
+  "ST10@ban": {
+   "code": "ST10",
+   "name": "Starter Deck Parallel World Tactician",
+   "asset": "ST10BAN-mwfab3p7.webp",
+   "w": 1600,
+   "h": 1195,
+   "at": "2026-11-13T18:02:34.235Z"
   }
  },
- "t": "2026-11-12T20:17:09.645Z",
+ "t": "2026-11-13T18:02:34.839Z",
  "tagli": {
   "BT25__cover": {
    "code": "BT25",
