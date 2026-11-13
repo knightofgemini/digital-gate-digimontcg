@@ -700,6 +700,68 @@
    "_prod": "PB28",
    "_post": 8492,
    "_src": "telegram"
+  },
+  {
+   "id": "BT27-001",
+   "cardNumber": "BT27-001",
+   "name": {
+    "english": "Gurimon"
+   },
+   "cardType": "Digi-Egg",
+   "color": "Red",
+   "cardLv": "Lv.2",
+   "form": "In-Training",
+   "attribute": "-",
+   "type": "Lesser",
+   "dp": "-",
+   "playCost": "-",
+   "digivolveCondition": [],
+   "effect": "-",
+   "digivolveEffect": "[Your Turn] [Once Per Turn] When any of your Digimon with [Huckmon] in their texts suspend, ＜Draw 1＞.",
+   "securityEffect": "-",
+   "specialDigivolve": "-",
+   "rarity": "C",
+   "version": "Normal",
+   "notes": "▹BOOSTER IGNITION OF X [BT-27]",
+   "_post": 8495,
+   "_src": "telegram"
+  },
+  {
+   "id": "BT27-016",
+   "cardNumber": "BT27-016",
+   "name": {
+    "english": "Jesmon (X Antibody)/Ultimate Seibaken"
+   },
+   "cardType": "Digimon/Option",
+   "color": "Red",
+   "cardLv": "Lv.6",
+   "form": "Mega",
+   "attribute": "Data",
+   "type": "Holy Warrior/X Antibody/Royal Knight",
+   "dp": "12000",
+   "playCost": "5",
+   "digivolveCondition": [
+    {
+     "color": "Red",
+     "cost": "3",
+     "level": "5"
+    }
+   ],
+   "effect": "＜Progress＞ \n＜Piercing＞ \n＜Engage＞ \n[When Digivolving] [When Attacking] [Once Per Turn] This Digimon gets +6000 DP until your opponent's turn ends. Then, by returning 1 of your other Digimon or 1 [Jesmon] or [X Antibody] from this Digimon's digivolution cards to the bottom of the deck, activate 1 [Main] effect on this card's Option side.",
+   "digivolveEffect": "-",
+   "securityEffect": "-",
+   "specialDigivolve": "[Digivolve] [Jesmon]: Cost 1",
+   "dualEffect": "[Arts Digivolve] ",
+   "optionCardColourRequirement": "Red",
+   "optionCardEffect": "＜Use Req. ([Huckmon] in text)＞ \n[Main] By placing 1 of your opponent's lowest DP Digimon as the bottom security card, trash their top security card.",
+   "block": [
+    "06"
+   ],
+   "rarity": "SR",
+   "version": "Normal",
+   "notes": "▹BOOSTER IGNITION OF X [BT-27]",
+   "_post": 8496,
+   "_src": "telegram"
   }
  ]
 }
