@@ -215,9 +215,17 @@
    "w": 1600,
    "h": 893,
    "at": "2026-11-14T23:11:01.849Z"
+  },
+  "ST16@ban": {
+   "code": "ST16",
+   "name": "Starter Deck Wolf Of Friendship",
+   "asset": "ST16BAN-mwh0zr4r.webp",
+   "w": 1600,
+   "h": 893,
+   "at": "2026-11-14T23:17:21.734Z"
   }
  },
- "t": "2026-11-14T23:12:08.408Z",
+ "t": "2026-11-14T23:17:22.308Z",
  "tagli": {
   "BT25__cover": {
    "code": "BT25",
