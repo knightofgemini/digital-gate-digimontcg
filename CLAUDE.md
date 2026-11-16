@@ -321,6 +321,10 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   **Ultimi spoiler**: il collegamento in alto ("ST26 →") segue la prima carta a sinistra (`onIndex`). Prova:
   `rn_home.py` (`h19_auto_*`, `h20_spoiler_*`, `h21_barra_*`; per la prova riaccende le animazioni dell'emulatore e
   chiude la richiesta delle notifiche, che mette l'app in pausa).
+- **Taglia e Banner prodotti collegati (16 novembre 2026, richiesta dell'utente)**: in Taglia compaiono anche i prodotti
+  con la sola immagine del banner (`timg` = `immagini/CODICE` → `immagini/CODICE@ban`, "· dal banner" nell'elenco); i
+  riquadri non ancora salvati partono dal centro (`cx`, `cy`) e dal logo del taglio `__prod` (In evidenza: logo in alto
+  al centro, al massimo 40%). Nell'app `artFor` per hero/cover/square usa `immagini/CODICE`, altrimenti `@ban`.
 - **Usciti di recente e In arrivo con le misure della Home nuova (11 novembre 2026, ramo `recenti-proposte`, segnalato
   dall'utente: le sezioni nate agli inizi non erano coerenti con la Home nuova)**: scelta dell'utente tra proposte fotografate
   sull'emulatore. "Usciti di recente" = **copertina** (`RecentCover` in `home.tsx`: formato carta 65:91 come "Set da
