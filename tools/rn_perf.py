@@ -51,6 +51,13 @@ def tap(pat):
     return False
 
 
+def calm():
+    # avviso di sistema dell'emulatore ("Pixel Launcher isn't responding") che copre l'app: "Wait"
+    for _ in range(3):
+        if not tap(r"^(Wait|Attendi)$"):
+            return
+
+
 def shot(name):
     with open(os.path.join(OUT, name + ".png"), "wb") as f:
         f.write(subprocess.run(["adb", "exec-out", "screencap", "-p"], capture_output=True).stdout)
@@ -108,11 +115,13 @@ for _ in range(2):
     if not tap("^Chiudi$"):
         break
 time.sleep(20)  # immagini e controlli dell'avvio
+calm()
 shot("p0_home")
 p = pid()
 say("pid", p)
 HZ = 100
 for giro in (1, 2, 3):
+    calm()
     # 1) Home ferma per 20 s: CPU dell'app e per thread, fotogrammi disegnati
     adb("shell", "dumpsys", "gfxinfo", PKG, "reset")
     t0 = cpu_ticks(p); th0 = threads(p); time.sleep(20); t1 = cpu_ticks(p); th1 = threads(p)
@@ -120,6 +129,7 @@ for giro in (1, 2, 3):
     top = sorted(((th1[k][1] - th0.get(k, (0, 0))[1], th1[k][0]) for k in th1), reverse=True)[:5]
     say("giro %d FERMA 20s: CPU app %.1f%%, fotogrammi %s, lenti %s" % (giro, (t1 - t0) / HZ / 20 * 100, g["Total frames rendered"], g["Janky frames"]))
     say("   thread:", ", ".join("%s %.1f%%" % (n, d / HZ / 20 * 100) for d, n in top))
+    calm()
     # 2) scorrimento della Home: 6 volte giù e su
     adb("shell", "dumpsys", "gfxinfo", PKG, "reset")
     t0 = cpu_ticks(p); th0 = threads(p); a = time.time()
@@ -145,6 +155,7 @@ for giro in (1, 2, 3):
     tap("^Prodotti$"); tap("^Home$")
     g = gfx()
     say("giro %d SCHEDE: fotogrammi %s, lenti %s, 90/99 %s/%s" % (giro, g["Total frames rendered"], g["Janky frames"], g["90th percentile"], g["99th percentile"]))
+calm()
 shot("p1_fine")
 for k in ("animator_duration_scale", "transition_animation_scale", "window_animation_scale"):
     adb("shell", "settings", "put", "global", k, "0")
