@@ -248,6 +248,10 @@ if h:
 for k in ("animator_duration_scale", "transition_animation_scale", "window_animation_scale"):
     adb("shell", "settings", "put", "global", k, "1")
 launch(12)
+# richiesta del permesso delle notifiche (la sua finestra mette l'app in pausa, e con lei il carosello)
+for _ in range(3):
+    if not tap("^(Don.t allow|Allow|Non consentire|Consenti)$", wait=2):
+        break
 for i in range(4):
     shot("h19_auto_%ds" % (i * 6))
     time.sleep(6)
