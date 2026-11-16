@@ -3,7 +3,7 @@
 // rettangoli per sezione) e `img/` (originali). L'app di tutti scarica tagli.json all'avvio e tornando nell'app (come i
 // prezzi), lo salva nel telefono e mostra l'originale ritagliato al momento, nella forma vera del riquadro.
 // Hanno la precedenza sulle immagini dentro l'APK (covers.ts), che restano come riserva.
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppState, Platform, View } from "react-native";
 import { Image } from "expo-image";
 import { documentDirectory, readAsStringAsync, writeAsStringAsync } from "expo-file-system/legacy";
@@ -97,13 +97,30 @@ export function logoArt(code: string): string | null {
   return img && img.asset ? RAW + "img/" + encodeURIComponent(img.asset) : null;
 }
 
+// misure a pixel interi: con i decimali l'immagine poteva cambiare grandezza di un soffio a ogni disegno, e il
+// telefono la ricaricava e ridisegnava la Home senza sosta (16 novembre 2026, segnalato dall'utente: app appesantita)
+const px = (v: number) => Math.round(v);
+const same = (a: number, b: number) => Math.abs(a - b) < 1;
+
 // originale ritagliato: riempie il riquadro che lo contiene (posizione assoluta), con il taglio adattato alla sua forma
 export function CutImg({ a }: { a: Art }) {
   const [box, setBox] = useState<{ w: number; h: number } | null>(null);
-  const st = box && box.w > 0 && box.h > 0 ? cutLayout(fitRect(a.r, box.w / box.h, a.w, a.h), a.w, a.h, box.w) : null;
+  const src = useMemo(() => ({ uri: a.uri }), [a.uri]);
+  const st = useMemo(() => {
+    if (!box || box.w <= 0 || box.h <= 0) return null;
+    const l = cutLayout(fitRect(a.r, box.w / box.h, a.w, a.h), a.w, a.h, box.w);
+    return { position: "absolute" as const, width: px(l.width), height: px(l.height), left: px(l.left), top: px(l.top) };
+  }, [box, a.r.x0, a.r.y0, a.r.x1, a.r.y1, a.w, a.h]);
   return (
-    <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden" }} onLayout={(e) => setBox({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
-      {st ? <Image source={{ uri: a.uri }} style={{ position: "absolute", ...st }} contentFit="fill" cachePolicy="disk" transition={120} /> : null}
+    <View
+      pointerEvents="none"
+      style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden" }}
+      onLayout={(e) => {
+        const { width: w, height: h } = e.nativeEvent.layout;
+        setBox((o) => (o && same(o.w, w) && same(o.h, h) ? o : { w, h }));
+      }}
+    >
+      {st ? <Image source={src} style={st} contentFit="fill" cachePolicy="disk" transition={120} /> : null}
     </View>
   );
 }
@@ -113,24 +130,30 @@ export function CutImg({ a }: { a: Art }) {
 export function LogoLay({ uri, p, s }: { uri: string; p: string; s: number }) {
   const [w, setW] = useState(0);
   const [ar, setAr] = useState(0);
-  const lw = w * s;
+  const src = useMemo(() => ({ uri }), [uri]);
+  const lw = px(w * s);
   return (
     <View
       pointerEvents="none"
-      onLayout={(e) => setW(e.nativeEvent.layout.width)}
+      onLayout={(e) => {
+        const v = e.nativeEvent.layout.width;
+        setW((o) => (same(o, v) ? o : v));
+      }}
       style={{
         position: "absolute",
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        padding: w * 0.05,
+        padding: px(w * 0.05),
         justifyContent: p[0] === "t" ? "flex-start" : p[0] === "m" ? "center" : "flex-end",
         alignItems: p[1] === "l" ? "flex-start" : p[1] === "c" ? "center" : "flex-end",
       }}
     >
       {w > 0 ? (
-        <Image source={{ uri }} style={{ width: lw, height: ar ? lw / ar : lw * 0.4, opacity: ar ? 1 : 0 }} contentFit="contain" cachePolicy="disk" onLoad={(e) => e.source && e.source.height && setAr(e.source.width / e.source.height)} />
+        // proporzioni del logo prese una volta sola: prima ogni caricamento poteva cambiarle di poco, cambiare l'altezza e
+        // far ricaricare il logo, all'infinito
+        <Image source={src} style={{ width: lw, height: px(ar ? lw / ar : lw * 0.4), opacity: ar ? 1 : 0 }} contentFit="contain" cachePolicy="disk" onLoad={(e) => e.source && e.source.height && setAr((o) => o || Math.round((e.source.width / e.source.height) * 100) / 100)} />
       ) : null}
     </View>
   );

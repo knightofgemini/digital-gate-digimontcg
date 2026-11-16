@@ -40,7 +40,7 @@ const DOT_RUN = 28;
 const DOT_H = 9;
 // parte interna della capsula (meno il contorno) e ogni quanto cresce di un pixel
 const FILL_W = DOT_RUN - 3;
-const FILL_STEP = 200;
+const FILL_STEP = 400;
 
 // logo dell'espansione scelto nell'editor (Taglia) sopra un riquadro tagliato: logo caricato a mano, poi quello ufficiale
 function CutLogo({ code, a }: { code: string; a: Art }) {
