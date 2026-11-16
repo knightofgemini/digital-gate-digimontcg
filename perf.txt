@@ -1,0 +1,19 @@
+pid 4187
+giro 1 FERMA 20s: CPU app 44.4%, fotogrammi 621, lenti 589 (94.85%)
+   thread: RenderThread 37.5%, imon.settracker 2.4%, mqt_v_js 2.2%, glide-disk-cach 1.2%, HeapTaskDaemon 0.2%
+giro 1 SCORRE 18s: CPU app 56.7%, fotogrammi 568, lenti 522 (91.90%), 50/90/95/99 89ms/125ms/150ms/150ms, UI lento 316, scadenze mancate 522
+   thread: RenderThread 48.8%, mqt_v_js 2.4%, imon.settracker 2.4%, glide-disk-cach 1.5%, binder:4187_1 0.1%
+giro 1 FILE: fotogrammi 233, lenti 213 (91.42%), 50/90/95/99 81ms/105ms/117ms/133ms
+giro 1 SCHEDE: fotogrammi 544, lenti 471 (86.58%), 90/99 105ms/133ms
+giro 2 FERMA 20s: CPU app 68.4%, fotogrammi 672, lenti 604 (89.88%)
+   thread: RenderThread 61.1%, mqt_v_js 2.8%, imon.settracker 2.3%, glide-disk-cach 1.7%, binder:4187_4 0.1%
+giro 2 SCORRE 17s: CPU app 72.3%, fotogrammi 570, lenti 500 (87.72%), 50/90/95/99 85ms/117ms/129ms/150ms, UI lento 294, scadenze mancate 500
+   thread: RenderThread 64.9%, mqt_v_js 2.9%, imon.settracker 2.7%, glide-disk-cach 1.6%, binder:4187_3 0.2%
+giro 2 FILE: fotogrammi 235, lenti 207 (88.09%), 50/90/95/99 81ms/101ms/105ms/125ms
+giro 2 SCHEDE: fotogrammi 525, lenti 458 (87.24%), 90/99 105ms/129ms
+giro 3 FERMA 20s: CPU app 70.2%, fotogrammi 720, lenti 624 (86.67%)
+   thread: RenderThread 61.8%, mqt_v_js 2.8%, imon.settracker 2.6%, glide-disk-cach 1.8%, binder:4187_7 0.1%
+giro 3 SCORRE 17s: CPU app 76.2%, fotogrammi 584, lenti 513 (87.84%), 50/90/95/99 85ms/121ms/129ms/150ms, UI lento 303, scadenze mancate 513
+   thread: RenderThread 69.3%, mqt_v_js 2.9%, imon.settracker 2.7%, glide-disk-cach 1.5%, HeapTaskDaemon 0.3%
+giro 3 FILE: fotogrammi 221, lenti 200 (90.50%), 50/90/95/99 85ms/117ms/125ms/133ms
+giro 3 SCHEDE: fotogrammi 533, lenti 473 (88.74%), 90/99 109ms/150ms
