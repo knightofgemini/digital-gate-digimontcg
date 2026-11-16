@@ -310,6 +310,17 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
     dell'utente "ovunque necessario"): uscito → Set da completare (e In evidenza se è l'ultimo del suo tipo); in arrivo →
     All'orizzonte, In evidenza e Set da completare (per dopo l'uscita). 9 novembre 2026: LM06, LM07 (Set da completare),
     LM09 (tutte e tre).
+- **Logo nei tagli, In evidenza a carosello, codice degli spoiler (16 novembre 2026, ramo `home-logo-carosello`, richieste
+  dell'utente)**: in Taglia ogni riquadro (In evidenza, Set da completare, All'orizzonte) ha il logo dell'espansione
+  come in Banner prodotti ("Logo: sì/no", 9 punti, zoom 15-90%), salvato nel taglio come `logo: {p, s}` (o `null`); in
+  In evidenza un logo solo per tutti i telefoni (al "Salva" va anche negli altri documenti `__hero` già salvati). App:
+  `CutLogo` in `home.tsx` (logo caricato a mano → ufficiale, sopra la sfumatura). **In evidenza scorre da solo**
+  (`Carousel` con `auto`, `HERO_AUTO` = 5 s, dall'ultima alla prima; fermo col dito sopra, riparte da capo dopo un
+  cambio a mano, fermo con la pagina non in vista o con le animazioni spente nel telefono): la scheda in vista ha una
+  **capsula con il contorno arancione che si riempie** fino al passaggio (`DOT_RUN`, `DOT_H`, scelta dell'utente).
+  **Ultimi spoiler**: il collegamento in alto ("ST26 →") segue la prima carta a sinistra (`onIndex`). Prova:
+  `rn_home.py` (`h19_auto_*`, `h20_spoiler_*`, `h21_barra_*`; per la prova riaccende le animazioni dell'emulatore e
+  chiude la richiesta delle notifiche, che mette l'app in pausa).
 - **Usciti di recente e In arrivo con le misure della Home nuova (11 novembre 2026, ramo `recenti-proposte`, segnalato
   dall'utente: le sezioni nate agli inizi non erano coerenti con la Home nuova)**: scelta dell'utente tra proposte fotografate
   sull'emulatore. "Usciti di recente" = **copertina** (`RecentCover` in `home.tsx`: formato carta 65:91 come "Set da
