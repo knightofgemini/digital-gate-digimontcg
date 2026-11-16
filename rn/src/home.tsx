@@ -36,7 +36,8 @@ const HERO_TYPES = ["BT", "EX", "ST", "LM", "PB"];
 // In evidenza scorre da solo come un carosello (16 novembre 2026, richiesta dell'utente): una scheda ogni 5 secondi
 const HERO_AUTO = 5000;
 // puntino che si riempie (scheda in vista con il passaggio automatico): un po' più lungo degli altri, per vedere la barra
-const DOT_RUN = 26;
+const DOT_RUN = 28;
+const DOT_H = 9;
 
 // logo dell'espansione scelto nell'editor (Taglia) sopra un riquadro tagliato: logo caricato a mano, poi quello ufficiale
 function CutLogo({ code, a }: { code: string; a: Art }) {
@@ -170,11 +171,12 @@ function Carousel({ w, children, dots, onIndex, auto }: { w: number; children: R
         {children}
       </ScrollView>
       {dots && n > 1 ? (
-        <View style={{ flexDirection: "row", justifyContent: "center", gap: 6, marginTop: 10 }} accessibilityLabel={"Scheda " + (i + 1) + " di " + n}>
+        <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6, marginTop: 10, minHeight: DOT_H }} accessibilityLabel={"Scheda " + (i + 1) + " di " + n}>
           {children.map((_, k) => (
             k === i && running ? (
-              <View key={k} style={{ width: DOT_RUN, height: 6, borderRadius: 3, overflow: "hidden", backgroundColor: t.line }}>
-                <Animated.View style={{ width: DOT_RUN, height: 6, borderRadius: 3, backgroundColor: t.accent, transform: [{ translateX: fill.interpolate({ inputRange: [0, 1], outputRange: [-DOT_RUN, 0] }) }] }} />
+              // capsula con il contorno arancione, che si riempie da sinistra (16 novembre 2026, richiesta dell'utente)
+              <View key={k} style={{ width: DOT_RUN, height: DOT_H, borderRadius: DOT_H / 2, borderWidth: 1.5, borderColor: t.accent, overflow: "hidden" }}>
+                <Animated.View style={{ width: DOT_RUN, height: DOT_H, backgroundColor: t.accent, transform: [{ translateX: fill.interpolate({ inputRange: [0, 1], outputRange: [-DOT_RUN, 0] }) }] }} />
               </View>
             ) : (
               <View key={k} style={{ width: k === i ? 18 : 6, height: 6, borderRadius: 3, backgroundColor: k === i ? t.accent : t.line }} />
