@@ -4,7 +4,7 @@
 // Ultimi spoiler: sezione a sé (SpoilerRow, scelta dell'utente tra due proposte; scartate le miniature nel banner).
 // Stili solo di questa pagina: i componenti condivisi (Banner, SecHead, Progress…) restano come sono.
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { AccessibilityInfo, Animated, Easing, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { AccessibilityInfo, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { Image } from "expo-image";
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
@@ -38,6 +38,9 @@ const HERO_AUTO = 5000;
 // puntino che si riempie (scheda in vista con il passaggio automatico): un po' più lungo degli altri, per vedere la barra
 const DOT_RUN = 28;
 const DOT_H = 9;
+// parte interna della capsula (meno il contorno) e ogni quanto cresce di un pixel
+const FILL_W = DOT_RUN - 3;
+const FILL_STEP = 200;
 
 // logo dell'espansione scelto nell'editor (Taglia) sopra un riquadro tagliato: logo caricato a mano, poi quello ufficiale
 function CutLogo({ code, a }: { code: string; a: Art }) {
@@ -95,29 +98,21 @@ function Carousel({ w, children, dots, onIndex, auto }: { w: number; children: R
   const drag = useRef(false);
   const [seen, setSeen] = useState(true);
   const [still, setStill] = useState(false);
-  // giro del conto alla rovescia: riparte (barra vuota) a ogni cambio di scheda e quando si lascia la fila col dito
-  const [cycle, setCycle] = useState(0);
-  const [held, setHeld] = useState(false);
-  const fill = useRef(new Animated.Value(1)).current;
+  // riempimento della capsula in pixel: cresce a scatti di 1 px (5 volte al secondo) e non con un'animazione continua,
+  // che ridisegnava tutto lo schermo a ogni fotogramma anche con la Home ferma (16 novembre 2026, segnalato
+  // dall'utente: app più pesante; misurato sull'emulatore). Riparte da vuota a ogni cambio di scheda e quando si
+  // lascia la fila col dito.
+  const [px, setPx] = useState(0);
   const restart = () => {
     last.current = Date.now();
-    setCycle((c) => c + 1);
+    setPx(0);
   };
   const running = !!auto && n > 1 && seen && !still;
-  useEffect(() => {
-    fill.stopAnimation();
-    if (!running) return fill.setValue(1);
-    fill.setValue(0);
-    if (held) return;
-    const a = Animated.timing(fill, { toValue: 1, duration: auto, easing: Easing.linear, useNativeDriver: true });
-    a.start();
-    return () => a.stop();
-  }, [cycle, held, running, auto]);
   useFocusEffect(
     useCallback(() => {
       setSeen(true);
       last.current = Date.now();
-      setCycle((c) => c + 1);
+      setPx(0);
       return () => setSeen(false);
     }, [])
   );
@@ -130,11 +125,16 @@ function Carousel({ w, children, dots, onIndex, auto }: { w: number; children: R
   useEffect(() => {
     if (!auto || n < 2 || !seen || still) return;
     const id = setInterval(() => {
-      if (drag.current || Date.now() - last.current < auto) return;
+      if (drag.current) return setPx(0);
+      const el = Date.now() - last.current;
+      if (el < auto) {
+        const v = Math.min(FILL_W, Math.round((el / auto) * FILL_W));
+        return setPx((o) => (o === v ? o : v));
+      }
       restart();
       const k = (cur.current + 1) % n;
       ref.current?.scrollTo({ x: k * (w + GAP), animated: true });
-    }, 250);
+    }, FILL_STEP);
     return () => clearInterval(id);
   }, [auto, n, seen, still, w]);
   const track = dots || onIndex || auto;
@@ -162,8 +162,8 @@ function Carousel({ w, children, dots, onIndex, auto }: { w: number; children: R
               }
             : undefined
         }
-        onScrollBeginDrag={auto ? () => ((drag.current = true), setHeld(true)) : undefined}
-        onScrollEndDrag={auto ? () => ((drag.current = false), setHeld(false), restart()) : undefined}
+        onScrollBeginDrag={auto ? () => ((drag.current = true), setPx(0)) : undefined}
+        onScrollEndDrag={auto ? () => ((drag.current = false), restart()) : undefined}
         // dopo il passaggio automatico il conto è già ripartito: niente salto della barra
         onMomentumScrollEnd={auto ? () => Date.now() - last.current > 900 && restart() : undefined}
         scrollEventThrottle={32}
@@ -176,7 +176,7 @@ function Carousel({ w, children, dots, onIndex, auto }: { w: number; children: R
             k === i && running ? (
               // capsula con il contorno arancione, che si riempie da sinistra (16 novembre 2026, richiesta dell'utente)
               <View key={k} style={{ width: DOT_RUN, height: DOT_H, borderRadius: DOT_H / 2, borderWidth: 1.5, borderColor: t.accent, overflow: "hidden" }}>
-                <Animated.View style={{ width: DOT_RUN, height: DOT_H, backgroundColor: t.accent, transform: [{ translateX: fill.interpolate({ inputRange: [0, 1], outputRange: [-DOT_RUN, 0] }) }] }} />
+                <View style={{ width: px, height: DOT_H, backgroundColor: t.accent }} />
               </View>
             ) : (
               <View key={k} style={{ width: k === i ? 18 : 6, height: 6, borderRadius: 3, backgroundColor: k === i ? t.accent : t.line }} />
