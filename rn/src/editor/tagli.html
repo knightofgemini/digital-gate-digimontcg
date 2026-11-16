@@ -327,6 +327,9 @@ button.b:disabled { opacity: .45; cursor: default; }
   const ZMAX = 3.5;
   let db = null, assets = null;
   let IMGS = {};   // code -> {code, name, asset, w, h}
+  // immagine dei tagli: quella caricata qui, altrimenti quella caricata in Banner prodotti (16 novembre 2026, richiesta
+  // dell'utente: i due sistemi si parlano, un prodotto col solo banner compare anche qui)
+  const timg = (c) => IMGS[c] || BIMGS[c];
   let CUTS = {};   // code__sec -> {x0,y0,x1,y1, asset}
   let cur = null;  // codice scelto
   const state = {}; // sec -> {cx, cy, z, dirty}
@@ -378,7 +381,7 @@ button.b:disabled { opacity: .45; cursor: default; }
 
   // ---- scelta del prodotto: menu a tendina, raggruppato per serie
   function renderChips() {
-    const codes = Object.keys(IMGS).sort(cmpSort);
+    const codes = banCodes();
     const box = $("chips");
     if (!codes.length) { box.textContent = ""; const s = document.createElement("span"); s.className = "hint"; s.textContent = "Nessuna immagine ancora."; box.append(s); return; }
     let sel = box.querySelector("select");
@@ -393,9 +396,10 @@ button.b:disabled { opacity: .45; cursor: default; }
     for (const c of codes) {
       const cat = seriesOf(c);
       if (cat !== lastCat) { grp = document.createElement("optgroup"); grp.label = "Serie " + cat; sel.append(grp); lastCat = cat; }
-      const n = SECS.filter((s) => CUTS[c + "__" + s.id] && CUTS[c + "__" + s.id].asset === IMGS[c].asset).length;
+      const im = timg(c);
+      const n = SECS.filter((s) => CUTS[c + "__" + s.id] && CUTS[c + "__" + s.id].asset === im.asset).length;
       const o = document.createElement("option"); o.value = c;
-      o.textContent = c + (IMGS[c].name ? " · " + IMGS[c].name : "") + (n ? " · tagli " + n + "/" + SECS.length : "");
+      o.textContent = c + (im.name ? " · " + im.name : "") + (IMGS[c] ? "" : " · dal banner") + (n ? " · tagli " + n + "/" + SECS.length : "");
       grp.append(o);
     }
     if (cur) sel.value = cur;
@@ -469,21 +473,30 @@ button.b:disabled { opacity: .45; cursor: default; }
   function renderEditor() {
     const ed = $("editor");
     ed.textContent = "";
-    if (!cur || !IMGS[cur]) { const e = document.createElement("div"); e.className = "empty"; e.textContent = "Scegli un prodotto qui sopra."; ed.append(e); return; }
-    const img = IMGS[cur];
+    if (!cur || !timg(cur)) { const e = document.createElement("div"); e.className = "empty"; e.textContent = "Scegli un prodotto qui sopra."; ed.append(e); return; }
+    const img = timg(cur);
     const list = document.createElement("div"); list.style.cssText = "display:flex;flex-direction:column;gap:18px";
+    // taglio del banner già fatto con la stessa immagine: i riquadri partono dal suo centro e dal suo logo
+    const ban = CUTS[cur + "__prod"] && CUTS[cur + "__prod"].asset === img.asset ? CUTS[cur + "__prod"] : null;
+    if (!IMGS[cur]) {
+      const n = document.createElement("p"); n.className = "hint";
+      n.textContent = "Per " + cur + " uso l'immagine caricata in \"Banner prodotti\"" + (ban ? ": i riquadri non ancora salvati partono dal centro e dal logo del banner." : ".") + " Se carichi qui sotto un'immagine apposta per " + cur + ", i tagli si rifanno con quella.";
+      list.append(n);
+    }
     for (const sec of SECS) {
       const isHero = sec.id === "hero";
       const saved = CUTS[cur + "__" + sec.id];
       const okCut = (c) => c && c.asset === img.asset;
-      state[sec.id] = okCut(saved) ? fromRect(img, sec.ar, saved) : { cx: 0.5, cy: 0.42, z: 1 };
+      state[sec.id] = okCut(saved) ? fromRect(img, sec.ar, saved) : ban ? { cx: ban.cx != null ? ban.cx : (ban.x0 + ban.x1) / 2, cy: ban.cy != null ? ban.cy : (ban.y0 + ban.y1) / 2, z: 1 } : { cx: 0.5, cy: 0.42, z: 1 };
       state[sec.id].dirty = false;
       // logo dell'espansione sopra il riquadro (16 novembre 2026, richiesta dell'utente): acceso o spento, uno dei 9 punti
       // e grandezza (frazione della larghezza del riquadro), come in Banner prodotti. In evidenza: uno solo per tutti i
       // telefoni (si salva nel documento comune e in quelli propri)
-      const lsrc = okCut(saved) ? saved : isHero ? PHONES.map((p) => CUTS[cur + "__hero@" + p.id]).find(okCut) : null;
+      const lsrc = okCut(saved) ? saved : (isHero ? PHONES.map((p) => CUTS[cur + "__hero@" + p.id]).find(okCut) : null) || ban;
       const l0 = lsrc && lsrc.logo && lsrc.logo.p ? lsrc.logo : null;
       const LG = { on: !!l0, p: l0 ? l0.p : isHero ? "tc" : "bc", s: l0 ? +l0.s || 0.45 : isHero ? 0.4 : 0.6, dirty: false };
+      // logo preso dal banner: in In evidenza va in alto al centro (in basso ci sono nome e pulsante) e più piccolo
+      if (l0 && lsrc === ban && isHero) { LG.p = "tc"; LG.s = Math.min(LG.s, 0.4); }
       const lurl = logoOf(cur);
       const lays = []; // [livello del logo, cornice]
       // In evidenza: posizione propria per ogni telefono sganciato dalla catena
@@ -759,7 +772,7 @@ button.b:disabled { opacity: .45; cursor: default; }
       const dim = await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok({ w: i.naturalWidth, h: i.naturalHeight }); i.onerror = ko; i.src = url; });
       URL.revokeObjectURL(url);
       const up = await assets.upload(file, code);
-      await db.doc("immagini/" + code).set({ code, name: name || (IMGS[code] && IMGS[code].name) || "", asset: up.id, w: up.w || dim.w, h: up.h || dim.h, at: new Date().toISOString() });
+      await db.doc("immagini/" + code).set({ code, name: name || (timg(code) && timg(code).name) || "", asset: up.id, w: up.w || dim.w, h: up.h || dim.h, at: new Date().toISOString() });
       cur = code; st.textContent = "Caricata: ora puoi tagliarla.";
       $("addCode").value = ""; $("addName").value = ""; $("addFile").value = "";
     } catch (e) { st.textContent = "Caricamento non riuscito: " + (e && e.message || "errore") + "."; }
@@ -869,7 +882,7 @@ button.b:disabled { opacity: .45; cursor: default; }
         const nm = document.createElement("div"); nm.className = "cmp-tname"; nm.textContent = t.name;
         const row = document.createElement("div"); row.className = "cmp-scroll"; row.tabIndex = 0;
         row.setAttribute("role", "group"); row.setAttribute("aria-label", t.name + " · serie " + cat);
-        for (const c of list) { const img = t.ban ? bimg(c) : IMGS[c]; const ok = (d) => !!d && !!img && d.asset === img.asset; for (const cell of t.cells(c, img, ok)) row.append(cell); }
+        for (const c of list) { const img = t.ban ? bimg(c) : timg(c); const ok = (d) => !!d && !!img && d.asset === img.asset; for (const cell of t.cells(c, img, ok)) row.append(cell); }
         type.append(nm, row); blk.append(type);
       }
       wrap.append(blk);
@@ -1107,10 +1120,12 @@ button.b:disabled { opacity: .45; cursor: default; }
       snap.docs.forEach((d) => { const v = d.data(); if (!v || !v.asset) return; if (d.id.endsWith("@ban")) { const c = d.id.slice(0, -4); nextB[c] = Object.assign({}, v, { code: c }); } else if (d.id.endsWith("@logo")) { const c = d.id.slice(0, -5); nextL[c] = Object.assign({}, v, { code: c }); } else next[d.id] = Object.assign({ code: d.id }, v); });
       const oldL = curB && LIMGS[curB] ? LIMGS[curB].asset : "";
       LIMGS = nextL;
-      const changed = !cur || !IMGS[cur] || !next[cur] || IMGS[cur].asset !== (next[cur] && next[cur].asset);
+      const oldT = cur ? timg(cur) : null;
       const oldB = curB ? bimg(curB) : null;
       IMGS = next; BIMGS = nextB;
-      if (!cur || !IMGS[cur]) cur = Object.keys(IMGS).sort()[0] || null;
+      if (!cur || !timg(cur)) cur = banCodes()[0] || null;
+      const nt = cur ? timg(cur) : null;
+      const changed = !oldT || !nt || oldT.asset !== nt.asset;
       const nb = curB ? bimg(curB) : null;
       const bch = !curB || !oldB || !nb || oldB.asset !== nb.asset || oldL !== (LIMGS[curB] ? LIMGS[curB].asset : "");
       renderChips(); renderCompare(); if (changed) renderEditor(); if (bch) renderBanner(); else fillBanPick();
