@@ -255,6 +255,9 @@ for _ in range(3):
 for i in range(4):
     shot("h19_auto_%ds" % (i * 6))
     time.sleep(6)
+# barra del puntino che si riempie: foto una dopo l'altra
+for i in range(6):
+    shot("h21_barra_%d" % i)
 home()
 for _ in range(4):
     r = finds(r"[A-Z]{2}\d{1,2}-\d{2,3}", ymin=0.15, ymax=0.95)

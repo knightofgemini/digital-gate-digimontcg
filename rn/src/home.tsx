@@ -4,7 +4,7 @@
 // Ultimi spoiler: sezione a sé (SpoilerRow, scelta dell'utente tra due proposte; scartate le miniature nel banner).
 // Stili solo di questa pagina: i componenti condivisi (Banner, SecHead, Progress…) restano come sono.
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { AccessibilityInfo, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { AccessibilityInfo, Animated, Easing, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { Image } from "expo-image";
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
@@ -35,6 +35,8 @@ const GAP = 12;
 const HERO_TYPES = ["BT", "EX", "ST", "LM", "PB"];
 // In evidenza scorre da solo come un carosello (16 novembre 2026, richiesta dell'utente): una scheda ogni 5 secondi
 const HERO_AUTO = 5000;
+// puntino che si riempie (scheda in vista con il passaggio automatico): un po' più lungo degli altri, per vedere la barra
+const DOT_RUN = 26;
 
 // logo dell'espansione scelto nell'editor (Taglia) sopra un riquadro tagliato: logo caricato a mano, poi quello ufficiale
 function CutLogo({ code, a }: { code: string; a: Art }) {
@@ -80,7 +82,8 @@ function Sec({ title, link, onLink }: { title: string; link?: string; onLink?: (
 // dots: puntini sotto la fila con la scheda in vista; onIndex: scheda in primo piano (la prima a sinistra);
 // auto: millisecondi dopo cui passa da sola alla scheda dopo (dall'ultima torna alla prima). Si ferma mentre il dito è
 // sulla fila, quando si cambia scheda a mano riparte da capo, e non gira con la pagina non in vista o con
-// "Riduci movimento" attivo nel telefono
+// "Riduci movimento" attivo nel telefono. Con auto il puntino della scheda in vista si riempie piano piano come una
+// barra: quando è pieno si passa alla scheda dopo (16 novembre 2026, richiesta dell'utente)
 function Carousel({ w, children, dots, onIndex, auto }: { w: number; children: ReactNode[]; dots?: boolean; onIndex?: (i: number) => void; auto?: number }) {
   const t = useTheme();
   const [i, setI] = useState(0);
@@ -91,10 +94,29 @@ function Carousel({ w, children, dots, onIndex, auto }: { w: number; children: R
   const drag = useRef(false);
   const [seen, setSeen] = useState(true);
   const [still, setStill] = useState(false);
+  // giro del conto alla rovescia: riparte (barra vuota) a ogni cambio di scheda e quando si lascia la fila col dito
+  const [cycle, setCycle] = useState(0);
+  const [held, setHeld] = useState(false);
+  const fill = useRef(new Animated.Value(1)).current;
+  const restart = () => {
+    last.current = Date.now();
+    setCycle((c) => c + 1);
+  };
+  const running = !!auto && n > 1 && seen && !still;
+  useEffect(() => {
+    fill.stopAnimation();
+    if (!running) return fill.setValue(1);
+    fill.setValue(0);
+    if (held) return;
+    const a = Animated.timing(fill, { toValue: 1, duration: auto, easing: Easing.linear, useNativeDriver: true });
+    a.start();
+    return () => a.stop();
+  }, [cycle, held, running, auto]);
   useFocusEffect(
     useCallback(() => {
       setSeen(true);
       last.current = Date.now();
+      setCycle((c) => c + 1);
       return () => setSeen(false);
     }, [])
   );
@@ -108,7 +130,7 @@ function Carousel({ w, children, dots, onIndex, auto }: { w: number; children: R
     if (!auto || n < 2 || !seen || still) return;
     const id = setInterval(() => {
       if (drag.current || Date.now() - last.current < auto) return;
-      last.current = Date.now();
+      restart();
       const k = (cur.current + 1) % n;
       ref.current?.scrollTo({ x: k * (w + GAP), animated: true });
     }, 250);
@@ -139,9 +161,10 @@ function Carousel({ w, children, dots, onIndex, auto }: { w: number; children: R
               }
             : undefined
         }
-        onScrollBeginDrag={auto ? () => (drag.current = true) : undefined}
-        onScrollEndDrag={auto ? () => ((drag.current = false), (last.current = Date.now())) : undefined}
-        onMomentumScrollEnd={auto ? () => (last.current = Date.now()) : undefined}
+        onScrollBeginDrag={auto ? () => ((drag.current = true), setHeld(true)) : undefined}
+        onScrollEndDrag={auto ? () => ((drag.current = false), setHeld(false), restart()) : undefined}
+        // dopo il passaggio automatico il conto è già ripartito: niente salto della barra
+        onMomentumScrollEnd={auto ? () => Date.now() - last.current > 900 && restart() : undefined}
         scrollEventThrottle={32}
       >
         {children}
@@ -149,7 +172,13 @@ function Carousel({ w, children, dots, onIndex, auto }: { w: number; children: R
       {dots && n > 1 ? (
         <View style={{ flexDirection: "row", justifyContent: "center", gap: 6, marginTop: 10 }} accessibilityLabel={"Scheda " + (i + 1) + " di " + n}>
           {children.map((_, k) => (
-            <View key={k} style={{ width: k === i ? 18 : 6, height: 6, borderRadius: 3, backgroundColor: k === i ? t.accent : t.line }} />
+            k === i && running ? (
+              <View key={k} style={{ width: DOT_RUN, height: 6, borderRadius: 3, overflow: "hidden", backgroundColor: t.line }}>
+                <Animated.View style={{ width: DOT_RUN, height: 6, borderRadius: 3, backgroundColor: t.accent, transform: [{ translateX: fill.interpolate({ inputRange: [0, 1], outputRange: [-DOT_RUN, 0] }) }] }} />
+              </View>
+            ) : (
+              <View key={k} style={{ width: k === i ? 18 : 6, height: 6, borderRadius: 3, backgroundColor: k === i ? t.accent : t.line }} />
+            )
           ))}
         </View>
       ) : null}
