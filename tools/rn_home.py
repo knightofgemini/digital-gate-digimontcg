@@ -243,13 +243,17 @@ if h:
         shot("h15_evidenza_%d" % i)
         hswipe(h[0][1])
 # 1c) In evidenza che scorre da solo (ogni 5 s) e codice di "Ultimi spoiler" che segue la carta in primo piano
-home()
+# l'emulatore ha le animazioni spente (= "Rimuovi animazioni" del telefono, e lì In evidenza resta fermo apposta):
+# per la prova si riaccendono e si riapre l'app
+for k in ("animator_duration_scale", "transition_animation_scale", "window_animation_scale"):
+    adb("shell", "settings", "put", "global", k, "1")
+launch(12)
 for i in range(4):
     shot("h19_auto_%ds" % (i * 6))
     time.sleep(6)
 home()
 for _ in range(4):
-    r = finds(r"[A-Z]{2}\d{2}-\d{3}", ymin=0.15, ymax=0.9)
+    r = finds(r"[A-Z]{2}\d{1,2}-\d{2,3}", ymin=0.15, ymax=0.95)
     if r:
         break
     swipe(0.3)
@@ -258,6 +262,8 @@ if r:
     for i in range(1, 6):
         hswipe(r[0][1], 2)
         shot("h20_spoiler_%d" % i)
+for k in ("animator_duration_scale", "transition_animation_scale", "window_animation_scale"):
+    adb("shell", "settings", "put", "global", k, "0")
 # 1a) Prodotti → In arrivo, pagina intera (dal collegamento "Calendario" di All'orizzonte)
 home()
 for _ in range(5):
