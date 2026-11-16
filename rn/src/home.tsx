@@ -3,8 +3,9 @@
 // collezione" sotto), Ultimi spoiler, Usciti di recente, All'orizzonte, Set da completare, Riprendi il mazzo.
 // Ultimi spoiler: sezione a sé (SpoilerRow, scelta dell'utente tra due proposte; scartate le miniature nel banner).
 // Stili solo di questa pagina: i componenti condivisi (Banner, SecHead, Progress…) restano come sono.
-import { ReactNode, useState } from "react";
-import { Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { AccessibilityInfo, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { useFocusEffect } from "expo-router";
 import { Image } from "expo-image";
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { DISPLAY, Text } from "./Text";
@@ -20,7 +21,7 @@ import { DBadge } from "./deckui";
 import { Focus, dateParts, focusPos, goals, groupName, heroSlides, upRows } from "./homeLogic";
 import FOCUS from "./bannerFocus.json";
 import { COVERS, HERO_ART, HORIZON_ART, heroSrc } from "./covers";
-import { CutImg, artFor, useHomeArt } from "./homeArt";
+import { type Art, CutImg, LogoLay, artFor, logoArt, useHomeArt } from "./homeArt";
 
 // punto da inquadrare scelto a mano per ogni banner (vedi focusPos in homeLogic.ts)
 const focusOf = (code: string) => (FOCUS as Record<string, Focus | string>)[code] as Focus | undefined;
@@ -32,6 +33,14 @@ const SEC_TOP = 24;
 const GAP = 12;
 // tipi di prodotto del banner scorrevole, in quest'ordine (uno per tipo)
 const HERO_TYPES = ["BT", "EX", "ST", "LM", "PB"];
+// In evidenza scorre da solo come un carosello (16 novembre 2026, richiesta dell'utente): una scheda ogni 5 secondi
+const HERO_AUTO = 5000;
+
+// logo dell'espansione scelto nell'editor (Taglia) sopra un riquadro tagliato: logo caricato a mano, poi quello ufficiale
+function CutLogo({ code, a }: { code: string; a: Art }) {
+  const u = a.logo ? logoArt(code) || logoUrl(code) : null;
+  return u && a.logo ? <LogoLay uri={u} p={a.logo.p} s={a.logo.s} /> : null;
+}
 
 function Arrow({ color, size = 17 }: { color: string; size?: number }) {
   return (
@@ -68,14 +77,48 @@ function Sec({ title, link, onLink }: { title: string; link?: string; onLink?: (
 
 // fila scorrevole: schede larghe w una accanto all'altra, si fermano sempre all'inizio di una scheda; la scheda dopo
 // si vede appena sul bordo, così si capisce che si può scorrere. Le schede di una fila hanno tutte la stessa altezza.
-// dots: puntini sotto la fila con la scheda in vista
-function Carousel({ w, children, dots }: { w: number; children: ReactNode[]; dots?: boolean }) {
+// dots: puntini sotto la fila con la scheda in vista; onIndex: scheda in primo piano (la prima a sinistra);
+// auto: millisecondi dopo cui passa da sola alla scheda dopo (dall'ultima torna alla prima). Si ferma mentre il dito è
+// sulla fila, quando si cambia scheda a mano riparte da capo, e non gira con la pagina non in vista o con
+// "Riduci movimento" attivo nel telefono
+function Carousel({ w, children, dots, onIndex, auto }: { w: number; children: ReactNode[]; dots?: boolean; onIndex?: (i: number) => void; auto?: number }) {
   const t = useTheme();
   const [i, setI] = useState(0);
   const n = children.length;
+  const ref = useRef<ScrollView>(null);
+  const cur = useRef(0);
+  const last = useRef(Date.now());
+  const drag = useRef(false);
+  const [seen, setSeen] = useState(true);
+  const [still, setStill] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      setSeen(true);
+      last.current = Date.now();
+      return () => setSeen(false);
+    }, [])
+  );
+  useEffect(() => {
+    if (!auto) return;
+    AccessibilityInfo.isReduceMotionEnabled().then(setStill).catch(() => {});
+    const sub = AccessibilityInfo.addEventListener("reduceMotionChanged", setStill);
+    return () => sub.remove();
+  }, [auto]);
+  useEffect(() => {
+    if (!auto || n < 2 || !seen || still) return;
+    const id = setInterval(() => {
+      if (drag.current || Date.now() - last.current < auto) return;
+      last.current = Date.now();
+      const k = (cur.current + 1) % n;
+      ref.current?.scrollTo({ x: k * (w + GAP), animated: true });
+    }, 250);
+    return () => clearInterval(id);
+  }, [auto, n, seen, still, w]);
+  const track = dots || onIndex || auto;
   return (
     <View>
       <ScrollView
+        ref={ref}
         horizontal
         showsHorizontalScrollIndicator={false}
         snapToInterval={w + GAP}
@@ -85,7 +128,20 @@ function Carousel({ w, children, dots }: { w: number; children: ReactNode[]; dot
         nestedScrollEnabled
         style={{ marginHorizontal: -14 }}
         contentContainerStyle={{ paddingHorizontal: 14, gap: GAP }}
-        onScroll={dots ? (e) => setI(Math.max(0, Math.min(n - 1, Math.round(e.nativeEvent.contentOffset.x / (w + GAP))))) : undefined}
+        onScroll={
+          track
+            ? (e) => {
+                const k = Math.max(0, Math.min(n - 1, Math.round(e.nativeEvent.contentOffset.x / (w + GAP))));
+                if (k === cur.current) return;
+                cur.current = k;
+                if (dots) setI(k);
+                if (onIndex) onIndex(k);
+              }
+            : undefined
+        }
+        onScrollBeginDrag={auto ? () => (drag.current = true) : undefined}
+        onScrollEndDrag={auto ? () => ((drag.current = false), (last.current = Date.now())) : undefined}
+        onMomentumScrollEnd={auto ? () => (last.current = Date.now()) : undefined}
         scrollEventThrottle={32}
       >
         {children}
@@ -237,6 +293,7 @@ function HeroSlide({ h, w }: { h: HeroData; w: number }) {
           <Rect width="10" height="100" fill={`url(#heroFade${h.key})`} />
         </Svg>
       </View>
+      {cut ? <CutLogo code={h.code} a={cut} /> : null}
       <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
         <View style={{ flexShrink: 1, borderRadius: 6, borderWidth: 1, borderColor: h.spoil ? HERO.btn : HERO.edge, backgroundColor: HERO.glass, paddingVertical: 5, paddingHorizontal: 8 }}>
           <Text style={{ color: h.spoil ? HERO.btn : HERO.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, lineHeight: 14, letterSpacing: 1.4 }}>{h.badge}</Text>
@@ -265,7 +322,7 @@ export function HeroCarousel({ cw, sp }: { cw: number; sp: Spoil[] }) {
   if (!list.length) return null;
   const w = list.length > 1 ? cw - 22 : cw;
   return (
-    <Carousel w={w} dots>
+    <Carousel w={w} dots auto={HERO_AUTO}>
       {list.map((h) => (
         <HeroSlide key={h.key} h={h} w={w} />
       ))}
@@ -298,14 +355,18 @@ export function CollectionRow() {
 // ---- sezione "Ultimi spoiler", carte dalla più recente (tocco = scheda della carta)
 export function SpoilerRow({ sp }: { sp: Spoil[] }) {
   const t = useTheme();
+  // carta in primo piano (la prima a sinistra): il collegamento in alto porta al suo prodotto (16 novembre 2026,
+  // richiesta dell'utente: prima restava quello della prima carta)
+  const [k, setK] = useState(0);
   if (!sp.length) return null;
   const list = sp.slice(0, 16);
   const cards = list.map((x) => x.c);
   const W = 104;
+  const u = (list[k] || list[0]).u;
   return (
     <>
-      <Sec title="Ultimi spoiler" link={list[0].u.code + " →"} onLink={() => openUpcoming(list[0].u.code, "home")} />
-      <Carousel w={W}>
+      <Sec title="Ultimi spoiler" link={u.code + " →"} onLink={() => openUpcoming(u.code, "home")} />
+      <Carousel w={W} onIndex={setK}>
         {list.map((x) => {
           const mk = markText(x.c);
           return (
@@ -391,7 +452,13 @@ function GlassTag({ text, color }: { text: string; color: string }) {
 export function SquareArt({ code }: { code: string }) {
   useHomeArt();
   const cut = artFor(code, "square");
-  if (cut) return <CutImg a={cut} />;
+  if (cut)
+    return (
+      <>
+        <CutImg a={cut} />
+        <CutLogo code={code} a={cut} />
+      </>
+    );
   if (HORIZON_ART[code]) return <Image source={HORIZON_ART[code]} style={FILL} contentFit="cover" transition={120} />;
   return <ProdImg code={code} prefer="banner" pos={focusPos(focusOf(code), 1, { left: "50%", top: "35%" })} />;
 }
@@ -475,7 +542,10 @@ function HorizonLine({ cw, rows }: { cw: number; rows: Upcoming[][] }) {
               </View>
               <View style={{ width: w, height: w, borderRadius: 12, overflow: "hidden" }}>
                 {artFor(i.u.code, "square") ? (
-                  <CutImg a={artFor(i.u.code, "square")!} />
+                  <>
+                    <CutImg a={artFor(i.u.code, "square")!} />
+                    <CutLogo code={i.u.code} a={artFor(i.u.code, "square")!} />
+                  </>
                 ) : HORIZON_ART[i.u.code] ? (
                   <Image source={HORIZON_ART[i.u.code]} style={FILL} contentFit="cover" transition={120} />
                 ) : (
@@ -513,7 +583,10 @@ function SetArt({ code, w, h }: { code: string; w: number; h: number }) {
   return (
     <View style={{ width: w, height: h, borderRadius: 9, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: cut || cv || b ? "#1a2540" : t.surface2 }}>
       {cut ? (
-        <CutImg a={cut} />
+        <>
+          <CutImg a={cut} />
+          <CutLogo code={code} a={cut} />
+        </>
       ) : cv ? (
         <Image source={cv} style={FILL} contentFit="cover" contentPosition={{ left: "50%", top: "50%" }} transition={120} />
       ) : b ? (

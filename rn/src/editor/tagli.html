@@ -478,6 +478,14 @@ button.b:disabled { opacity: .45; cursor: default; }
       const okCut = (c) => c && c.asset === img.asset;
       state[sec.id] = okCut(saved) ? fromRect(img, sec.ar, saved) : { cx: 0.5, cy: 0.42, z: 1 };
       state[sec.id].dirty = false;
+      // logo dell'espansione sopra il riquadro (16 novembre 2026, richiesta dell'utente): acceso o spento, uno dei 9 punti
+      // e grandezza (frazione della larghezza del riquadro), come in Banner prodotti. In evidenza: uno solo per tutti i
+      // telefoni (si salva nel documento comune e in quelli propri)
+      const lsrc = okCut(saved) ? saved : isHero ? PHONES.map((p) => CUTS[cur + "__hero@" + p.id]).find(okCut) : null;
+      const l0 = lsrc && lsrc.logo && lsrc.logo.p ? lsrc.logo : null;
+      const LG = { on: !!l0, p: l0 ? l0.p : isHero ? "tc" : "bc", s: l0 ? +l0.s || 0.45 : isHero ? 0.4 : 0.6, dirty: false };
+      const lurl = logoOf(cur);
+      const lays = []; // [livello del logo, cornice]
       // In evidenza: posizione propria per ogni telefono sganciato dalla catena
       const own = {}, drop = {};
       if (isHero) for (const p of PHONES) {
@@ -573,6 +581,7 @@ button.b:disabled { opacity: .45; cursor: default; }
           const fade = document.createElement("div"); fade.className = "fade";
           const nm = document.createElement("div"); nm.className = "mini-nm"; nm.textContent = img.name || img.code;
           f.append(im, fade, nm);
+          if (lurl) { const l = logoLay(lurl, LG.p, LG.s, 100); f.insertBefore(l, nm); lays.push([l, f]); }
           f.onclick = () => { phone = p.id; sizeHero(); refreshPhones(); sync(); };
           const cap = document.createElement("div"); cap.className = "hint mini-cap";
           cell.append(f, cap); miniRow.append(cell); minis.push({ f, p, cap });
@@ -603,10 +612,43 @@ button.b:disabled { opacity: .45; cursor: default; }
       // indicatore: spostamento dal centro e margini rispetto ai bordi dell'immagine originale, in pixel
       const meter = document.createElement("div"); meter.className = "meter"; meter.setAttribute("aria-live", "polite");
       meter.innerHTML = '<div class="m-h">Spostamento dal centro</div><div class="m-move"></div><div class="m-h">Spazio ai bordi</div><div class="m-grid"><span>◀ <b data-k="l"></b></span><span>▶ <b data-k="r"></b></span><span>▲ <b data-k="t"></b></span><span>▼ <b data-k="b"></b></span></div><div class="m-note"></div>';
-      right.append(zpad, rng, meter, save);
+      right.append(zpad, rng, meter);
+      save.style.alignSelf = "flex-start";
       tools.append(pad, right);
 
-      const pending = () => { const t = target(); return t.st.dirty || !okCut(CUTS[t.doc]) || Object.keys(drop).length > 0; };
+      // comandi del logo: acceso/spento, 9 punti, grandezza con − / + e cursore
+      const ltools = document.createElement("div"); ltools.className = "tools";
+      const lgrid = document.createElement("div"); lgrid.className = "posgrid"; lgrid.setAttribute("role", "group"); lgrid.setAttribute("aria-label", "Posizione del logo");
+      const lsv = document.createElement("span"); lsv.className = "zv";
+      const lrng = document.createElement("input"); lrng.type = "range"; lrng.min = "0.15"; lrng.max = "0.9"; lrng.step = "0.01"; lrng.setAttribute("aria-label", "Zoom del logo");
+      const lon = document.createElement("button"); lon.type = "button"; lon.className = "chip"; lon.style.alignSelf = "flex-start";
+      const touchL = () => { LG.dirty = true; sync(); };
+      if (lurl) {
+        const l = logoLay(lurl, LG.p, LG.s, 300);
+        const over = frame.querySelector(".over");
+        if (over) frame.insertBefore(l, over); else frame.append(l);
+        lays.unshift([l, frame]);
+        lon.onclick = () => { LG.on = !LG.on; touchL(); };
+        for (const [p, name] of POS) {
+          const b = document.createElement("button"); b.type = "button"; b.dataset.p = p; b.title = name; b.setAttribute("aria-label", "Logo " + name.toLowerCase());
+          b.append(document.createElement("i"));
+          b.onclick = () => { LG.p = p; LG.on = true; touchL(); };
+          lgrid.append(b);
+        }
+        const size = (d) => (k) => { LG.s = Math.max(0.15, Math.min(0.9, Math.round((LG.s + d * 0.01 * k) * 100) / 100)); LG.on = true; touchL(); };
+        lrng.oninput = () => { LG.s = Math.round(+lrng.value * 100) / 100; LG.on = true; touchL(); };
+        const spad = document.createElement("div"); spad.className = "zpad"; spad.setAttribute("role", "group"); spad.setAttribute("aria-label", "Grandezza del logo");
+        spad.append(holdButton("−", "Logo più piccolo", size(-1)), lsv, holdButton("+", "Logo più grande", size(1)));
+        const lr = document.createElement("div"); lr.className = "tools-r";
+        const ll = document.createElement("div"); ll.className = "m-h"; ll.textContent = "Logo dell'espansione · posizione e zoom";
+        lr.append(ll, lon, spad, lrng);
+        ltools.append(lgrid, lr);
+      } else {
+        const n = document.createElement("p"); n.className = "hint"; n.textContent = "Per " + cur + " non c'è il logo dell'espansione: puoi caricarlo nella scheda \"Banner prodotti\".";
+        ltools.append(n);
+      }
+
+      const pending = () => { const t = target(); return t.st.dirty || LG.dirty || !okCut(CUTS[t.doc]) || Object.keys(drop).length > 0; };
       const sync = () => {
         const t = target();
         clamp(img, t.ar, t.st);
@@ -622,12 +664,18 @@ button.b:disabled { opacity: .45; cursor: default; }
           meter.querySelector(".m-note").textContent = "Pixel dell'immagine originale (" + img.w + " × " + img.h + "); si vede un riquadro di " + Math.round(r.x1 - r.x0) + " × " + Math.round(r.y1 - r.y0) + ". Un tocco sulle frecce = " + STEP_PX + " px.";
         }
         paintR(frame, isHero ? rectFor(phone) : rectFor(null));
+        for (const [l, f] of lays) { l.hidden = !LG.on; setLogo(l, LG.p, LG.s, f.clientWidth); }
+        if (lurl) {
+          lon.setAttribute("aria-pressed", String(LG.on)); lon.textContent = LG.on ? "Logo: sì" : "Logo: no";
+          lsv.textContent = Math.round(LG.s * 100) + "%"; lrng.value = String(LG.s);
+          lgrid.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(LG.on && b.dataset.p === LG.p)));
+        }
         for (const m of minis) {
           paintR(m.f, rectFor(m.p.id));
           m.cap.textContent = m.p.name + " · " + (own[m.p.id] ? "posizione propria" : "collegato");
           m.f.classList.toggle("cur", m.p.id === phone);
         }
-        if (pending()) { badge.className = "saved changed"; badge.textContent = t.st.dirty || Object.keys(drop).length ? "Da salvare" : "Non ancora salvato"; }
+        if (pending()) { badge.className = "saved changed"; badge.textContent = t.st.dirty || LG.dirty || Object.keys(drop).length ? "Da salvare" : "Non ancora salvato"; }
         else { badge.className = "saved"; badge.textContent = t.solo ? "Salvato per " + phoneOf(phone).name.toLowerCase() : "Salvato"; }
         save.textContent = t.solo ? "Salva per " + phoneOf(phone).name.toLowerCase() : "Salva";
         save.disabled = !db || !pending();
@@ -640,10 +688,21 @@ button.b:disabled { opacity: .45; cursor: default; }
           x0: r.x0 / img.w, y0: r.y0 / img.h, x1: r.x1 / img.w, y1: r.y1 / img.h, cx: t.st.cx, cy: t.st.cy,
           px: [Math.round(r.x0), Math.round(r.y0), Math.round(r.x1), Math.round(r.y1)], zoom: +t.st.z.toFixed(3), at: new Date().toISOString() };
         if (t.solo) { body.phone = phone; body.dp = phoneOf(phone).dp; body.ar = +t.ar.toFixed(4); }
+        const logo = LG.on && lurl ? { p: LG.p, s: LG.s } : null;
+        body.logo = logo;
         save.disabled = true; save.textContent = "Salvo…";
         try {
           for (const pid of Object.keys(drop)) { await db.doc("tagli/" + cur + "__hero@" + pid).delete(); delete CUTS[cur + "__hero@" + pid]; delete drop[pid]; }
           await db.doc("tagli/" + t.doc).set(body); t.st.dirty = false; CUTS[t.doc] = body;
+          // In evidenza: lo stesso logo anche negli altri documenti già salvati (comune e telefoni sganciati)
+          if (isHero && LG.dirty) {
+            for (const k of [cur + "__hero", ...PHONES.map((p) => cur + "__hero@" + p.id)]) {
+              const d = CUTS[k];
+              if (k === t.doc || !okCut(d) || JSON.stringify(d.logo || null) === JSON.stringify(logo)) continue;
+              const nb = Object.assign({}, d, { logo }); await db.doc("tagli/" + k).set(nb); CUTS[k] = nb;
+            }
+          }
+          LG.dirty = false;
           status(sec.name + " di " + cur + (t.solo ? " salvato solo per " + phoneOf(phone).name.toLowerCase() + "." : " salvato."));
         } catch (e) { status("Non sono riuscito a salvare: " + (e && e.message || "errore") + ". Riprova tra poco.", true); }
         sync(); renderChips();
@@ -662,7 +721,7 @@ button.b:disabled { opacity: .45; cursor: default; }
 
       box.append(head, rule);
       if (phoneRow) box.append(phoneRow);
-      box.append(view, tools);
+      box.append(view, tools, ltools, save);
       if (box._minis) {
         const mh = document.createElement("div"); mh.className = "eyebrow"; mh.textContent = "Tutti i telefoni · tocca per modificarne uno";
         box.append(mh, box._minis);
@@ -681,7 +740,7 @@ button.b:disabled { opacity: .45; cursor: default; }
       sync();
     }
     const tip = document.createElement("p"); tip.className = "hint";
-    tip.textContent = "Usa le frecce: un tocco sposta di 1 pixel, tenendo premuto continua. Lo zoom si regola con − e + (0,01 a tocco) o col cursore. In \"In evidenza\" la catena tiene tutti i telefoni insieme: sganciala per sistemare solo il telefono scelto. I tagli salvati arrivano nell'app di tutti in pochi minuti.";
+    tip.textContent = "Usa le frecce: un tocco sposta di 1 pixel, tenendo premuto continua. Lo zoom si regola con − e + (0,01 a tocco) o col cursore. Il logo dell'espansione si accende con \"Logo\", si mette in uno dei 9 punti e si ingrandisce col suo cursore. In \"In evidenza\" la catena tiene tutti i telefoni insieme: sganciala per sistemare solo il telefono scelto. I tagli salvati arrivano nell'app di tutti in pochi minuti.";
     list.append(tip);
     ed.append(list);
   }
@@ -762,16 +821,22 @@ button.b:disabled { opacity: .45; cursor: default; }
     if (w > lim) { w = lim; h = w / ar; }
     return { x0: (cx - w / 2) / img.w, y0: (cy - h / 2) / img.h, x1: (cx + w / 2) / img.w, y1: (cy + h / 2) / img.h };
   }
+  // logo salvato anche nelle miniature del confronto
+  const withLogo = (cell, c, d) => {
+    const url = logoOf(c), lg = d && d.logo;
+    if (url && lg && lg.p) { const b = cell.querySelector(".cmp-box"); b.append(logoLay(url, lg.p, +lg.s || 0.45, parseFloat(b.style.width))); }
+    return cell;
+  };
   const heroRow = (p) => ({ name: "In evidenza · " + p.name + " (" + p.dp + " dp)", cells: (c, img, ok) => {
     const ar = heroAr(p.dp), own = CUTS[c + "__hero@" + p.id], com = CUTS[c + "__hero"];
-    if (ok(own)) return [cmpThumb(img, own, c, zTxt(zoomOf(img, own, ar)), "posizione propria")];
+    if (ok(own)) return [withLogo(cmpThumb(img, own, c, zTxt(zoomOf(img, own, ar)), "posizione propria"), c, own)];
     // zoom comune, lo stesso che si vede in Taglia (misurato sul riquadro di riferimento, come lo stato dell'editor)
-    if (ok(com)) { const r = fitFrac(img, com, ar); return [cmpThumb(img, r, c, zTxt(zoomOf(img, com, SECS[0].ar)), "collegato")]; }
+    if (ok(com)) { const r = fitFrac(img, com, ar); return [withLogo(cmpThumb(img, r, c, zTxt(zoomOf(img, com, SECS[0].ar)), "collegato"), c, com)]; }
     return [cmpEmpty(c, ar, "da fare")];
   } });
   const fixRow = (id, name, ar) => ({ name, cells: (c, img, ok) => {
     const d = CUTS[c + "__" + id];
-    return [ok(d) ? cmpThumb(img, d, c, zTxt(zoomOf(img, d, ar))) : cmpEmpty(c, ar)];
+    return [ok(d) ? withLogo(cmpThumb(img, d, c, zTxt(zoomOf(img, d, ar))), c, d) : cmpEmpty(c, ar)];
   } });
   const CMP_TYPES = [
     ...PHONES.map(heroRow),
