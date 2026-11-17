@@ -5,7 +5,7 @@
 import { ScrollView, useWindowDimensions } from "react-native";
 import { Screen, useBarState } from "../../chrome";
 import { useStore } from "../../store";
-import { CollectionRow, DeckModule, GoalModule, HeroCarousel, HomeTitle, Horizon, Recent, SpoilerRow, spoilers } from "../../home";
+import { CollectionRow, DeckModule, GoalModule, HeroCarousel, HomeTitle, Horizon, Recent, SpoilerRow, heroScroll, spoilers } from "../../home";
 
 export default function Home() {
   const bar = useBarState();
@@ -15,7 +15,13 @@ export default function Home() {
   const sp = spoilers();
   return (
     <Screen bs={bar}>
-      <ScrollView onScroll={bar.onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: 28 }}>
+      <ScrollView
+        onScroll={(e) => {
+          bar.onScroll(e);
+          // In evidenza fuori dallo schermo: la sua capsula si ferma (niente animazione mentre si scorre il resto)
+          heroScroll(e.nativeEvent.contentOffset.y);
+        }}
+        scrollEventThrottle={16} contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: 28 }}>
         <HomeTitle />
         <HeroCarousel cw={cw} sp={sp} />
         <CollectionRow />
