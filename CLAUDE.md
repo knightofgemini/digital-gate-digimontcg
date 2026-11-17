@@ -321,6 +321,17 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   **Ultimi spoiler**: il collegamento in alto ("ST26 →") segue la prima carta a sinistra (`onIndex`). Prova:
   `rn_home.py` (`h19_auto_*`, `h20_spoiler_*`, `h21_barra_*`; per la prova riaccende le animazioni dell'emulatore e
   chiude la richiesta delle notifiche, che mette l'app in pausa).
+- **Home leggera (17 novembre 2026, segnalato dall'utente: animazioni appesantite)**: misurato sull'emulatore con
+  `tools/rn_perf.py` / `rn_diag2.py` (rami `perf-*`, foto e risultati nei rami `rn-shots-perf-*`: fotogrammi disegnati
+  con la Home ferma da `dumpsys gfxinfo`, CPU per thread). Cause: (1) `CutImg` e `LogoLay` con misure a decimali e
+  proporzioni del logo prese a ogni caricamento: immagini ricaricate e Home ridisegnata senza sosta (~26 fotogrammi/s
+  anche col carosello fermo); ora misure a pixel interi, `source` memorizzato, proporzioni del logo prese una volta;
+  (2) capsula di In evidenza animata con ritaglio (`overflow: hidden`). Ora la capsula si riempie in modo **continuo**
+  (scelta dell'utente) con un'animazione nativa (`scaleX`, `transformOrigin: left`, senza ritaglio) che a fine giro
+  passa alla scheda dopo, e si **ferma** quando In evidenza esce dallo schermo (`heroScroll` dalla Home, sopra 320 dp)
+  o si lascia la pagina, riprendendo da dove era. Esito: Home ferma o scorsa in basso 0 fotogrammi; con In evidenza in
+  vista la capsula ridisegna di continuo (sull'emulatore senza scheda grafica costa molto, sul telefono poco); a scatti
+  di 0,4 s erano ~7 fotogrammi/s (ripiego se l'utente la sente ancora pesante).
 - **Taglia e Banner prodotti collegati (16 novembre 2026, richiesta dell'utente)**: in Taglia compaiono anche i prodotti
   con la sola immagine del banner (`timg` = `immagini/CODICE` → `immagini/CODICE@ban`, "· dal banner" nell'elenco); i
   riquadri non ancora salvati partono dal centro (`cx`, `cy`) e dal logo del taglio `__prod` (In evidenza: logo in alto
