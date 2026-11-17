@@ -1,0 +1,12 @@
+src/bgTask.ts(15,25): error TS2307: Cannot find module '../data/data.json' or its corresponding type declarations.
+src/bgTask.ts(16,29): error TS2307: Cannot find module '../data/products.json' or its corresponding type declarations.
+src/data.ts(8,25): error TS2307: Cannot find module '../data/data.json' or its corresponding type declarations.
+src/data.ts(9,29): error TS2307: Cannot find module '../data/products.json' or its corresponding type declarations.
+src/dataupd.ts(11,24): error TS2307: Cannot find module '../data/ver.json' or its corresponding type declarations.
+src/home.tsx(136,20): error TS2339: Property 'scrollTo' does not exist on type '((props: Omit<ScrollViewProps, "ref"> & { ref?: Ref<ScrollViewInstance> | undefined; }) => ReactNode) & Readonly<{ Context: Context<...>; }>'.
+src/home.tsx(144,9): error TS2322: Type 'RefObject<(((props: Omit<ScrollViewProps, "ref"> & { ref?: Ref<ScrollViewInstance> | undefined; }) => ReactNode) & Readonly<...>) | null>' is not assignable to type 'Ref<ScrollViewInstance> | undefined'.
+  Type 'RefObject<(((props: Omit<ScrollViewProps, "ref"> & { ref?: Ref<ScrollViewInstance> | undefined; }) => ReactNode) & Readonly<...>) | null>' is not assignable to type 'RefObject<ScrollViewInstance | null>'.
+    Type '(((props: Omit<ScrollViewProps, "ref"> & { ref?: Ref<ScrollViewInstance> | undefined; }) => ReactNode) & Readonly<{ ...; }>) | null' is not assignable to type 'ScrollViewInstance | null'.
+      Type '((props: Omit<ScrollViewProps, "ref"> & { ref?: Ref<ScrollViewInstance> | undefined; }) => ReactNode) & Readonly<{ Context: Context<...>; }>' is not assignable to type 'ScrollViewInstance | null'.
+src/prices.ts(7,17): error TS2307: Cannot find module '../data/prices.json' or its corresponding type declarations.
+TSC ERRORI
