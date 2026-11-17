@@ -332,6 +332,12 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   o si lascia la pagina, riprendendo da dove era. Esito: Home ferma o scorsa in basso 0 fotogrammi; con In evidenza in
   vista la capsula ridisegna di continuo (sull'emulatore senza scheda grafica costa molto, sul telefono poco); a scatti
   di 0,4 s erano ~7 fotogrammi/s (ripiego se l'utente la sente ancora pesante).
+- **Intro fluida (17 novembre 2026, segnalato dall'utente: la parte finale dell'intro andava a scatti)**: durante
+  l'intro la Home rimanda il lavoro non visibile: la capsula di In evidenza parte 600 ms dopo la fine dell'intro e le
+  sezioni sotto lo schermo (Usciti di recente, All'orizzonte, Set da completare, Riprendi il mazzo) si montano 200 ms
+  dopo (`useAfterIntro` in `home.tsx`, da `whenIntroDone`); la sfumatura finale dell'intro ha
+  `renderToHardwareTextureAndroid`. Sull'emulatore l'avvio è troppo lento per misurare l'intro (`tools/rn_intro.py`
+  sui rami `perf-prima/ora/fix`: tutte a scatti): conta la prova sul telefono dell'utente.
 - **Taglia e Banner prodotti collegati (16 novembre 2026, richiesta dell'utente)**: in Taglia compaiono anche i prodotti
   con la sola immagine del banner (`timg` = `immagini/CODICE` → `immagini/CODICE@ban`, "· dal banner" nell'elenco); i
   riquadri non ancora salvati partono dal centro (`cx`, `cy`) e dal logo del taglio `__prod` (In evidenza: logo in alto
