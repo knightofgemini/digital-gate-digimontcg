@@ -1,0 +1,6 @@
+avvio 1: fotogrammi 17, lenti 17 (100.00%), 90/99 1250ms/1500ms, i 5 più lunghi (ms) 141327, 141285, 141238, 141163, 141082
+avvio 2: fotogrammi 36, lenti 35 (97.22%), 90/99 500ms/1200ms, i 5 più lunghi (ms) 158251, 158128, 157955, 157893, 157743
+avvio 3: fotogrammi 18, lenti 18 (100.00%), 90/99 1000ms/1100ms, i 5 più lunghi (ms) 171469, 171356, 171223, 171103, 171023
+avvio 4: fotogrammi 30, lenti 30 (100.00%), 90/99 500ms/800ms, i 5 più lunghi (ms) 184845, 184744, 184617, 184561, 184440
+avvio 5: fotogrammi 33, lenti 31 (93.94%), 90/99 300ms/650ms, i 5 più lunghi (ms) 196811, 196614, 196466, 196350, 196230
+avvio 6: fotogrammi 25, lenti 25 (100.00%), 90/99 600ms/1150ms, i 5 più lunghi (ms) 209775, 209424, 209079, 208791, 208710
