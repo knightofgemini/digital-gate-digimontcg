@@ -99,7 +99,7 @@ function Carousel({ w, children, dots, onIndex, auto }: { w: number; children: R
   const t = useTheme();
   const [i, setI] = useState(0);
   const n = children.length;
-  const ref = useRef<ScrollView>(null);
+  const ref = useRef<any>(null); // ScrollView (il tipo di RN 0.88 non accetta useRef<ScrollView>)
   const cur = useRef(0);
   const geo = useRef({ w, n });
   geo.current = { w, n };
