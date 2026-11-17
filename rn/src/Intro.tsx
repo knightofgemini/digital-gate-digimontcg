@@ -105,7 +105,10 @@ export function Intro() {
     <Pressable onPress={finish} accessibilityLabel="Avvio di Digital Gate. Tocca per entrare." style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000 }}>
       {/* sfondo blu notte anche nel tema chiaro: ora e batteria chiare finché l'intro è visibile */}
       <StatusBar style="light" />
-      <Animated.View style={{ flex: 1, backgroundColor: "#0b1120", alignItems: "center", justifyContent: "center", opacity: k([1066, 1235], [1, 0]) }}>
+      {/* sfumatura finale su una superficie sola del telefono (renderToHardwareTextureAndroid): senza, a ogni fotogramma
+          tutta l'intro veniva ridisegnata a parte per farla trasparente (17 novembre 2026, segnalato dall'utente: la
+          parte finale andava a scatti) */}
+      <Animated.View renderToHardwareTextureAndroid style={{ flex: 1, backgroundColor: "#0b1120", alignItems: "center", justifyContent: "center", opacity: k([1066, 1235], [1, 0]) }}>
         <Svg style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100">
           <Defs>
             <RadialGradient id="bootamb" cx="50" cy="46" rx="54" ry="54" gradientUnits="userSpaceOnUse">

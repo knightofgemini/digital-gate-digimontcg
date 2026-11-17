@@ -21,6 +21,7 @@ import { DBadge } from "./deckui";
 import { Focus, dateParts, focusPos, goals, groupName, heroSlides, upRows } from "./homeLogic";
 import FOCUS from "./bannerFocus.json";
 import { COVERS, HERO_ART, HORIZON_ART, heroSrc } from "./covers";
+import { whenIntroDone } from "./Intro";
 import { type Art, CutImg, LogoLay, artFor, logoArt, useHomeArt } from "./homeArt";
 
 // punto da inquadrare scelto a mano per ogni banner (vedi focusPos in homeLogic.ts)
@@ -40,6 +41,24 @@ const DOT_RUN = 28;
 const DOT_H = 9;
 // parte interna della capsula (meno il contorno)
 const FILL_W = DOT_RUN - 3;
+// vero un po' dopo la fine dell'intro: la Home intanto non fa lavori che si possono rimandare (capsula di In evidenza,
+// sezioni sotto lo schermo), così la sfumatura finale dell'intro resta fluida (17 novembre 2026, segnalato dall'utente)
+export function useAfterIntro(delay: number) {
+  const [ok, setOk] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    let id: any = null;
+    whenIntroDone(() => {
+      id = setTimeout(() => alive && setOk(true), delay);
+    });
+    return () => {
+      alive = false;
+      clearTimeout(id);
+    };
+  }, []);
+  return ok;
+}
+
 // In evidenza in vista (la Home lo dice scorrendo, heroScroll): fuori vista la capsula si ferma
 const HERO_VIS = { v: true, subs: new Set<(v: boolean) => void>() };
 export function heroScroll(y: number) {
@@ -116,7 +135,8 @@ function Carousel({ w, children, dots, onIndex, auto }: { w: number; children: R
   const autoAt = useRef(0); // momento dell'ultimo passaggio automatico (il suo fine scorrimento non riparte da capo)
   const [inView, setInView] = useState(HERO_VIS.v);
   const running = !!auto && n > 1 && seen && !still;
-  const active = running && inView;
+  const ready = useAfterIntro(600);
+  const active = running && inView && ready;
   const activeRef = useRef(active);
   activeRef.current = active;
   const stop = () => {

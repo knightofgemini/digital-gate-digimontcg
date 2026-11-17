@@ -5,7 +5,7 @@
 import { ScrollView, useWindowDimensions } from "react-native";
 import { Screen, useBarState } from "../../chrome";
 import { useStore } from "../../store";
-import { CollectionRow, DeckModule, GoalModule, HeroCarousel, HomeTitle, Horizon, Recent, SpoilerRow, heroScroll, spoilers } from "../../home";
+import { CollectionRow, DeckModule, GoalModule, HeroCarousel, HomeTitle, Horizon, Recent, SpoilerRow, heroScroll, spoilers, useAfterIntro } from "../../home";
 
 export default function Home() {
   const bar = useBarState();
@@ -13,6 +13,8 @@ export default function Home() {
   useStore();
   const cw = useWindowDimensions().width - 28;
   const sp = spoilers();
+  // sezioni sotto lo schermo: dopo l'intro (non si vedono prima, e così l'intro finisce fluida)
+  const later = useAfterIntro(200);
   return (
     <Screen bs={bar}>
       <ScrollView
@@ -26,10 +28,14 @@ export default function Home() {
         <HeroCarousel cw={cw} sp={sp} />
         <CollectionRow />
         <SpoilerRow sp={sp} />
-        <Recent cw={cw} />
-        <Horizon cw={cw} />
-        <GoalModule cw={cw} />
-        <DeckModule cw={cw} />
+        {later ? (
+          <>
+            <Recent cw={cw} />
+            <Horizon cw={cw} />
+            <GoalModule cw={cw} />
+            <DeckModule cw={cw} />
+          </>
+        ) : null}
       </ScrollView>
     </Screen>
   );
