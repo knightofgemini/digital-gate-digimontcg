@@ -462,7 +462,6 @@
   "ST24-11_P3"
  ],
  "_hold": {
-  "BT27-097": "immagine sbagliata (l'anteprima TakaOtaku di BT27-097 è Keenan Crier BT27-096), testo incompleto",
   "BD02-01": "senza immagine, rarità mancante (dal 2026-11-07)",
   "BD02-05": "senza immagine, rarità mancante (dal 2026-11-07)",
   "BD02-06": "senza immagine, rarità mancante (dal 2026-11-07)",
@@ -477,13 +476,9 @@
   "BD01-09": "senza immagine, rarità mancante (dal 2026-11-07)"
  },
  "_hold_versions": [
-  "BT27-103_P2",
   "EX14-012_P1",
   "EX14-054_P1",
-  "EX14-054_P2",
-  "LM-028_P4",
-  "P-036_P7",
-  "LM-027_P4"
+  "EX14-054_P2"
  ],
  "_hold_note": "_hold_versions: versioni già annunciate ma ancora senza immagine (spoiler); toglierle da qui quando l'immagine è disponibile. _hold: carte svelate ma tenute da parte (senza immagine, testo incompleto o immagine sbagliata); toglierle da qui dopo il controllo sull'immagine."
 }
