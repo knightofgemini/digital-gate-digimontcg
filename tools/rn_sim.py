@@ -69,7 +69,15 @@ while time.time() - t0 < 130:
 
 # 2) partita normale
 start("digitalgate://simulatore?l=v")
-time.sleep(10)
+for k in range(4):  # moneta, mescolamento, pesca
+    time.sleep(2.5)
+    shot("preparazione%d" % k)
+time.sleep(4)
+shot("mulligan")
+tap(0.38, 0.61)  # "Keep hand"
+burst_t = time.time()
+while time.time() - burst_t < 6:
+    shot("sicurezza")
 shot("normale")
 for i in range(8):  # aspetta il proprio turno (l'avversario può iniziare)
     time.sleep(3)

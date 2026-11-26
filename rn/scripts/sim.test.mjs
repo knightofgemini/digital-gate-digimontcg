@@ -17,10 +17,13 @@ function seeded(s) {
 
 async function game(seed, mine) {
   const fx = {};
-  const ui = { ask: async (_t, o) => o[0]?.v ?? null, fx: async (e) => void (fx[e.k] = (fx[e.k] || 0) + 1), update() {}, isLive: () => true };
+  const ui = { ask: async (_t, o) => o[0]?.v ?? null, fx: async (e) => void (fx[e.k] = (fx[e.k] || 0) + 1), update() {}, isLive: () => true, mulligan: async () => false };
   const sim = new Sim(DB, ui, seeded(seed));
   const G = sim.newGame(mine);
   G.P[0].ai = true;
+  await sim.setup();
+  assert.equal(G.P[0].sec.length, 5);
+  assert.equal(G.P[1].hand.length, 5);
   await sim.startTurn();
   return { G, fx, sim };
 }
@@ -48,5 +51,18 @@ test("100 partite computer contro computer finiscono con un vincitore", async ()
 
 test("le animazioni vengono chieste", async () => {
   const { fx } = await game(7, "red");
-  for (const k of ["banner", "spawn", "attack", "reveal", "mem", "delete", "end"]) assert.ok(fx[k] > 0, k);
+  for (const k of ["first", "shuffle", "secAdd", "banner", "spawn", "attack", "reveal", "mem", "delete", "end"]) assert.ok(fx[k] > 0, k);
+});
+
+test("mulligan: la mano torna nel mazzo e si pescano 5 carte nuove", async () => {
+  let asked = 0;
+  const ui = { ask: async (_t, o) => o[0]?.v ?? null, fx: async () => {}, update() {}, isLive: () => true, mulligan: async (h) => (asked++, assert.equal(h.length, 5), true) };
+  const sim = new Sim(DB, ui, seeded(3));
+  const G = sim.newGame("red", 0);
+  await sim.setup();
+  assert.equal(asked, 1);
+  assert.equal(G.P[0].hand.length, 5);
+  assert.equal(G.P[0].sec.length, 5);
+  assert.equal(G.P[0].deck.length, 50 - 10);
+  assert.equal(G.phase, "breed");
 });

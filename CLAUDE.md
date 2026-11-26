@@ -373,6 +373,13 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   in alto con l'azione); il tocco apre ancora la scheda. Parametro `?l=h|v` per la disposizione (prove).
   **Sicurezza**: scudo con il numero e sotto le carte coperte di traverso, una sopra l'altra (richiesta dell'utente;
   `Security`/`HBack`, la carta controllata scivola via).
+  **Novità del 26 novembre sera (richieste dell'utente)**: tutto il simulatore in **inglese** (testi, registro, menu; resta
+  in italiano solo la voce del menu Altro dell'app); **preparazione come al tavolo** (`setup` nel motore: moneta con
+  riquadro "YOU GO FIRST"/"OPPONENT GOES FIRST", mescolamento con i mazzi che tremano, 5 carte a testa, **mulligan**
+  una volta con il riquadro "Keep this hand?" (`SimUI.mulligan`; l'IA lo fa se non ha un Lv.3), poi 5 carte nella
+  Sicurezza una alla volta); **attacco trascinato con una freccia** dal Digimon al bersaglio (`Arrow`, si ridisegna da
+  sola) invece della carta che si sposta (la carta della mano invece segue ancora il dito); carte della mano e pila
+  della Sicurezza che si allargano quando sono poche.
   Menu → "Guarda una partita" (`?demo=1`): il telefono gioca da solo con tutti e due i mazzi. Prova su emulatore:
   `prova-emulatore.yml` con "sim" o inviando sul ramo `simulatore` (`tools/rn_sim.py`: le animazioni continue bloccano
   uiautomator, quindi solo foto della partita dimostrativa e tocchi a coordinate fisse). Prima

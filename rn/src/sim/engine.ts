@@ -8,7 +8,7 @@ export type Def = { code: string; n: string; lv: number; col: string; t: string;
 export type CardInst = { u: string; c: string };
 export type Stack = { u: string; cards: CardInst[]; susp: boolean; fresh: boolean; buffs: { dp: number; exp: number }[]; noAB: number; mg: number };
 export type Player = { key: string; ai: boolean; deck: CardInst[]; eggs: CardInst[]; hand: CardInst[]; sec: CardInst[]; trash: CardInst[]; breed: Stack | null; field: Stack[]; secBuff: { dp: number; exp: number }[]; sw: number };
-export type Game = { P: [Player, Player]; cur: 0 | 1; mem: number; turn: number; phase: "breed" | "main"; over: 0 | 1 | null; busy: boolean; log: { t: string; c: string }[] };
+export type Game = { P: [Player, Player]; cur: 0 | 1; mem: number; turn: number; phase: "setup" | "breed" | "main"; over: 0 | 1 | null; busy: boolean; log: { t: string; c: string }[] };
 export type Opt<T> = { label: string; sub?: string; v: T; pri?: boolean; code?: string };
 
 // animazioni ed effetti chiesti alla schermata: ognuno si aspetta finché non è finito
@@ -27,13 +27,18 @@ export type Fx =
   | { k: "mem"; from: number; to: number }
   | { k: "trashSrc"; u: string; n: number }
   | { k: "unsusp"; u: string }
-  | { k: "end"; win: 0 | 1 };
+  | { k: "end"; win: 0 | 1 }
+  | { k: "first"; pi: 0 | 1 }
+  | { k: "shuffle" }
+  | { k: "secAdd"; pi: 0 | 1 };
 
 export interface SimUI {
   ask<T>(title: string, opts: Opt<T>[], cancel?: string, body?: string): Promise<T | null>;
   fx(e: Fx): Promise<void>;
   update(): void;
   isLive(g: Game): boolean;
+  // mano iniziale: true = mulligan (rimescola e pesca 5 carte nuove)
+  mulligan(hand: string[]): Promise<boolean>;
 }
 
 export const DECKS: Record<string, { name: string; code: string; list: Record<string, number> }> = {
@@ -95,16 +100,66 @@ export class Sim {
     this.shuffle(deck);
     this.shuffle(eggs);
     const p: Player = { key, ai, deck, eggs, hand: [], sec: [], trash: [], breed: null, field: [], secBuff: [], sw: -9 };
-    p.sec = deck.splice(0, 5);
-    p.hand = deck.splice(0, 5);
     return p;
   }
   newGame(mine: string, first?: 0 | 1) {
     this.uid = 0;
     const theirs = mine === "red" ? "blue" : "red";
-    this.G = { P: [this.newPlayer(mine, false), this.newPlayer(theirs, true)], cur: first ?? (this.rnd() < 0.5 ? 0 : 1), mem: 0, turn: 0, phase: "breed", over: null, busy: false, log: [] };
-    this.log((this.G.cur === 0 ? "Inizi tu" : "Inizia l'avversario") + ". Il primo turno non si pesca.", "k");
+    this.G = { P: [this.newPlayer(mine, false), this.newPlayer(theirs, true)], cur: first ?? (this.rnd() < 0.5 ? 0 : 1), mem: 0, turn: 0, phase: "setup", over: null, busy: false, log: [] };
     return this.G;
+  }
+
+  // preparazione come al tavolo (richiesta dell'utente): chi inizia, mazzi mescolati, 5 carte in mano, mulligan
+  // (una volta: la mano torna nel mazzo, si rimescola e si pescano 5 carte), poi 5 carte coperte nella Sicurezza
+  async setup() {
+    const G = this.G;
+    const live = () => this.ui.isLive(G);
+    this.log((G.cur === 0 ? "You go first" : "The opponent goes first") + ". The first player doesn't draw on turn 1.", "k");
+    await this.fx({ k: "first", pi: G.cur });
+    if (!live()) return;
+    this.log("Both players shuffle their decks.");
+    await this.fx({ k: "shuffle" });
+    await this.drawStart();
+    for (const i of [0, 1] as const) {
+      if (!live()) return;
+      const p = this.P(i);
+      const again = p.ai ? !p.hand.some((c) => this.D(c).t === "Digimon" && this.D(c).lv === 3) : await this.ui.mulligan(p.hand.map((c) => c.c));
+      if (!live()) return;
+      if (again) {
+        p.deck.push(...p.hand);
+        p.hand = [];
+        this.shuffle(p.deck);
+        this.log(i ? "The opponent takes a mulligan." : "You take a mulligan.");
+        this.ui.update();
+        await this.fx({ k: "shuffle" });
+        for (let k = 0; k < 5; k++) {
+          const c = p.deck.shift()!;
+          p.hand.push(c);
+          this.ui.update();
+          await this.fx({ k: "spawn", u: c.u, how: "draw" });
+        }
+      } else this.log(i ? "The opponent keeps the hand." : "You keep your hand.");
+    }
+    this.log("Each player places 5 cards face down as Security.");
+    for (let k = 0; k < 5; k++)
+      for (const i of [0, 1] as const) {
+        if (!live()) return;
+        const p = this.P(i);
+        p.sec.push(p.deck.shift()!);
+        this.ui.update();
+        await this.fx({ k: "secAdd", pi: i });
+      }
+    G.phase = "breed";
+  }
+  async drawStart() {
+    for (let k = 0; k < 5; k++)
+      for (const i of [0, 1] as const) {
+        const p = this.P(i);
+        const c = p.deck.shift()!;
+        p.hand.push(c);
+        this.ui.update();
+        await this.fx({ k: "spawn", u: c.u, how: "draw" });
+      }
   }
 
   // ---- valori calcolati ----
@@ -166,8 +221,8 @@ export class Sim {
     if (this.P(i).ai) return aiPick(items) || null;
     return this.ui.ask(
       title,
-      items.map((s) => ({ label: this.top(s).n, sub: "DP " + this.dp(this.owner(s), s) + " · Lv." + this.top(s).lv + (this.nsrc(s) ? " · " + this.nsrc(s) + " sotto" : ""), v: s, code: this.topCode(s) })),
-      optional ? "Nessuno" : undefined,
+      items.map((s) => ({ label: this.top(s).n, sub: "DP " + this.dp(this.owner(s), s) + " · Lv." + this.top(s).lv + (this.nsrc(s) ? " · " + this.nsrc(s) + " under" : ""), v: s, code: this.topCode(s) })),
+      optional ? "None" : undefined,
     );
   }
   best = (i: number) => (arr: Stack[]) => arr.slice().sort((a, b) => this.dp(i, b) - this.dp(i, a))[0];
@@ -177,7 +232,7 @@ export class Sim {
     await this.fx({ k: "delete", u: s.u });
     this.P(i).field = this.P(i).field.filter((x) => x !== s);
     this.P(i).trash.push(...s.cards);
-    this.log(this.top(s).n + (i ? " (avversario)" : " (tuo)") + " viene eliminato.", "a");
+    this.log(this.top(s).n + (i ? " (opponent)" : " (yours)") + " is deleted.", "a");
     this.ui.update();
   }
   async effect(i: 0 | 1, code: string, text: string) {
@@ -187,7 +242,7 @@ export class Sim {
     const s = await this.choose(i, title, this.digis(i), this.best(i));
     if (s) {
       s.buffs.push({ dp: n, exp });
-      this.log(this.top(s).n + " ottiene +" + n + " DP.", "y");
+      this.log(this.top(s).n + " gets +" + n + " DP.", "y");
       this.ui.update();
       await this.fx({ k: "buff", u: s.u, n });
     }
@@ -195,13 +250,13 @@ export class Sim {
   async trashBottom(i: number, k: number, f: (s: Stack) => boolean) {
     const o = 1 - i,
       t = this.digis(o).filter((s) => this.nsrc(s) > 0 && f(s));
-    const s = await this.choose(i, "Togli carte sotto a un Digimon avversario", t, (a) => a.slice().sort((x, y) => this.nsrc(y) - this.nsrc(x))[0]);
+    const s = await this.choose(i, "Trash digivolution cards from an opponent's Digimon", t, (a) => a.slice().sort((x, y) => this.nsrc(y) - this.nsrc(x))[0]);
     if (!s) return;
     const n = Math.min(k, this.nsrc(s));
     await this.fx({ k: "trashSrc", u: s.u, n });
     const r = s.cards.splice(0, n);
     this.P(o).trash.push(...r);
-    this.log("Tolte " + r.length + " carte sotto " + this.top(s).n + ".", "y");
+    this.log("Trashed " + r.length + " card(s) from under " + this.top(s).n + ".", "y");
     this.ui.update();
   }
   async runMain(i: 0 | 1, code: string) {
@@ -209,34 +264,34 @@ export class Sim {
       o = (1 - i) as 0 | 1;
     switch (code) {
       case "ST1-13":
-        return this.plus(i, 3000, G.turn, "Shadow Wing: +3000 DP a");
+        return this.plus(i, 3000, G.turn, "Shadow Wing: +3000 DP to");
       case "ST1-14":
         this.P(i).secBuff.push({ dp: 7000, exp: G.turn + 1 });
-        this.log((i ? "I Digimon in Sicurezza dell'avversario" : "I tuoi Digimon in Sicurezza") + " hanno +7000 DP.", "y");
+        this.log((i ? "Opponent's Security Digimon" : "Your Security Digimon") + " get +7000 DP.", "y");
         return;
       case "ST1-15": {
         for (let k = 0; k < 2; k++) {
           const t = this.digis(o).filter((s) => this.dp(o, s) <= 4000);
-          const s = await this.choose(i, "Giga Destroyer: elimina (" + (k + 1) + " di 2)", t, this.best(o), true);
+          const s = await this.choose(i, "Giga Destroyer: delete (" + (k + 1) + " of 2)", t, this.best(o), true);
           if (!s) break;
           await this.kill(o, s);
         }
         return;
       }
       case "ST1-16": {
-        const s = await this.choose(i, "Gaia Force: elimina", this.digis(o), this.best(o));
+        const s = await this.choose(i, "Gaia Force: delete", this.digis(o), this.best(o));
         if (s) await this.kill(o, s);
         return;
       }
       case "ST2-13":
         await this.gain(i, 1);
-        this.log(i ? "Avversario guadagna 1 memoria." : "Guadagni 1 memoria.", "y");
+        this.log(i ? "Opponent gains 1 memory." : "You gain 1 memory.", "y");
         return;
       case "ST2-14": {
-        const s = await this.choose(i, "Sorrow Blue: non può attaccare né bloccare", this.digis(o).filter((x) => this.nsrc(x) === 0), this.best(o));
+        const s = await this.choose(i, "Sorrow Blue: can't attack or block", this.digis(o).filter((x) => this.nsrc(x) === 0), this.best(o));
         if (s) {
           s.noAB = G.turn + 1;
-          this.log(this.top(s).n + " non può attaccare né bloccare.", "y");
+          this.log(this.top(s).n + " can't attack or block.", "y");
           this.ui.update();
         }
         return;
@@ -247,25 +302,25 @@ export class Sim {
         if (!opts.length) return;
         let pick: { s: Stack; c: CardInst } | null;
         if (this.P(i).ai) pick = opts.sort((a, b) => this.D(b.c).lv - this.D(a.c).lv)[0];
-        else pick = await this.ui.ask("Kaiser Nail: gioca gratis", opts.map((x) => ({ label: this.D(x.c).n, sub: "da sotto " + this.top(x.s).n, v: x, code: x.c.c })));
+        else pick = await this.ui.ask("Kaiser Nail: play for free", opts.map((x) => ({ label: this.D(x.c).n, sub: "from under " + this.top(x.s).n, v: x, code: x.c.c })));
         if (!pick) return;
         pick.s.cards.splice(pick.s.cards.indexOf(pick.c), 1);
         const ns = this.stack([pick.c]);
         this.P(i).field.push(ns);
-        this.log((i ? "Avversario gioca " : "Giochi ") + this.D(pick.c).n + " gratis.", "y");
+        this.log((i ? "Opponent plays " : "You play ") + this.D(pick.c).n + " for free.", "y");
         this.ui.update();
         await this.fx({ k: "spawn", u: ns.u, how: "free" });
         return;
       }
       case "ST2-16": {
-        const s = await this.choose(i, "Cocytus Breath: torna in mano", this.digis(o), this.best(o));
+        const s = await this.choose(i, "Cocytus Breath: return to hand", this.digis(o), this.best(o));
         if (s) {
           await this.fx({ k: "bounce", u: s.u });
           this.P(o).field = this.P(o).field.filter((x) => x !== s);
           const t = s.cards.pop()!;
           this.P(o).trash.push(...s.cards);
           this.P(o).hand.push(t);
-          this.log(this.D(t).n + (o ? " torna in mano all'avversario." : " torna nella tua mano."), "a");
+          this.log(this.D(t).n + (o ? " returns to the opponent's hand." : " returns to your hand."), "a");
           this.ui.update();
         }
         return;
@@ -279,7 +334,7 @@ export class Sim {
     if (d.t === "Tamer") {
       const ns = this.stack([card]);
       this.P(i).field.push(ns);
-      this.log(d.n + " entra in gioco dalla Sicurezza.", "y");
+      this.log(d.n + " is played from Security.", "y");
       this.ui.update();
       await this.fx({ k: "spawn", u: ns.u, how: "sec" });
       return true;
@@ -288,21 +343,21 @@ export class Sim {
     switch (c) {
       case "ST1-13":
         this.P(i).sw = G.turn + 1;
-        this.log((i ? "I Digimon dell'avversario ottengono" : "I tuoi Digimon ottengono") + " Security A. +1.", "y");
+        this.log((i ? "Opponent's Digimon gain" : "Your Digimon gain") + " Security A. +1.", "y");
         break;
       case "ST1-14":
         this.P(i).secBuff.push({ dp: 7000, exp: G.turn });
-        this.log("Digimon in Sicurezza +7000 DP per il turno.", "y");
+        this.log("Security Digimon get +7000 DP for the turn.", "y");
         break;
       case "ST2-13":
         await this.gain(i, 2);
-        this.log(i ? "Avversario guadagna 2 memoria." : "Guadagni 2 memoria.", "y");
+        this.log(i ? "Opponent gains 2 memory." : "You gain 2 memory.", "y");
         break;
       case "ST2-14": {
-        const s = await this.choose(i, "Sorrow Blue: non può attaccare né bloccare", this.digis(1 - i).filter((x) => this.nsrc(x) === 0), this.best(1 - i));
+        const s = await this.choose(i, "Sorrow Blue: can't attack or block", this.digis(1 - i).filter((x) => this.nsrc(x) === 0), this.best(1 - i));
         if (s) {
           s.noAB = G.turn + 1;
-          this.log(this.top(s).n + " non può attaccare né bloccare.", "y");
+          this.log(this.top(s).n + " can't attack or block.", "y");
         }
         break;
       }
@@ -315,7 +370,7 @@ export class Sim {
     const c = this.topCode(s);
     if (c === "ST1-08") {
       await this.effect(i, c, this.top(s).e);
-      await this.plus(i, 3000, this.G.turn, "Garudamon: +3000 DP a");
+      await this.plus(i, 3000, this.G.turn, "Garudamon: +3000 DP to");
     }
     if (c === "ST2-09") {
       await this.effect(i, c, this.top(s).e);
@@ -329,7 +384,7 @@ export class Sim {
       c = p.eggs.shift()!;
     p.breed = this.stack([c]);
     p.breed.fresh = false;
-    this.log((i ? "Avversario schiude " : "Schiudi ") + this.D(c).n + ".");
+    this.log((i ? "Opponent hatches " : "You hatch ") + this.D(c).n + ".");
     this.ui.update();
     await this.fx({ k: "spawn", u: p.breed.u, how: "hatch" });
   }
@@ -338,7 +393,7 @@ export class Sim {
       s = p.breed!;
     p.field.push(s);
     p.breed = null;
-    this.log((i ? "Avversario sposta " : "Sposti ") + this.top(s).n + " in campo.");
+    this.log((i ? "Opponent moves " : "You move ") + this.top(s).n + " to the battle area.");
     this.ui.update();
     await this.fx({ k: "spawn", u: s.u, how: "move" });
   }
@@ -346,7 +401,7 @@ export class Sim {
     const p = this.P(i),
       d = this.D(card);
     p.hand = p.hand.filter((x) => x !== card);
-    this.log((i ? "Avversario gioca " : "Giochi ") + d.n + " (costo " + d.pc + ").");
+    this.log((i ? "Opponent plays " : "You play ") + d.n + " (cost " + d.pc + ").");
     if (d.t === "Option") {
       this.ui.update();
       await this.effect(i, card.c, d.e);
@@ -366,7 +421,7 @@ export class Sim {
     const p = this.P(i),
       d = this.D(card);
     p.hand = p.hand.filter((x) => x !== card);
-    this.log((i ? "Avversario digievolve " : "Digievolvi ") + this.top(s).n + " in " + d.n + " (costo " + d.ec + ").");
+    this.log((i ? "Opponent digivolves " : "You digivolve ") + this.top(s).n + " into " + d.n + " (cost " + d.ec + ").");
     s.cards.push(card);
     this.ui.update();
     await this.fx({ k: "spawn", u: s.u, how: "evo" });
@@ -383,12 +438,12 @@ export class Sim {
     const G = this.G,
       o = (1 - i) as 0 | 1;
     s.susp = true;
-    this.log(this.top(s).n + " attacca " + (target === "p" ? "il giocatore" : this.top(target).n) + ".", "k");
+    this.log(this.top(s).n + " attacks " + (target === "p" ? "the player" : this.top(target).n) + ".", "k");
     this.ui.update();
     if (/Lose 2 memory/.test(this.top(s).e)) {
       await this.effect(i, this.topCode(s), "[When Attacking] Lose 2 memory.");
       await this.pay(2);
-      this.log(i ? "Avversario perde 2 memoria." : "Perdi 2 memoria.");
+      this.log(i ? "Opponent loses 2 memory." : "You lose 2 memory.");
     }
     for (const c of this.srcCodes(s)) {
       if (c === "ST2-03") {
@@ -404,7 +459,7 @@ export class Sim {
       s.mg = G.turn;
       await this.effect(i, "ST2-11", this.top(s).e);
       s.susp = false;
-      this.log("MetalGarurumon si raddrizza.", "y");
+      this.log("MetalGarurumon unsuspends.", "y");
       this.ui.update();
     }
     if (!this.alive(i, s)) return;
@@ -417,23 +472,23 @@ export class Sim {
         b = bl.filter((x) => this.dp(o, x) >= a)[0] || (target === "p" && this.P(o).sec.length <= 1 ? bl[0] : null);
       } else {
         b = await this.ui.ask(
-          "Bloccare l'attacco?",
-          bl.map((x) => ({ label: "Blocca con " + this.top(x).n, sub: "DP " + this.dp(o, x), v: x, code: this.topCode(x) })),
-          "Non bloccare",
-          this.top(s).n + " (DP " + this.dp(i, s) + ") attacca " + (target === "p" ? "te" : this.top(target).n) + ".",
+          "Block the attack?",
+          bl.map((x) => ({ label: "Block with " + this.top(x).n, sub: "DP " + this.dp(o, x), v: x, code: this.topCode(x) })),
+          "Don't block",
+          this.top(s).n + " (DP " + this.dp(i, s) + ") attacks " + (target === "p" ? "you" : this.top(target).n) + ".",
         );
       }
     }
     if (b) {
       b.susp = true;
-      this.log(this.top(b).n + " blocca!", "k");
+      this.log(this.top(b).n + " blocks!", "k");
       this.ui.update();
       await this.fx({ k: "block", u: b.u });
       target = b;
       if (this.srcCodes(s).includes("ST1-09") && G.cur === i) {
         await this.effect(i, "ST1-09", this.DB["ST1-09"].i);
         await this.gain(i, 3);
-        this.log(i ? "Avversario guadagna 3 memoria (MetalGreymon)." : "Guadagni 3 memoria (MetalGreymon).", "y");
+        this.log(i ? "Opponent gains 3 memory (MetalGreymon)." : "You gain 3 memory (MetalGreymon).", "y");
       }
     }
     await this.fx({ k: "attack", from: s.u, to: target === "p" ? "sec" + o : target.u });
@@ -444,7 +499,7 @@ export class Sim {
     const o = (1 - i) as 0 | 1,
       x = this.dp(i, a, b),
       y = this.dp(o, b, a);
-    this.log("Battaglia: " + this.top(a).n + " " + x + " contro " + this.top(b).n + " " + y + ".");
+    this.log("Battle: " + this.top(a).n + " " + x + " vs " + this.top(b).n + " " + y + ".");
     await this.fx({ k: "clash", a: a.u, b: b.u, da: x, db: y });
     if (x >= y) await this.kill(o, b);
     if (y >= x) await this.kill(i, a);
@@ -454,29 +509,29 @@ export class Sim {
       d = this.P(o);
     if (!d.sec.length) {
       this.G.over = i;
-      this.log(i ? "L'avversario vince la partita." : "Hai vinto la partita!", "k");
+      this.log(i ? "The opponent wins the game." : "You win the game!", "k");
       this.ui.update();
       await this.fx({ k: "end", win: i });
       return;
     }
     const n = this.secA(i, s);
-    if (n > 1) this.log("Controlla " + n + " carte della Sicurezza.");
+    if (n > 1) this.log("Checks " + n + " Security cards.");
     for (let k = 0; k < n; k++) {
       if (!this.alive(i, s) || !d.sec.length) break;
       const c = d.sec.shift()!,
         cd = this.D(c);
-      this.log("Sicurezza: " + cd.n + ".", "k");
+      this.log("Security: " + cd.n + ".", "k");
       this.ui.update();
       if (cd.t === "Digimon") {
         const x = this.dp(i, s, { cards: [c] }),
           y = cd.dp + this.secBuff(o);
-        this.log("Battaglia: " + this.top(s).n + " " + x + " contro " + cd.n + " " + y + ".");
-        await this.fx({ k: "reveal", pi: o, atk: this.topCode(s), atkDp: x, sec: c.c, secDp: y, res: x > y ? "Controllo superato" : x === y ? "Pareggio: " + this.top(s).n + " viene eliminato" : this.top(s).n + " viene eliminato", lost: x <= y });
+        this.log("Battle: " + this.top(s).n + " " + x + " vs " + cd.n + " " + y + ".");
+        await this.fx({ k: "reveal", pi: o, atk: this.topCode(s), atkDp: x, sec: c.c, secDp: y, res: x > y ? "Check passed" : x === y ? "Tie: " + this.top(s).n + " is deleted" : this.top(s).n + " is deleted", lost: x <= y });
         d.trash.push(c);
         this.ui.update();
         if (x <= y) await this.kill(i, s);
       } else {
-        await this.fx({ k: "reveal", pi: o, atk: this.topCode(s), atkDp: this.dp(i, s), sec: c.c, secDp: null, res: cd.s ? "Effetto di Sicurezza" : "Nessun effetto", lost: false });
+        await this.fx({ k: "reveal", pi: o, atk: this.topCode(s), atkDp: this.dp(i, s), sec: c.c, secDp: null, res: cd.s ? "Security effect" : "No effect", lost: false });
         const kept = await this.runSec(o, c);
         if (!kept) d.trash.push(c);
         this.ui.update();
@@ -501,20 +556,20 @@ export class Sim {
       s.fresh = false;
     }
     G.phase = "breed";
-    this.log("— Turno " + G.turn + ": " + (i === 0 ? "tocca a te" : "tocca all'avversario") + " (memoria " + G.mem + ") —", "k");
+    this.log("— Turn " + G.turn + ": " + (i === 0 ? "your turn" : "opponent's turn") + " (memory " + G.mem + ") —", "k");
     this.ui.update();
-    await this.fx({ k: "banner", text: i === 0 ? "Il tuo turno" : "Turno avversario", op: i === 1 });
+    await this.fx({ k: "banner", text: i === 0 ? "Your turn" : "Opponent's turn", op: i === 1 });
     if (!this.ui.isLive(g)) return;
     if (ups.length) await this.fx({ k: "unsusp", u: ups.map((s) => s.u).join(",") });
     if (p.field.some((s) => this.topCode(s) === "ST2-12") && this.digis(1 - i).some((x) => this.nsrc(x) === 0)) {
       await this.effect(i, "ST2-12", this.DB["ST2-12"].e);
       await this.gain(i, 1);
-      this.log("Matt Ishida: +1 memoria.", "y");
+      this.log("Matt Ishida: +1 memory.", "y");
     }
     if (G.turn > 1) {
       if (!p.deck.length) {
         G.over = (1 - i) as 0 | 1;
-        this.log(i ? "L'avversario non può pescare e perde." : "Non puoi pescare: hai perso.", "k");
+        this.log(i ? "The opponent can't draw and loses." : "You can't draw: you lose.", "k");
         this.ui.update();
         await this.fx({ k: "end", win: G.over });
         return;
@@ -531,7 +586,7 @@ export class Sim {
     const G = this.G;
     if (G.over != null) return;
     const nm = pass ? 3 : -G.mem;
-    this.log(pass ? (G.cur ? "L'avversario passa il turno." : "Passi il turno.") : "La memoria passa all'avversario: fine turno.");
+    this.log(pass ? (G.cur ? "The opponent passes." : "You pass.") : "Memory moves to the opponent's side: turn ends.");
     if (pass) {
       const from = G.mem;
       G.mem = -3;
@@ -553,7 +608,7 @@ export class Sim {
   async toMain() {
     this.G.phase = "main";
     this.ui.update();
-    await this.fx({ k: "phase", text: "Fase principale" });
+    await this.fx({ k: "phase", text: "Main phase" });
   }
 
   // ---- IA ----
