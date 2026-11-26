@@ -7,15 +7,17 @@ name: Prova su emulatore
 # (tools/rn_news.py): l'APK ha i dati di prima degli spoiler del 3 novembre 2026, così all'apertura scarica quelli del sito.
 # Con "home" fotografa la Home (tools/rn_home.py: temi chiaro e scuro, collezione vuota e piena, senza rete, larghezze
 # 320/360/430 dp, testo ingrandito e collegamenti principali; di solito solo la prova rapida, tutto con "completa").
+# Con "sim" (o inviando sul ramo simulatore) prova il simulatore (tools/rn_sim.py: turni giocati, animazioni, orizzontale).
 on:
   push:
-    branches: [rn-tag, rn-scan, rn-novita]
-    paths: ["rn/**", "tools/rn_shots*", "tools/rn_gestures.py", "tools/rn_mazzo.py", "tools/rn_news.py", "tools/rn_home.py", ".github/workflows/prova-emulatore.yml"]
+    branches: [rn-tag, rn-scan, rn-novita, simulatore]
+    paths: ["rn/**", "tools/rn_shots*", "tools/rn_gestures.py", "tools/rn_mazzo.py", "tools/rn_news.py", "tools/rn_home.py", "tools/rn_sim.py", ".github/workflows/prova-emulatore.yml"]
   workflow_dispatch:
     inputs:
       scansione: { description: "Prova della scansione senza rete al posto delle foto delle carte", type: boolean, default: false }
       novita: { description: "Prova del riquadro Carte nuove (APK con dati vecchi)", type: boolean, default: false }
       home: { description: "Foto della Home al posto delle foto delle carte (rapida: tema scuro, pagina intera, banner)", type: boolean, default: false }
+      sim: { description: "Prova del simulatore (tools/rn_sim.py)", type: boolean, default: false }
       completa: { description: "Con home: prova completa (senza rete, collezione vuota, tema chiaro, collegamenti, larghezze)", type: boolean, default: false }
 permissions:
   contents: write
@@ -124,7 +126,7 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot-save
           disable-animations: true
-          script: adb install -r prova.apk && if [ "${{ inputs.home }}" = "true" ]; then HOME_COMPLETA=${{ inputs.completa && '1' || '0' }} python3 tools/rn_home.py foto; elif [ "${{ inputs.novita || github.ref_name == 'rn-novita' }}" = "true" ]; then python3 tools/rn_news.py foto; elif [ "${{ inputs.scansione || github.ref_name == 'rn-scan' }}" = "true" ]; then python3 tools/rn_scan.py foto; else python3 tools/rn_shots.py foto "$(cat tools/rn_shots.txt)" && python3 tools/rn_gestures.py foto; python3 tools/rn_mazzo.py foto; fi
+          script: adb install -r prova.apk && if [ "${{ inputs.sim || github.ref_name == 'simulatore' }}" = "true" ]; then python3 tools/rn_sim.py foto; elif [ "${{ inputs.home }}" = "true" ]; then HOME_COMPLETA=${{ inputs.completa && '1' || '0' }} python3 tools/rn_home.py foto; elif [ "${{ inputs.novita || github.ref_name == 'rn-novita' }}" = "true" ]; then python3 tools/rn_news.py foto; elif [ "${{ inputs.scansione || github.ref_name == 'rn-scan' }}" = "true" ]; then python3 tools/rn_scan.py foto; else python3 tools/rn_shots.py foto "$(cat tools/rn_shots.txt)" && python3 tools/rn_gestures.py foto; python3 tools/rn_mazzo.py foto; fi
       - name: Foto nel ramo rn-shots
         if: always()
         run: |

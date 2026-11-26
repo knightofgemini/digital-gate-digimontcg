@@ -43,6 +43,7 @@ function Root() {
         <Stack.Screen name="offline" />
         <Stack.Screen name="info" />
         <Stack.Screen name="tagli" />
+        <Stack.Screen name="simulatore" options={{ animation: "fade", contentStyle: { backgroundColor: "#0a0f24", paddingBottom: 0 } }} />
       </Stack>
       <TabBar />
       <MoreSheet />

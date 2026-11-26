@@ -353,6 +353,22 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   data arancione se il giorno è esatto o azzurra se solo il mese, conto alla rovescia di `upBadge`, carte svelate)
   **dentro la linea del tempo per mese di prima** (linea a sinistra, punto e titolo del mese; scartate le tessere su due
   colonne). `tools/rn_home.py` fotografa anche In arrivo a pagina intera (`h18_inarrivo_intera`).
+- **Simulatore (26 novembre 2026, ramo `simulatore`, richiesta dell'utente; non ancora in `main`)**: partita contro il
+  telefono con i mazzi base ST1 Gaia Red e ST2 Cocytus Blue (liste indicative), voce "Simulatore (prova)" nel menu Altro,
+  schermata `rn/src/app/simulatore.tsx` (`digitalgate://simulatore`, senza barra in basso). Motore senza import in
+  `rn/src/sim/engine.ts` (regole principali e tutti gli effetti delle 32 carte; la schermata passa le carte del catalogo
+  con `toDef` e un'interfaccia `SimUI` per domande e animazioni), prove con
+  `node --experimental-strip-types --test scripts/sim.test.mjs` (100 partite computer contro computer). Animazioni in
+  `rn/src/sim/fx.tsx` (valori animati per carta `av`, posizioni misurate da `REFS`, livello `FxLayer` con scintille,
+  anelli, numeri, scudo, graffi): carta giocata che cala con lampo, digievoluzione con lampo dorato, schiusa, pesca,
+  attacco con slancio e colpo, blocco, battaglia con i DP, eliminazione, ritorno in mano, controllo della Sicurezza con
+  la carta che si gira, effetti in un riquadro a destra ("Risoluzione dell'effetto"), memoria che scorre, fasce di
+  turno, vittoria/sconfitta. Tavolo verticale sul modello di Aegis (aegis-digi.online) e orizzontale sul modello di
+  Digimon Alysion (fascia della memoria a monete, pulsante rotondo del turno, Sicurezza come fila di carte coperte),
+  colori di Digital Gate. Solo questa schermata può girare: `expo-screen-orientation` (aggiunto con `npm install`
+  `~58.0.4`), Menu → Disposizione (segue il telefono / orizzontale / verticale, `sim-layout`), uscendo torna verticale.
+  Prova su emulatore: `prova-emulatore.yml` con "sim" o inviando sul ramo `simulatore` (`tools/rn_sim.py`). Prima
+  versione per il browser (claude.ai): https://claude.ai/artifact/5PszTp5nTXKgMwvaQ2zaxN
 - **Prove più veloci (7 novembre 2026)**: in `apk.yml` e `prova-emulatore.yml` si conservano tra una build e l'altra i
   file di Gradle, i suoi risultati riutilizzabili (`org.gradle.caching=true`) e le parti in C++ (ccache, finora poche
   riuse); emulatore salvato dopo il primo avvio (cache `avd-…`). APK di prova da 18 a 11 minuti. `prova-emulatore.yml`

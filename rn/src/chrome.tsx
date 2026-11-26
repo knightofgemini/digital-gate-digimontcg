@@ -115,6 +115,15 @@ export function MoreSheet() {
             ) : null
           }
         />
+        <Row
+          icon={
+            <Svg width={20} height={20} viewBox="0 0 24 24">
+              <Path d="M4 6.5 9.5 4l3 12.5L7 19z M14 4.5h5.5a1 1 0 0 1 1 1V19a1 1 0 0 1-1 1H14" stroke={t.ink2} strokeWidth={2} strokeLinejoin="round" fill="none" />
+            </Svg>
+          }
+          label="Simulatore (prova)"
+          onPress={() => go("/simulatore")}
+        />
         <Row icon={<Icon name="info" color={t.ink2} size={20} />} label="Informazioni" onPress={() => go("/info")} />
         {hasKey() ? (
           <Row
@@ -297,7 +306,7 @@ const TABS: [TabId, string, string, string][] = [
 ];
 const TABROOTS = TABS.map((x) => x[3]);
 // Pagine senza barra in basso: scheda carta e scansione (a tutto schermo)
-const NOBAR = /^\/(carta|scansiona)/;
+const NOBAR = /^\/(carta|scansiona|simulatore)/;
 
 // pagina da cui si arriva cambiando scheda: passando da Prodotti a Carte o Collezione ricerca e filtri si azzerano
 // (come nell'app attuale)
