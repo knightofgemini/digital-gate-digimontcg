@@ -367,7 +367,9 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   Digimon Alysion (fascia della memoria a monete, pulsante rotondo del turno, Sicurezza come fila di carte coperte),
   colori di Digital Gate. Solo questa schermata può girare: `expo-screen-orientation` (aggiunto con `npm install`
   `~58.0.4`), Menu → Disposizione (segue il telefono / orizzontale / verticale, `sim-layout`), uscendo torna verticale.
-  Prova su emulatore: `prova-emulatore.yml` con "sim" o inviando sul ramo `simulatore` (`tools/rn_sim.py`). Prima
+  Menu → "Guarda una partita" (`?demo=1`): il telefono gioca da solo con tutti e due i mazzi. Prova su emulatore:
+  `prova-emulatore.yml` con "sim" o inviando sul ramo `simulatore` (`tools/rn_sim.py`: le animazioni continue bloccano
+  uiautomator, quindi solo foto della partita dimostrativa e tocchi a coordinate fisse). Prima
   versione per il browser (claude.ai): https://claude.ai/artifact/5PszTp5nTXKgMwvaQ2zaxN
 - **Prove più veloci (7 novembre 2026)**: in `apk.yml` e `prova-emulatore.yml` si conservano tra una build e l'altra i
   file di Gradle, i suoi risultati riutilizzabili (`org.gradle.caching=true`) e le parti in C++ (ccache, finora poche

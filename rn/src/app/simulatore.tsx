@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, Platform, Pressable, ScrollView, useWindowDimensions, View } from "react-native";
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -382,6 +382,9 @@ type Q = { title: string; opts: Opt<any>[]; cancel?: string; body?: string; res:
 type Sheet = { code: string; src?: string[]; acts: { label: string; sub?: string; pri?: boolean; go: () => Promise<void> }[]; who: string };
 
 export default function Simulatore() {
+  // ?demo=1: il telefono gioca da solo con tutti e due i mazzi (Menu → Guarda una partita; usato anche dalla prova su emulatore)
+  const params = useLocalSearchParams<{ demo?: string }>();
+  const demo = useRef(params.demo === "1");
   useData();
   const { width: W, height: H } = useWindowDimensions();
   const ins = useSafeAreaInsets();
@@ -576,6 +579,12 @@ export default function Simulatore() {
       case "end":
         for (let k = 0; k < 3; k++) FX.burst(W / 2 + (k - 1) * 90, H * 0.4, e.win === 0 ? C.gold : "#7f95e6", true);
         await W8(500);
+        if (demo.current) {
+          // partita dimostrativa: dopo la fine ne parte un'altra
+          const g = sim.G;
+          setTimeout(() => alive.current && sim.G === g && newGame(), 3500);
+          return;
+        }
         setEnd(e.win === 0);
         return;
     }
@@ -589,6 +598,7 @@ export default function Simulatore() {
     setQ(null);
     setSheet(null);
     const G = sim.newGame(key);
+    G.P[0].ai = demo.current;
     G.busy = true;
     update();
     await sim.startTurn();
@@ -1037,9 +1047,20 @@ export default function Simulatore() {
           <View style={{ gap: 6, marginTop: 12 }}>
             <ActBtn
               label="Nuova partita"
+              sub="Giochi tu contro il telefono"
               pri
               onPress={() => {
                 setMenu(false);
+                demo.current = false;
+                newGame(deck);
+              }}
+            />
+            <ActBtn
+              label="Guarda una partita"
+              sub="Il telefono gioca da solo con tutti e due i mazzi"
+              onPress={() => {
+                setMenu(false);
+                demo.current = true;
                 newGame(deck);
               }}
             />
