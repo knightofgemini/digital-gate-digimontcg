@@ -44,14 +44,13 @@ def start(url):
     time.sleep(1)
     adb("shell", "monkey", "-p", PKG, "-c", "android.intent.category.LAUNCHER", "1")
     time.sleep(12)
-    # richiesta del permesso delle notifiche: "Non consentire" a coordinate (finestra di sistema al centro in basso)
     shot("avvio")
-    adb("shell", "input", "keyevent", "4")
-    time.sleep(1)
     adb("shell", "am", "start", "-W", "-a", "android.intent.action.VIEW", "-d", "'" + url + "'", PKG)
     time.sleep(2)
 
 
+# permesso delle notifiche già dato: la sua finestra coprirebbe il tavolo e metterebbe l'app in pausa
+adb("shell", "pm", "grant", PKG, "android.permission.POST_NOTIFICATIONS")
 for k in ("animator_duration_scale", "transition_animation_scale", "window_animation_scale"):
     adb("shell", "settings", "put", "global", k, "1")
 adb("shell", "settings", "put", "system", "accelerometer_rotation", "0")
