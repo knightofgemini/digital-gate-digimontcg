@@ -383,7 +383,7 @@ type Sheet = { code: string; src?: string[]; acts: { label: string; sub?: string
 
 export default function Simulatore() {
   // ?demo=1: il telefono gioca da solo con tutti e due i mazzi (Menu → Guarda una partita; usato anche dalla prova su emulatore)
-  const params = useLocalSearchParams<{ demo?: string }>();
+  const params = useLocalSearchParams<{ demo?: string; l?: string }>();
   const demo = useRef(params.demo === "1");
   useData();
   const { width: W, height: H } = useWindowDimensions();
@@ -611,8 +611,10 @@ export default function Simulatore() {
     let ok = true;
     (async () => {
       try {
-        const [l, d, s] = await Promise.all([AsyncStorage.getItem("sim-layout"), AsyncStorage.getItem("sim-deck"), AsyncStorage.getItem("sim-speed")]);
+        let [l, d, s] = await Promise.all([AsyncStorage.getItem("sim-layout"), AsyncStorage.getItem("sim-deck"), AsyncStorage.getItem("sim-speed")]);
         if (!ok) return;
+        // ?l=h / ?l=v: disposizione scelta dal collegamento (prova su emulatore)
+        if (params.l === "h" || params.l === "v") l = params.l;
         if (l === "h" || l === "v") setLayout(l);
         if (d && DECKS[d]) setDeck(d);
         if (s) setSpeed((SPEED = parseFloat(s) || 1));
@@ -630,7 +632,9 @@ export default function Simulatore() {
   }, []);
   function applyLayout(l: "auto" | "h" | "v") {
     const O = ScreenOrientation.OrientationLock;
-    (l === "h" ? ScreenOrientation.lockAsync(O.LANDSCAPE) : l === "v" ? ScreenOrientation.lockAsync(O.PORTRAIT_UP) : ScreenOrientation.unlockAsync()).catch(() => {});
+    // "segue il telefono" = SCREEN_ORIENTATION_FULL_USER (13): gira col telefono ma rispetta il blocco della rotazione
+    // (unlockAsync tornerebbe al verticale fisso di app.json)
+    (l === "h" ? ScreenOrientation.lockAsync(O.LANDSCAPE) : l === "v" ? ScreenOrientation.lockAsync(O.PORTRAIT_UP) : Platform.OS === "android" ? ScreenOrientation.lockPlatformAsync({ screenOrientationConstantAndroid: 13 }) : ScreenOrientation.lockAsync(O.ALL)).catch(() => {});
   }
 
   const G = sim.G;

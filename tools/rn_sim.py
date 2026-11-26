@@ -57,20 +57,18 @@ adb("shell", "settings", "put", "system", "accelerometer_rotation", "0")
 adb("shell", "settings", "put", "system", "user_rotation", "0")
 
 # 1) partita dimostrativa
-start("digitalgate://simulatore?demo=1")
-t0 = time.time()
-while time.time() - t0 < 130:
-    shot("demo_v")
-adb("shell", "settings", "put", "system", "user_rotation", "1")
-time.sleep(2)
+start("digitalgate://simulatore?demo=1&l=v")
 t0 = time.time()
 while time.time() - t0 < 110:
+    shot("demo_v")
+# orizzontale scelto dal collegamento (?l=h: come Menu → Disposizione → Orizzontale)
+start("digitalgate://simulatore?demo=1&l=h")
+t0 = time.time()
+while time.time() - t0 < 130:
     shot("demo_h")
-adb("shell", "settings", "put", "system", "user_rotation", "0")
-time.sleep(2)
 
 # 2) partita normale
-start("digitalgate://simulatore")
+start("digitalgate://simulatore?l=v")
 time.sleep(10)
 shot("normale")
 for i in range(8):  # aspetta il proprio turno (l'avversario può iniziare)
@@ -82,8 +80,8 @@ tap(0.5, 0.08)  # tocco sul fondo scuro: chiude
 tap(0.91, 0.082)  # Menu
 shot("menu")
 tap(0.5, 0.06)
-adb("shell", "settings", "put", "system", "user_rotation", "1")
-time.sleep(3)
+start("digitalgate://simulatore?l=h")
+time.sleep(20)
 shot("normale_orizzontale")
 tap(0.85, 0.9)  # carta della mano in basso a destra
 shot("scheda_orizzontale")
