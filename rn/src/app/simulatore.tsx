@@ -55,7 +55,9 @@ function Face({ code, w, h, big }: { code: string; w: number; h: number; big?: b
           <Text numberOfLines={3} style={{ color: C.ink, fontWeight: "600", fontSize: Math.max(7, w * 0.14), lineHeight: Math.max(8, w * 0.17), padding: 3 }}>{c.name}</Text>
         </View>
       ) : null}
-      {c ? <Image source={big ? fullUrl(c) : thumbUrl(c)} style={{ width: w, height: h }} contentFit="cover" cachePolicy="disk" recyclingKey={code} transition={120} /> : null}
+      {c ? <Image source={thumbUrl(c)} style={{ width: w, height: h }} contentFit="cover" cachePolicy="disk" recyclingKey={code} transition={120} /> : null}
+      {/* grande: sopra la miniatura (già salvata), così non resta mai vuota mentre l'immagine grande arriva */}
+      {c && big ? <Image source={fullUrl(c)} style={{ position: "absolute", left: 0, top: 0, width: w, height: h }} contentFit="cover" cachePolicy="disk" recyclingKey={code + "f"} transition={150} /> : null}
     </View>
   );
 }
