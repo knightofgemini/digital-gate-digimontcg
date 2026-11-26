@@ -4,7 +4,7 @@
 // rotondo del turno, Sicurezza come fila di carte coperte), con i colori di Digital Gate e le immagini delle carte
 // dell'app. Questa schermata può girare in orizzontale (expo-screen-orientation); uscendo torna verticale.
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Easing, Platform, Pressable, ScrollView, useWindowDimensions, View } from "react-native";
+import { Animated, Easing, PanResponder, Platform, Pressable, ScrollView, useWindowDimensions, View } from "react-native";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -16,7 +16,7 @@ import { DISPLAY, Text } from "../Text";
 import { BYCODE, Card, fullUrl, thumbUrl, useData } from "../data";
 import { Rich } from "../rich";
 import { CardInst, DECKS, Def, Fx, Game, Opt, SIM_CODES, Sim, SimUI, Stack, toDef } from "../sim/engine";
-import { av, FX, FxLayer, measure, PULSE, REFS, resetAV, ROOT, run, sp, tm, wait } from "../sim/fx";
+import { av, Box, FX, FxLayer, measure, PULSE, REFS, resetAV, ROOT, run, sp, tm, wait } from "../sim/fx";
 
 const C = {
   bg: "#0a0f24",
@@ -77,7 +77,28 @@ function Back({ w, h, red }: { w: number; h: number; red?: boolean }) {
   );
 }
 
-type Ctx = { sim: Sim; G: Game; cw: number; ch: number; tap: (k: string) => void; canS: (s: Stack) => boolean };
+// trascinamento (26 novembre 2026, richiesta dell'utente): carta della mano su un proprio Digimon = digievolvi, sul
+// campo = gioca/usa; Digimon in campo su un Digimon avversario sospeso = attacca, sulla Sicurezza o sul campo avversario
+// = attacca il giocatore. Il tocco resta per la scheda della carta.
+type DragView = { src: string; code: string; w: number; h: number; keys: string[]; hover: string | null; label: string | null };
+type DragFns = { begin: (kind: "hand" | "stack", u: string, gx: number, gy: number) => boolean; move: (gx: number, gy: number) => void; end: (cancel: boolean) => void };
+type Ctx = { sim: Sim; G: Game; cw: number; ch: number; tap: (k: string) => void; canS: (s: Stack) => boolean; drag: DragView | null; dfn: DragFns };
+function useDragPan(kind: "hand" | "stack", u: string, dfn: DragFns) {
+  const r = useRef({ kind, u, dfn });
+  r.current = { kind, u, dfn };
+  return useMemo(() => {
+    const want = (g: { dx: number; dy: number; x0: number; y0: number }) => (Math.abs(g.dy) > 10 || Math.abs(g.dx) > 14 ? r.current.dfn.begin(r.current.kind, r.current.u, g.x0, g.y0) : false);
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_e, g) => want(g),
+      onMoveShouldSetPanResponderCapture: (_e, g) => want(g),
+      onPanResponderMove: (_e, g) => r.current.dfn.move(g.moveX, g.moveY),
+      onPanResponderRelease: () => r.current.dfn.end(false),
+      onPanResponderTerminate: () => r.current.dfn.end(true),
+      onPanResponderTerminationRequest: () => false,
+    });
+  }, []);
+}
 
 function StackView({ s, owner, x, sz }: { s: Stack; owner: 0 | 1; x: Ctx; sz?: [number, number] }) {
   const { sim } = x;
@@ -95,7 +116,12 @@ function StackView({ s, owner, x, sz }: { s: Stack; owner: 0 | 1; x: Ctx; sz?: [
   const can = x.canS(s);
   const sa = d.t === "Digimon" ? sim.secA(owner, s) - 1 : 0;
   const rot = Animated.add(Animated.multiply(sr, 90), a.rot).interpolate({ inputRange: [-720, 720], outputRange: ["-720deg", "720deg"] });
+  const pan = useDragPan("stack", s.u, x.dfn);
+  const hi = !!x.drag && x.drag.keys.includes(s.u);
+  const hov = !!x.drag && x.drag.hover === s.u;
+  const src = !!x.drag && x.drag.src === s.u;
   return (
+    <View {...pan.panHandlers} style={{ opacity: src ? 0.35 : 1, transform: [{ scale: hov ? 1.08 : 1 }] }}>
     <Pressable onPress={() => x.tap(s.u)} style={{ width: cw + 10, height: ch + 18, alignItems: "center", justifyContent: "center" }}>
       {n ? (
         <View style={{ position: "absolute", top: 0, left: 2, zIndex: 3, flexDirection: "row", alignItems: "center", backgroundColor: C.pink, borderRadius: 8, paddingHorizontal: 5 }}>
@@ -116,7 +142,8 @@ function StackView({ s, owner, x, sz }: { s: Stack; owner: 0 | 1; x: Ctx; sz?: [
       >
         {/* carte sotto, appena sporgenti */}
         {n ? <View style={{ position: "absolute", left: 3, top: 4, width: cw, height: ch, borderRadius: 5, backgroundColor: "#0b0f22", borderWidth: 1, borderColor: "#ffffff33" }} /> : null}
-        {can ? <Animated.View style={{ position: "absolute", left: -4, top: -4, right: -4, bottom: -4, borderRadius: 8, borderWidth: 2.5, borderColor: C.acc, opacity: PULSE.interpolate({ inputRange: [0, 1], outputRange: [0.45, 1] }) }} /> : null}
+        {can && !x.drag ? <Animated.View style={{ position: "absolute", left: -4, top: -4, right: -4, bottom: -4, borderRadius: 8, borderWidth: 2.5, borderColor: C.acc, opacity: PULSE.interpolate({ inputRange: [0, 1], outputRange: [0.45, 1] }) }} /> : null}
+        {hi ? <Animated.View style={{ position: "absolute", left: -5, top: -5, right: -5, bottom: -5, borderRadius: 9, borderWidth: hov ? 4 : 2.5, borderColor: hov ? "#fff" : C.gold, opacity: hov ? 1 : PULSE.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }} /> : null}
         <Face code={code} w={cw} h={ch} />
         <Animated.View pointerEvents="none" style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, borderRadius: 5, backgroundColor: "#fff", opacity: a.flash }} />
         <Animated.View pointerEvents="none" style={{ position: "absolute", left: -6, top: -6, right: -6, bottom: -6, borderRadius: 10, borderWidth: 3, borderColor: C.gold, opacity: a.glow }} />
@@ -133,6 +160,7 @@ function StackView({ s, owner, x, sz }: { s: Stack; owner: 0 | 1; x: Ctx; sz?: [
         </View>
       ) : null}
     </Pressable>
+    </View>
   );
 }
 const Ico = ({ bg, ring, t }: { bg: string; ring: string; t: string }) => (
@@ -141,10 +169,13 @@ const Ico = ({ bg, ring, t }: { bg: string; ring: string; t: string }) => (
   </View>
 );
 
-function HandCard({ c, i, n, w, h, can, onPress, mx }: { c: CardInst; i: number; n: number; w: number; h: number; can: boolean; onPress: () => void; mx: number }) {
+function HandCard({ c, i, n, w, h, can, onPress, mx, x }: { c: CardInst; i: number; n: number; w: number; h: number; can: boolean; onPress: () => void; mx: number; x: Ctx }) {
   const a = av(c.u);
   const off = i - (n - 1) / 2;
+  const pan = useDragPan("hand", c.u, x.dfn);
+  const src = !!x.drag && x.drag.src === c.u;
   return (
+    <View {...pan.panHandlers} style={{ opacity: src ? 0.3 : 1 }}>
     <Pressable onPress={onPress} style={{ width: w, height: h + 10, marginHorizontal: mx }}>
       <Animated.View
         ref={(r: any) => {
@@ -158,6 +189,7 @@ function HandCard({ c, i, n, w, h, can, onPress, mx }: { c: CardInst; i: number;
         <Animated.View pointerEvents="none" style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, borderRadius: 5, backgroundColor: "#fff", opacity: a.flash }} />
       </Animated.View>
     </Pressable>
+    </View>
   );
 }
 
@@ -193,14 +225,16 @@ function Pile({ label, n, kind, top, w, h, onPress, rk, noN }: { label: string; 
     </Pressable>
   );
 }
-function Security({ n, i, w, row }: { n: number; i: 0 | 1; w: number; row?: boolean }) {
+function Security({ n, i, w, row, x }: { n: number; i: 0 | 1; w: number; row?: boolean; x?: Ctx }) {
+  const hov = !!(x && x.drag && x.drag.hover === "sec" + i);
+  const hi = !!(x && x.drag && x.drag.keys.includes("sec" + i));
   return (
     <View
       ref={(r: any) => {
         REFS.set("sec" + i, r);
       }}
       collapsable={false}
-      style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+      style={{ flexDirection: "row", alignItems: "center", gap: 6, padding: 3, borderRadius: 12, borderWidth: hi ? 2 : 0, borderColor: hov ? "#fff" : C.gold, backgroundColor: hov ? "#ff5a4f33" : "transparent", transform: [{ scale: hov ? 1.1 : 1 }] }}
     >
       <View style={{ width: 40, height: 46, alignItems: "center", justifyContent: "center" }}>
         <Svg width={40} height={46} viewBox="0 0 40 46" style={{ position: "absolute" }}>
@@ -405,6 +439,9 @@ export default function Simulatore() {
   const [deck, setDeck] = useState("red");
   const [speed, setSpeed] = useState(1);
   const alive = useRef(true);
+  const [drag, setDrag] = useState<DragView | null>(null);
+  const dragSt = useRef<{ tgts: { k: string; label: string; go: () => Promise<void>; box?: Box | null }[]; hover: number; rx: number; ry: number; w: number; h: number } | null>(null);
+  const DXY = useRef(new Animated.ValueXY()).current;
   const nid = useRef(0);
 
   const DB = useMemo(() => {
@@ -666,7 +703,66 @@ export default function Simulatore() {
     ch: 0,
     canS: (s) => myMain && sim.canAtk(0, s),
     tap: (u) => tapStack(u),
+    drag,
+    dfn: { begin: dragBegin, move: dragMove, end: dragEnd },
   };
+
+  // ---- trascinamento ----
+  type Tgt = { k: string; label: string; go: () => Promise<void>; box?: Box | null };
+  function dragBegin(kind: "hand" | "stack", u: string, gx: number, gy: number) {
+    if (!myMain || dragSt.current) return false;
+    let code = "",
+      tg: Tgt[] = [];
+    if (kind === "hand") {
+      const c = me.hand.find((z) => z.u === u);
+      if (!c) return false;
+      const d = sim.DB[c.c];
+      code = c.c;
+      for (const s of sim.evoTargets(0, c)) if (sim.canPay(d.ec || 0)) tg.push({ k: s.u, label: "Digievolvi " + sim.top(s).n, go: () => sim.evo(0, c, s) });
+      if (sim.canUse(0, c)) tg.push({ k: "zone0", label: d.t === "Option" ? "Usa " + d.n : "Gioca " + d.n, go: () => sim.play(0, c) });
+    } else {
+      const s = me.field.find((z) => z.u === u);
+      if (!s || !sim.canAtk(0, s)) return false;
+      code = sim.topCode(s);
+      for (const t of sim.digis(1).filter((z) => z.susp)) tg.push({ k: t.u, label: "Attacca " + sim.top(t).n, go: () => sim.attack(0, s, t) });
+      tg.push({ k: "sec1", label: "Attacca il giocatore", go: () => sim.attack(0, s, "p") });
+      tg.push({ k: "zone1", label: "Attacca il giocatore", go: () => sim.attack(0, s, "p") });
+    }
+    if (!tg.length) return false;
+    const w = Math.round(Math.max(cw, 56) * 1.15),
+      h = Math.round(w * 1.396);
+    const st = { tgts: tg, hover: -1, rx: 0, ry: 0, w, h };
+    dragSt.current = st;
+    DXY.setValue({ x: gx - w / 2, y: gy - h * 0.85 });
+    ROOT.v?.measureInWindow((rx: number, ry: number) => {
+      st.rx = rx;
+      st.ry = ry;
+    });
+    tg.forEach((t) => measure(t.k).then((b) => (t.box = b)));
+    setDrag({ src: u, code, w, h, keys: tg.map((t) => t.k), hover: null, label: null });
+    return true;
+  }
+  function dragMove(gx: number, gy: number) {
+    const st = dragSt.current;
+    if (!st) return;
+    const px = gx - st.rx,
+      py = gy - st.ry;
+    DXY.setValue({ x: px - st.w / 2, y: py - st.h * 0.85 });
+    // prima i Digimon (più piccoli), poi Sicurezza e campo
+    const i = st.tgts.findIndex((t) => t.box && px >= t.box.x - 8 && px <= t.box.x + t.box.w + 8 && py >= t.box.y - 8 && py <= t.box.y + t.box.h + 8);
+    if (i !== st.hover) {
+      st.hover = i;
+      const t = i >= 0 ? st.tgts[i] : null;
+      setDrag((d) => d && { ...d, hover: t ? t.k : null, label: t ? t.label : null });
+    }
+  }
+  function dragEnd(cancel: boolean) {
+    const st = dragSt.current;
+    dragSt.current = null;
+    const t = !cancel && st && st.hover >= 0 ? st.tgts[st.hover] : null;
+    setDrag(null);
+    if (t) act(t.go);
+  }
 
   function tapStack(u: string) {
     if (G.busy && !(G.cur === 1)) return;
@@ -795,7 +891,7 @@ export default function Simulatore() {
       style={{ flexDirection: "row", justifyContent: "center", alignItems: "flex-end", paddingHorizontal: -handMx }}
     >
       {me.hand.map((c, i) => (
-        <HandCard key={c.u} c={c} i={i} n={me.hand.length} w={hw} h={hh} mx={handMx} can={canHand(c)} onPress={() => tapHand(c)} />
+        <HandCard key={c.u} c={c} i={i} n={me.hand.length} w={hw} h={hh} mx={handMx} x={x} can={canHand(c)} onPress={() => tapHand(c)} />
       ))}
     </View>
   );
@@ -853,9 +949,9 @@ export default function Simulatore() {
                     </View>
                   </View>
                 </View>
-                <Zone fill>{battle(1, true)}</Zone>
+                <Zone fill rk="zone1" x={x}>{battle(1, true)}</Zone>
                 <View style={{ width: side, justifyContent: "space-between", alignItems: "flex-end" }}>
-                  <Security n={op.sec.length} i={1} w={Math.round(pw * 0.62)} row />
+                  <Security n={op.sec.length} i={1} w={Math.round(pw * 0.62)} row x={x} />
                   <View style={{ flexDirection: "row", gap: 8, alignItems: "flex-end" }}>
                     {breed(1)}
                     {eggs(1)}
@@ -882,7 +978,7 @@ export default function Simulatore() {
                     {piles(0)}
                   </View>
                 </View>
-                <Zone fill>{battle(0, true)}</Zone>
+                <Zone fill rk="zone0" x={x}>{battle(0, true)}</Zone>
                 <View style={{ width: W * 0.3, justifyContent: "flex-end", alignItems: "center", overflow: "visible" }}>{hand}</View>
               </View>
             </View>
@@ -890,13 +986,13 @@ export default function Simulatore() {
             <View style={{ flex: 1, paddingHorizontal: 8, paddingTop: 4 }}>
               {top}
               <View style={{ height: 6 }} />
-              <Zone opp>
+              <Zone opp rk="zone1" x={x}>
                 <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8 }}>
                   {piles(1)}
                   <View style={{ flex: 1, alignItems: "center" }}>{oppHand}</View>
                   {breed(1)}
                   {eggs(1)}
-                  <Security n={op.sec.length} i={1} w={0} />
+                  <Security n={op.sec.length} i={1} w={0} x={x} />
                 </View>
                 <View style={{ height: ch + 22, marginTop: 4 }}>{battle(1)}</View>
               </Zone>
@@ -910,7 +1006,7 @@ export default function Simulatore() {
                 </View>
                 <MemBar v={vMem} width={W - 16 - ins.left - ins.right} />
               </View>
-              <Zone>
+              <Zone rk="zone0" x={x}>
                 <View style={{ height: ch + 22 }}>{battle(0)}</View>
                 <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8, marginTop: 4 }}>
                   <Security n={me.sec.length} i={0} w={0} />
@@ -924,6 +1020,21 @@ export default function Simulatore() {
             </View>
           )}
           <FxLayer />
+          {drag ? (
+            <Animated.View pointerEvents="none" style={{ position: "absolute", left: 0, top: 0, alignItems: "center", transform: DXY.getTranslateTransform() }}>
+              <View style={{ transform: [{ rotate: "-5deg" }], shadowColor: "#000", shadowOpacity: 0.6, shadowRadius: 12, elevation: 14, borderRadius: 8, borderWidth: 2, borderColor: drag.hover ? "#fff" : C.acc }}>
+                <Face code={drag.code} w={drag.w} h={drag.h} />
+              </View>
+            </Animated.View>
+          ) : null}
+          {drag ? (
+            // cosa succede lasciando la carta: fisso in alto al centro, sempre leggibile
+            <View pointerEvents="none" style={{ position: "absolute", top: land ? 4 : 52, left: 0, right: 0, alignItems: "center" }}>
+              <View style={{ backgroundColor: drag.label ? C.acc : "#0b0f22e6", borderRadius: 16, paddingHorizontal: 14, paddingVertical: 6, borderWidth: 1, borderColor: drag.label ? C.acc : C.line }}>
+                <Text numberOfLines={1} style={{ color: drag.label ? "#04212b" : C.mut, fontWeight: "700", fontSize: 14 }}>{drag.label || "Trascina su un bersaglio"}</Text>
+              </View>
+            </View>
+          ) : null}
         </View>
       </SafeAreaView>
 
@@ -1048,7 +1159,7 @@ export default function Simulatore() {
             }}
           />
           <Text style={{ color: C.mut, fontSize: 12.5, marginTop: 12, lineHeight: 18 }}>
-            Prova contro il telefono con i mazzi base ST1 e ST2: memoria, uova, digievoluzione con pesca, attacchi, Blocker, Security Attack e controlli della Sicurezza, con tutti gli effetti di queste 32 carte. Il testo delle carte resta in inglese come stampato. Liste dei mazzi indicative.
+            Prova contro il telefono con i mazzi base ST1 e ST2: memoria, uova, digievoluzione con pesca, attacchi, Blocker, Security Attack e controlli della Sicurezza, con tutti gli effetti di queste 32 carte. Puoi toccare le carte per vedere le azioni oppure trascinarle: dalla mano su un tuo Digimon per digievolvere o sul campo per giocarle, da un tuo Digimon su un Digimon avversario sospeso o sulla Sicurezza per attaccare. Il testo delle carte resta in inglese come stampato. Liste dei mazzi indicative.
           </Text>
           <View style={{ gap: 6, marginTop: 12 }}>
             <ActBtn
@@ -1078,8 +1189,20 @@ export default function Simulatore() {
   );
 }
 
-function Zone({ children, opp, fill }: { children: React.ReactNode; opp?: boolean; fill?: boolean }) {
-  return <View style={{ flex: fill ? 1 : undefined, minHeight: 0, backgroundColor: opp ? "#1b13360f" : "#ffffff08", borderWidth: 1, borderColor: "#38d6f533", borderRadius: 14, padding: 6, justifyContent: "center" }}>{children}</View>;
+function Zone({ children, opp, fill, rk, x }: { children: React.ReactNode; opp?: boolean; fill?: boolean; rk?: string; x?: Ctx }) {
+  const hi = !!(x && x.drag && rk && x.drag.keys.includes(rk));
+  const hov = !!(x && x.drag && rk && x.drag.hover === rk);
+  return (
+    <View
+      ref={(r: any) => {
+        if (rk) REFS.set(rk, r);
+      }}
+      collapsable={false}
+      style={{ flex: fill ? 1 : undefined, minHeight: 0, backgroundColor: hov ? "#38d6f526" : opp ? "#1b13360f" : "#ffffff08", borderWidth: hi ? 2 : 1, borderStyle: hi && !hov ? "dashed" : "solid", borderColor: hov ? "#fff" : hi ? C.gold : "#38d6f533", borderRadius: 14, padding: hi ? 5 : 6, justifyContent: "center" }}
+    >
+      {children}
+    </View>
+  );
 }
 function Dial({ label, off, onPress }: { label: string; off?: boolean; onPress?: () => void }) {
   const r = useRef(new Animated.Value(0)).current;

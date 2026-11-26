@@ -367,6 +367,10 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   Digimon Alysion (fascia della memoria a monete, pulsante rotondo del turno, Sicurezza come fila di carte coperte),
   colori di Digital Gate. Solo questa schermata può girare: `expo-screen-orientation` (aggiunto con `npm install`
   `~58.0.4`), Menu → Disposizione (segue il telefono / orizzontale / verticale, `sim-layout`), uscendo torna verticale.
+  **Trascinamento** (richiesta dell'utente): carta della mano su un proprio Digimon/allevamento = digievolvi, sul proprio
+  campo = gioca/usa; Digimon in campo su un Digimon avversario sospeso = attacca, sulla Sicurezza o sul campo avversario =
+  attacca il giocatore (`useDragPan` con PanResponder, bersagli misurati all'inizio, carta che segue il dito e scritta
+  in alto con l'azione); il tocco apre ancora la scheda. Parametro `?l=h|v` per la disposizione (prove).
   Menu → "Guarda una partita" (`?demo=1`): il telefono gioca da solo con tutti e due i mazzi. Prova su emulatore:
   `prova-emulatore.yml` con "sim" o inviando sul ramo `simulatore` (`tools/rn_sim.py`: le animazioni continue bloccano
   uiautomator, quindi solo foto della partita dimostrativa e tocchi a coordinate fisse). Prima
