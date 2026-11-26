@@ -77,6 +77,26 @@ shot("normale_turno")
 tap(0.5, 0.92)  # carta al centro della mano
 shot("scheda_carta")
 tap(0.5, 0.08)  # tocco sul fondo scuro: chiude
+# trascinamento: carte della mano trascinate sul proprio campo (gioca o digievolvi), foto mentre il dito si muove
+def drag(x1, y1, x2, y2, name, ms=1400):
+    W, H = size()
+    pr = subprocess.Popen(["adb", "shell", "input", "swipe", str(int(W * x1)), str(int(H * y1)), str(int(W * x2)), str(int(H * y2)), str(ms)])
+    time.sleep(ms / 1000 * 0.6)
+    shot(name)
+    pr.wait()
+    time.sleep(0.3)
+    shot(name + "_lasciata")
+    time.sleep(4)
+
+
+tap(0.87, 0.4225, 2)  # Avanti (fase di allevamento)
+shot("prima_del_trascinamento")
+for k, hx in enumerate((0.5, 0.38, 0.62)):
+    drag(hx, 0.92, 0.5, 0.56, "trascina_mano%d" % k)
+# attacco trascinando il primo Digimon del campo sulla Sicurezza avversaria (scudo in alto a destra)
+drag(0.12, 0.6, 0.92, 0.18, "trascina_attacco")
+time.sleep(4)
+shot("dopo_attacco")
 tap(0.91, 0.082)  # Menu
 shot("menu")
 tap(0.5, 0.06)
