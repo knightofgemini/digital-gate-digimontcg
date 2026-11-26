@@ -762,6 +762,266 @@
    "notes": "▹BOOSTER IGNITION OF X [BT-27]",
    "_post": 8496,
    "_src": "telegram"
+  },
+  {
+   "id": "BD01-02",
+   "cardNumber": "BD01-02",
+   "name": {
+    "english": "Gemmon"
+   },
+   "cardType": "Digimon",
+   "color": "Red",
+   "cardLv": "Lv.3",
+   "form": "Rookie",
+   "attribute": "Vaccine",
+   "type": "Mythical Beast/ALYSION",
+   "dp": "2000",
+   "playCost": "3",
+   "digivolveCondition": [
+    {
+     "color": "Red",
+     "cost": "0",
+     "level": "2"
+    }
+   ],
+   "effect": "-",
+   "digivolveEffect": "[Your Turn] Add 1000 to this [ALYSION] trait Digimon's DP deletion effect's maximum.",
+   "securityEffect": "-",
+   "specialDigivolve": "-",
+   "block": [
+    "06"
+   ],
+   "rarity": "R",
+   "version": "Normal",
+   "notes": "▹STARTER DECK DIGIMON ALYSION RUBEUSDRAMON [ST-25]",
+   "_post": 8425,
+   "_src": "telegram"
+  },
+  {
+   "id": "BD01-03",
+   "cardNumber": "BD01-03",
+   "name": {
+    "english": "Liskmon"
+   },
+   "cardType": "Digimon",
+   "color": "Red",
+   "cardLv": "Lv.4",
+   "form": "Champion",
+   "attribute": "Vaccine",
+   "type": "Bird Dragon/ALYSION",
+   "dp": "5000",
+   "playCost": "5",
+   "digivolveCondition": [
+    {
+     "color": "Red",
+     "cost": "2",
+     "level": "3"
+    }
+   ],
+   "effect": "[When Digivolving] Delete 1 of your opponent's Digimon with 2000 DP or less.",
+   "digivolveEffect": "-",
+   "securityEffect": "-",
+   "specialDigivolve": "-",
+   "block": [
+    "06"
+   ],
+   "rarity": "C",
+   "version": "Normal",
+   "notes": "▹STARTER DECK DIGIMON ALYSION RUBEUSDRAMON [ST-25]",
+   "_post": 8426,
+   "_src": "telegram"
+  },
+  {
+   "id": "BD01-05",
+   "cardNumber": "BD01-05",
+   "name": {
+    "english": "Reptilimon"
+   },
+   "cardType": "Digimon",
+   "color": "Red",
+   "cardLv": "Lv.5",
+   "form": "Ultimate",
+   "attribute": "Vaccine",
+   "type": "Dragon Warrior/ALYSION",
+   "dp": "6000",
+   "playCost": "7",
+   "digivolveCondition": [
+    {
+     "color": "Red",
+     "cost": "2",
+     "level": "4"
+    }
+   ],
+   "effect": "-",
+   "digivolveEffect": "[Your Turn] [Once Per Turn] When any of your opponent's Digimon are deleted, this Digimon gains ＜Security A. +1＞ for the turn.",
+   "securityEffect": "-",
+   "specialDigivolve": "-",
+   "block": [
+    "06"
+   ],
+   "rarity": "U",
+   "version": "Normal",
+   "notes": "▹STARTER DECK DIGIMON ALYSION RUBEUSDRAMON [ST-25]",
+   "_post": 8427,
+   "_src": "telegram"
+  },
+  {
+   "id": "BD01-10",
+   "cardNumber": "BD01-10",
+   "name": {
+    "english": "Kanata Hondo"
+   },
+   "cardType": "Tamer",
+   "color": "Red",
+   "cardLv": "-",
+   "form": "-",
+   "attribute": "-",
+   "type": "ALYSION",
+   "dp": "-",
+   "playCost": "3",
+   "digivolveCondition": [],
+   "effect": "[Start of Your Main Phase] If you have a red Digimon with the [ALYSION] trait, gain 1 memory.\n[Your Turn] All of your red Digimon with the [ALYSION] trait get +1000 DP.",
+   "digivolveEffect": "-",
+   "securityEffect": "[Security] Play this card without paying the cost.",
+   "specialDigivolve": "-",
+   "block": [
+    "06"
+   ],
+   "rarity": "U",
+   "version": "Normal",
+   "notes": "▹STARTER DECK DIGIMON ALYSION RUBEUSDRAMON [ST-25]",
+   "_post": 8430,
+   "_src": "telegram"
+  },
+  {
+   "id": "BD02-02",
+   "cardNumber": "BD02-02",
+   "name": {
+    "english": "Renamon"
+   },
+   "cardType": "Digimon",
+   "color": "Blue",
+   "cardLv": "Lv.3",
+   "form": "Rookie",
+   "attribute": "Data",
+   "type": "Beastkin/ALYSION",
+   "dp": "2000",
+   "playCost": "3",
+   "digivolveCondition": [
+    {
+     "color": "Blue",
+     "cost": "0",
+     "level": "2"
+    }
+   ],
+   "effect": "[On Play] Reveal the top 5 cards of your deck. Add 1 blue [ALYSION] trait card among them to the hand. Return the rest to the bottom of the deck.",
+   "digivolveEffect": "-",
+   "securityEffect": "-",
+   "specialDigivolve": "-",
+   "block": [
+    "06"
+   ],
+   "rarity": "R",
+   "version": "Normal",
+   "notes": "▹STARTER DECK DIGIMON ALYSION YUKINAMON [ST-26]",
+   "_post": 8433,
+   "_src": "telegram"
+  },
+  {
+   "id": "BD02-03",
+   "cardNumber": "BD02-03",
+   "name": {
+    "english": "Tenkomon"
+   },
+   "cardType": "Digimon",
+   "color": "Blue",
+   "cardLv": "Lv.4",
+   "form": "Champion",
+   "attribute": "Virus",
+   "type": "Mysterious Beast/ALYSION",
+   "dp": "5000",
+   "playCost": "5",
+   "digivolveCondition": [
+    {
+     "color": "Blue",
+     "cost": "2",
+     "level": "3"
+    }
+   ],
+   "effect": "-",
+   "digivolveEffect": "[When Attacking] [Once Per Turn] Trash the bottom digivolution card of 1 of your opponent's Digimon.",
+   "securityEffect": "-",
+   "specialDigivolve": "-",
+   "block": [
+    "06"
+   ],
+   "rarity": "C",
+   "version": "Normal",
+   "notes": "▹STARTER DECK DIGIMON ALYSION YUKINAMON [ST-26]",
+   "_post": 8434,
+   "_src": "telegram"
+  },
+  {
+   "id": "BD02-04",
+   "cardNumber": "BD02-04",
+   "name": {
+    "english": "Sekkamon"
+   },
+   "cardType": "Digimon",
+   "color": "Blue",
+   "cardLv": "Lv.5",
+   "form": "Ultimate",
+   "attribute": "Virus",
+   "type": "Beastkin/ALYSION",
+   "dp": "6000",
+   "playCost": "7",
+   "digivolveCondition": [
+    {
+     "color": "Blue",
+     "cost": "2",
+     "level": "4"
+    }
+   ],
+   "effect": "-",
+   "digivolveEffect": "[When Attacking] [Once Per Turn] If your opponent has no Digimon with digivolution cards, this Digimon unsuspends.",
+   "securityEffect": "-",
+   "specialDigivolve": "-",
+   "block": [
+    "06"
+   ],
+   "rarity": "U",
+   "version": "Normal",
+   "notes": "▹STARTER DECK DIGIMON ALYSION YUKINAMON [ST-26]",
+   "_post": 8435,
+   "_src": "telegram"
+  },
+  {
+   "id": "BD02-08",
+   "cardNumber": "BD02-08",
+   "name": {
+    "english": "Valner Dragnogh"
+   },
+   "cardType": "Tamer",
+   "color": "Blue",
+   "cardLv": "-",
+   "form": "-",
+   "attribute": "-",
+   "type": "ALYSION",
+   "dp": "-",
+   "playCost": "3",
+   "digivolveCondition": [],
+   "effect": "[Start of Your Main Phase] If you have a blue Digimon with the [ALYSION] trait, gain 1 memory.\n[Main] By suspending this Tamer, 1 of your blue Digimon with the [ALYSION] trait gains ＜Piercing＞ for the turn.",
+   "digivolveEffect": "-",
+   "securityEffect": "[Security] Play this card without paying the cost.",
+   "specialDigivolve": "-",
+   "block": [
+    "06"
+   ],
+   "rarity": "U",
+   "version": "Normal",
+   "notes": "▹STARTER DECK DIGIMON ALYSION YUKINAMON [ST-26]",
+   "_post": 8436,
+   "_src": "telegram"
   }
  ]
 }
