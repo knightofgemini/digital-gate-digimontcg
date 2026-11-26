@@ -380,6 +380,14 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   Sicurezza una alla volta); **attacco trascinato con una freccia** dal Digimon al bersaglio (`Arrow`, si ridisegna da
   sola) invece della carta che si sposta (la carta della mano invece segue ancora il dito); carte della mano e pila
   della Sicurezza che si allargano quando sono poche.
+  **Spunti da Alysion (26 novembre sera, dal video di una partita, scelta dell'utente)**: nome delle fasi grande e
+  inclinato che attraversa lo schermo (`PhaseV`; fasi Unsuspend, Draw, Breeding, Main, End nel motore, blu/rosso) e
+  tappeto con alone rosso nel turno avversario (`Mat op`); carta giocata mostrata grande al centro con la fascia
+  "Lv.3 · DIGIMON" e il nome (`CardShowV`), digievoluzione con cerchio di simboli che gira (`Rune`, doppio e dorato
+  dai Lv.6); freccia d'attacco a "›››" che scorrono (`Chevrons`, anche nel trascinamento) ed etichetta "Security
+  Attack"; blocco scelto sul tavolo ("Select a Card to Block", scudo con spunta, Don't block/Confirm: `SimUI.block`);
+  etichetta "DIGIVOLVE" sulle carte della mano; DP rossi quando scendono; sezione "State" nella scheda di una carta in
+  campo ed effetti ereditati di ogni carta sotto; contatori Sicurezza/mano/mazzo/scarti (`Counters`).
   Menu → "Guarda una partita" (`?demo=1`): il telefono gioca da solo con tutti e due i mazzi. Prova su emulatore:
   `prova-emulatore.yml` con "sim" o inviando sul ramo `simulatore` (`tools/rn_sim.py`: le animazioni continue bloccano
   uiautomator, quindi solo foto della partita dimostrativa e tocchi a coordinate fisse). Prima

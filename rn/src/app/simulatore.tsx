@@ -11,7 +11,7 @@ import { StatusBar } from "expo-status-bar";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Svg, { Circle, Defs, LinearGradient, Path, RadialGradient, Rect, Stop } from "react-native-svg";
+import Svg, { Circle, Defs, LinearGradient, Path, RadialGradient, Rect, Stop, Text as SvgText } from "react-native-svg";
 import { DISPLAY, Text } from "../Text";
 import { BYCODE, Card, fullUrl, thumbUrl, useData } from "../data";
 import { Rich } from "../rich";
@@ -82,7 +82,8 @@ function Back({ w, h, red }: { w: number; h: number; red?: boolean }) {
 // = attacca il giocatore. Il tocco resta per la scheda della carta.
 type DragView = { src: string; code: string; w: number; h: number; keys: string[]; hover: string | null; label: string | null; arrow?: boolean };
 type DragFns = { begin: (kind: "hand" | "stack", u: string, gx: number, gy: number) => boolean; move: (gx: number, gy: number) => void; end: (cancel: boolean) => void };
-type Ctx = { sim: Sim; G: Game; cw: number; ch: number; tap: (k: string) => void; canS: (s: Stack) => boolean; drag: DragView | null; dfn: DragFns };
+type Blk = { atk: string; target: string; blockers: string[]; text: string; sel: string | null; res: (u: string | null) => void };
+type Ctx = { sim: Sim; G: Game; cw: number; ch: number; tap: (k: string) => void; canS: (s: Stack) => boolean; drag: DragView | null; dfn: DragFns; blk: Blk | null };
 function useDragPan(kind: "hand" | "stack", u: string, dfn: DragFns) {
   const r = useRef({ kind, u, dfn });
   r.current = { kind, u, dfn };
@@ -120,6 +121,8 @@ function StackView({ s, owner, x, sz }: { s: Stack; owner: 0 | 1; x: Ctx; sz?: [
   const hi = !!x.drag && x.drag.keys.includes(s.u);
   const hov = !!x.drag && x.drag.hover === s.u;
   const src = !!x.drag && x.drag.src === s.u && !x.drag.arrow;
+  const bk = !!x.blk && x.blk.blockers.includes(s.u),
+    bsel = !!x.blk && x.blk.sel === s.u;
   return (
     <View {...pan.panHandlers} style={{ opacity: src ? 0.35 : 1, transform: [{ scale: hov ? 1.08 : 1 }] }}>
     <Pressable onPress={() => x.tap(s.u)} style={{ width: cw + 10, height: ch + 18, alignItems: "center", justifyContent: "center" }}>
@@ -143,13 +146,22 @@ function StackView({ s, owner, x, sz }: { s: Stack; owner: 0 | 1; x: Ctx; sz?: [
         {/* carte sotto, appena sporgenti */}
         {n ? <View style={{ position: "absolute", left: 3, top: 4, width: cw, height: ch, borderRadius: 5, backgroundColor: "#0b0f22", borderWidth: 1, borderColor: "#ffffff33" }} /> : null}
         {can && !x.drag ? <Animated.View style={{ position: "absolute", left: -4, top: -4, right: -4, bottom: -4, borderRadius: 8, borderWidth: 2.5, borderColor: C.acc, opacity: PULSE.interpolate({ inputRange: [0, 1], outputRange: [0.45, 1] }) }} /> : null}
+        {bk ? <Animated.View style={{ position: "absolute", left: -5, top: -5, right: -5, bottom: -5, borderRadius: 9, borderWidth: bsel ? 4 : 2.5, borderColor: bsel ? "#7fd8ff" : C.gold, opacity: bsel ? 1 : PULSE.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }} /> : null}
         {hi ? <Animated.View style={{ position: "absolute", left: -5, top: -5, right: -5, bottom: -5, borderRadius: 9, borderWidth: hov ? 4 : 2.5, borderColor: hov ? "#fff" : C.gold, opacity: hov ? 1 : PULSE.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }} /> : null}
         <Face code={code} w={cw} h={ch} />
         <Animated.View pointerEvents="none" style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, borderRadius: 5, backgroundColor: "#fff", opacity: a.flash }} />
         <Animated.View pointerEvents="none" style={{ position: "absolute", left: -6, top: -6, right: -6, bottom: -6, borderRadius: 10, borderWidth: 3, borderColor: C.gold, opacity: a.glow }} />
         {dpv != null ? (
           <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: "#0b0f22dd", paddingVertical: 1, alignItems: "center", borderBottomLeftRadius: 5, borderBottomRightRadius: 5 }}>
-            <Text style={{ color: mod > 0 ? C.ok : C.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: Math.max(10, cw * 0.2) }}>{dpv}</Text>
+            <Text style={{ color: mod > 0 ? C.ok : mod < 0 ? "#ff6b78" : C.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: Math.max(10, cw * 0.2) }}>{dpv}</Text>
+          </View>
+        ) : null}
+        {bsel ? (
+          <View pointerEvents="none" style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center", backgroundColor: "#0b2a5a66", borderRadius: 5 }}>
+            <Svg width={cw * 0.62} height={cw * 0.7} viewBox="0 0 24 27">
+              <Path d="M12 1 22 5v8c0 6-4.5 10.5-10 13C6.5 23.5 2 19 2 13V5z" fill="#2f6fe0cc" stroke="#cfe0ff" strokeWidth={1.6} />
+              <Path d="M7.5 13l3.2 3.2 5.8-6.4" stroke="#fff" strokeWidth={2.4} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
           </View>
         ) : null}
       </Animated.View>
@@ -169,7 +181,7 @@ const Ico = ({ bg, ring, t }: { bg: string; ring: string; t: string }) => (
   </View>
 );
 
-function HandCard({ c, i, n, w, h, can, onPress, mx, x }: { c: CardInst; i: number; n: number; w: number; h: number; can: boolean; onPress: () => void; mx: number; x: Ctx }) {
+function HandCard({ c, i, n, w, h, can, evo, onPress, mx, x }: { c: CardInst; i: number; n: number; w: number; h: number; can: boolean; evo: boolean; onPress: () => void; mx: number; x: Ctx }) {
   const a = av(c.u);
   const off = i - (n - 1) / 2;
   const pan = useDragPan("hand", c.u, x.dfn);
@@ -187,6 +199,13 @@ function HandCard({ c, i, n, w, h, can, onPress, mx, x }: { c: CardInst; i: numb
         {can ? <Animated.View style={{ position: "absolute", left: -3, top: -3, right: -3, bottom: -3, borderRadius: 7, borderWidth: 2.5, borderColor: C.acc, opacity: PULSE.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }} /> : null}
         <Face code={c.c} w={w} h={h} />
         <Animated.View pointerEvents="none" style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, borderRadius: 5, backgroundColor: "#fff", opacity: a.flash }} />
+        {evo ? (
+          <View pointerEvents="none" style={{ position: "absolute", top: -11, left: -2, right: -2, alignItems: "center" }}>
+            <View style={{ backgroundColor: "#ff8a1e", borderRadius: 4, paddingHorizontal: 3, paddingVertical: 1, borderWidth: 1, borderColor: "#ffe0b0" }}>
+              <Text numberOfLines={1} adjustsFontSizeToFit style={{ color: "#fff", fontFamily: DISPLAY, fontWeight: "700", fontStyle: "italic", fontSize: Math.min(10, w * 0.15), letterSpacing: 0.3 }}>DIGIVOLVE</Text>
+            </View>
+          </View>
+        ) : null}
       </Animated.View>
     </Pressable>
     </View>
@@ -459,7 +478,7 @@ function Panel({ land, onClose, children }: { land: boolean; onClose?: () => voi
   );
 }
 type Q = { title: string; opts: Opt<any>[]; cancel?: string; body?: string; res: (v: any) => void };
-type Sheet = { code: string; src?: string[]; acts: { label: string; sub?: string; pri?: boolean; go: () => Promise<void> }[]; who: string };
+type Sheet = { code: string; src?: string[]; acts: { label: string; sub?: string; pri?: boolean; go: () => Promise<void> }[]; who: string; u?: string };
 
 export default function Simulatore() {
   // ?demo=1: il telefono gioca da solo con tutti e due i mazzi (Menu → Guarda una partita; usato anche dalla prova su emulatore)
@@ -479,6 +498,10 @@ export default function Simulatore() {
   const [eff, setEff] = useState<(Extract<Fx, { k: "effect" }> & { id: number }) | null>(null);
   const [end, setEnd] = useState<null | boolean>(null);
   const [mull, setMull] = useState<{ hand: string[]; res: (v: boolean) => void } | null>(null);
+  const [phz, setPh] = useState<{ text: string; op: boolean; id: number } | null>(null);
+  const [show, setShow] = useState<Show | null>(null);
+  const [blk, setBlk] = useState<Blk | null>(null);
+  const [secPill, setSecPill] = useState(false);
   const [first, setFirst] = useState<null | 0 | 1>(null);
   const [menu, setMenu] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
@@ -504,6 +527,14 @@ export default function Simulatore() {
     update,
     isLive: (g) => alive.current && simRef.current.G === g,
     mulligan: (hand) => new Promise((res) => setMull({ hand, res })),
+    block: (atk, target, blockers, text) =>
+      new Promise((res) => {
+        setBlk({ atk, target, blockers, text, sel: null, res });
+        // freccia dall'attaccante al bersaglio finché non scegli
+        Promise.all([measure(atk), measure(target)]).then(([A, B]) => {
+          if (A && B) ARROW.set?.({ x1: A.cx, y1: A.cy, x2: B.cx, y2: B.cy, color: "#ff5a4f" });
+        });
+      }),
     fx: async (e) => fxRun(e),
   };
   const simRef = useRef<Sim>(null as any);
@@ -521,9 +552,9 @@ export default function Simulatore() {
         setBan(null);
         return;
       case "phase":
-        setBan({ text: e.text, op: false, small: true, id: ++nid.current });
-        await W8(900);
-        setBan(null);
+        setPh({ text: e.text, op: !!e.op, id: ++nid.current });
+        await W8(760);
+        setPh(null);
         return;
       case "mem":
         update();
@@ -540,6 +571,21 @@ export default function Simulatore() {
           return;
         }
         if (e.how === "evo") {
+          a.op.setValue(0);
+          const st = [...G.P[0].field, ...G.P[1].field, G.P[0].breed, G.P[1].breed].find((z) => z && z.u === e.u);
+          const code = st ? sim.topCode(st) : "";
+          if (code) {
+            const big = sim.DB[code].lv >= 6;
+            setShow({ code, kind: "evo", big, id: ++nid.current });
+            const Wd = W / 2,
+              Hd = H / 2;
+            await W8(260);
+            FX.burst(Wd, Hd, big ? C.gold : COL[sim.DB[code].col] || C.acc, true);
+            if (big) for (const [k, col] of ["#ff5fb3", "#38d6f5", "#7dffa8", "#f5c542"].entries()) setTimeout(() => FX.burst(Wd + Math.cos(k * 1.6) * 90, Hd + Math.sin(k * 1.6) * 110, col, true), 120 * k);
+            await W8(big ? 1150 : 860);
+            setShow(null);
+          }
+          a.op.setValue(1);
           a.flash.setValue(1);
           a.sc.setValue(1.45);
           a.glow.setValue(1);
@@ -567,7 +613,17 @@ export default function Simulatore() {
           await run(Animated.parallel([sp(a.sc, 1), tm(a.op, 1, 250)]));
           return;
         }
-        // play, sec, free: la carta cala dall'alto sul tavolo
+        // play, sec, free: prima grande al centro (Digimon e Tamer), poi cala dall'alto sul tavolo
+        {
+          const st = [...G.P[0].field, ...G.P[1].field].find((z) => z.u === e.u);
+          const code = st ? sim.topCode(st) : "";
+          if (code && e.how !== "sec") {
+            a.op.setValue(0);
+            setShow({ code, kind: "play", big: false, id: ++nid.current });
+            await W8(820);
+            setShow(null);
+          }
+        }
         a.sc.setValue(1.9);
         a.op.setValue(0);
         a.ty.setValue(-30);
@@ -586,6 +642,10 @@ export default function Simulatore() {
           B = await measure(e.to);
         if (!A || !B) return;
         const a = av(e.from);
+        ARROW.set?.({ x1: A.cx, y1: A.cy, x2: B.cx, y2: B.cy, color: "#ff5a4f" });
+        if (e.to.startsWith("sec")) setSecPill(true);
+        await W8(650);
+        ARROW.set?.(null);
         const dx = (B.cx - A.cx) * 0.78,
           dy = (B.cy - A.cy) * 0.78;
         a.glow.setValue(1);
@@ -598,6 +658,7 @@ export default function Simulatore() {
           run(Animated.sequence([tm(t.tx, 9, 50), tm(t.tx, -9, 70), tm(t.tx, 6, 60), tm(t.tx, 0, 60)]));
         }
         await run(Animated.parallel([sp(a.tx, 0, 6, 60), sp(a.ty, 0, 6, 60), sp(a.sc, 1), tm(a.glow, 0, 400)]));
+        setSecPill(false);
         return;
       }
       case "block": {
@@ -704,6 +765,10 @@ export default function Simulatore() {
     setEnd(null);
     setQ(null);
     setSheet(null);
+    setBlk(null);
+    setShow(null);
+    setSecPill(false);
+    ARROW.set?.(null);
     const G = sim.newGame(key);
     G.P[0].ai = demo.current;
     G.busy = true;
@@ -765,7 +830,8 @@ export default function Simulatore() {
       }
     }
   };
-  const canHand = (c: CardInst) => myMain && (sim.canUse(0, c) || sim.evoTargets(0, c).some(() => sim.canPay(sim.DB[c.c].ec || 0)));
+  const canEvo = (c: CardInst) => myMain && sim.evoTargets(0, c).length > 0 && sim.canPay(sim.DB[c.c].ec || 0);
+  const canHand = (c: CardInst) => myMain && (sim.canUse(0, c) || canEvo(c));
   const x: Ctx = {
     sim,
     G,
@@ -775,6 +841,7 @@ export default function Simulatore() {
     tap: (u) => tapStack(u),
     drag,
     dfn: { begin: dragBegin, move: dragMove, end: dragEnd },
+    blk,
   };
 
   // ---- trascinamento ----
@@ -847,6 +914,11 @@ export default function Simulatore() {
   }
 
   function tapStack(u: string) {
+    // scelta del Digimon che blocca: il tocco lo seleziona (o lo toglie)
+    if (blk) {
+      if (blk.blockers.includes(u)) setBlk({ ...blk, sel: blk.sel === u ? null : u });
+      return;
+    }
     if (G.busy && !(G.cur === 1)) return;
     for (const i of [0, 1] as const) {
       const p = G.P[i];
@@ -857,7 +929,7 @@ export default function Simulatore() {
         acts.push({ label: "Attack the player", sub: "DP " + sim.dp(0, s) + (sim.secA(0, s) > 1 ? " · checks " + sim.secA(0, s) + " cards" : ""), pri: true, go: () => sim.attack(0, s, "p") });
         for (const t of sim.digis(1).filter((z) => z.susp)) acts.push({ label: "Attack " + sim.top(t).n, sub: "DP " + sim.dp(0, s, t) + " vs " + sim.dp(1, t, s), go: () => sim.attack(0, s, t) });
       }
-      setSheet({ code: sim.topCode(s), src: s.cards.slice(0, -1).map((c) => sim.DB[c.c].n), acts, who: i ? "Opponent" : p.breed === s ? "Breeding area" : "Battle area" });
+      setSheet({ code: sim.topCode(s), src: s.cards.slice(0, -1).map((c) => sim.DB[c.c].n), acts, who: i ? "Opponent" : p.breed === s ? "Breeding area" : "Battle area", u: s.u });
       return;
     }
   }
@@ -974,7 +1046,7 @@ export default function Simulatore() {
       style={{ flexDirection: "row", justifyContent: "center", alignItems: "flex-end", paddingHorizontal: -handMx }}
     >
       {me.hand.map((c, i) => (
-        <HandCard key={c.u} c={c} i={i} n={me.hand.length} w={hw} h={hh} mx={handMx} x={x} can={canHand(c)} onPress={() => tapHand(c)} />
+        <HandCard key={c.u} c={c} i={i} n={me.hand.length} w={hw} h={hh} mx={handMx} x={x} can={canHand(c)} evo={canEvo(c)} onPress={() => tapHand(c)} />
       ))}
     </View>
   );
@@ -995,7 +1067,7 @@ export default function Simulatore() {
       </Pressable>
       <View style={{ flex: 1 }}>
         <Text style={{ color: C.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 15 }}>Turn {Math.max(1, G.turn)}</Text>
-        <Text style={{ color: C.mut, fontSize: 11 }} numberOfLines={1}>{DECKS[me.key].name} vs {DECKS[op.key].name}</Text>
+        <Counters p={op} label="Opp." />
       </View>
       <Btn small label="Log" onPress={() => setLogOpen(true)} />
       <Btn small label="Menu" onPress={() => setMenu(true)} />
@@ -1005,7 +1077,7 @@ export default function Simulatore() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <StatusBar hidden={land} style="light" />
-      <Mat />
+      <Mat op={G.cur === 1 && G.phase !== "setup"} />
       <SafeAreaView style={{ flex: 1 }} edges={["top", "bottom", "left", "right"]}>
         <View
           ref={(r: any) => {
@@ -1028,7 +1100,7 @@ export default function Simulatore() {
                     {piles(1)}
                     <View style={{ flex: 1, alignItems: "flex-end" }}>
                       <Text style={{ color: C.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 14 }}>Turn {Math.max(1, G.turn)}</Text>
-                      <Text style={{ color: C.mut, fontSize: 11 }}>Opp. hand {op.hand.length}</Text>
+                      <Counters p={op} />
                     </View>
                   </View>
                 </View>
@@ -1043,6 +1115,9 @@ export default function Simulatore() {
               </View>
               {/* memoria */}
               <View style={{ height: memH, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <View style={{ position: "absolute", left: 0, bottom: -2 }}>
+                  <Counters p={me} />
+                </View>
                 <View style={{ flex: 1, alignItems: "center" }}>
                   <MemBar v={vMem} width={Math.min(W - 260 - ins.left - ins.right, 680)} />
                 </View>
@@ -1086,6 +1161,7 @@ export default function Simulatore() {
                   <View style={{ backgroundColor: C.pink, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 }}>
                     <Text style={{ color: "#2b0018", fontFamily: DISPLAY, fontWeight: "700", fontSize: 12 }}>{phaseTxt}</Text>
                   </View>
+                  <Counters p={me} label="You" />
                   <View style={{ flex: 1 }} />
                   {controls}
                 </View>
@@ -1124,7 +1200,51 @@ export default function Simulatore() {
         </View>
       </SafeAreaView>
 
+      {show ? <CardShowV key={show.id} s={show} sim={sim} W={W} H={H} /> : null}
       {ban ? <BannerV key={ban.id} text={ban.text} op={ban.op} small={ban.small} /> : null}
+      {phz ? <PhaseV key={phz.id} text={phz.text} op={phz.op} /> : null}
+      {secPill ? (
+        <View pointerEvents="none" style={{ position: "absolute", top: ins.top + (land ? 6 : 48), left: 0, right: 0, alignItems: "center" }}>
+          <View style={{ backgroundColor: "#d62a3a", borderRadius: 16, paddingHorizontal: 18, paddingVertical: 6, borderWidth: 1.5, borderColor: "#ffb4ba" }}>
+            <Text style={{ color: "#fff", fontFamily: DISPLAY, fontWeight: "700", fontSize: 15, letterSpacing: 0.5 }}>Security Attack</Text>
+          </View>
+        </View>
+      ) : null}
+      {blk ? (
+        <View pointerEvents="box-none" style={{ position: "absolute", top: ins.top + (land ? 4 : 46), left: 0, right: 0, alignItems: "center" }}>
+          <View style={{ backgroundColor: "#0b0f22f2", borderRadius: 16, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: C.line, alignItems: "center", maxWidth: "94%" }}>
+            <Text style={{ color: C.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16 }}>
+              Select a Card to <Text style={{ color: C.gold, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16 }}>Block</Text>
+            </Text>
+            <Text style={{ color: C.mut, fontSize: 12, marginTop: 2, textAlign: "center" }}>{blk.text}</Text>
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
+              <Btn
+                small
+                label="Don't block"
+                onPress={() => {
+                  ARROW.set?.(null);
+                  const r = blk.res;
+                  setBlk(null);
+                  r(null);
+                }}
+              />
+              <Btn
+                small
+                pri
+                label="Confirm"
+                disabled={!blk.sel}
+                onPress={() => {
+                  ARROW.set?.(null);
+                  const r = blk.res,
+                    u = blk.sel;
+                  setBlk(null);
+                  r(u);
+                }}
+              />
+            </View>
+          </View>
+        </View>
+      ) : null}
       {eff ? <EffectV key={eff.id} e={eff} sim={sim} land={land} /> : null}
       {rev ? <RevealV e={rev} sim={sim} /> : null}
       {first != null ? <FirstV pi={first} /> : null}
@@ -1147,7 +1267,7 @@ export default function Simulatore() {
           {sheet.who.startsWith("trash") ? (
             <TrashList sim={sim} p={G.P[+sheet.who.slice(5) as 0 | 1]} title={sheet.who === "trash0" ? "Your trash" : "Opponent's trash"} />
           ) : (
-            <CardDetail code={sheet.code} sim={sim} who={sheet.who} src={sheet.src} land={land}>
+            <CardDetail code={sheet.code} sim={sim} who={sheet.who} src={sheet.src} land={land} st={sheet.u ? [...G.P[0].field, ...G.P[1].field, G.P[0].breed, G.P[1].breed].find((z) => z && z.u === sheet.u) || undefined : undefined}>
               {sheet.acts.map((a, k) => (
                 <ActBtn
                   key={k}
@@ -1348,8 +1468,24 @@ function Seg({ title, value, opts, onChange }: { title: string; value: string; o
     </View>
   );
 }
-function CardDetail({ code, sim, who, src, land, children }: { code: string; sim: Sim; who: string; src?: string[]; land: boolean; children?: React.ReactNode }) {
+function CardDetail({ code, sim, who, src, land, children, st }: { code: string; sim: Sim; who: string; src?: string[]; land: boolean; children?: React.ReactNode; st?: Stack }) {
   const d = sim.DB[code];
+  // "State" come in Alysion: quello che vale adesso per la carta in campo
+  const state: { t: string; c: string }[] = [];
+  if (st) {
+    const o = sim.owner(st);
+    state.push({ t: st.susp ? "Suspended" : "Active", c: st.susp ? "#ffb347" : C.ok });
+    if (d.t === "Digimon") {
+      const v = sim.dp(o, st);
+      if (v !== d.dp) state.push({ t: "DP " + v + " (" + (v > d.dp ? "+" : "") + (v - d.dp) + ")", c: v > d.dp ? C.ok : "#ff6b78" });
+      for (const b of st.buffs) state.push({ t: (b.dp > 0 ? "+" : "") + b.dp + " DP until turn " + b.exp, c: b.dp > 0 ? C.ok : "#ff6b78" });
+      if (sim.blocker(st)) state.push({ t: "Blocker", c: "#7fb0ff" });
+      const sa = sim.secA(o, st) - 1;
+      if (sa > 0) state.push({ t: "Security Attack +" + sa, c: "#ff8a94" });
+      if (st.noAB >= sim.G.turn) state.push({ t: "Can't attack or block", c: "#ff6b78" });
+    }
+  }
+  const inh = st ? st.cards.slice(0, -1).filter((c) => sim.DB[c.c].i) : [];
   const w = land ? 150 : 128;
   const txt = (l: string, t: string) =>
     t ? (
@@ -1379,7 +1515,22 @@ function CardDetail({ code, sim, who, src, land, children }: { code: string; sim
         </View>
       </View>
       {!land ? <View style={{ gap: 6, marginTop: 10 }}>{children}</View> : null}
+      {state.length ? (
+        <View style={{ backgroundColor: "#0d1328", borderRadius: 10, padding: 9, marginTop: 10 }}>
+          <Text style={{ color: C.mut, fontSize: 11, marginBottom: 5 }}>State</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
+            {state.map((z, k) => (
+              <View key={k} style={{ borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, backgroundColor: z.c + "22", borderWidth: 1, borderColor: z.c }}>
+                <Text style={{ color: z.c, fontWeight: "700", fontSize: 12 }}>{z.t}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : null}
       {txt("Effect", d.e)}
+      {inh.map((c, k) => (
+        <View key={c.u}>{txt("Inherited from " + sim.DB[c.c].n, sim.DB[c.c].i)}</View>
+      ))}
       {txt("Inherited effect", d.i)}
       {txt("Security", d.s)}
     </View>
@@ -1407,9 +1558,14 @@ function TrashList({ sim, p, title }: { sim: Sim; p: { trash: CardInst[] }; titl
   );
 }
 // tappeto: sfumatura blu notte e cerchi dell'arena al centro
-function Mat() {
+// alone rosso nel turno dell'avversario, blu nel tuo (come Alysion)
+const MATOP = new Animated.Value(0);
+function Mat({ op }: { op: boolean }) {
   const { width: W, height: H } = useWindowDimensions();
   const r = Math.min(W, H);
+  useEffect(() => {
+    tm(MATOP, op ? 1 : 0, 700).start();
+  }, [op]);
   return (
     <View pointerEvents="none" style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }}>
       <Svg width={W} height={H}>
@@ -1426,43 +1582,38 @@ function Mat() {
         ))}
         <Rect x={0} y={H / 2 - 22} width={W} height={44} fill="#38d6f5" fillOpacity={0.05} />
       </Svg>
+      <Animated.View style={{ position: "absolute", left: 0, top: 0, opacity: MATOP }}>
+        <Svg width={W} height={H}>
+          <Defs>
+            <RadialGradient id="matop" cx="50%" cy="50%" r="60%">
+              <Stop offset="0" stopColor="#c42040" stopOpacity={0.55} />
+              <Stop offset="0.55" stopColor="#5a1030" stopOpacity={0.35} />
+              <Stop offset="1" stopColor="#0a0f24" stopOpacity={0} />
+            </RadialGradient>
+          </Defs>
+          <Rect width={W} height={H} fill="url(#matop)" />
+          {[0.16, 0.27].map((k) => (
+            <Circle key={k} cx={W / 2} cy={H / 2} r={r * k} stroke="#ff5a6e" strokeOpacity={0.3} strokeWidth={2} fill="none" />
+          ))}
+        </Svg>
+      </Animated.View>
     </View>
   );
 }
 
 // freccia dell'attacco trascinato: si ridisegna da sola (senza ridisegnare il tavolo) a ogni movimento del dito
-const ARROW: { set: ((a: { x1: number; y1: number; x2: number; y2: number } | null) => void) | null } = { set: null };
+type ArrowA = { x1: number; y1: number; x2: number; y2: number; color?: string };
+const ARROW: { set: ((a: ArrowA | null) => void) | null } = { set: null };
 function Arrow() {
-  const [a, setA] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
+  const [a, setA] = useState<ArrowA | null>(null);
   useEffect(() => {
     ARROW.set = setA;
     return () => {
       ARROW.set = null;
     };
   }, []);
-  const { width: W, height: H } = useWindowDimensions();
   if (!a) return null;
-  const dx = a.x2 - a.x1,
-    dy = a.y2 - a.y1,
-    len = Math.hypot(dx, dy) || 1;
-  // curva leggera verso l'alto e punta orientata come l'ultimo tratto
-  const cx = (a.x1 + a.x2) / 2 - (dy / len) * Math.min(60, len * 0.2),
-    cy = (a.y1 + a.y2) / 2 + (dx / len) * Math.min(60, len * 0.2);
-  const ang = Math.atan2(a.y2 - cy, a.x2 - cx);
-  const hx = (r: number, t: number) => a.x2 + Math.cos(ang + t) * r;
-  const hy = (r: number, t: number) => a.y2 + Math.sin(ang + t) * r;
-  const head = `M${a.x2 + Math.cos(ang) * 6} ${a.y2 + Math.sin(ang) * 6} L${hx(22, 2.6)} ${hy(22, 2.6)} L${hx(10, Math.PI)} ${hy(10, Math.PI)} L${hx(22, -2.6)} ${hy(22, -2.6)} Z`;
-  const path = `M${a.x1} ${a.y1} Q${cx} ${cy} ${a.x2} ${a.y2}`;
-  return (
-    <View pointerEvents="none" style={{ position: "absolute", left: 0, top: 0, width: W, height: H }}>
-      <Svg width={W} height={H}>
-        <Path d={path} stroke="#000" strokeOpacity={0.45} strokeWidth={11} fill="none" strokeLinecap="round" />
-        <Path d={path} stroke={C.gold} strokeWidth={6} fill="none" strokeLinecap="round" strokeDasharray="14 7" />
-        <Path d={head} fill={C.gold} stroke="#000" strokeOpacity={0.5} strokeWidth={1.5} />
-        <Circle cx={a.x1} cy={a.y1} r={9} fill={C.gold} stroke="#fff" strokeWidth={2} />
-      </Svg>
-    </View>
-  );
+  return <Chevrons a={a} color={a.color || C.gold} />;
 }
 // chi inizia: riquadro al centro
 function FirstV({ pi }: { pi: 0 | 1 }) {
@@ -1503,6 +1654,199 @@ function MulliganV({ hand, land, W, onPick }: { hand: string[]; land: boolean; W
           <Btn label="Mulligan" onPress={() => onPick(true)} />
         </View>
       </Animated.View>
+    </View>
+  );
+}
+
+// ---- spunti da Digimon Alysion (video della partita, 26 novembre 2026, scelta dell'utente) ----
+
+// nome della fase grande, inclinato, che attraversa lo schermo con una scia di luce (blu nel tuo turno, rosso nell'altro)
+function PhaseV({ text, op }: { text: string; op: boolean }) {
+  const p = useRef(new Animated.Value(0)).current;
+  const { width } = useWindowDimensions();
+  useEffect(() => {
+    run(Animated.sequence([tm(p, 1, 230, Easing.out(Easing.exp)), Animated.delay(330 * SPEED), tm(p, 2, 210, Easing.in(Easing.cubic))]));
+  }, []);
+  const glow = op ? "#ff3b4e" : "#38a8ff";
+  return (
+    <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: "38%", height: 90, alignItems: "center", justifyContent: "center" }}>
+      {/* scia */}
+      <Animated.View style={{ position: "absolute", left: 0, right: 0, height: 64, opacity: p.interpolate({ inputRange: [0, 1, 2], outputRange: [0, 1, 0] }), transform: [{ scaleX: p.interpolate({ inputRange: [0, 1, 2], outputRange: [0.2, 1, 1.4] }) }] }}>
+        <Svg width="100%" height={64} viewBox="0 0 100 64" preserveAspectRatio="none">
+          <Defs>
+            <LinearGradient id={"ph" + (op ? "r" : "b")} x1="0" y1="0" x2="1" y2="0">
+              <Stop offset="0" stopColor={glow} stopOpacity={0} />
+              <Stop offset="0.5" stopColor={glow} stopOpacity={0.55} />
+              <Stop offset="1" stopColor={glow} stopOpacity={0} />
+            </LinearGradient>
+          </Defs>
+          <Rect x={0} y={14} width={100} height={36} fill={`url(#ph${op ? "r" : "b"})`} />
+          <Rect x={0} y={31} width={100} height={2} fill="#fff" fillOpacity={0.9} />
+        </Svg>
+      </Animated.View>
+      <Animated.View style={{ opacity: p.interpolate({ inputRange: [0, 0.5, 1, 1.6, 2], outputRange: [0, 1, 1, 1, 0] }), transform: [{ translateX: p.interpolate({ inputRange: [0, 1, 2], outputRange: [width * 0.6, 0, -width * 0.6] }) }, { skewX: "-12deg" }] }}>
+        <Text style={{ color: "#fff", fontFamily: DISPLAY, fontWeight: "700", fontStyle: "italic", fontSize: Math.min(44, width / 11), letterSpacing: 2, textTransform: "uppercase", textShadowColor: glow, textShadowRadius: 14 }}>{text}</Text>
+      </Animated.View>
+    </View>
+  );
+}
+
+// cerchio di simboli che gira dietro la carta che digievolve (due cerchi e più grande per i Lv.6 e oltre)
+function Rune({ size, color, rev }: { size: number; color: string; rev?: boolean }) {
+  const r = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const a = Animated.loop(Animated.timing(r, { toValue: 1, duration: 5000, easing: Easing.linear, useNativeDriver: true }));
+    a.start();
+    return () => a.stop();
+  }, []);
+  const G = "DIGITALMONSTER";
+  return (
+    <Animated.View style={{ position: "absolute", width: size, height: size, transform: [{ rotate: r.interpolate({ inputRange: [0, 1], outputRange: rev ? ["360deg", "0deg"] : ["0deg", "360deg"] }) }] }}>
+      <Svg width={size} height={size} viewBox="-50 -50 100 100">
+        <Circle r={48} stroke={color} strokeWidth={1.2} fill="none" strokeOpacity={0.9} />
+        <Circle r={40} stroke={color} strokeWidth={0.6} fill="none" strokeDasharray="2 3" />
+        <Circle r={33} stroke="#fff" strokeWidth={0.5} fill="none" strokeOpacity={0.6} />
+        {Array.from({ length: 28 }, (_, k) => {
+          const a = (k / 28) * Math.PI * 2;
+          return <Path key={"t" + k} d={`M${Math.cos(a) * 40} ${Math.sin(a) * 40}L${Math.cos(a) * (k % 2 ? 43 : 46)} ${Math.sin(a) * (k % 2 ? 43 : 46)}`} stroke={color} strokeWidth={0.8} />;
+        })}
+        {G.split("").map((ch, k) => {
+          const a = (k / G.length) * 360;
+          return (
+            <SvgText key={k} x={0} y={-35} fontSize={5.5} fontWeight="700" fill="#fff" fillOpacity={0.85} textAnchor="middle" transform={`rotate(${a})`}>
+              {ch}
+            </SvgText>
+          );
+        })}
+      </Svg>
+    </Animated.View>
+  );
+}
+
+// carta giocata o digievoluta mostrata grande al centro, con la fascia "Lv.3 · DIGIMON" e il nome, prima di andare al suo posto
+type Show = { code: string; kind: "play" | "evo"; big: boolean; id: number };
+function CardShowV({ s, sim, W, H }: { s: Show; sim: Sim; W: number; H: number }) {
+  const p = useRef(new Animated.Value(0)).current;
+  const fl = useRef(new Animated.Value(s.kind === "evo" ? 1 : 0.6)).current;
+  const hold = s.kind === "evo" ? (s.big ? 900 : 620) : 420;
+  useEffect(() => {
+    run(Animated.sequence([Animated.parallel([sp(p, 1, 7, 90), tm(fl, 0, 500)]), Animated.delay(hold * SPEED), tm(p, 2, 200, Easing.in(Easing.cubic))]));
+  }, []);
+  const d = sim.DB[s.code];
+  const w = Math.round(Math.min(W * 0.36, H * 0.3, 190)),
+    h = Math.round(w * 1.396);
+  const col = COL[d.col] || C.acc;
+  const tag = d.t === "Digimon" ? "DIGIMON" : d.t === "Tamer" ? "TAMER" : d.t.toUpperCase();
+  return (
+    <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, alignItems: "center", justifyContent: "center" }}>
+      <Animated.View style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, backgroundColor: "#05081a", opacity: p.interpolate({ inputRange: [0, 1, 2], outputRange: [0, s.kind === "evo" ? 0.7 : 0.45, 0] }) }} />
+      {s.kind === "evo" ? (
+        <Animated.View style={{ position: "absolute", alignItems: "center", justifyContent: "center", opacity: p.interpolate({ inputRange: [0, 1, 2], outputRange: [0, 1, 0] }), transform: [{ scale: p.interpolate({ inputRange: [0, 1, 2], outputRange: [0.3, 1, 1.3] }) }] }}>
+          <Rune size={h * (s.big ? 1.75 : 1.45)} color={s.big ? C.gold : col} />
+          {s.big ? <Rune size={h * 1.3} color="#9ff3ff" rev /> : null}
+        </Animated.View>
+      ) : null}
+      <Animated.View style={{ alignItems: "center", opacity: p.interpolate({ inputRange: [0, 0.4, 1, 2], outputRange: [0, 1, 1, 0] }), transform: [{ scale: p.interpolate({ inputRange: [0, 1, 2], outputRange: [0.55, 1, 0.5] }) }, { translateY: p.interpolate({ inputRange: [0, 1, 2], outputRange: [30, 0, 0] }) }] }}>
+        <View style={{ borderRadius: 10, borderWidth: 3, borderColor: "#fff", overflow: "hidden", shadowColor: col, shadowOpacity: 1, shadowRadius: 22, elevation: 18 }}>
+          <Face code={s.code} w={w} h={h} big />
+          <Animated.View style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, backgroundColor: "#fff", opacity: fl }} />
+        </View>
+        <View style={{ width: w + 26, marginTop: -26, backgroundColor: "#0b0f22f2", borderWidth: 1.5, borderColor: "#fff", borderRadius: 6, overflow: "hidden" }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 8, paddingVertical: 2, backgroundColor: "#ffffff1c" }}>
+            <Text style={{ color: C.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 13 }}>{d.lv ? "Lv." + d.lv : ""}</Text>
+            <Text style={{ color: C.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 12, letterSpacing: 1 }}>{tag}</Text>
+          </View>
+          <Text numberOfLines={1} adjustsFontSizeToFit style={{ color: "#fff", fontFamily: DISPLAY, fontWeight: "700", fontSize: 19, textAlign: "center", paddingVertical: 3 }}>{d.n}</Text>
+        </View>
+      </Animated.View>
+    </View>
+  );
+}
+
+// contatori come in alto a sinistra in Alysion: Sicurezza, mano, mazzo, scarti
+function Counters({ p, label }: { p: { sec: unknown[]; hand: unknown[]; deck: unknown[]; trash: unknown[] }; label?: string }) {
+  const it = (ico: React.ReactNode, n: number) => (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+      {ico}
+      <Text style={{ color: C.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 12 }}>{n}</Text>
+    </View>
+  );
+  const s = { width: 13, height: 13, viewBox: "0 0 24 24" } as const;
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#0b0f22b3", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: "#ffffff14", alignSelf: "flex-start" }}>
+      {label ? <Text style={{ color: C.mut, fontSize: 10.5 }}>{label}</Text> : null}
+      {it(
+        <Svg {...s}>
+          <Path d="M12 2 21 5.5v6.5c0 5-3.8 8.6-9 10-5.2-1.4-9-5-9-10V5.5z" fill="#7fb0ff" />
+        </Svg>,
+        p.sec.length,
+      )}
+      {it(
+        <Svg {...s}>
+          <Rect x={3} y={5} width={11} height={15} rx={2} fill="#9aa6c7" transform="rotate(-12 8 12)" />
+          <Rect x={10} y={4} width={11} height={15} rx={2} fill="#eef2ff" transform="rotate(10 15 12)" />
+        </Svg>,
+        p.hand.length,
+      )}
+      {it(
+        <Svg {...s}>
+          <Rect x={5} y={6} width={14} height={16} rx={2} fill="#4a6fd0" />
+          <Rect x={5} y={2} width={14} height={16} rx={2} fill="#7f95e6" stroke="#0b0f22" strokeWidth={1} />
+        </Svg>,
+        p.deck.length,
+      )}
+      {it(
+        <Svg {...s}>
+          <Path d="M5 7h14l-1.3 14H6.3zM9 4h6v3H9z" fill="#ff8a94" />
+        </Svg>,
+        p.trash.length,
+      )}
+    </View>
+  );
+}
+
+// freccia d'attacco fatta di "›››" che scorrono verso il bersaglio (attacchi, blocco e trascinamento)
+function Chevrons({ a, color }: { a: { x1: number; y1: number; x2: number; y2: number }; color: string }) {
+  const prog = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const l = Animated.loop(Animated.timing(prog, { toValue: 1, duration: 900, easing: Easing.linear, useNativeDriver: true }));
+    l.start();
+    return () => l.stop();
+  }, []);
+  const dx = a.x2 - a.x1,
+    dy = a.y2 - a.y1,
+    len = Math.hypot(dx, dy) || 1;
+  const cx = (a.x1 + a.x2) / 2 - (dy / len) * Math.min(60, len * 0.2),
+    cy = (a.y1 + a.y2) / 2 + (dx / len) * Math.min(60, len * 0.2);
+  const pt = (t: number) => [(1 - t) * (1 - t) * a.x1 + 2 * (1 - t) * t * cx + t * t * a.x2, (1 - t) * (1 - t) * a.y1 + 2 * (1 - t) * t * cy + t * t * a.y2];
+  const ang = (t: number) => (Math.atan2(2 * (1 - t) * (cy - a.y1) + 2 * t * (a.y2 - cy), 2 * (1 - t) * (cx - a.x1) + 2 * t * (a.x2 - cx)) * 180) / Math.PI;
+  const K = Math.max(3, Math.min(9, Math.round(len / 38)));
+  const S = 12;
+  const ts = Array.from({ length: S + 1 }, (_, k) => k / S);
+  const xs = ts.map((t) => pt(t)[0] - 13),
+    ys = ts.map((t) => pt(t)[1] - 13),
+    rs = ts.map((t) => ang(t) + "deg");
+  const head = pt(1),
+    ha = ang(0.98);
+  return (
+    <View pointerEvents="none" style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }}>
+      {Array.from({ length: K }, (_, k) => {
+        const t = Animated.modulo(Animated.add(prog, k / K), 1);
+        return (
+          <Animated.View key={k} style={{ position: "absolute", left: 0, top: 0, width: 26, height: 26, opacity: t.interpolate({ inputRange: [0, 0.12, 0.85, 1], outputRange: [0, 1, 1, 0] }), transform: [{ translateX: t.interpolate({ inputRange: ts, outputRange: xs }) }, { translateY: t.interpolate({ inputRange: ts, outputRange: ys }) }, { rotate: t.interpolate({ inputRange: ts, outputRange: rs }) }] }}>
+            <Svg width={26} height={26} viewBox="0 0 26 26">
+              <Path d="M6 4 L16 13 L6 22" stroke="#000" strokeOpacity={0.45} strokeWidth={8} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              <Path d="M6 4 L16 13 L6 22" stroke={color} strokeWidth={5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
+          </Animated.View>
+        );
+      })}
+      <View style={{ position: "absolute", left: head[0] - 17, top: head[1] - 17, width: 34, height: 34, transform: [{ rotate: ha + "deg" }] }}>
+        <Svg width={34} height={34} viewBox="0 0 34 34">
+          <Path d="M8 5 L30 17 L8 29 L14 17 Z" fill={color} stroke="#fff" strokeWidth={2} strokeLinejoin="round" />
+        </Svg>
+      </View>
+      <View style={{ position: "absolute", left: a.x1 - 8, top: a.y1 - 8, width: 16, height: 16, borderRadius: 8, backgroundColor: color, borderWidth: 2, borderColor: "#fff" }} />
     </View>
   );
 }

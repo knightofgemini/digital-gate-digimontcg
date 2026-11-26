@@ -14,7 +14,7 @@ export type Opt<T> = { label: string; sub?: string; v: T; pri?: boolean; code?: 
 // animazioni ed effetti chiesti alla schermata: ognuno si aspetta finché non è finito
 export type Fx =
   | { k: "banner"; text: string; op: boolean }
-  | { k: "phase"; text: string }
+  | { k: "phase"; text: string; op?: boolean }
   | { k: "spawn"; u: string; how: "play" | "evo" | "hatch" | "draw" | "move" | "sec" | "free" }
   | { k: "attack"; from: string; to: string }
   | { k: "block"; u: string }
@@ -39,6 +39,8 @@ export interface SimUI {
   isLive(g: Game): boolean;
   // mano iniziale: true = mulligan (rimescola e pesca 5 carte nuove)
   mulligan(hand: string[]): Promise<boolean>;
+  // blocco scelto sul tavolo (Alysion: "Select a Card to Block"): uid del Digimon che blocca o null; senza, domanda normale
+  block?(atk: string, target: string, blockers: string[], text: string): Promise<string | null>;
 }
 
 export const DECKS: Record<string, { name: string; code: string; list: Record<string, number> }> = {
@@ -471,12 +473,17 @@ export class Sim {
         const a = this.dp(i, s);
         b = bl.filter((x) => this.dp(o, x) >= a)[0] || (target === "p" && this.P(o).sec.length <= 1 ? bl[0] : null);
       } else {
-        b = await this.ui.ask(
-          "Block the attack?",
-          bl.map((x) => ({ label: "Block with " + this.top(x).n, sub: "DP " + this.dp(o, x), v: x, code: this.topCode(x) })),
-          "Don't block",
-          this.top(s).n + " (DP " + this.dp(i, s) + ") attacks " + (target === "p" ? "you" : this.top(target).n) + ".",
-        );
+        const text = this.top(s).n + " (DP " + this.dp(i, s) + ") attacks " + (target === "p" ? "you" : this.top(target).n) + ".";
+        if (this.ui.block) {
+          const u = await this.ui.block(s.u, target === "p" ? "sec" + o : target.u, bl.map((x) => x.u), text);
+          b = bl.find((x) => x.u === u) || null;
+        } else
+          b = await this.ui.ask(
+            "Block the attack?",
+            bl.map((x) => ({ label: "Block with " + this.top(x).n, sub: "DP " + this.dp(o, x), v: x, code: this.topCode(x) })),
+            "Don't block",
+            text,
+          );
       }
     }
     if (b) {
@@ -560,7 +567,10 @@ export class Sim {
     this.ui.update();
     await this.fx({ k: "banner", text: i === 0 ? "Your turn" : "Opponent's turn", op: i === 1 });
     if (!this.ui.isLive(g)) return;
-    if (ups.length) await this.fx({ k: "unsusp", u: ups.map((s) => s.u).join(",") });
+    if (ups.length) {
+      await this.fx({ k: "phase", text: "Unsuspend phase", op: i === 1 });
+      await this.fx({ k: "unsusp", u: ups.map((s) => s.u).join(",") });
+    }
     if (p.field.some((s) => this.topCode(s) === "ST2-12") && this.digis(1 - i).some((x) => this.nsrc(x) === 0)) {
       await this.effect(i, "ST2-12", this.DB["ST2-12"].e);
       await this.gain(i, 1);
@@ -574,11 +584,14 @@ export class Sim {
         await this.fx({ k: "end", win: G.over });
         return;
       }
+      await this.fx({ k: "phase", text: "Draw phase", op: i === 1 });
       const c = p.deck.shift()!;
       p.hand.push(c);
       this.ui.update();
       await this.fx({ k: "spawn", u: c.u, how: "draw" });
     }
+    if (!this.ui.isLive(g)) return;
+    await this.fx({ k: "phase", text: "Breeding phase", op: i === 1 });
     if (!this.ui.isLive(g)) return;
     if (p.ai) await this.aiTurn();
   }
@@ -587,6 +600,8 @@ export class Sim {
     if (G.over != null) return;
     const nm = pass ? 3 : -G.mem;
     this.log(pass ? (G.cur ? "The opponent passes." : "You pass.") : "Memory moves to the opponent's side: turn ends.");
+    await this.fx({ k: "phase", text: "End phase", op: G.cur === 1 });
+    if (!this.ui.isLive(G)) return;
     if (pass) {
       const from = G.mem;
       G.mem = -3;
@@ -608,7 +623,7 @@ export class Sim {
   async toMain() {
     this.G.phase = "main";
     this.ui.update();
-    await this.fx({ k: "phase", text: "Main phase" });
+    await this.fx({ k: "phase", text: "Main phase", op: this.G.cur === 1 });
   }
 
   // ---- IA ----
