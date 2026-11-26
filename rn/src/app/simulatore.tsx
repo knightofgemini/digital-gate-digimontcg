@@ -947,7 +947,7 @@ export default function Simulatore() {
       {G.over != null ? (
         <Btn small label="New game" pri onPress={() => newGame()} />
       ) : G.phase === "setup" ? null : G.cur !== 0 ? (
-        <Dial label="Opponent's turn" off />
+        <Dial label="Opp. turn" off />
       ) : G.phase === "breed" && !G.busy ? (
         <>
           {!me.breed && me.eggs.length ? <Btn small pri label="Hatch" onPress={() => act(async () => (await sim.hatch(0), await sim.toMain()))} /> : null}
