@@ -371,6 +371,8 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   campo = gioca/usa; Digimon in campo su un Digimon avversario sospeso = attacca, sulla Sicurezza o sul campo avversario =
   attacca il giocatore (`useDragPan` con PanResponder, bersagli misurati all'inizio, carta che segue il dito e scritta
   in alto con l'azione); il tocco apre ancora la scheda. Parametro `?l=h|v` per la disposizione (prove).
+  **Sicurezza**: scudo con il numero e sotto le carte coperte di traverso, una sopra l'altra (richiesta dell'utente;
+  `Security`/`HBack`, la carta controllata scivola via).
   Menu → "Guarda una partita" (`?demo=1`): il telefono gioca da solo con tutti e due i mazzi. Prova su emulatore:
   `prova-emulatore.yml` con "sim" o inviando sul ramo `simulatore` (`tools/rn_sim.py`: le animazioni continue bloccano
   uiautomator, quindi solo foto della partita dimostrativa e tocchi a coordinate fisse). Prima

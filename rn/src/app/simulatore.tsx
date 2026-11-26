@@ -225,32 +225,63 @@ function Pile({ label, n, kind, top, w, h, onPress, rk, noN }: { label: string; 
     </Pressable>
   );
 }
-function Security({ n, i, w, row, x }: { n: number; i: 0 | 1; w: number; row?: boolean; x?: Ctx }) {
+// Sicurezza: scudo con il numero e, sotto, le carte coperte messe di traverso una sopra l'altra come sul tavolo
+// (richiesta dell'utente, 26 novembre 2026)
+function HBack({ w, h, red }: { w: number; h: number; red?: boolean }) {
+  return (
+    <Svg width={w} height={h} viewBox="0 0 60 43">
+      <Defs>
+        <LinearGradient id={"hb" + (red ? "r" : "b")} x1="0" y1="0" x2="1" y2="1">
+          <Stop offset="0" stopColor={red ? "#c0303c" : "#2c4bb8"} />
+          <Stop offset="1" stopColor={red ? "#5a1018" : "#121c52"} />
+        </LinearGradient>
+      </Defs>
+      <Rect x={0.5} y={0.5} width={59} height={42} rx={3.5} fill={`url(#hb${red ? "r" : "b"})`} stroke={red ? "#ff9aa3" : "#7f95e6"} />
+      <Circle cx={30} cy={21.5} r={11} stroke="#ffffff55" strokeWidth={1.4} fill="none" />
+      <Circle cx={30} cy={21.5} r={6} stroke="#ffffff88" strokeWidth={1.4} fill="none" />
+    </Svg>
+  );
+}
+function Security({ n, i, x, compact }: { n: number; i: 0 | 1; w?: number; row?: boolean; x?: Ctx; compact?: boolean }) {
   const hov = !!(x && x.drag && x.drag.hover === "sec" + i);
   const hi = !!(x && x.drag && x.drag.keys.includes("sec" + i));
+  const cw = compact ? 36 : 42,
+    chh = Math.round(cw * 0.716),
+    step = compact ? 4 : 6;
+  // la carta che se ne va scivola via a destra e svanisce
+  const out = useRef(new Animated.Value(0)).current;
+  const last = useRef(n);
+  useEffect(() => {
+    if (n < last.current) {
+      out.setValue(1);
+      tm(out, 0, 450).start();
+    }
+    last.current = n;
+  }, [n]);
   return (
     <View
       ref={(r: any) => {
         REFS.set("sec" + i, r);
       }}
       collapsable={false}
-      style={{ flexDirection: "row", alignItems: "center", gap: 6, padding: 3, borderRadius: 12, borderWidth: hi ? 2 : 0, borderColor: hov ? "#fff" : C.gold, backgroundColor: hov ? "#ff5a4f33" : "transparent", transform: [{ scale: hov ? 1.1 : 1 }] }}
+      style={{ alignItems: "center", padding: 3, borderRadius: 12, borderWidth: hi ? 2 : 0, borderColor: hov ? "#fff" : C.gold, backgroundColor: hov ? "#ff5a4f33" : "transparent", transform: [{ scale: hov ? 1.1 : 1 }] }}
     >
-      <View style={{ width: 40, height: 46, alignItems: "center", justifyContent: "center" }}>
+      <View style={{ width: 40, height: 46, alignItems: "center", justifyContent: "center", zIndex: 2 }}>
         <Svg width={40} height={46} viewBox="0 0 40 46" style={{ position: "absolute" }}>
           <Path d="M20 1 39 7v18c0 10-8 17-19 20C9 42 1 35 1 25V7z" fill={i ? "#1b3c96" : "#8d1c2a"} stroke={i ? "#6f9bff" : "#ff8a94"} strokeWidth={1.5} />
         </Svg>
         <Text style={{ color: "#fff", fontFamily: DISPLAY, fontWeight: "700", fontSize: 20 }}>{n}</Text>
       </View>
-      {row ? (
-        <View style={{ flexDirection: "row", paddingLeft: w * 0.3 }}>
-          {Array.from({ length: n }, (_, k) => (
-            <View key={k} style={{ marginLeft: -w * 0.3 }}>
-              <Back w={w} h={w * 1.4} red={!i} />
-            </View>
-          ))}
-        </View>
-      ) : null}
+      <View style={{ width: cw + 4, height: chh + Math.max(0, n - 1) * step + 2, marginTop: -4 }}>
+        {Array.from({ length: n }, (_, k) => (
+          <View key={k} style={{ position: "absolute", left: 2, top: k * step, shadowColor: "#000", shadowOpacity: 0.5, shadowRadius: 3, elevation: 2 }}>
+            <HBack w={cw} h={chh} red={!i} />
+          </View>
+        ))}
+        <Animated.View pointerEvents="none" style={{ position: "absolute", left: 2, top: n * step, opacity: out, transform: [{ translateX: out.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }) }, { rotate: out.interpolate({ inputRange: [0, 1], outputRange: ["20deg", "0deg"] }) }] }}>
+          <HBack w={cw} h={chh} red={!i} />
+        </Animated.View>
+      </View>
     </View>
   );
 }
@@ -799,7 +830,7 @@ export default function Simulatore() {
     cw = Math.round(ch / 1.396);
     hh = Math.round(Math.max(60, Math.min(124, bandH - 14)));
     hw = Math.round(hh / 1.396);
-    pw = Math.round(Math.min(38, cw * 0.6));
+    pw = Math.round(Math.min(bandH < 175 ? 31 : 38, cw * 0.6));
     ph = Math.round(pw * 1.396);
   } else {
     cw = Math.round(Math.max(44, Math.min(66, (W - 40) / 6)));
@@ -950,12 +981,12 @@ export default function Simulatore() {
                   </View>
                 </View>
                 <Zone fill rk="zone1" x={x}>{battle(1, true)}</Zone>
-                <View style={{ width: side, justifyContent: "space-between", alignItems: "flex-end" }}>
-                  <Security n={op.sec.length} i={1} w={Math.round(pw * 0.62)} row x={x} />
-                  <View style={{ flexDirection: "row", gap: 8, alignItems: "flex-end" }}>
+                <View style={{ width: side, flexDirection: "row", justifyContent: "flex-end", alignItems: "flex-start", gap: 8 }}>
+                  <View style={{ flexDirection: "row", gap: 8, alignItems: "flex-end", alignSelf: "flex-end" }}>
                     {breed(1)}
                     {eggs(1)}
                   </View>
+                  <Security n={op.sec.length} i={1} x={x} compact />
                 </View>
               </View>
               {/* memoria */}
@@ -970,12 +1001,14 @@ export default function Simulatore() {
               </View>
               {/* tu */}
               <View style={{ height: bandH, flexDirection: "row", gap: 6 }}>
-                <View style={{ width: side, justifyContent: "space-between" }}>
-                  <Security n={me.sec.length} i={0} w={Math.round(pw * 0.62)} row />
-                  <View style={{ flexDirection: "row", gap: 8, alignItems: "flex-end" }}>
-                    {eggs(0)}
-                    {breed(0)}
-                    {piles(0)}
+                <View style={{ width: side, flexDirection: "row", gap: 8, alignItems: "flex-start" }}>
+                  <Security n={me.sec.length} i={0} compact />
+                  <View style={{ flex: 1, justifyContent: "space-between", height: "100%" }}>
+                    <View style={{ flexDirection: "row", gap: 8, alignItems: "flex-end" }}>
+                      {eggs(0)}
+                      {breed(0)}
+                    </View>
+                    <View style={{ flexDirection: "row", gap: 8, alignItems: "flex-end" }}>{piles(0)}</View>
                   </View>
                 </View>
                 <Zone fill rk="zone0" x={x}>{battle(0, true)}</Zone>
