@@ -66,7 +66,13 @@ for i, spec in enumerate(SPECS):
     if key.startswith("pagina:") and kw:
         # pagina: prima i tocchi (separati da "+"; "%x;y" = punto dello schermo in frazioni), poi si scorre
         for j, w in enumerate(kw.split("+")):
-            if w.startswith("%"):
+            if w.startswith("?"):
+                # "?parola": scrive nel campo che ha la tastiera (una parola sola)
+                adb("shell", "input", "text", w[1:])
+                time.sleep(1.5)
+                adb("shell", "input", "keyevent", "4")
+                time.sleep(1)
+            elif w.startswith("%"):
                 fx, fy = map(float, w[1:].split(";"))
                 adb("shell", "input", "tap", str(int(W * fx)), str(int(H * fy)))
                 time.sleep(1.2)

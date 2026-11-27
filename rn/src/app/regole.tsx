@@ -8,7 +8,7 @@ import { DISPLAY, Text, TextInput } from "../Text";
 import { useTheme } from "../theme";
 import { PageTitle, common } from "../ui";
 import { Screen, useBarState } from "../chrome";
-import { QAItem, RuleQA, byRecent, qaDate, rulesQA, tags, useQA } from "../qa";
+import { QAItem, RuleQA, qaDate, rulesQA, tags, useQA } from "../qa";
 import { Rich } from "../rich";
 
 // nomi delle sezioni del sito in italiano (solo le etichette dell'app; le domande restano in inglese)
@@ -24,6 +24,9 @@ const CATS: [string, string][] = [
 const MESI = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
 // nome della voce con la stessa capsula del testo delle carte: le parole chiave come ＜Blocker＞, i momenti e le zone
 // sono già tra [ ] nel sito (27 novembre 2026, segnalato dall'utente: le voci erano testo semplice)
+// qui (a differenza della scheda carta) dalla più vecchia alla più recente, a parità di data per numero
+// (27 novembre 2026, richiesta dell'utente)
+const byOldest = (l: RuleQA[]) => l.slice().sort((x, y) => (x[5] || "").localeCompare(y[5] || "") || x[2] - y[2]);
 const KWG = new Set(["Alliance"]); // parole chiave che il sito mette nel Glossario
 const voce = (cat: string, title: string) => (cat === "Keyword Effects" || KWG.has(title) ? "＜" + title + "＞" : tags(title).replace(/\]\?$/, "]"));
 type Row = { k: string; kind: "grp"; cat: string; title: string; list: RuleQA[] } | { k: string; kind: "qa"; it: RuleQA; where: string };
@@ -42,14 +45,14 @@ export default function Regole() {
     const w = q.trim().toLowerCase();
     if (w.length >= 2) {
       // ricerca in tutte le sezioni: domande, risposte e nomi delle voci
-      return byRecent(all, (r) => r[5], (r) => r[2])
+      return byOldest(all)
         .filter((r) => (r[1] + "\n" + r[3] + "\n" + r[4]).toLowerCase().includes(w))
         .slice(0, 120)
         .map((r) => ({ k: "q" + r[2], kind: "qa" as const, it: r, where: label(r[0]) + " · " + r[1] }));
     }
     const groups = new Map<string, RuleQA[]>();
     for (const r of all) if (r[0] === cat) (groups.get(r[1]) || groups.set(r[1], []).get(r[1])!).push(r);
-    return [...groups].map(([title, list]) => ({ k: cat + "|" + title, kind: "grp" as const, cat, title, list: byRecent(list, (r) => r[5], (r) => r[2]) }));
+    return [...groups].map(([title, list]) => ({ k: cat + "|" + title, kind: "grp" as const, cat, title, list: byOldest(list) }));
   }, [q, cat, all]);
   const now = Date.now();
   const d = qaDate();
