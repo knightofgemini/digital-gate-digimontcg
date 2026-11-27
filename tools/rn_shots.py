@@ -64,10 +64,10 @@ for i, spec in enumerate(SPECS):
     time.sleep(7)
     shot(name + "_1")
     if key.startswith("pagina:") and kw:
-        # pagina: prima i tocchi (separati da "+"; "%x,y" = punto dello schermo in frazioni), poi si scorre
+        # pagina: prima i tocchi (separati da "+"; "%x;y" = punto dello schermo in frazioni), poi si scorre
         for j, w in enumerate(kw.split("+")):
             if w.startswith("%"):
-                fx, fy = map(float, w[1:].split(","))
+                fx, fy = map(float, w[1:].split(";"))
                 adb("shell", "input", "tap", str(int(W * fx)), str(int(H * fy)))
                 time.sleep(1.2)
             else:
