@@ -96,80 +96,77 @@ const dataIt = (d: string) => (d ? +d.slice(8) + " " + MESI[+d.slice(5, 7) - 1] 
 // "<Security A.>" del sito → "＜Security A.＞" come nel testo delle carte, così diventa la stessa icona
 // "[...]" nel sito è una parte di testo omessa, non un nome: resta testo semplice
 const tags = (s: string) => s.replace(/<([A-Z][^<>\n]{0,40})>/g, "＜$1＞").replace(/\[(\.\.\.|…)\]/g, "(…)");
-const SHOW = 5;
 
+// sezione della scheda carta: un riquadro chiuso con il titolo e il numero di domande, come le voci della pagina
+// Regole; toccandolo si aprono tutte, dalla più recente (27 novembre 2026, richiesta dell'utente)
 export function QASection({ code, H3 }: { code: string; H3: any }) {
   const t = useTheme();
   useQA();
   const list = qaFor(code);
-  const [all, setAll] = useState(false);
+  const [open, setOpen] = useState(false);
   if (!list.length) return null;
   const now = Date.now();
-  const shown = all ? list : list.slice(0, SHOW);
+  const nuove = list.filter((x) => x[3] && now - Date.parse(x[3]) < 30 * 86400000).length;
   return (
     <View style={{ marginTop: 4, marginBottom: 14 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
-        <Text style={[H3, { marginBottom: 0 }]}>Domande e risposte</Text>
-        <View style={{ backgroundColor: t.surface2, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 1 }}>
-          <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "700", fontSize: 11.5 }}>{list.length}</Text>
-        </View>
-      </View>
-      <Text style={{ color: t.ink2, fontSize: 12.5, marginBottom: 8 }}>Risposte ufficiali di Bandai ai dubbi su questa carta</Text>
-      <View style={{ gap: 8 }}>
-        {shown.map(([n, q, a, d]) => (
-          <QAItem key={n} n={n} q={q} a={a} d={d} now={now} />
-        ))}
-      </View>
-      {list.length > SHOW ? (
-        <Pressable onPress={() => setAll(!all)} style={({ pressed }) => ({ marginTop: 8, alignSelf: "flex-start", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, backgroundColor: t.surface2, opacity: pressed ? 0.7 : 1 })}>
-          <Text style={{ color: t.ink, fontWeight: "600", fontSize: 13.5 }}>{all ? "Mostra meno" : "Mostra tutte (" + list.length + ")"}</Text>
+      <Text style={H3}>Domande e risposte</Text>
+      <View style={{ borderWidth: 1, borderColor: t.line, borderRadius: 12, backgroundColor: t.surface }}>
+        <Pressable onPress={() => setOpen(!open)} accessibilityState={{ expanded: open }} style={{ minHeight: 52, paddingHorizontal: 14, paddingVertical: 8, flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: t.ink, fontWeight: "600", fontSize: 15 }}>Risposte ufficiali di Bandai</Text>
+            <Text style={{ color: t.ink2, fontSize: 12.5, marginTop: 1 }}>{list.length === 1 ? "1 domanda" : list.length + " domande"} su questa carta</Text>
+          </View>
+          {nuove ? (
+            <View style={{ backgroundColor: t.accentSoft, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1 }}>
+              <Text style={{ color: t.accent, fontFamily: DISPLAY, fontWeight: "700", fontSize: 10.5, letterSpacing: 0.5 }}>{nuove > 1 ? nuove + " NUOVE" : "NUOVA"}</Text>
+            </View>
+          ) : null}
+          <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "700", fontSize: 12 }}>{list.length}</Text>
+          <Svg width={18} height={18} viewBox="0 0 24 24" style={{ transform: [{ rotate: open ? "180deg" : "0deg" }] }}>
+            <Path d="M5 9l7 7 7-7" stroke={t.ink} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          </Svg>
         </Pressable>
-      ) : null}
+        {open ? (
+          <View style={{ gap: 8, paddingHorizontal: 8, paddingBottom: 8 }}>
+            {list.map(([n, q, a, d]) => (
+              <QAItem key={n} n={n} q={q} a={a} d={d} now={now} />
+            ))}
+          </View>
+        ) : null}
+      </View>
     </View>
   );
 }
-// una domanda con la sua risposta (scheda carta e pagina delle regole)
-// una domanda con la sua risposta (scheda carta e pagina delle regole): chiusa si vede solo la domanda, con la data;
-// toccandola si apre la risposta (27 novembre 2026, richiesta dell'utente)
+// una domanda con la sua risposta (scheda carta e pagina delle regole), sempre aperta
 export function QAItem({ n, q, a, d, now }: { n: number; q: string; a: string; d: string; now: number }) {
   const t = useTheme();
-  const [open, setOpen] = useState(false);
   const nuova = d && now - Date.parse(d) < 30 * 86400000;
   return (
-    <View style={{ backgroundColor: t.surface, borderColor: open ? t.ink2 : t.line, borderWidth: 1, borderRadius: 10 }}>
-      <Pressable onPress={() => setOpen(!open)} accessibilityState={{ expanded: open }} style={({ pressed }) => ({ paddingVertical: 10, paddingHorizontal: 12, opacity: pressed ? 0.75 : 1 })}>
-        <View style={{ flexDirection: "row", gap: 10 }}>
-          <Badge l="Q" bg={t.accent} ink={t.accentInk} />
-          <View style={{ flex: 1 }}>
-            <Rich text={tags(q)} style={{ color: t.ink, fontSize: 14.5, lineHeight: 21, fontWeight: "600" }} />
+    <View style={{ backgroundColor: t.surface, borderColor: t.line, borderWidth: 1, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 }}>
+      <View style={{ flexDirection: "row", gap: 10 }}>
+        <Badge l="Q" bg={t.accent} ink={t.accentInk} />
+        <View style={{ flex: 1 }}>
+          <Rich text={tags(q)} style={{ color: t.ink, fontSize: 14.5, lineHeight: 21, fontWeight: "600" }} />
+        </View>
+      </View>
+      <View style={{ height: 1, backgroundColor: t.line, marginVertical: 8, marginLeft: 34 }} />
+      <View style={{ flexDirection: "row", gap: 10 }}>
+        <Badge l="A" bg={t.ok} ink="#fff" />
+        <View style={{ flex: 1 }}>
+          <Rich text={tags(a)} style={{ color: t.ink, fontSize: 14.5, lineHeight: 21 }} />
+        </View>
+      </View>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8, marginLeft: 34 }}>
+        {nuova ? (
+          <View style={{ backgroundColor: t.accentSoft, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1 }}>
+            <Text style={{ color: t.accent, fontFamily: DISPLAY, fontWeight: "700", fontSize: 10.5, letterSpacing: 0.5 }}>NUOVA</Text>
           </View>
-          <Svg width={18} height={18} viewBox="0 0 24 24" style={{ marginTop: 2, transform: [{ rotate: open ? "180deg" : "0deg" }] }}>
-            <Path d="M5 9l7 7 7-7" stroke={t.ink2} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          </Svg>
-        </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6, marginLeft: 34 }}>
-          {nuova ? (
-            <View style={{ backgroundColor: t.accentSoft, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1 }}>
-              <Text style={{ color: t.accent, fontFamily: DISPLAY, fontWeight: "700", fontSize: 10.5, letterSpacing: 0.5 }}>NUOVA</Text>
-            </View>
-          ) : null}
-          <Text style={{ color: t.ink2, fontSize: 11.5 }}>
-            Q{n}
-            {d ? " · aggiornata il " + dataIt(d) : ""}
-          </Text>
-        </View>
-      </Pressable>
-      {open ? (
-        <View style={{ paddingHorizontal: 12, paddingBottom: 12 }}>
-          <View style={{ height: 1, backgroundColor: t.line, marginBottom: 8, marginLeft: 34 }} />
-          <View style={{ flexDirection: "row", gap: 10 }}>
-            <Badge l="A" bg={t.ok} ink="#fff" />
-            <View style={{ flex: 1 }}>
-              <Rich text={tags(a)} style={{ color: t.ink, fontSize: 14.5, lineHeight: 21 }} />
-            </View>
-          </View>
-        </View>
-      ) : null}
+        ) : null}
+        <Text style={{ color: t.ink2, fontSize: 11.5 }}>
+          Q{n}
+          {d ? " · aggiornata il " + dataIt(d) : ""}
+        </Text>
+      </View>
     </View>
   );
 }
