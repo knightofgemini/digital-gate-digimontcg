@@ -83,7 +83,8 @@ export function startQA() {
 const MESI = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
 const dataIt = (d: string) => (d ? +d.slice(8) + " " + MESI[+d.slice(5, 7) - 1] + " " + d.slice(0, 4) : "");
 // "<Security A.>" del sito → "＜Security A.＞" come nel testo delle carte, così diventa la stessa icona
-const tags = (s: string) => s.replace(/<([A-Z][^<>\n]{0,40})>/g, "＜$1＞");
+// "[...]" nel sito è una parte di testo omessa, non un nome: resta testo semplice
+const tags = (s: string) => s.replace(/<([A-Z][^<>\n]{0,40})>/g, "＜$1＞").replace(/\[(\.\.\.|…)\]/g, "(…)");
 const SHOW = 3;
 
 export function QASection({ code, H3 }: { code: string; H3: any }) {
