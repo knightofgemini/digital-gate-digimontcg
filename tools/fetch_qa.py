@@ -1,9 +1,10 @@
 # Q&A ufficiali di Bandai (world.digimoncard.com/rule/, 27 novembre 2026, richiesta dell'utente): non c'è un PDF unico,
 # la pagina delle regole cerca le Q&A per prodotto con un modulo (POST `is_card_search`, `prodid`) e le Q&A delle regole
 # per categoria (`is_rule_search`, `category`). Lanciato da analysis.yml: salva le pagine dei risultati in analysis/qa/
-# (card_PRODID[_pN].html, rule_CATEGORIA.html); le legge poi tools/parse_qa.py.
+# (card_PRODID[_pN].html, rule_CATEGORIA.html); le legge poi tools/parse_qa.py. Ogni notte da qa.yml (cartella come
+# argomento), che aggiorna src/qa.json su main se Bandai ha aggiunto domande.
 import os, re, sys, time, urllib.request, urllib.parse
-OUT = "analysis/qa"
+OUT = sys.argv[1] if len(sys.argv) > 1 and not sys.argv[1].startswith("x") else "analysis/qa"
 os.makedirs(OUT, exist_ok=True)
 URL = "https://world.digimoncard.com/rule/"
 UA = {"User-Agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36", "Content-Type": "application/x-www-form-urlencoded", "Referer": URL}

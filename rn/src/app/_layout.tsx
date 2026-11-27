@@ -10,6 +10,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { loadStore } from "../store";
 import { ToastHost } from "../toast";
 import { startDataUpdates, whenFirstCheck } from "../dataupd";
+import { startQA } from "../qa";
 import { askNotifications, startBackground } from "../bgTask";
 import { startArt } from "../homeArt";
 import { loadKey } from "../ghArt";
@@ -42,6 +43,7 @@ function Root() {
         <Stack.Screen name="scansiona" options={{ animation: "fade", presentation: "fullScreenModal", contentStyle: { backgroundColor: "#000" } }} />
         <Stack.Screen name="offline" />
         <Stack.Screen name="info" />
+        <Stack.Screen name="regole" />
         <Stack.Screen name="tagli" />
       </Stack>
       <TabBar />
@@ -75,6 +77,8 @@ export default function RootLayout() {
       // il riquadro "Carte nuove" con l'elenco (News.tsx). Durante il recupero dei dati dell'app vecchia niente
       // riquadro: comparirà all'apertura successiva
       startDataUpdates((n) => !m && showNews(n));
+      // domande e risposte ufficiali aggiornate sul sito (qa.yml ogni notte)
+      startQA();
       // controllo delle carte nuove anche ad app chiusa, con notifica (bgTask.ts); permesso chiesto dopo l'intro
       startBackground();
       // (anche la richiesta del permesso aspetta il riquadro delle carte nuove, se c'è)

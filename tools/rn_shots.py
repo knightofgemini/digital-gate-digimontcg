@@ -57,10 +57,16 @@ shot("00_avvio")
 for i, spec in enumerate(SPECS):
     key, _, kw = spec.partition("@")
     name = "%02d_%s" % (i + 1, re.sub(r"[^A-Za-z0-9_-]+", "_", key.split("|")[-1]))
-    url = "digitalgate://carta/" + urllib.parse.quote(key, safe="")
+    # "pagina:regole" apre una pagina dell'app invece di una carta
+    url = "digitalgate://" + key[7:] if key.startswith("pagina:") else "digitalgate://carta/" + urllib.parse.quote(key, safe="")
     adb("shell", "am", "start", "-W", "-a", "android.intent.action.VIEW", "-d", "'" + url + "'", PKG)
     time.sleep(7)
     shot(name + "_1")
+    if key.startswith("pagina:") and kw:
+        # pagina: prima il tocco (apre la voce), poi si scorre
+        tap_text(kw)
+        shot(name + "_kw")
+        kw = ""
     swipe_up(int(H * 0.38))
     shot(name + "_2")
     swipe_up(int(H * 0.45))

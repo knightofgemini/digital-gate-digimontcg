@@ -2,8 +2,9 @@
 # {"c": {CODICE: [[n, domanda, risposta, data], ...]}, "r": [[categoria, voce, n, domanda, risposta, data], ...],
 #  "t": data dell'ultima Q&A}. Testi in inglese esattamente come sul sito (a capo = "\n").
 import html, json, os, re, sys
-D = sys.argv[1] if len(sys.argv) > 1 else "analysis/qa"
-OUT = sys.argv[2] if len(sys.argv) > 2 else "src/qa.json"
+ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
+D = ARGS[0] if ARGS else "analysis/qa"
+OUT = ARGS[1] if len(ARGS) > 1 else "src/qa.json"
 MON = {m: i + 1 for i, m in enumerate("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split())}
 def clean(s):
     s = re.sub(r"<br\s*/?>", "\n", s)
@@ -54,5 +55,13 @@ for v in cards.values():
     v.sort(key=lambda x: x[0])
 alld = [x[3] for v in cards.values() for x in v if x[3]] + [x[5] for x in rules if x[5]]
 out = {"t": max(alld) if alld else "", "c": dict(sorted(cards.items())), "r": rules}
+n_new = sum(len(v) for v in cards.values())
+if os.path.exists(OUT) and "--forza" not in sys.argv:
+    try:
+        n_old = sum(len(v) for v in json.load(open(OUT))["c"].values())
+        if n_new < n_old * 0.95:
+            sys.exit(f"troppe poche domande ({n_new} contro {n_old}): il sito è cambiato? Niente aggiornamento")
+    except (ValueError, KeyError):
+        pass
 json.dump(out, open(OUT, "w"), ensure_ascii=False, separators=(",", ":"))
 print("carte", len(cards), "domande", sum(len(v) for v in cards.values()), "regole", len(rules), "ultima", out["t"], os.path.getsize(OUT) // 1024, "KB")

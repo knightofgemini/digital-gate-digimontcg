@@ -115,6 +115,15 @@ export function MoreSheet() {
             ) : null
           }
         />
+        <Row
+          icon={
+            <Svg width={20} height={20} viewBox="0 0 24 24">
+              <Path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5zM4 21.5A2.5 2.5 0 0 0 6.5 24H20M9 7h7M9 11h5" stroke={t.ink2} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" transform="translate(0 -1)" />
+            </Svg>
+          }
+          label="Regole"
+          onPress={() => go("/regole")}
+        />
         <Row icon={<Icon name="info" color={t.ink2} size={20} />} label="Informazioni" onPress={() => go("/info")} />
         {hasKey() ? (
           <Row

@@ -29,6 +29,12 @@ raw_d, raw_p = (src / "data.json").read_bytes(), (src / "products.json").read_by
 try: t = int(subprocess.run(["git", "log", "-1", "--format=%ct"], cwd=root, capture_output=True, text=True).stdout.strip() or 0)
 except Exception: t = 0
 (dd / "ver.json").write_text(json.dumps({"h": hashlib.sha1(raw_d + raw_p).hexdigest()[:16], "t": t}), encoding="utf-8")
+# domande e risposte ufficiali (src/qa.json, aggiornato ogni notte da qa.yml): l'app le scarica se qa-ver.json ha una
+# data più recente delle sue (rn/src/qa.tsx)
+if (src / "qa.json").exists():
+    raw_q = (src / "qa.json").read_bytes()
+    (dd / "qa.json").write_bytes(raw_q)
+    (dd / "qa-ver.json").write_text(json.dumps({"t": json.loads(raw_q).get("t", ""), "h": hashlib.sha1(raw_q).hexdigest()[:16]}), encoding="utf-8")
 
 ocr = root / "rn" / "ocr"
 if (ocr / "v.json").exists():

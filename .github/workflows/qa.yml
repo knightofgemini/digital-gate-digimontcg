@@ -1,0 +1,38 @@
+name: Domande e risposte ufficiali
+# Ogni notte (o a mano) scarica le Q&A ufficiali di Bandai dalla pagina delle regole (tools/fetch_qa.py), le riscrive in
+# src/qa.json (tools/parse_qa.py) e, se Bandai ne ha aggiunte o cambiate, le mette su main e avvia la pubblicazione
+# del deposito (build.yml): l'app le scarica da sola (rn/src/qa.tsx), senza APK nuovo.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "43 4 * * *"
+permissions:
+  contents: write
+  actions: write   # avvio di build.yml: i push fatti da qui non lo fanno partire da soli
+concurrency:
+  group: qa
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - run: python3 tools/fetch_qa.py "$RUNNER_TEMP/qa"
+      - run: python3 tools/parse_qa.py "$RUNNER_TEMP/qa" src/qa.json
+      - name: Pubblica
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add src/qa.json
+          git diff --cached --quiet && { echo "nessuna domanda nuova"; exit 0; }
+          git commit -qm "Domande e risposte ufficiali aggiornate ($(date +%d/%m/%Y))"
+          for n in 1 2 3; do
+            git pull -q --rebase origin main && git push -q origin HEAD:main && break
+            sleep 10
+          done
+          gh workflow run build.yml --ref main
+          echo "::notice title=Q&A::domande aggiornate, pubblicazione avviata"
