@@ -9,6 +9,7 @@ import { documentDirectory, writeAsStringAsync } from "expo-file-system/legacy";
 import { DISPLAY, Text } from "./Text";
 import { Rich } from "./rich";
 import { useTheme } from "./theme";
+import Svg, { Path } from "react-native-svg";
 
 // [numero, domanda, risposta, data] e, per le regole, [categoria, voce, numero, domanda, risposta, data]
 export type QA = [number, string, string, string];
@@ -35,7 +36,16 @@ function db(): DBT {
     } catch {}
   return (DB = d);
 }
-export const qaFor = (code: string): QA[] => db().c[code] || [];
+// dalla più recente alla più vecchia (a parità di data, numero più alto prima), anche per le regole
+export const byRecent = <T,>(l: T[], d: (x: T) => string, n: (x: T) => number) => l.slice().sort((x, y) => (d(y) || "").localeCompare(d(x) || "") || n(y) - n(x));
+const SORTED = new Map<string, QA[]>();
+export function qaFor(code: string): QA[] {
+  const l = db().c[code];
+  if (!l) return [];
+  let o = SORTED.get(code);
+  if (!o) SORTED.set(code, (o = byRecent(l, (x) => x[3], (x) => x[0])));
+  return o;
+}
 export const rulesQA = (): RuleQA[] => db().r || [];
 export const qaDate = () => db().t;
 // chi mostra le domande si ridisegna quando arrivano quelle nuove
@@ -65,6 +75,7 @@ async function checkQA() {
     await writeAsStringAsync(documentDirectory + FILE, txt);
     await writeAsStringAsync(documentDirectory + "dg-qa-ver.json", JSON.stringify(v));
     DB = x;
+    SORTED.clear();
     SUBS.forEach((g) => g());
   } catch {}
 }
@@ -85,7 +96,7 @@ const dataIt = (d: string) => (d ? +d.slice(8) + " " + MESI[+d.slice(5, 7) - 1] 
 // "<Security A.>" del sito → "＜Security A.＞" come nel testo delle carte, così diventa la stessa icona
 // "[...]" nel sito è una parte di testo omessa, non un nome: resta testo semplice
 const tags = (s: string) => s.replace(/<([A-Z][^<>\n]{0,40})>/g, "＜$1＞").replace(/\[(\.\.\.|…)\]/g, "(…)");
-const SHOW = 3;
+const SHOW = 5;
 
 export function QASection({ code, H3 }: { code: string; H3: any }) {
   const t = useTheme();
@@ -118,37 +129,49 @@ export function QASection({ code, H3 }: { code: string; H3: any }) {
   );
 }
 // una domanda con la sua risposta (scheda carta e pagina delle regole)
+// una domanda con la sua risposta (scheda carta e pagina delle regole): chiusa si vede solo la domanda, con la data;
+// toccandola si apre la risposta (27 novembre 2026, richiesta dell'utente)
 export function QAItem({ n, q, a, d, now }: { n: number; q: string; a: string; d: string; now: number }) {
   const t = useTheme();
+  const [open, setOpen] = useState(false);
   const nuova = d && now - Date.parse(d) < 30 * 86400000;
-          return (
-            <View style={{ backgroundColor: t.surface, borderColor: t.line, borderWidth: 1, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 }}>
-              <View style={{ flexDirection: "row", gap: 10 }}>
-                <Badge l="Q" bg={t.accent} ink={t.accentInk} />
-                <View style={{ flex: 1 }}>
-                  <Rich text={tags(q)} style={{ color: t.ink, fontSize: 14.5, lineHeight: 21, fontWeight: "600" }} />
-                </View>
-              </View>
-              <View style={{ height: 1, backgroundColor: t.line, marginVertical: 8, marginLeft: 34 }} />
-              <View style={{ flexDirection: "row", gap: 10 }}>
-                <Badge l="A" bg={t.ok} ink="#fff" />
-                <View style={{ flex: 1 }}>
-                  <Rich text={tags(a)} style={{ color: t.ink, fontSize: 14.5, lineHeight: 21 }} />
-                </View>
-              </View>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8, marginLeft: 34 }}>
-                {nuova ? (
-                  <View style={{ backgroundColor: t.accentSoft, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1 }}>
-                    <Text style={{ color: t.accent, fontFamily: DISPLAY, fontWeight: "700", fontSize: 10.5, letterSpacing: 0.5 }}>NUOVA</Text>
-                  </View>
-                ) : null}
-                <Text style={{ color: t.ink2, fontSize: 11.5 }}>
-                  Q{n}
-                  {d ? " · aggiornata il " + dataIt(d) : ""}
-                </Text>
-              </View>
+  return (
+    <View style={{ backgroundColor: t.surface, borderColor: open ? t.ink2 : t.line, borderWidth: 1, borderRadius: 10 }}>
+      <Pressable onPress={() => setOpen(!open)} accessibilityState={{ expanded: open }} style={({ pressed }) => ({ paddingVertical: 10, paddingHorizontal: 12, opacity: pressed ? 0.75 : 1 })}>
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <Badge l="Q" bg={t.accent} ink={t.accentInk} />
+          <View style={{ flex: 1 }}>
+            <Rich text={tags(q)} style={{ color: t.ink, fontSize: 14.5, lineHeight: 21, fontWeight: "600" }} />
+          </View>
+          <Svg width={18} height={18} viewBox="0 0 24 24" style={{ marginTop: 2, transform: [{ rotate: open ? "180deg" : "0deg" }] }}>
+            <Path d="M5 9l7 7 7-7" stroke={t.ink2} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          </Svg>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6, marginLeft: 34 }}>
+          {nuova ? (
+            <View style={{ backgroundColor: t.accentSoft, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1 }}>
+              <Text style={{ color: t.accent, fontFamily: DISPLAY, fontWeight: "700", fontSize: 10.5, letterSpacing: 0.5 }}>NUOVA</Text>
             </View>
-          );
+          ) : null}
+          <Text style={{ color: t.ink2, fontSize: 11.5 }}>
+            Q{n}
+            {d ? " · aggiornata il " + dataIt(d) : ""}
+          </Text>
+        </View>
+      </Pressable>
+      {open ? (
+        <View style={{ paddingHorizontal: 12, paddingBottom: 12 }}>
+          <View style={{ height: 1, backgroundColor: t.line, marginBottom: 8, marginLeft: 34 }} />
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <Badge l="A" bg={t.ok} ink="#fff" />
+            <View style={{ flex: 1 }}>
+              <Rich text={tags(a)} style={{ color: t.ink, fontSize: 14.5, lineHeight: 21 }} />
+            </View>
+          </View>
+        </View>
+      ) : null}
+    </View>
+  );
 }
 function Badge({ l, bg, ink }: { l: string; bg: string; ink: string }) {
   return (

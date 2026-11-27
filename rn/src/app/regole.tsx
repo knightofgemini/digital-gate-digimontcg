@@ -8,7 +8,7 @@ import { DISPLAY, Text, TextInput } from "../Text";
 import { useTheme } from "../theme";
 import { PageTitle, common } from "../ui";
 import { Screen, useBarState } from "../chrome";
-import { QAItem, RuleQA, qaDate, rulesQA, useQA } from "../qa";
+import { QAItem, RuleQA, byRecent, qaDate, rulesQA, useQA } from "../qa";
 
 // nomi delle sezioni del sito in italiano (solo le etichette dell'app; le domande restano in inglese)
 const CATS: [string, string][] = [
@@ -37,14 +37,14 @@ export default function Regole() {
     const w = q.trim().toLowerCase();
     if (w.length >= 2) {
       // ricerca in tutte le sezioni: domande, risposte e nomi delle voci
-      return all
+      return byRecent(all, (r) => r[5], (r) => r[2])
         .filter((r) => (r[1] + "\n" + r[3] + "\n" + r[4]).toLowerCase().includes(w))
         .slice(0, 120)
         .map((r) => ({ k: "q" + r[2], kind: "qa" as const, it: r, where: label(r[0]) + " · " + r[1] }));
     }
     const groups = new Map<string, RuleQA[]>();
     for (const r of all) if (r[0] === cat) (groups.get(r[1]) || groups.set(r[1], []).get(r[1])!).push(r);
-    return [...groups].map(([title, list]) => ({ k: cat + "|" + title, kind: "grp" as const, cat, title, list }));
+    return [...groups].map(([title, list]) => ({ k: cat + "|" + title, kind: "grp" as const, cat, title, list: byRecent(list, (r) => r[5], (r) => r[2]) }));
   }, [q, cat, all]);
   const now = Date.now();
   const d = qaDate();

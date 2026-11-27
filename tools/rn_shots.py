@@ -37,7 +37,8 @@ def tap_text(word):
     xml = adb("shell", "cat", "/sdcard/ui.xml")
     for m in re.finditer(r'text="([^"]*)"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml):
         t, x1, y1, x2, y2 = m.group(1), *map(int, m.groups()[1:])
-        if t.strip() == word and y1 > H * 0.12 and y2 < H * 0.88:
+        # "~testo": basta che la scritta contenga il testo (domande lunghe)
+        if (word[1:] in t if word.startswith("~") else t.strip() == word) and y1 > H * 0.12 and y2 < H * 0.88:
             adb("shell", "input", "tap", str((x1 + x2) // 2), str((y1 + y2) // 2))
             time.sleep(1.2)
             return True
