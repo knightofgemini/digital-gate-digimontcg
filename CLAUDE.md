@@ -120,7 +120,7 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
 - `prova-emulatore.yml`: APK x86_64 su emulatore Android 14; foto delle schede in `tools/rn_shots.txt` e prova dei
   gesti a ogni invio sul ramo `rn-tag`; prova della scansione senza rete (`tools/rn_scan.py`) con "scansione" o
   inviando sul ramo `rn-scan`. Risultati nel ramo `rn-shots`.
-- `spoiler.yml` (ogni mattina, più l'attività programmata di Claude 4 volte al giorno), `telegram.yml` (canale Telegram, ramo `telegram`), `prezzi.yml` (ogni notte, ramo `prezzi`), `set-assets.yml` (ogni lunedì, ramo
+- `qa.yml` (ogni notte: domande e risposte ufficiali di Bandai su main), `spoiler.yml` (ogni mattina, più l'attività programmata di Claude 4 volte al giorno), `telegram.yml` (canale Telegram, ramo `telegram`), `prezzi.yml` (ogni notte, ramo `prezzi`), `set-assets.yml` (ogni lunedì, ramo
   `set-assets`), `analysis.yml` (script a richiesta, risultati nel ramo `analysis-out`).
 - Rami che devono restare: `main`, `prezzi`, `set-assets`, `spoiler-stato`, `telegram`, `home-art`, `analysis-out`, `rn-check`, `rn-shots`.
   Esperimenti scartati della vecchia app: etichette `archivio/<nome>` (pulizia del 3 novembre 2026: 75 rami già
@@ -353,6 +353,21 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   data arancione se il giorno è esatto o azzurra se solo il mese, conto alla rovescia di `upBadge`, carte svelate)
   **dentro la linea del tempo per mese di prima** (linea a sinistra, punto e titolo del mese; scartate le tessere su due
   colonne). `tools/rn_home.py` fotografa anche In arrivo a pagina intera (`h18_inarrivo_intera`).
+- **Domande e risposte ufficiali (27 novembre 2026, ramo `faq-carte`, richieste dell'utente)**: Bandai non ha un PDF
+  unico: la pagina delle regole (world.digimoncard.com/rule/) cerca le Q&A con un modulo (POST `is_card_search` +
+  `prodid` per prodotto, `is_rule_search` + `category` per le regole; tutte le risposte nella stessa pagina, divise in
+  pagine solo dal browser). `tools/fetch_qa.py CARTELLA` salva le pagine, `tools/parse_qa.py CARTELLA src/qa.json` le
+  riscrive in `src/qa.json` (`c`: {codice: [[n, domanda, risposta, data]]}, `r`: [[categoria, voce, n, domanda,
+  risposta, data]], `t`: data dell'ultima; non scrive se le domande scendono sotto il 95% di prima, `--forza`).
+  Prima raccolta: 7216 domande su 2768 carte e 700 sulle regole (ultime del 20/11/2026). **`qa.yml` ogni notte (04:43
+  UTC, o a mano)**: se cambia `src/qa.json` fa il commit su main e avvia `build.yml`; `build.py` mette `dati/qa.json` e
+  `dati/qa-ver.json` (`t`, `h`) nel deposito. App: `rn/src/qa.tsx` (dati dell'APK in `rn/data/qa.json` via
+  `sync-data.js`, letti solo quando servono; `startQA` da `_layout.tsx` 8 s dopo l'apertura e tornando dopo 3 ore
+  scarica le domande se `h` è cambiato, `dg-qa.json` + `dg-qa-ver.json`), sezione **"Domande e risposte"** nella scheda
+  carta dopo gli effetti (`QASection`: Q arancione / A verde, testo con le icone di `Rich`, `<Keyword>` del sito →
+  `＜Keyword＞`, "[...]" → "(…)", data e NUOVA se degli ultimi 30 giorni, prime 3 + "Mostra tutte") e pagina
+  **Regole** (`rn/src/app/regole.tsx`, voce "Regole" in Altro): sezioni con nomi italiani, voci che si aprono, ricerca
+  in tutte. Domande e risposte restano in inglese. `tools/rn_shots.txt` accetta anche `pagina:regole@Voce`.
 - **Prove più veloci (7 novembre 2026)**: in `apk.yml` e `prova-emulatore.yml` si conservano tra una build e l'altra i
   file di Gradle, i suoi risultati riutilizzabili (`org.gradle.caching=true`) e le parti in C++ (ccache, finora poche
   riuse); emulatore salvato dopo il primo avvio (cache `avd-…`). APK di prova da 18 a 11 minuti. `prova-emulatore.yml`
