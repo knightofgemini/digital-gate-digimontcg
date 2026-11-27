@@ -367,7 +367,12 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   carta dopo gli effetti (`QASection`: Q arancione / A verde, testo con le icone di `Rich`, `<Keyword>` del sito →
   `＜Keyword＞`, "[...]" → "(…)", data e NUOVA se degli ultimi 30 giorni, prime 3 + "Mostra tutte") e pagina
   **Regole** (`rn/src/app/regole.tsx`, voce "Regole" in Altro): sezioni con nomi italiani, voci che si aprono, ricerca
-  in tutte. Domande e risposte restano in inglese. `tools/rn_shots.txt` accetta anche `pagina:regole@Voce`.
+  in tutte. Domande e risposte restano in inglese. **Ritocchi del 27 novembre (richieste dell'utente)**: domande
+  sempre dalla più recente alla più vecchia (`byRecent`, anche nelle voci e nella ricerca delle Regole); nella scheda
+  carta la sezione è un riquadro chiuso come le voci delle Regole ("Risposte ufficiali di Bandai · N domande",
+  NUOVA/N NUOVE) che si apre con tutte le domande, sempre aperte (provate e scartate le domande da aprire una per
+  una). `tools/rn_shots.txt` accetta anche `pagina:regole@Voce+%x;y` (più tocchi, anche a un punto dello schermo) e
+  `@~testo` (scritta che contiene il testo).
 - **Prove più veloci (7 novembre 2026)**: in `apk.yml` e `prova-emulatore.yml` si conservano tra una build e l'altra i
   file di Gradle, i suoi risultati riutilizzabili (`org.gradle.caching=true`) e le parti in C++ (ccache, finora poche
   riuse); emulatore salvato dopo il primo avvio (cache `avd-…`). APK di prova da 18 a 11 minuti. `prova-emulatore.yml`
