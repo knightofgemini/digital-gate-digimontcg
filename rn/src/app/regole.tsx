@@ -8,7 +8,8 @@ import { DISPLAY, Text, TextInput } from "../Text";
 import { useTheme } from "../theme";
 import { PageTitle, common } from "../ui";
 import { Screen, useBarState } from "../chrome";
-import { QAItem, RuleQA, byRecent, qaDate, rulesQA, useQA } from "../qa";
+import { QAItem, RuleQA, byRecent, qaDate, rulesQA, tags, useQA } from "../qa";
+import { Rich } from "../rich";
 
 // nomi delle sezioni del sito in italiano (solo le etichette dell'app; le domande restano in inglese)
 const CATS: [string, string][] = [
@@ -21,6 +22,10 @@ const CATS: [string, string][] = [
   ["Glossary", "Glossario"],
 ];
 const MESI = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
+// nome della voce con la stessa capsula del testo delle carte: le parole chiave come ＜Blocker＞, i momenti e le zone
+// sono già tra [ ] nel sito (27 novembre 2026, segnalato dall'utente: le voci erano testo semplice)
+const KWG = new Set(["Alliance"]); // parole chiave che il sito mette nel Glossario
+const voce = (cat: string, title: string) => (cat === "Keyword Effects" || KWG.has(title) ? "＜" + title + "＞" : tags(title).replace(/\]\?$/, "]"));
 type Row = { k: string; kind: "grp"; cat: string; title: string; list: RuleQA[] } | { k: string; kind: "qa"; it: RuleQA; where: string };
 
 export default function Regole() {
@@ -94,7 +99,9 @@ export default function Regole() {
           ) : (
             <View style={{ marginBottom: 8, borderWidth: 1, borderColor: t.line, borderRadius: 12, backgroundColor: t.surface }}>
               <Pressable onPress={() => setOpen({ ...open, [r.k]: !open[r.k] })} style={{ minHeight: 50, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 10 }}>
-                <Text style={{ color: t.ink, fontWeight: "600", fontSize: 15, flex: 1 }}>{r.title}</Text>
+                <View style={{ flex: 1 }}>
+                  <Rich text={voce(r.cat, r.title)} style={{ color: t.ink, fontWeight: "600", fontSize: 15, lineHeight: 22 }} />
+                </View>
                 <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "700", fontSize: 12 }}>{r.list.length}</Text>
                 <Svg width={18} height={18} viewBox="0 0 24 24" style={{ transform: [{ rotate: open[r.k] ? "180deg" : "0deg" }] }}>
                   <Path d="M5 9l7 7 7-7" stroke={t.ink} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" fill="none" />

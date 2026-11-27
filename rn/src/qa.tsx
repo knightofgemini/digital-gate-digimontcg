@@ -95,7 +95,12 @@ const MESI = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ot
 const dataIt = (d: string) => (d ? +d.slice(8) + " " + MESI[+d.slice(5, 7) - 1] + " " + d.slice(0, 4) : "");
 // "<Security A.>" del sito → "＜Security A.＞" come nel testo delle carte, così diventa la stessa icona
 // "[...]" nel sito è una parte di testo omessa, non un nome: resta testo semplice
-const tags = (s: string) => s.replace(/<([A-Z][^<>\n]{0,40})>/g, "＜$1＞").replace(/\[(\.\.\.|…)\]/g, "(…)");
+// "{Breeding}", "{Hand}" del sito → "[Breeding]" come le zone nel testo delle carte
+export const tags = (s: string) =>
+  s
+    .replace(/<([A-Z][^<>\n]{0,40})>/g, "＜$1＞")
+    .replace(/\[(\.\.\.|…)\]/g, "(…)")
+    .replace(/\{([A-Z][A-Za-z ]{1,20})\}/g, "[$1]");
 
 // sezione della scheda carta: un riquadro chiuso con il titolo e il numero di domande, come le voci della pagina
 // Regole; toccandolo si aprono tutte, dalla più recente (27 novembre 2026, richiesta dell'utente)
