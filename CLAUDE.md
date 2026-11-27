@@ -371,7 +371,11 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   sempre dalla più recente alla più vecchia (`byRecent`, anche nelle voci e nella ricerca delle Regole); nella scheda
   carta la sezione è un riquadro chiuso come le voci delle Regole ("Risposte ufficiali di Bandai · N domande",
   NUOVA/N NUOVE) che si apre con tutte le domande, sempre aperte (provate e scartate le domande da aprire una per
-  una). `tools/rn_shots.txt` accetta anche `pagina:regole@Voce+%x;y` (più tocchi, anche a un punto dello schermo) e
+  una). **Pagina Regole (27 novembre sera, richieste dell'utente)**: nomi delle voci con le capsule (`voce` in
+  `regole.tsx`: Parole chiave e Alliance → ＜…＞, momenti e zone già tra [ ]; tolto il "?" di "[Your Turn]?"), "{Zona}"
+  del sito → "[Zona]" (`tags`), domande **dalla più vecchia alla più recente** (`byOldest`, solo qui; la scheda carta
+  resta dalla più recente); le voci seguono l'ordine del sito. `tools/rn_shots.txt` accetta anche `?parola` (scrive nel
+  campo con la tastiera) e `pagina:regole@Voce+%x;y` (più tocchi, anche a un punto dello schermo) e
   `@~testo` (scritta che contiene il testo).
 - **Prove più veloci (7 novembre 2026)**: in `apk.yml` e `prova-emulatore.yml` si conservano tra una build e l'altra i
   file di Gradle, i suoi risultati riutilizzabili (`org.gradle.caching=true`) e le parti in C++ (ccache, finora poche
