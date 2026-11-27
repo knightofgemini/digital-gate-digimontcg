@@ -64,9 +64,15 @@ for i, spec in enumerate(SPECS):
     time.sleep(7)
     shot(name + "_1")
     if key.startswith("pagina:") and kw:
-        # pagina: prima il tocco (apre la voce), poi si scorre
-        tap_text(kw)
-        shot(name + "_kw")
+        # pagina: prima i tocchi (separati da "+"; "%x,y" = punto dello schermo in frazioni), poi si scorre
+        for j, w in enumerate(kw.split("+")):
+            if w.startswith("%"):
+                fx, fy = map(float, w[1:].split(","))
+                adb("shell", "input", "tap", str(int(W * fx)), str(int(H * fy)))
+                time.sleep(1.2)
+            else:
+                tap_text(w)
+            shot(name + "_kw" + ("" if not j else str(j)))
         kw = ""
     swipe_up(int(H * 0.38))
     shot(name + "_2")
