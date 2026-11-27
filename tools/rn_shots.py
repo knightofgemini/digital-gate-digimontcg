@@ -65,6 +65,10 @@ for i, spec in enumerate(SPECS):
     shot(name + "_2")
     swipe_up(int(H * 0.45))
     shot(name + "_3")
+    # più in basso (domande e risposte ufficiali, 27 novembre 2026)
+    for k in (4, 5, 6):
+        swipe_up(int(H * 0.5))
+        shot(name + "_%d" % k)
     if kw:
         # torna alla prima foto con la keyword e la tocca
         for _ in range(3):

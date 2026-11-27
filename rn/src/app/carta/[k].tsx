@@ -22,6 +22,7 @@ import { favSet, isFav, owned, useStore } from "../../store";
 import { deckById } from "../../decks";
 import { DeckQty, Lock } from "../../DeckQty";
 import { useTheme } from "../../theme";
+import { QASection } from "../../qa";
 
 export default function Carta() {
   const { k, deck } = useLocalSearchParams<{ k: string; deck?: string }>();
@@ -550,6 +551,9 @@ function CardPage({ c, setC, width, deck, strip, fade, sv, fan, exitTo }: { c: C
             .map(([title, v, sd]) => (
               <Box key={c.k + "|" + title} title={title} text={kwJoin(kwNoRem(v))} side={sd} ldp={title === "Regole Link" ? ex.ldp : ""} />
             ))}
+
+          {/* domande e risposte ufficiali di Bandai */}
+          <QASection key={c.k + "qa"} code={c.code} H3={H3(t)} />
 
           {/* prezzi affiancati: il valore apre il negozio, il resto apre/chiude i dettagli */}
           {(cmCovered(c) || ctCovered(c)) && (
