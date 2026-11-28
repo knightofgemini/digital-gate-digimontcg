@@ -124,11 +124,11 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot-save
           disable-animations: true
-          script: adb install -r prova.apk && if [ "${{ inputs.home }}" = "true" ]; then HOME_COMPLETA=${{ inputs.completa && '1' || '0' }} python3 tools/rn_home.py foto; elif [ "${{ inputs.novita || github.ref_name == 'rn-novita' }}" = "true" ]; then python3 tools/rn_news.py foto; elif [ "${{ inputs.scansione || github.ref_name == 'rn-scan' }}" = "true" ]; then python3 tools/rn_scan.py foto; else python3 tools/rn_shots.py foto "$(cat tools/rn_shots.txt)" && python3 tools/rn_gestures.py foto; python3 tools/rn_mazzo.py foto; fi
+          script: adb install -r prova.apk && if [ "${{ startsWith(github.ref_name, 'perf') }}" = "true" ]; then python3 tools/rn_perf.py foto; elif [ "${{ inputs.home }}" = "true" ]; then HOME_COMPLETA=${{ inputs.completa && '1' || '0' }} python3 tools/rn_home.py foto; elif [ "${{ inputs.novita || github.ref_name == 'rn-novita' }}" = "true" ]; then python3 tools/rn_news.py foto; elif [ "${{ inputs.scansione || github.ref_name == 'rn-scan' }}" = "true" ]; then python3 tools/rn_scan.py foto; else python3 tools/rn_shots.py foto "$(cat tools/rn_shots.txt)" && python3 tools/rn_gestures.py foto; python3 tools/rn_mazzo.py foto; fi
       - name: Foto nel ramo rn-shots
         if: always()
         run: |
           mkdir -p foto && cp /tmp/tsc.txt foto/ 2>/dev/null || true; cp /tmp/gradle.txt foto/ 2>/dev/null || true
           echo "${{ github.sha }}" > foto/sha.txt
           cd foto && git init -q && git add -A && git -c user.name=Claude -c user.email=noreply@anthropic.com commit -qm "foto ${{ github.sha }}"
-          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/rn-shots
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/rn-shots${{ startsWith(github.ref_name, 'perf') && format('-{0}', github.ref_name) || '' }}
