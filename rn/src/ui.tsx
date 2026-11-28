@@ -6,7 +6,7 @@ import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path, Rect, Circle } from "react-native-svg";
 import { Card, logoUrl, thumbUrl } from "./data";
-import { Theme, useTheme } from "./theme";
+import { FS, Theme, useTheme } from "./theme";
 
 // Icone del menu (stessi disegni di src/template.html, IC)
 export function Icon({ name, color, size = 24 }: { name: string; color: string; size?: number }) {
@@ -122,7 +122,7 @@ export function PageTitle({ children }: { children: ReactNode }) {
 
 export function SubHead({ children }: { children: ReactNode }) {
   const t = useTheme();
-  return <Text style={{ color: t.ink2, fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.6, marginTop: 18, marginBottom: 8 }}>{children}</Text>;
+  return <Text accessibilityRole="header" style={{ color: t.ink, fontFamily: DISPLAY, fontSize: FS.lg, fontWeight: "700", marginTop: 24, marginBottom: 8 }}>{children}</Text>;
 }
 
 export const common = (t: Theme) =>

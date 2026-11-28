@@ -9,7 +9,6 @@ import { BAN } from "../data";
 import { fmtDate } from "../prices";
 import { exportText } from "../store";
 import { useTheme } from "../theme";
-import { PageTitle } from "../ui";
 import { Screen, useBarState } from "../chrome";
 import { Btn } from "../visual";
 import { Backup } from "../Backup";
@@ -43,9 +42,8 @@ export default function Info() {
     ["Crediti e marchi", "Digimon e Digimon Card Game sono marchi di Bandai. ©Akiyoshi Hongo, Toei Animation. Questo progetto non è affiliato a Bandai."],
   ];
   return (
-    <Screen bs={bar}>
+    <Screen bs={bar} title="Informazioni">
       <ScrollView onScroll={bar.onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: 28 }}>
-        <PageTitle>Informazioni</PageTitle>
         <View style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 14, padding: 14, marginBottom: 14 }}>
           <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.2, letterSpacing: 2, textTransform: "uppercase" }}>Backup dei tuoi dati</Text>
           <Text style={{ color: t.ink, marginTop: 14, marginBottom: 4 }}>Copia in un testo la collezione, le preferite (con liste e avvisi) e i mazzi, per conservarli o incollarli su un altro telefono.</Text>

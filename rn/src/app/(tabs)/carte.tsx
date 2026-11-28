@@ -6,7 +6,6 @@ import { CARDS, normQ, relevance, useData } from "../../data";
 import { ActiveChips, FilterSheet, fltCount } from "../../FilterSheet";
 import { EMPTY, Filters, anyFlt, cardMatches, qmHolder, srcCards } from "../../filters";
 import { CardList, CountRow } from "../../items";
-import { PageTitle } from "../../ui";
 import { Screen, TABNAV } from "../../chrome";
 import { BOTTOM_PAD, BottomBar } from "../../BottomBar";
 import { View } from "react-native";
@@ -57,13 +56,12 @@ export default function Carte() {
   }, [q, f, dv]);
 
   return (
-    <Screen>
+    <Screen title="Ricerca carte">
       <CardList
         list={list}
         padBottom={BOTTOM_PAD + (nf ? 42 : 0)}
         header={
           <View style={{ paddingTop: 4 }}>
-            <PageTitle>Ricerca carte</PageTitle>
             {list.length ? <CountRow n={list.length} top={8} /> : null}
           </View>
         }

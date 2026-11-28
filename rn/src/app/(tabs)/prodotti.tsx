@@ -2,17 +2,19 @@
 // i rilasciati in griglia con l'illustrazione, per tipo o in ordine cronologico per anno (pulsanti accanto alle schede,
 // scelta salvata in "dg-pord"); gli "In arrivo" come cronologia per mese dalla più vicina. Ricerca in basso con i tipi.
 import { memo, useEffect, useMemo, useState } from "react";
-import { FlatList, Pressable, View, useWindowDimensions } from "react-native";
+import { FlatList, Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
+import { Image } from "expo-image";
+import { artFor, useHomeArt } from "../../homeArt";
+import { COVERS } from "../../covers";
 import { useLocalSearchParams, router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Svg, { Path, Rect } from "react-native-svg";
+import Svg, { Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { DISPLAY, Text } from "../../Text";
-import { CardSet, PRODUCTS, SETBY, SETS, TYPES, UPCOMING, Upcoming, cardsOfSet, daysTo, fold, monthLabel, normQ, numOf, soonSet, spoilerSet, upBadge, upSorted, upWhen, useData } from "../../data";
-import { SquareArt } from "../../home";
+import { CardSet, bannerUrl, PRODUCTS, SETBY, SETS, TYPES, UPCOMING, Upcoming, cardsOfSet, daysTo, fold, monthLabel, normQ, numOf, soonSet, spoilerSet, upBadge, upSorted, upWhen, useData } from "../../data";
+import { SetArt, SquareArt } from "../../home";
 import { setStats, useStore } from "../../store";
 import { openUpcoming } from "../../nav";
-import { useTheme } from "../../theme";
-import { PageTitle } from "../../ui";
+import { FS, R, useTheme } from "../../theme";
 import { Screen, useBarState } from "../../chrome";
 import { Badge, ProdVisual, ProgLine } from "../../visual";
 import { BOTTOM_PAD, BottomBar, Chip } from "../../BottomBar";
@@ -66,24 +68,79 @@ function OrdBtn({ on, kind, onPress }: { on: boolean; kind: "date" | "type"; onP
   );
 }
 
+// titolo di un gruppo (tipo di prodotto o anno), grande come i titoli delle sezioni della Home, con il numero accanto
 function GroupTitle({ children, top = 18 }: { children: string; top?: number }) {
   const t = useTheme();
-  return <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "500", fontSize: 12.5, letterSpacing: 1.5, textTransform: "uppercase", marginTop: top, marginBottom: 8 }}>{children}</Text>;
+  const [name, num] = children.split(" · ");
+  return (
+    <Text accessibilityRole="header" style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.sec, lineHeight: 29, marginTop: top + 10, marginBottom: 12 }}>
+      {name}
+      {num ? <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: FS.md }}>{"  " + num}</Text> : null}
+    </Text>
+  );
 }
 
 // riquadro di un prodotto (.ptile). memo: si ridisegna solo se cambia qualcosa di suo (non a ogni copia aggiunta altrove)
+// 28 novembre 2026 (direzione "Galleria" scelta dall'utente): copertina verticale con le scritte sopra l'immagine, con
+// gli stessi tagli "Set da completare" dell'editor (SetArt: taglio cover → copertina dell'APK → banner centrato);
+// l'avanzamento compare solo se del prodotto hai già qualche carta
 const ProdTile = memo(function ProdTile({ s, hit, q, w, h, n }: { s: CardSet; hit?: number; q: string; w: number; h: number; n: number }) {
   const t = useTheme();
   const isNew = !!s.date && daysTo(s.date) >= -60 && daysTo(s.date) <= 0;
+  const H = Math.round(w * 1.4);
+  useHomeArt();
+  const cover = !!(artFor(s.code, "cover") || COVERS[s.code]);
+  const ban = cover ? null : bannerUrl(s.code);
+  const done = n > 0 && h === n;
   return (
-    <Pressable onPress={() => router.push({ pathname: "/prodotto/[id]", params: hit ? { id: s.id, q, qm: "name" } : { id: s.id } })} style={{ width: w, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, borderRadius: 12, overflow: "hidden" }}>
-      <ProdVisual code={s.code}>{isNew ? <Badge icon="spark" text="Nuovo" isNew /> : null}</ProdVisual>
-      <View style={{ paddingTop: 9, paddingHorizontal: 10, paddingBottom: 11, gap: 2 }}>
-        <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.2, letterSpacing: 0.9, textTransform: "uppercase" }}>{s.code}</Text>
-        <Text style={{ color: t.ink, fontWeight: "600", fontSize: 14.7, lineHeight: 18 }}>{s.name}</Text>
-        {s.date && s.date.charAt(0) !== "0" ? <Text style={{ color: t.ink2, fontSize: 12.5 }}>{monthLabel(s.date)}</Text> : null}
-        {hit ? <Text style={{ color: t.accent, fontSize: 12.5, fontWeight: "600" }}>{hit + (hit === 1 ? " carta trovata" : " carte trovate")}</Text> : null}
-        <ProgLine h={h} n={n} />
+    <Pressable onPress={() => router.push({ pathname: "/prodotto/[id]", params: hit ? { id: s.id, q, qm: "name" } : { id: s.id } })} accessibilityLabel={s.code + " " + s.name + (h ? ", " + h + " su " + n + " carte" : "")} style={{ width: w, height: H, borderRadius: R.chip, overflow: "hidden", backgroundColor: t.surface2 }}>
+      {cover ? (
+        <SetArt code={s.code} w={w} h={H} r={0} />
+      ) : ban ? (
+        // senza copertina tagliata a mano: il banner intero (scritte mai tagliate) su un fondo fatto dallo stesso banner sfocato;
+        // con un taglio "Set da completare" fatto nell'editor diventa una copertina a tutta altezza
+        <>
+          <Image source={ban} style={StyleSheet.absoluteFill} contentFit="cover" blurRadius={24} cachePolicy="disk" />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(11,17,32,.35)" }]} />
+          <Image source={ban} style={{ position: "absolute", left: 0, right: 0, top: Math.round(H * 0.14), height: Math.round((w * 9) / 16) }} contentFit="contain" cachePolicy="disk" transition={120} />
+        </>
+      ) : (
+        <SetArt code={s.code} w={w} h={H} r={0} />
+      )}
+      <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "62%" }}>
+        <Svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 100">
+          <Defs>
+            <LinearGradient id={"pt" + s.id} x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor="#0b1120" stopOpacity={0} />
+              <Stop offset="0.55" stopColor="#0b1120" stopOpacity={0.78} />
+              <Stop offset="1" stopColor="#0b1120" stopOpacity={0.95} />
+            </LinearGradient>
+          </Defs>
+          <Rect width="10" height="100" fill={"url(#pt" + s.id + ")"} />
+        </Svg>
+      </View>
+      {isNew ? (
+        <View style={{ position: "absolute", top: 8, left: 8, borderRadius: R.chip, backgroundColor: "rgba(11,17,32,.82)", paddingVertical: 3, paddingHorizontal: 7 }}>
+          <Text style={{ color: "#4ade80", fontFamily: DISPLAY, fontWeight: "700", fontSize: 10, letterSpacing: 1 }}>NUOVO</Text>
+        </View>
+      ) : null}
+      <View style={{ position: "absolute", left: 12, right: 12, bottom: 11, gap: 1 }}>
+        <Text style={{ color: "#c9d3e6", fontSize: FS.xs, lineHeight: 14, fontWeight: "500" }} numberOfLines={1}>
+          {s.code}
+          {s.date && s.date.charAt(0) !== "0" ? " · " + monthLabel(s.date) : ""}
+        </Text>
+        <Text style={{ color: "#f4f7fd", fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.lg, lineHeight: 21 }} numberOfLines={2}>
+          {s.name}
+        </Text>
+        {hit ? <Text style={{ color: "#ffb48a", fontSize: 12.5, fontWeight: "600" }}>{hit + (hit === 1 ? " carta trovata" : " carte trovate")}</Text> : null}
+        {h > 0 ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 5 }}>
+            <View style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,.22)", overflow: "hidden" }}>
+              <View style={{ width: `${(h / n) * 100}%`, height: "100%", backgroundColor: done ? "#4ade80" : "#f4f7fd" }} />
+            </View>
+            <Text style={{ color: done ? "#4ade80" : "#c9d3e6", fontSize: FS.xs, fontVariant: ["tabular-nums"] }}>{h}/{n}</Text>
+          </View>
+        ) : null}
       </View>
     </Pressable>
   );
@@ -202,7 +259,7 @@ export default function Prodotti() {
 
   // larghezza dei riquadri dalla finestra: niente prima passata vuota per misurare (comparivano prima i soli titoli)
   const { width: winW } = useWindowDimensions();
-  const tileW = Math.floor((winW - 28 - 10) / 2);
+  const tileW = Math.floor((winW - 28 - 12) / 2);
   // elenco a righe che si costruiscono man mano che si scorre: all'apertura solo quelle in vista (prima si costruivano
   // tutti i ~100 riquadri insieme e la pagina si bloccava per un attimo)
   const rows = useMemo(() => {
@@ -217,7 +274,6 @@ export default function Prodotti() {
   const stats = setStats();
   const head = (
     <>
-      <PageTitle>Prodotti</PageTitle>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2, marginBottom: 12 }}>
         <Seg active={seg} onPick={pickSeg} />
         {seg === "sets" ? (
@@ -232,7 +288,7 @@ export default function Prodotti() {
   );
 
   return (
-    <Screen bs={bar}>
+    <Screen bs={bar} title="Prodotti">
       <FlatList
         data={rows}
         keyExtractor={(r) => r.k}
@@ -241,7 +297,7 @@ export default function Prodotti() {
           r.title ? (
             <GroupTitle top={r.top}>{r.title}</GroupTitle>
           ) : (
-            <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
+            <View style={{ flexDirection: "row", gap: 12, marginBottom: 12 }}>
               {r.sets!.map((s) => {
                 const st = stats[s.id] || { n: 0, h: 0 };
                 return <ProdTile key={s.id} s={s} hit={hits[s.id]} q={q} w={tileW} h={st.h} n={st.n} />;

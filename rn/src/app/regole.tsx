@@ -6,7 +6,7 @@ import { FlatList, Pressable, ScrollView, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { DISPLAY, Text, TextInput } from "../Text";
 import { useTheme } from "../theme";
-import { PageTitle, common } from "../ui";
+import { common } from "../ui";
 import { Screen, useBarState } from "../chrome";
 import { QAItem, RuleQA, qaDate, rulesQA, tags, useQA } from "../qa";
 import { Rich } from "../rich";
@@ -58,7 +58,6 @@ export default function Regole() {
   const d = qaDate();
   const head = (
     <View>
-      <PageTitle>Regole</PageTitle>
       <Text style={{ color: t.ink2, fontSize: 13.5, lineHeight: 19, marginTop: -4, marginBottom: 10 }}>
         Domande e risposte ufficiali di Bandai sulle regole del gioco{d ? ", aggiornate al " + +d.slice(8) + " " + MESI[+d.slice(5, 7) - 1] + " " + d.slice(0, 4) : ""}. Le risposte sono in inglese, come sul sito ufficiale.
       </Text>
@@ -82,7 +81,7 @@ export default function Regole() {
     </View>
   );
   return (
-    <Screen bs={bar}>
+    <Screen bs={bar} title="Regole">
       <FlatList
         data={rows}
         keyExtractor={(r) => r.k}

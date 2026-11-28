@@ -11,7 +11,7 @@ import { CARDS, UPCOMING } from "./data";
 import { decksTodo } from "./decks";
 import { openSoon } from "./nav";
 import { owned, useStore } from "./store";
-import { setThemePref, useTheme } from "./theme";
+import { FS, setThemePref, useTheme } from "./theme";
 import { Icon } from "./ui";
 import { RUN, useOffline } from "./offline";
 import { hasKey, onKey } from "./ghArt";
@@ -151,23 +151,31 @@ export function MoreSheet() {
 }
 
 // ---- barra in alto (.bar con .mbrand e .morebtn)
-export function AppBar({ children }: { children?: ReactNode }) {
+// Una sola intestazione (28 novembre 2026, ritocco grafico): nelle pagine c'è il titolo della pagina nella barra in alto,
+// il marchio Digital Gate solo in Home. overlay = Home: barra trasparente sopra l'illustrazione di In evidenza, piena
+// (solid) quando l'illustrazione è uscita dallo schermo.
+export function AppBar({ children, title, overlay, solid }: { children?: ReactNode; title?: string; overlay?: boolean; solid?: boolean }) {
   const t = useTheme();
+  const clear = overlay && !solid;
+  const ink = clear ? "#f4f7fd" : t.ink;
   return (
-    <View style={{ backgroundColor: t.bg, borderBottomWidth: 1, borderBottomColor: t.line, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 18 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-        <Pressable onPress={() => goTab("home")} accessibilityLabel="Digital Gate - Digimon TCG, vai alla Home" style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 9, paddingVertical: 4, paddingHorizontal: 2 }}>
-          <DgMark />
-          <View>
-            <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16, lineHeight: 17, letterSpacing: 1.28, textTransform: "uppercase" }}>Digital Gate</Text>
-            <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 9, letterSpacing: 3.06 }}>Digimon TCG</Text>
-          </View>
-        </Pressable>
-        <Pressable onPress={() => openMore(true)} accessibilityLabel="Altro: prossime uscite, informazioni e tema" style={{ width: 44, height: 44, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, alignItems: "center", justifyContent: "center" }}>
-          <Svg width={20} height={20} viewBox="0 0 24 24" fill={t.ink}>
-            <Circle cx={5} cy={12} r={2} />
-            <Circle cx={12} cy={12} r={2} />
-            <Circle cx={19} cy={12} r={2} />
+    <View style={{ backgroundColor: clear ? "transparent" : t.bg, borderBottomWidth: clear ? 0 : 1, borderBottomColor: t.line, paddingLeft: 16, paddingRight: 6, paddingVertical: 6 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, minHeight: 48 }}>
+        {title ? (
+          <Text accessibilityRole="header" numberOfLines={1} style={{ flex: 1, color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.page, lineHeight: 30, letterSpacing: -0.3 }}>
+            {title}
+          </Text>
+        ) : (
+          <Pressable onPress={() => goTab("home")} accessibilityLabel="Digital Gate - Digimon TCG, vai alla Home" style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 9, paddingVertical: 4 }}>
+            <DgMark size={28} />
+            <Text style={{ color: ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16, lineHeight: 18, letterSpacing: 1.6, textTransform: "uppercase" }}>Digital Gate</Text>
+          </Pressable>
+        )}
+        <Pressable onPress={() => openMore(true)} accessibilityLabel="Altro: prossime uscite, informazioni e tema" style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
+          <Svg width={20} height={20} viewBox="0 0 24 24" fill={clear ? ink : t.ink2}>
+            <Circle cx={5} cy={12} r={1.8} />
+            <Circle cx={12} cy={12} r={1.8} />
+            <Circle cx={19} cy={12} r={1.8} />
           </Svg>
         </Pressable>
       </View>
@@ -184,9 +192,9 @@ const BarCtx = createContext<BarState | null>(null);
 // stato della barra di una pagina: la pagina lo crea (useBarState) e lo passa a <Screen bs={…}>; gli elenchi dentro la pagina
 // lo leggono con useBar()
 export function useBarState(): BarState {
-  const [h, setH] = useState(71);
+  const [h, setH] = useState(61);
   const y = useRef(new Animated.Value(0)).current;
-  const st = useRef({ last: 0, up: 0, down: 0, hid: false, h: 71 });
+  const st = useRef({ last: 0, up: 0, down: 0, hid: false, h: 61 });
   st.current.h = h;
   return useMemo(() => {
     const show = (v: boolean) => {
@@ -222,7 +230,7 @@ export function useBarState(): BarState {
 }
 const NOBAR_STATE: BarState = { pad: 0, onScroll: () => {}, y: new Animated.Value(0), setH: () => {} };
 export const useBar = () => useContext(BarCtx) || NOBAR_STATE;
-export function Screen({ children, bar, bs }: { children: ReactNode; bar?: ReactNode; bs?: BarState }) {
+export function Screen({ children, bar, bs, title, overlay, solid }: { children: ReactNode; bar?: ReactNode; bs?: BarState; title?: string; overlay?: boolean; solid?: boolean }) {
   const t = useTheme();
   const own = useBarState();
   const st = bs || own;
@@ -231,7 +239,7 @@ export function Screen({ children, bar, bs }: { children: ReactNode; bar?: React
       <View style={{ flex: 1, overflow: "hidden" }}>
         <BarCtx.Provider value={st}>{children}</BarCtx.Provider>
         <Animated.View onLayout={(e) => st.setH(Math.round(e.nativeEvent.layout.height))} style={{ position: "absolute", top: 0, left: 0, right: 0, transform: [{ translateY: st.y }] }}>
-          <AppBar>{bar}</AppBar>
+          <AppBar title={title} overlay={overlay} solid={solid}>{bar}</AppBar>
         </Animated.View>
       </View>
     </SafeAreaView>
@@ -349,14 +357,14 @@ export function TabBar() {
   const cur = curTab(path, params.from);
   const todo = decksTodo();
   return (
-    <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, flexDirection: "row", backgroundColor: t.surface, borderTopWidth: 1, borderTopColor: t.line, paddingTop: 6, paddingHorizontal: 4, paddingBottom: 8 + ins.bottom, boxShadow: "0 -4px 16px rgba(15,26,46,.06)" }}>
+    <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, flexDirection: "row", backgroundColor: t.surface, borderTopWidth: 1, borderTopColor: t.line, paddingTop: 6, paddingHorizontal: 4, paddingBottom: 8 + ins.bottom }}>
       {TABS.map(([id, label, icon, href]) => {
         const on = cur === id;
         return (
           <Pressable key={id} onPress={() => (on && TABROOTS.includes(path) ? null : goTab(id))} accessibilityLabel={id === "deck" && todo ? `${label}, ${todo} ${todo === 1 ? "mazzo da completare" : "mazzi da completare"}` : label} style={{ flex: 1, minHeight: 50, alignItems: "center", justifyContent: "center", gap: 3 }}>
-            {on && <View style={{ position: "absolute", top: 2, width: 44, height: 30, borderRadius: 15, backgroundColor: t.accentSoft }} />}
+            {on && <View style={{ position: "absolute", top: -7, width: 28, height: 2.5, borderRadius: 1.25, backgroundColor: t.accent }} />}
             <Icon name={icon} color={on ? t.accent : t.ink2} size={23} />
-            <Text style={{ color: on ? t.accent : t.ink2, fontSize: 11.2, fontWeight: on ? "700" : "500" }}>{label}</Text>
+            <Text style={{ color: on ? t.accent : t.ink2, fontSize: FS.xs, fontWeight: on ? "700" : "500" }}>{label}</Text>
             {id === "deck" && todo ? (
               <View style={{ position: "absolute", top: 2, left: "50%", marginLeft: 6, minWidth: 16, height: 16, paddingHorizontal: 4, borderRadius: 8, backgroundColor: t.cyan, alignItems: "center", justifyContent: "center" }}>
                 <Text style={{ color: "#fff", fontFamily: DISPLAY, fontWeight: "700", fontSize: 9.6, lineHeight: 16 }}>{todo}</Text>

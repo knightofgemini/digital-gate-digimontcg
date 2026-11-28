@@ -21,7 +21,7 @@ import { Heart, ListsIcon, QtyControl } from "../../items";
 import { favSet, isFav, owned, useStore } from "../../store";
 import { deckById } from "../../decks";
 import { DeckQty, Lock } from "../../DeckQty";
-import { useTheme } from "../../theme";
+import { FS, R, useTheme } from "../../theme";
 import { QASection } from "../../qa";
 
 export default function Carta() {
@@ -64,7 +64,7 @@ export default function Carta() {
     });
   }, [dv]);
   const maxW = Math.min(width, 560);
-  const cw = Math.min(290, maxW - 84);
+  const cw = Math.min(310, maxW - 72);
   // distanza tra le carte della fila: le vicine spuntano ai lati senza coprire quella al centro.
   // Numero intero di pixel del telefono: Android arrotonda lo scatto ai pixel e con una distanza non intera, carta dopo carta,
   // la fila usciva dal centro (e i dettagli restavano sbiaditi)
@@ -395,7 +395,7 @@ function CardPage({ c, setC, width, deck, strip, fade, sv, fan, exitTo }: { c: C
   const cv = cmVal(c),
     tv = ctVal(c);
   const low = cv != null && tv != null && cv !== tv ? (cv < tv ? "cm" : "ct") : "";
-  const cw = Math.min(290, maxW - 84);
+  const cw = Math.min(310, maxW - 72);
   const insB = useSafeAreaInsets().bottom;
   const copies = vers.reduce((n, a) => n + owned(a), 0);
 
@@ -428,6 +428,18 @@ function CardPage({ c, setC, width, deck, strip, fade, sv, fan, exitTo }: { c: C
       </View>
       {/* overScrollMode never: niente effetto elastico di Android in cima e in fondo (la scheda "rimbalzava", segnalato dall'utente) */}
       <Animated.ScrollView ref={scrollRef} onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} overScrollMode="never" bounces={false} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 14 + footH, width: maxW, alignSelf: "center" }} nestedScrollEnabled>
+        {/* fondo appena tinto con il colore della carta dietro la fila (28 novembre 2026, ritocco "Carta protagonista") */}
+        <View pointerEvents="none" style={{ position: "absolute", top: 0, left: -((width - maxW) / 2), width, height: Math.round((cw * 7) / 5) + 60 }}>
+          <Svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 100">
+            <Defs>
+              <LinearGradient id="ctint" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor={t.cards[c.colors[0]] || t.line} stopOpacity={t.dark ? 0.26 : 0.2} />
+                <Stop offset="1" stopColor={t.cards[c.colors[0]] || t.line} stopOpacity={0} />
+              </LinearGradient>
+            </Defs>
+            <Rect width="10" height="100" fill="url(#ctint)" />
+          </Svg>
+        </View>
         {/* fila delle carte a ventaglio (precedente e successiva ai lati) */}
         {strip}
 
@@ -475,7 +487,7 @@ function CardPage({ c, setC, width, deck, strip, fade, sv, fan, exitTo }: { c: C
           </View>
 
           {/* una riga di dati */}
-          <View style={{ flexDirection: "row", marginBottom: 10, borderRadius: 14, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, overflow: "hidden" }}>
+          <View style={{ flexDirection: "row", marginBottom: 14 }}>
             {(
               [
                 ["Tipo", c.ct],
@@ -489,14 +501,13 @@ function CardPage({ c, setC, width, deck, strip, fade, sv, fan, exitTo }: { c: C
                 <DataCell key={l} label={l} value={v} />
               ))}
             {c.colors.length > 0 && (
-              <View style={{ flex: 1, paddingVertical: 8, paddingHorizontal: 4, gap: 2, alignItems: "center", borderLeftWidth: 1, borderColor: t.line }}>
-                <Text style={CDL(t)}>Colore</Text>
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, minHeight: 22 }}>
+              <View style={{ flex: 1, paddingVertical: 6, paddingHorizontal: 4, gap: 2, alignItems: "center" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, minHeight: 26 }}>
                   {c.colors.map((x) => (
-                    <View key={x} style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: t.cards[x] }} />
+                    <View key={x} style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: t.cards[x] }} />
                   ))}
-                  {c.colors.length === 1 && <Text style={{ color: t.ink, fontWeight: "600", fontSize: 15.2 }}>{c.colors[0]}</Text>}
                 </View>
+                <Text style={CDL(t)}>{c.colors.length === 1 ? c.colors[0] : "Colore"}</Text>
               </View>
             )}
           </View>
@@ -720,11 +731,11 @@ function countryName(cc?: string) {
 }
 
 const RARCOL: Record<string, string> = { C: "#9aa4b6", U: "#3fbf75", R: "#4c8dff", SR: "#b06bff", SEC: "#f2b230", UR: "#ff5470", P: "#2fc6c0" };
-const headBtn = (t: any) => ({ width: 44, height: 44, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, alignItems: "center" as const, justifyContent: "center" as const });
+const headBtn = (t: any) => ({ width: 44, height: 44, borderRadius: R.btn, borderWidth: 1, borderColor: "transparent", alignItems: "center" as const, justifyContent: "center" as const });
 // titoletto delle sezioni (.fx h3)
-const H3 = (t: any) => ({ color: t.ink2, fontFamily: DISPLAY, fontWeight: "500" as const, fontSize: 12, letterSpacing: 1.2, textTransform: "uppercase" as const, marginBottom: 4 });
+const H3 = (t: any) => ({ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600" as const, fontSize: 12, letterSpacing: 1, textTransform: "uppercase" as const, marginBottom: 6 });
 // etichetta della riga di dati (.cdc > span)
-const CDL = (t: any) => ({ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600" as const, fontSize: 10.6, letterSpacing: 0.85, textTransform: "uppercase" as const });
+const CDL = (t: any) => ({ color: t.ink2, fontSize: FS.xs, lineHeight: 14 });
 
 // cuore nel riquadro (.favb.big): arancione con lo sfondo tenue se preferita
 function FavBig({ c }: { c: Card }) {
@@ -749,11 +760,11 @@ function FavBig({ c }: { c: Card }) {
 function DataCell({ label, value }: { label: string; value: string }) {
   const t = useTheme();
   return (
-    <View style={{ flex: label === "Tipo" && value.length > 8 ? 2 : 1, minWidth: 0, paddingVertical: 8, paddingHorizontal: 4, gap: 2, alignItems: "center", borderLeftWidth: label === "Tipo" ? 0 : 1, borderColor: t.line }}>
-      <Text style={CDL(t)}>{label}</Text>
-      <Text style={{ color: t.ink, fontWeight: "600", fontSize: 15.2, lineHeight: 22 }} numberOfLines={1}>
+    <View style={{ flex: label === "Tipo" && value.length > 8 ? 2 : 1, minWidth: 0, paddingVertical: 6, paddingHorizontal: 4, gap: 2, alignItems: "center" }}>
+      <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: label === "Tipo" ? FS.lg : FS.xl, lineHeight: 26 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
         {value}
       </Text>
+      <Text style={CDL(t)}>{label}</Text>
     </View>
   );
 }
@@ -767,8 +778,8 @@ function Evo({ title, text, one }: { title: string; text: string; one?: boolean 
   const fs = one && avail && nat > avail + 0.5 ? Math.max(8, Math.floor(((15 * avail) / nat) * 2) / 2) : 15;
   const st = { color: t.ink, fontFamily: DISPLAY, fontWeight: "600" as const, fontSize: fs, lineHeight: fs * 1.5 };
   return (
-    <View style={{ backgroundColor: t.surface, borderColor: t.line, borderWidth: 1, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10 }}>
-      <Text style={{ color: t.ink2, fontSize: 11.2, letterSpacing: 0.9, textTransform: "uppercase", lineHeight: 16 }}>{title}</Text>
+    <View style={{ paddingVertical: 4 }}>
+      <Text style={H3(t)}>{title}</Text>
       <View onLayout={one ? (e) => setAvail(e.nativeEvent.layout.width) : undefined}>
         {one && (
           <View style={{ position: "absolute", left: 0, top: 0, width: 4000, opacity: 0, flexDirection: "row" }} pointerEvents="none">
@@ -788,9 +799,9 @@ function Evo({ title, text, one }: { title: string; text: string; one?: boolean 
 function Box({ title, text, side, ldp }: { title: string; text: string; side?: any; ldp?: string }) {
   const t = useTheme();
   return (
-    <View style={{ marginBottom: 10 }}>
+    <View style={{ marginBottom: 16 }}>
       <Text style={H3(t)}>{title}</Text>
-      <View style={{ backgroundColor: t.surface, borderColor: t.line, borderWidth: 1, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 }}>
+      <View>
       {side && (side.c || side.col) ? (
         <Text style={{ color: t.ink, fontSize: 15, lineHeight: 22 }}>
           {side.c ? <Chip text={"Use " + side.c} cls="tim" fs={15} /> : null}

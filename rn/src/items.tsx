@@ -12,7 +12,7 @@ import { Card, fullUrl, isAce, thumbUrl } from "./data";
 import { openCard } from "./nav";
 import { cmCovered, cmOf, cmUrl, ctCovered, ctOf, ctUrl, eurN, usePrices } from "./prices";
 import { S, favSet, isFav, owned, setQty, setView, useStore, useView } from "./store";
-import { useTheme } from "./theme";
+import { FS, R, useTheme } from "./theme";
 import { ColorBand } from "./ui";
 import { FitText } from "./fit";
 import { useBar } from "./chrome";
@@ -326,17 +326,22 @@ export const ListRow = memo(function ListRow({ c, list, extra, noPrice, right, d
   );
 });
 
-// vista a immagini (.tile)
+// vista a immagini (.tile). 28 novembre 2026 (ritocco grafico "Carta protagonista"): niente riquadro intorno, la carta
+// in primo piano con il cuore sopra l'immagine; sotto i colori, nome, dati, copie e prezzi come prima
 export const GridTile = memo(function GridTile({ c, list, width, extra, qty, deck, onOpen }: { c: Card; list: Card[]; width: number; extra?: ReactNode; qty?: ReactNode; deck?: string; onOpen?: () => void }) {
   const t = useTheme();
   return (
-    <Pressable onPress={() => (onOpen && onOpen(), openCard(c, list, deck))} style={{ width, padding: 6, gap: 5, backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 11 }}>
-      <Image source={fullUrl(c)} placeholder={thumbUrl(c)} placeholderContentFit="cover" style={{ width: "100%", aspectRatio: 5 / 7, borderRadius: 7, backgroundColor: t.surface2 }} contentFit="cover" cachePolicy="disk" transition={120} recyclingKey={c.k} />
-      <ColorBand colors={c.colors} height={5} />
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, minWidth: 0 }}>
-        <FitText text={c.name} size={14.7} boxStyle={{ flex: 1 }} style={{ color: t.ink, fontWeight: "600" }} ace={isAce(c)} />
-        {qty ? null : <FavButton c={c} box />}
+    <Pressable onPress={() => (onOpen && onOpen(), openCard(c, list, deck))} style={{ width, gap: 5 }}>
+      <View>
+        <Image source={fullUrl(c)} placeholder={thumbUrl(c)} placeholderContentFit="cover" style={{ width: "100%", aspectRatio: 5 / 7, borderRadius: R.btn, backgroundColor: t.surface2 }} contentFit="cover" cachePolicy="disk" transition={120} recyclingKey={c.k} />
+        {qty ? null : (
+          <View style={{ position: "absolute", top: 6, right: 6, width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(11,17,32,.72)", alignItems: "center", justifyContent: "center" }}>
+            <FavButton c={c} size={20} />
+          </View>
+        )}
       </View>
+      <ColorBand colors={c.colors} height={4} />
+      <FitText text={c.name} size={FS.md} style={{ color: t.ink, fontWeight: "600" }} ace={isAce(c)} />
       <View>
         <ListLines c={c} />
       </View>
@@ -383,13 +388,14 @@ export function CountRow({ n, top = 14 }: { n: number; top?: number }) {
   const t = useTheme();
   return (
     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: top, marginBottom: 8 }}>
-      <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "500", fontSize: 12.5, letterSpacing: 1.5, textTransform: "uppercase" }}>{n + (n === 1 ? " carta" : " carte")}</Text>
+      <Text style={{ color: t.ink2, fontSize: FS.sm, fontVariant: ["tabular-nums"] }}>{n.toLocaleString("it-IT") + (n === 1 ? " carta" : " carte")}</Text>
       <ViewToggle />
     </View>
   );
 }
 
 const Sep = () => <View style={{ height: 6 }} />;
+const SepG = () => <View style={{ height: 22 }} />;
 // elenco di carte già filtrato, nella vista scelta (griglia a due colonne o elenco)
 export function CardList({ list, header, empty, extra, padBottom = BOTTOM_PAD }: { list: Card[]; header?: React.ReactElement; empty?: string; extra?: (c: Card) => ReactNode; padBottom?: number }) {
   const t = useTheme();
@@ -399,7 +405,7 @@ export function CardList({ list, header, empty, extra, padBottom = BOTTOM_PAD }:
   const { width } = useWindowDimensions();
   const bar = useBar();
   const grid = view === "grid";
-  const tw = Math.floor((width - 28 - 6) / 2);
+  const tw = Math.floor((width - 32 - 12) / 2);
   const renderItem = useCallback(
     ({ item }: { item: Card }) => (grid ? <GridTile c={item} list={list} width={tw} extra={extra && extra(item)} /> : <ListRow c={item} list={list} extra={extra && extra(item)} />),
     [grid, list, tw, extra]
@@ -413,10 +419,10 @@ export function CardList({ list, header, empty, extra, padBottom = BOTTOM_PAD }:
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
       ListHeaderComponent={header}
-      columnWrapperStyle={grid ? { gap: 6 } : undefined}
-      ItemSeparatorComponent={Sep}
+      columnWrapperStyle={grid ? { gap: 12 } : undefined}
+      ItemSeparatorComponent={grid ? SepG : Sep}
       onScroll={bar.onScroll} scrollEventThrottle={16}
-      contentContainerStyle={{ paddingHorizontal: 14, paddingTop: bar.pad, paddingBottom: padBottom }}
+      contentContainerStyle={{ paddingHorizontal: grid ? 16 : 14, paddingTop: bar.pad, paddingBottom: padBottom }}
       initialNumToRender={grid ? 8 : 10}
       windowSize={7}
       renderItem={renderItem}

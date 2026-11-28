@@ -11,7 +11,7 @@ import Svg, { Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { DISPLAY, Text } from "./Text";
 import { CARDS, Card, CardSet, PRODUCTS, SETS, SETBY, TYPES, Upcoming, bannerUrl, cardsOfSet, daysTo, logoUrl, markText, packUrl, recentSets, soonSet, spoilDate, spoilerSet, thumbUrl, typeOf, upBadge, upSorted, upWhen } from "./data";
 import { openCard, openDeck, openSet, openSoon, openUpcoming } from "./nav";
-import { useTheme } from "./theme";
+import { FS, R, useTheme } from "./theme";
 import { Icon } from "./ui";
 import { goSearch, goTab } from "./chrome";
 import { Btn, Glow, ICO_ARROW, ICO_PLUS, Progress } from "./visual";
@@ -30,7 +30,7 @@ const focusOf = (code: string) => (FOCUS as Record<string, Focus | string>)[code
 const FILL = { position: "absolute" as const, top: 0, left: 0, right: 0, bottom: 0 };
 // banner in evidenza: stessi colori nei due temi (illustrazione che sfuma nel blu notte, testo chiaro)
 const HERO = { bg: "#0b1120", ink: "#e8edf7", title: "#f4f7fd", soft: "#a3b1cb", eyebrow: "#63d5ee", btn: "#ff7a3d", btnInk: "#1a0b03", glass: "rgba(11,17,32,.86)", edge: "rgba(232,237,247,.17)" };
-const SEC_TOP = 24;
+const SEC_TOP = 32;
 const GAP = 12;
 // tipi di prodotto del banner scorrevole, in quest'ordine (uno per tipo)
 const HERO_TYPES = ["BT", "EX", "ST", "LM", "PB"];
@@ -94,8 +94,8 @@ function ChevronRight({ color, size = 16 }: { color: string; size?: number }) {
 function Sec({ title, link, onLink }: { title: string; link?: string; onLink?: () => void }) {
   const t = useTheme();
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: SEC_TOP, marginBottom: 11 }}>
-      <Text accessibilityRole="header" style={{ flex: 1, color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 12.5, lineHeight: 18, letterSpacing: 2, textTransform: "uppercase" }}>
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: SEC_TOP, marginBottom: 12 }}>
+      <Text accessibilityRole="header" style={{ flex: 1, color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.sec, lineHeight: 29, letterSpacing: -0.3 }}>
         {title}
       </Text>
       {link ? (
@@ -114,14 +114,14 @@ function Sec({ title, link, onLink }: { title: string; link?: string; onLink?: (
 // sulla fila, quando si cambia scheda a mano riparte da capo, e non gira con la pagina non in vista o con
 // "Riduci movimento" attivo nel telefono. Con auto il puntino della scheda in vista si riempie piano piano come una
 // barra: quando è pieno si passa alla scheda dopo (16 novembre 2026, richiesta dell'utente)
-function Carousel({ w, children, dots, onIndex, auto }: { w: number; children: ReactNode[]; dots?: boolean; onIndex?: (i: number) => void; auto?: number }) {
+function Carousel({ w, children, dots, onIndex, auto, gap = GAP, edge = 14 }: { w: number; children: ReactNode[]; dots?: boolean; onIndex?: (i: number) => void; auto?: number; gap?: number; edge?: number }) {
   const t = useTheme();
   const [i, setI] = useState(0);
   const n = children.length;
   const ref = useRef<any>(null); // ScrollView (il tipo di RN 0.88 non accetta useRef<ScrollView>)
   const cur = useRef(0);
-  const geo = useRef({ w, n });
-  geo.current = { w, n };
+  const geo = useRef({ w, n, gap });
+  geo.current = { w, n, gap };
   const [seen, setSeen] = useState(true);
   const [still, setStill] = useState(false);
   // riempimento della capsula: animazione continua fatta dal telefono (non da JavaScript), senza ritagli (la parte
@@ -158,7 +158,7 @@ function Carousel({ w, children, dots, onIndex, auto }: { w: number; children: R
       const g = geo.current;
       const k = (cur.current + 1) % g.n;
       autoAt.current = Date.now();
-      ref.current?.scrollTo({ x: k * (g.w + GAP), animated: true });
+      ref.current?.scrollTo({ x: k * (g.w + g.gap), animated: true });
       go(0);
     });
   };
@@ -192,17 +192,17 @@ function Carousel({ w, children, dots, onIndex, auto }: { w: number; children: R
         ref={ref}
         horizontal
         showsHorizontalScrollIndicator={false}
-        snapToInterval={w + GAP}
+        snapToInterval={w + gap}
         snapToAlignment="start"
         decelerationRate="fast"
         disableIntervalMomentum
         nestedScrollEnabled
-        style={{ marginHorizontal: -14 }}
-        contentContainerStyle={{ paddingHorizontal: 14, gap: GAP }}
+        style={{ marginHorizontal: -edge }}
+        contentContainerStyle={{ paddingHorizontal: edge, gap }}
         onScroll={
           track
             ? (e) => {
-                const k = Math.max(0, Math.min(n - 1, Math.round(e.nativeEvent.contentOffset.x / (w + GAP))));
+                const k = Math.max(0, Math.min(n - 1, Math.round(e.nativeEvent.contentOffset.x / (w + gap))));
                 if (k === cur.current) return;
                 cur.current = k;
                 if (dots) setI(k);
@@ -338,15 +338,18 @@ function HeroFallback({ code }: { code: string }) {
   );
 }
 
+// altezza di In evidenza a tutta larghezza (28 novembre 2026, direzione "Galleria" scelta dall'utente)
+export const HERO_H = 420;
 function HeroSlide({ h, w }: { h: HeroData; w: number }) {
   useHomeArt();
+  const t = useTheme();
   const sw = useWindowDimensions().width;
   const cut = artFor(h.code, "hero", sw);
   const art = HERO_ART[h.code];
   const b = bannerUrl(h.code);
+  const label = h.spoil ? "Nuovi spoiler" : h.badge === "IN ARRIVO" ? "In arrivo" : "Uscito di recente";
   return (
-    <Pressable onPress={h.go} accessibilityRole="button" accessibilityLabel={h.badge.toLowerCase() + ": " + h.code + " " + h.name + ", " + h.when + ". " + h.cta} style={{ width: w, minHeight: 276, borderRadius: 16, overflow: "hidden", backgroundColor: HERO.bg, padding: 15, justifyContent: "space-between" }}>
-      {/* illustrazione scelta dall'utente solo per questo riquadro (covers.ts), altrimenti il banner del prodotto */}
+    <Pressable onPress={h.go} accessibilityRole="button" accessibilityLabel={h.badge.toLowerCase() + ": " + h.code + " " + h.name + ", " + h.when + ". " + h.cta} style={{ width: w, height: HERO_H, overflow: "hidden", backgroundColor: HERO.bg, justifyContent: "flex-end" }}>
       {/* taglio scelto nell'editor dell'app (homeArt.tsx), poi l'illustrazione dentro l'APK (covers.ts), poi il banner */}
       {cut ? (
         <CutImg a={cut} />
@@ -357,54 +360,47 @@ function HeroSlide({ h, w }: { h: HeroData; w: number }) {
       ) : (
         <HeroFallback code={h.code} />
       )}
-      {/* sfumatura in una vista a tutta superficie: con width/height "100%" sull'Svg la misura sarebbe quella
-          interna (meno il margine di 15) e la sfumatura non arriverebbe al bordo destro e in fondo */}
+      {/* sfumature: in alto scura per leggere il marchio della barra, in basso verso lo sfondo della pagina (l'illustrazione
+          entra nella pagina senza bordo) */}
       <View pointerEvents="none" style={FILL}>
         <Svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 100">
           <Defs>
             <LinearGradient id={"heroFade" + h.key} x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={HERO.bg} stopOpacity={0.15} />
-              <Stop offset="0.18" stopColor={HERO.bg} stopOpacity={0.15} />
-              <Stop offset="0.35" stopColor={HERO.bg} stopOpacity={0.25} />
-              <Stop offset="0.66" stopColor={HERO.bg} stopOpacity={0.91} />
-              <Stop offset="1" stopColor={HERO.bg} stopOpacity={1} />
+              <Stop offset="0" stopColor="#05080f" stopOpacity={0.6} />
+              <Stop offset="0.2" stopColor="#05080f" stopOpacity={0} />
+              <Stop offset="0.42" stopColor={t.bg} stopOpacity={0} />
+              <Stop offset="0.8" stopColor={t.bg} stopOpacity={0.88} />
+              <Stop offset="1" stopColor={t.bg} stopOpacity={1} />
             </LinearGradient>
           </Defs>
           <Rect width="10" height="100" fill={`url(#heroFade${h.key})`} />
         </Svg>
       </View>
       {cut ? <CutLogo code={h.code} a={cut} /> : null}
-      <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
-        <View style={{ flexShrink: 1, borderRadius: 6, borderWidth: 1, borderColor: h.spoil ? HERO.btn : HERO.edge, backgroundColor: HERO.glass, paddingVertical: 5, paddingHorizontal: 8 }}>
-          <Text style={{ color: h.spoil ? HERO.btn : HERO.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, lineHeight: 14, letterSpacing: 1.4 }}>{h.badge}</Text>
-        </View>
-        {h.dp ? (
-          <View accessible accessibilityLabel={h.dp.label} style={{ minWidth: 46, alignItems: "center", borderRadius: 9, borderWidth: 1, borderColor: HERO.edge, backgroundColor: HERO.glass, paddingVertical: 6, paddingHorizontal: 8 }}>
-            <Text style={{ color: HERO.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 22, lineHeight: 24 }}>{h.dp.big}</Text>
-            <Text style={{ color: HERO.soft, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10, lineHeight: 14, letterSpacing: 1.3 }}>{h.dp.small}</Text>
-          </View>
-        ) : null}
-      </View>
-      <View style={{ paddingTop: 36 }}>
-        <Text style={{ color: HERO.eyebrow, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, lineHeight: 14, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 3 }}>{h.eyebrow}</Text>
-        <Text style={{ color: HERO.title, fontFamily: DISPLAY, fontWeight: "700", fontSize: 29, lineHeight: 32, letterSpacing: -0.4, marginBottom: 12 }}>{h.name}</Text>
-        <Pressable onPress={h.go} accessibilityRole="button" accessibilityLabel={h.cta + ": " + h.name} style={{ minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, paddingHorizontal: 15, borderRadius: 10, backgroundColor: HERO.btn }}>
-          <Text style={{ color: HERO.btnInk, fontWeight: "600", fontSize: 14 }}>{h.cta}</Text>
-          <Arrow color={HERO.btnInk} />
+      <View style={{ paddingHorizontal: 16, paddingBottom: 6 }}>
+        <Text style={{ color: h.spoil ? t.accent : t.ink2, fontSize: FS.sm, lineHeight: 18, fontWeight: "500", marginBottom: 2 }} numberOfLines={1}>
+          {label + " · " + h.eyebrow}
+        </Text>
+        <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.hero, lineHeight: 38, letterSpacing: -0.6, marginBottom: 14 }} numberOfLines={2}>
+          {h.name}
+        </Text>
+        <Pressable onPress={h.go} accessibilityRole="button" accessibilityLabel={h.cta + ": " + h.name} style={{ alignSelf: "flex-start", minHeight: 44, flexDirection: "row", alignItems: "center", gap: 9, paddingHorizontal: 18, borderRadius: R.btn, backgroundColor: t.accent }}>
+          <Text style={{ color: t.accentInk, fontWeight: "600", fontSize: 14.5 }}>{h.cta}</Text>
+          <Arrow color={t.accentInk} />
         </Pressable>
       </View>
     </Pressable>
   );
 }
 
-export function HeroCarousel({ cw, sp }: { cw: number; sp: Spoil[] }) {
+export function HeroCarousel({ sp }: { cw?: number; sp: Spoil[] }) {
   const list = heroData(sp);
+  const sw = useWindowDimensions().width;
   if (!list.length) return null;
-  const w = list.length > 1 ? cw - 22 : cw;
   return (
-    <Carousel w={w} dots auto={HERO_AUTO}>
+    <Carousel w={sw} gap={0} edge={0} dots auto={HERO_AUTO}>
       {list.map((h) => (
-        <HeroSlide key={h.key} h={h} w={w} />
+        <HeroSlide key={h.key} h={h} w={sw} />
       ))}
     </Carousel>
   );
@@ -417,17 +413,21 @@ export function CollectionRow() {
   let n = 0;
   CARDS.forEach((c) => owned(c) && n++);
   const word = n === 1 ? "carta" : "carte";
+  const nd = S.decks.length;
+  const Num = ({ v, l }: { v: number; l: string }) => (
+    <View>
+      <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 28, lineHeight: 32, fontVariant: ["tabular-nums"] }}>{v.toLocaleString("it-IT")}</Text>
+      <Text style={{ color: t.ink2, fontSize: FS.xs, lineHeight: 14 }}>{l}</Text>
+    </View>
+  );
+  // 28 novembre 2026 (direzione "Galleria"): numeri grandi al posto della riga nel riquadro; tocco = Collezione
   return (
-    <Pressable onPress={() => goTab("coll")} accessibilityRole="button" accessibilityLabel={"La tua collezione: " + n + " " + word} style={{ marginTop: 14, minHeight: 50, flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 9, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface }}>
-      <Icon name="coll" color={t.cyan} size={19} />
-      <Text style={{ flex: 1, color: t.ink2, fontSize: 13.4 }} numberOfLines={1}>
-        La tua collezione
-      </Text>
-      <View style={{ flexDirection: "row", alignItems: "baseline", gap: 4 }}>
-        <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 18, fontVariant: ["tabular-nums"] }}>{n.toLocaleString("it-IT")}</Text>
-        <Text style={{ color: t.ink2, fontSize: 12 }}>{word}</Text>
+    <Pressable onPress={() => goTab("coll")} accessibilityRole="button" accessibilityLabel={"La tua collezione: " + n + " " + word + ", " + nd + (nd === 1 ? " mazzo" : " mazzi")} style={{ marginTop: 20, flexDirection: "row", alignItems: "flex-end", gap: 28 }}>
+      <Num v={n} l={word + " in collezione"} />
+      <Num v={nd} l={nd === 1 ? "mazzo" : "mazzi"} />
+      <View style={{ flex: 1, alignItems: "flex-end", paddingBottom: 2 }}>
+        <Text style={{ color: t.cyan, fontWeight: "600", fontSize: 13.6 }}>Collezione →</Text>
       </View>
-      <ChevronRight color={t.cyan} />
     </Pressable>
   );
 }
@@ -441,7 +441,7 @@ export function SpoilerRow({ sp }: { sp: Spoil[] }) {
   if (!sp.length) return null;
   const list = sp.slice(0, 16);
   const cards = list.map((x) => x.c);
-  const W = 104;
+  const W = 132;
   const u = (list[k] || list[0]).u;
   return (
     <>
@@ -451,15 +451,15 @@ export function SpoilerRow({ sp }: { sp: Spoil[] }) {
           const mk = markText(x.c);
           return (
             <Pressable key={x.c.k} onPress={() => openCard(x.c, cards)} accessibilityLabel={x.c.name + " " + x.c.code} style={{ width: W }}>
-              <View style={{ width: W, height: Math.round(W / 0.716), borderRadius: 7, overflow: "hidden", backgroundColor: t.surface2, }}>
+              <View style={{ width: W, height: Math.round(W / 0.716), borderRadius: 7, overflow: "hidden", backgroundColor: t.surface2 }}>
                 <Image source={thumbUrl(x.c)} style={FILL} contentFit="cover" cachePolicy="disk" transition={120} recyclingKey={x.c.k} />
               </View>
-              <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.5, marginTop: 6 }} numberOfLines={1}>
+              <Text style={{ color: t.ink, fontWeight: "600", fontSize: FS.sm, lineHeight: 18, marginTop: 8 }} numberOfLines={1}>
+                {x.c.name}
+              </Text>
+              <Text style={{ color: t.ink2, fontSize: FS.xs, lineHeight: 15 }} numberOfLines={1}>
                 {x.c.code}
                 {mk ? " " + mk : ""}
-              </Text>
-              <Text style={{ color: t.ink2, fontSize: 11.5, lineHeight: 15 }} numberOfLines={1}>
-                {x.c.name}
               </Text>
             </Pressable>
           );
@@ -476,7 +476,7 @@ export function Recent({ cw }: { cw: number }) {
   if (!list.length) return null;
   // copertina (11 novembre 2026, scelta dell'utente tra copertina, quadrato e locandina): formato carta come "Set da
   // completare" (stessi tagli dell'editor), larga come le schede di All'orizzonte, scritte uguali alle altre file
-  const w = Math.floor((cw - GAP) / 2.3);
+  const w = Math.floor((cw - GAP) / 2.1);
   const h = Math.round((w * 91) / 65);
   return (
     <>
@@ -497,15 +497,15 @@ function RecentCover({ x, st, w, h }: { x: CardSet; st?: { n: number; h: number 
   const done = has && st!.h === st!.n;
   return (
     <Pressable onPress={() => openSet(x.id, "home")} accessibilityRole="button" accessibilityLabel={x.code + " " + x.name + (isNew ? ", nuovo" : "") + (has ? ": " + st!.h + " su " + st!.n + " carte" : "")} style={{ width: w }}>
-      <View style={{ width: w, height: h, borderRadius: 12, overflow: "hidden", backgroundColor: "#1a2540" }}>
+      <View style={{ width: w, height: h, borderRadius: R.chip, overflow: "hidden", backgroundColor: "#1a2540" }}>
         <SetArt code={x.code} w={w} h={h} />
         {isNew ? <GlassTag text="NUOVO" color="#4ade80" /> : null}
       </View>
-      <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.5, letterSpacing: 0.6, marginTop: 7 }} numberOfLines={1}>
-        {x.code}
-      </Text>
-      <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "600", fontSize: 13, lineHeight: 17 }} numberOfLines={2}>
+      <Text style={{ color: t.ink, fontWeight: "600", fontSize: FS.md, lineHeight: 20, marginTop: 8 }} numberOfLines={2}>
         {x.name}
+      </Text>
+      <Text style={{ color: t.ink2, fontSize: FS.xs, lineHeight: 15 }} numberOfLines={1}>
+        {x.code}
       </Text>
       {has ? (
         <View style={{ marginTop: 6 }}>
@@ -600,7 +600,7 @@ function ProdImg({ code, prefer, fit = "cover", pos }: { code: string; prefer: "
 function HorizonLine({ cw, rows }: { cw: number; rows: Upcoming[][] }) {
   const t = useTheme();
   useHomeArt();
-  const w = Math.floor((cw - GAP) / 2.3);
+  const w = Math.floor((cw - GAP) / 2.1);
   return (
     <>
       <Sec title="All’orizzonte" link="Calendario →" onLink={openSoon} />
@@ -651,7 +651,7 @@ function HorizonLine({ cw, rows }: { cw: number; rows: Upcoming[][] }) {
 
 // ---- set da completare: tutti quelli iniziati e incompleti, dal più vicino al completamento
 // ritaglio dell'illustrazione del prodotto; senza: confezione, logo o codice
-function SetArt({ code, w, h }: { code: string; w: number; h: number }) {
+export function SetArt({ code, w, h, r = 9 }: { code: string; w: number; h: number; r?: number }) {
   const t = useTheme();
   useHomeArt();
   // taglio scelto nell'editor dell'app (homeArt.tsx), poi la copertina verticale dentro l'APK (covers.ts), poi il banner
@@ -661,7 +661,7 @@ function SetArt({ code, w, h }: { code: string; w: number; h: number }) {
   const pk = !cut && !cv && !b ? packUrl(code) : null;
   const lg = !cut && !cv && !b && !pk ? logoUrl(code) : null;
   return (
-    <View style={{ width: w, height: h, borderRadius: 9, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: cut || cv || b ? "#1a2540" : t.surface2 }}>
+    <View style={{ width: w, height: h, borderRadius: r, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: cut || cv || b ? "#1a2540" : t.surface2 }}>
       {cut ? (
         <>
           <CutImg a={cut} />

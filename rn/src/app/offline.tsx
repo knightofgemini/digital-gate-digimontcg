@@ -11,7 +11,6 @@ import { SETBY, SETS, numOf, useData } from "../data";
 import { haveStats } from "../imgstore";
 import { AVG, OFF, PAGE, RUN, choose, count, deleteAll, deleteKind, deleteSet, items, label, mb, missing, pause, setAuto, start, useOffline } from "../offline";
 import { useTheme } from "../theme";
-import { PageTitle } from "../ui";
 import { Screen, useBarState } from "../chrome";
 import { Btn, Progress } from "../visual";
 import { ConfirmBox } from "../deckui";
@@ -69,9 +68,8 @@ export default function Offline() {
   const pick = async (sc: string) => choose(sc);
 
   return (
-    <Screen bs={bar}>
+    <Screen bs={bar} title="Immagini offline">
       <ScrollView onScroll={bar.onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: 28 + 24 }}>
-        <PageTitle>Immagini offline</PageTitle>
         <Text style={{ color: t.ink2, fontSize: 14.7, lineHeight: 23, marginTop: -4, marginBottom: 14 }}>
           {"Scarica le immagini nel dispositivo: compaiono subito e funzionano anche senza internet. Restano salvate anche quando aggiorni l'app." + (BGD ? " Lo scaricamento continua anche con l'app in sottofondo." : " Lo scaricamento continua finché l'app resta aperta, anche se cambi schermata.")}
         </Text>

@@ -64,3 +64,12 @@ export function useTheme(): Theme {
   const pref = useSyncExternalStore(sub, () => PREF, () => PREF);
   return (pref || sys) === "dark" ? dark : light;
 }
+
+// ---- Gettoni del sistema grafico (28 novembre 2026, ritocco grafico scelto dall'utente: Home e Prodotti "Galleria",
+// il resto "Carta protagonista", niente angoli smussati). Valori unici da usare al posto dei numeri sparsi nei file.
+// Testo: 11 etichette · 13 dettagli · 15 testo · 17 nomi · 20 sezioni · 24 titoli di pagina · 34 In evidenza
+export const FS = { xs: 11, sm: 13, md: 15, lg: 17, xl: 20, page: 24, sec: 24, hero: 34 };
+// Spaziature (margine pagina 16, tra sezioni 32)
+export const SP = { 1: 4, 2: 8, 3: 12, 4: 16, 6: 24, 8: 32, 12: 48 };
+// Arrotondamenti: capsule e etichette · pulsanti e campi · immagini · fogli dal basso
+export const R = { chip: 6, btn: 10, img: 12, sheet: 22 };

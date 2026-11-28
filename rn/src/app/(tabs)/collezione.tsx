@@ -12,7 +12,7 @@ import { CardList, CountRow, Heart, ViewToggle } from "../../items";
 import { bestVal, cmVal, ctVal, eurN, eurT, usePrices } from "../../prices";
 import { S, favCards, favCount, listById, listDelete, listNew, owned, setStats, useStore } from "../../store";
 import { useTheme } from "../../theme";
-import { Logo, PageTitle } from "../../ui";
+import { Logo } from "../../ui";
 import { Screen, TABNAV, goTab } from "../../chrome";
 import { Btn, ProgLine, SecHead } from "../../visual";
 import { BOTTOM_PAD, BottomBar } from "../../BottomBar";
@@ -182,14 +182,13 @@ export default function Collezione() {
   const noList = (view === "all" && !anyQty) || (fav && !favCount());
 
   return (
-    <Screen>
+    <Screen title="La mia collezione">
       <CardList
         list={noList ? [] : list}
         padBottom={BOTTOM_PAD + (nf ? 42 : 0)}
         extra={fav ? favExtra : undefined}
         header={
           <View style={{ paddingTop: 4 }}>
-            <PageTitle>La mia collezione</PageTitle>
             <Seg view={view} setView={setView} miss={miss} />
             {body}
             {count}

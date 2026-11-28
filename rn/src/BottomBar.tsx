@@ -6,7 +6,7 @@ import { Pressable, ScrollView, View } from "react-native";
 import { router } from "expo-router";
 import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { DISPLAY, Text, TextInput } from "./Text";
-import { useTheme } from "./theme";
+import { R, useTheme } from "./theme";
 import { useKbH } from "./chrome";
 
 const SHADOW = "0 8px 22px rgba(0,0,0,.22)";
@@ -51,7 +51,7 @@ export function Chevron({ color, up, size = 22 }: { color: string; up?: boolean;
 export function SquareBtn({ children, on, onPress, label, badge, size = 50, shadow = true }: { children: ReactNode; on?: boolean; onPress: () => void; label: string; badge?: number; size?: number; shadow?: boolean }) {
   const t = useTheme();
   return (
-    <Pressable onPress={onPress} accessibilityLabel={label} style={{ width: size, height: size, borderRadius: 14, borderWidth: 1, borderColor: on ? t.cyan : t.line, backgroundColor: on ? t.cyanSoft : t.surface, alignItems: "center", justifyContent: "center", boxShadow: shadow ? SHADOW : undefined }}>
+    <Pressable onPress={onPress} accessibilityLabel={label} style={{ width: size, height: size, borderRadius: R.btn, borderWidth: 1, borderColor: on ? t.cyan : t.line, backgroundColor: on ? t.cyanSoft : t.surface, alignItems: "center", justifyContent: "center", boxShadow: shadow ? SHADOW : undefined }}>
       {children}
       {badge ? (
         <View style={{ position: "absolute", top: -6, right: -6, minWidth: 20, height: 20, paddingHorizontal: 5, borderRadius: 10, backgroundColor: t.cyan, alignItems: "center", justifyContent: "center" }}>
@@ -110,7 +110,7 @@ export function BottomBar({ q, setQ, placeholder, chips, cam, filter, x, below, 
       </Svg>
       {chips ? <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, alignItems: "center" }}>{chips}</View> : null}
       <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
-        <View style={{ flex: 1, minWidth: 0, height: 50, borderRadius: 14, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, boxShadow: SHADOW, justifyContent: "center" }}>
+        <View style={{ flex: 1, minWidth: 0, height: 50, borderRadius: R.btn, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, boxShadow: SHADOW, justifyContent: "center" }}>
           <View pointerEvents="none" style={{ position: "absolute", left: 13 }}>
             <SearchIcon color={t.accent} />
           </View>
