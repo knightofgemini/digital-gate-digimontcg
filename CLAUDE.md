@@ -399,6 +399,8 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   `Panel` e `SecHead` di `visual.tsx` senza riquadro e con titolo Chakra; `Btn` secondario solo contorno; filtri scelti in
   azzurro tenue (Regole, liste delle preferite); titoli dei fogli (Altro, Carte nuove) Chakra 24 dritti; raggi dei fogli,
   pulsanti e campi dai gettoni `R`.
+  **Contatore delle copie senza contenitore** (28 novembre 2026, richiesta dell'utente): `QtyControl` in `items.tsx` (usato
+  anche dal mazzo con `DeckQty`) è solo − numero + affiancati, senza il riquadro arrotondato intorno.
 - **Prove più veloci (7 novembre 2026)**: in `apk.yml` e `prova-emulatore.yml` si conservano tra una build e l'altra i
   file di Gradle, i suoi risultati riutilizzabili (`org.gradle.caching=true`) e le parti in C++ (ccache, finora poche
   riuse); emulatore salvato dopo il primo avvio (cache `avd-…`). APK di prova da 18 a 11 minuti. `prova-emulatore.yml`

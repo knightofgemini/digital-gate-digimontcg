@@ -1,1 +1,1 @@
-ex3|EX3-024,pagina:prodotto/bt27,pagina:prodotto/bt25,pagina:mazzi,pagina:offline,pagina:info,pagina:regole@%0.5;0.28,pagina:collezione
+ex3|EX3-024,pagina:carte,pagina:prodotto/bt25

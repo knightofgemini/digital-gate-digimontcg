@@ -114,7 +114,8 @@ export function QtyControl({ c, value, onSet, plusOff, big, fill, plus, onBlocke
     );
   };
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: fill ? "space-between" : undefined, alignSelf: fill ? "stretch" : undefined, gap: 4, padding: big ? 4 : 3, borderRadius: 14, borderWidth: 1, borderColor: t.line, backgroundColor: t.bg }}>
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: fill ? "space-between" : undefined, alignSelf: fill ? "stretch" : undefined, gap: 8 }}>
+      {/* niente contenitore intorno a − numero + (28 novembre 2026, richiesta dell'utente) */}
       {btn("−", false, () => n > 0 && set(n - 1), -1, false, plus === "lock" && !n ? "lock" : undefined)}
       {numText ? (
         <Text style={{ color: "#ff5a5f", fontFamily: DISPLAY, fontWeight: "700", fontSize: 11.5, letterSpacing: 0.5, textTransform: "uppercase", paddingHorizontal: 2 }}>{numText}</Text>
