@@ -140,6 +140,8 @@ for giro in (1, 2, 3):
     dt = time.time() - a; t1 = cpu_ticks(p); th1 = threads(p)
     g = gfx()
     top = sorted(((th1[k][1] - th0.get(k, (0, 0))[1], th1[k][0]) for k in th1), reverse=True)[:5]
+    shot("g%d_dopo_scorre" % giro)
+    say("pid ora", pid(), "finestra", re.findall(r"mCurrentFocus=[^\n]*", adb("shell", "dumpsys", "window"))[:1])
     say("giro %d SCORRE %.0fs: CPU app %.1f%%, fotogrammi %s, lenti %s, 50/90/95/99 %s/%s/%s/%s, UI lento %s, scadenze mancate %s" % (giro, dt, (t1 - t0) / HZ / dt * 100, g["Total frames rendered"], g["Janky frames"], g["50th percentile"], g["90th percentile"], g["95th percentile"], g["99th percentile"], g["Number Slow UI thread"], g["Number Frame deadline missed"]))
     say("   thread:", ", ".join("%s %.1f%%" % (n, d / HZ / dt * 100) for d, n in top))
     # 3) file orizzontali: In evidenza e Ultimi spoiler col dito
@@ -157,5 +159,7 @@ for giro in (1, 2, 3):
     say("giro %d SCHEDE: fotogrammi %s, lenti %s, 90/99 %s/%s" % (giro, g["Total frames rendered"], g["Janky frames"], g["90th percentile"], g["99th percentile"]))
 calm()
 shot("p1_fine")
+open(os.path.join(OUT, "logcat.txt"), "w").write(adb("logcat", "-d", "-t", "3000"))
+open(os.path.join(OUT, "anr.txt"), "w").write(adb("shell", "dumpsys", "activity", "processes")[:20000])
 for k in ("animator_duration_scale", "transition_animation_scale", "window_animation_scale"):
     adb("shell", "settings", "put", "global", k, "0")
