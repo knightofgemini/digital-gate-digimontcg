@@ -11,7 +11,7 @@ import { CARDS, UPCOMING } from "./data";
 import { decksTodo } from "./decks";
 import { openSoon } from "./nav";
 import { owned, useStore } from "./store";
-import { FS, setThemePref, useTheme } from "./theme";
+import { R, FS, setThemePref, useTheme } from "./theme";
 import { Icon } from "./ui";
 import { RUN, useOffline } from "./offline";
 import { hasKey, onKey } from "./ghArt";
@@ -80,16 +80,16 @@ export function MoreSheet() {
     router.navigate(href);
   };
   const Row = ({ icon, label, onPress, right }: { icon: ReactNode; label: string; onPress: () => void; right?: ReactNode }) => (
-    <Pressable onPress={onPress} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 52, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: t.line }}>
+    <Pressable onPress={onPress} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 54, paddingHorizontal: 2, borderBottomWidth: 1, borderBottomColor: t.line }}>
       {icon}
       <Text style={{ color: t.ink, fontSize: 16, fontWeight: "600", flex: 1 }}>{label}</Text>
       {right}
     </Pressable>
   );
   return (
-    <Sheet visible={open} onClose={() => setOpen(false)} maxH={0.82} style={{ backgroundColor: t.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 18 + ins.bottom, boxShadow: "0 -10px 40px rgba(0,0,0,.25)" }}>
+    <Sheet visible={open} onClose={() => setOpen(false)} maxH={0.82} style={{ backgroundColor: t.bg, borderTopLeftRadius: R.sheet, borderTopRightRadius: R.sheet, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 18 + ins.bottom, boxShadow: "0 -10px 40px rgba(0,0,0,.25)" }}>
         <View style={{ alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: t.line }} />
-        <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 18.4, marginTop: 6, marginBottom: 8 }}>Altro</Text>
+        <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.page, marginTop: 6, marginBottom: 8 }}>Altro</Text>
         <Row
           icon={<Icon name="soon" color={t.ink2} size={20} />}
           label="Prossime uscite"
@@ -138,7 +138,7 @@ export function MoreSheet() {
         ) : null}
         <Row icon={<ThemeIcon dark={t.dark} color={t.ink2} />} label={t.dark ? "Tema chiaro" : "Tema scuro"} onPress={() => setThemePref(t.dark ? "light" : "dark")} />
         <Text onLongPress={() => go("/tagli")} suppressHighlighting style={{ color: t.ink2, fontSize: 11.8, marginTop: 14, lineHeight: 17 }}>Digital Gate - Digimon TCG · catalogo non ufficiale. Immagini e marchi © Bandai, Akiyoshi Hongo, Toei Animation.</Text>
-        <View style={{ marginTop: 16, padding: 12, borderRadius: 12, backgroundColor: t.surface, borderWidth: 1, borderColor: t.line }}>
+        <View style={{ marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderColor: t.line }}>
           <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 13.6, marginBottom: 8 }}>
             <Text style={{ color: t.accent, fontFamily: DISPLAY, fontWeight: "600" }}>{uniq}</Text> / {CARDS.length} carte
           </Text>
@@ -154,13 +154,20 @@ export function MoreSheet() {
 // Una sola intestazione (28 novembre 2026, ritocco grafico): nelle pagine c'è il titolo della pagina nella barra in alto,
 // il marchio Digital Gate solo in Home. overlay = Home: barra trasparente sopra l'illustrazione di In evidenza, piena
 // (solid) quando l'illustrazione è uscita dallo schermo.
-export function AppBar({ children, title, overlay, solid }: { children?: ReactNode; title?: string; overlay?: boolean; solid?: boolean }) {
+export function AppBar({ children, title, overlay, solid, back }: { children?: ReactNode; title?: string; overlay?: boolean; solid?: boolean; back?: () => void }) {
   const t = useTheme();
   const clear = overlay && !solid;
   const ink = clear ? "#f4f7fd" : t.ink;
   return (
     <View style={{ backgroundColor: clear ? "transparent" : t.bg, borderBottomWidth: clear ? 0 : 1, borderBottomColor: t.line, paddingLeft: 16, paddingRight: 6, paddingVertical: 6 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6, minHeight: 48 }}>
+        {back ? (
+          <Pressable onPress={back} accessibilityLabel="Indietro" style={{ width: 44, height: 44, marginLeft: -12, alignItems: "center", justifyContent: "center" }}>
+            <Svg width={22} height={22} viewBox="0 0 24 24">
+              <Path d="M15 5l-7 7 7 7" stroke={t.ink} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            </Svg>
+          </Pressable>
+        ) : null}
         {title ? (
           <Text accessibilityRole="header" numberOfLines={1} style={{ flex: 1, color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.page, lineHeight: 30, letterSpacing: -0.3 }}>
             {title}
@@ -230,7 +237,7 @@ export function useBarState(): BarState {
 }
 const NOBAR_STATE: BarState = { pad: 0, onScroll: () => {}, y: new Animated.Value(0), setH: () => {} };
 export const useBar = () => useContext(BarCtx) || NOBAR_STATE;
-export function Screen({ children, bar, bs, title, overlay, solid }: { children: ReactNode; bar?: ReactNode; bs?: BarState; title?: string; overlay?: boolean; solid?: boolean }) {
+export function Screen({ children, bar, bs, title, overlay, solid, back }: { children: ReactNode; bar?: ReactNode; bs?: BarState; title?: string; overlay?: boolean; solid?: boolean; back?: () => void }) {
   const t = useTheme();
   const own = useBarState();
   const st = bs || own;
@@ -239,7 +246,7 @@ export function Screen({ children, bar, bs, title, overlay, solid }: { children:
       <View style={{ flex: 1, overflow: "hidden" }}>
         <BarCtx.Provider value={st}>{children}</BarCtx.Provider>
         <Animated.View onLayout={(e) => st.setH(Math.round(e.nativeEvent.layout.height))} style={{ position: "absolute", top: 0, left: 0, right: 0, transform: [{ translateY: st.y }] }}>
-          <AppBar title={title} overlay={overlay} solid={solid}>{bar}</AppBar>
+          <AppBar title={title} overlay={overlay} solid={solid} back={back}>{bar}</AppBar>
         </Animated.View>
       </View>
     </SafeAreaView>

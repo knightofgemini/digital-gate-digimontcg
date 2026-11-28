@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { FlatList, Pressable, ScrollView, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { DISPLAY, Text, TextInput } from "../Text";
-import { useTheme } from "../theme";
+import { FS, R, useTheme } from "../theme";
 import { common } from "../ui";
 import { Screen, useBarState } from "../chrome";
 import { QAItem, RuleQA, qaDate, rulesQA, tags, useQA } from "../qa";
@@ -68,9 +68,9 @@ export default function Regole() {
             const n = all.filter((r) => r[0] === c).length;
             const on = c === cat;
             return (
-              <Pressable key={c} onPress={() => setCat(c)} style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, height: 36, borderRadius: 18, backgroundColor: on ? t.accent : t.surface, borderWidth: 1, borderColor: on ? t.accent : t.line }}>
-                <Text style={{ color: on ? t.accentInk : t.ink, fontWeight: "600", fontSize: 13.5 }}>{l}</Text>
-                <Text style={{ color: on ? t.accentInk : t.ink2, fontFamily: DISPLAY, fontWeight: "700", fontSize: 11.5, opacity: 0.85 }}>{n}</Text>
+              <Pressable key={c} onPress={() => setCat(c)} style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, height: 36, borderRadius: R.chip, backgroundColor: on ? t.cyanSoft : "transparent", borderWidth: 1, borderColor: on ? t.cyan : t.line }}>
+                <Text style={{ color: t.ink, fontWeight: "600", fontSize: FS.sm }}>{l}</Text>
+                <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.xs }}>{n}</Text>
               </Pressable>
             );
           })}
@@ -89,7 +89,7 @@ export default function Regole() {
         scrollEventThrottle={16}
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={head}
-        contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8 + bar.pad, paddingBottom: 40 }}
         renderItem={({ item: r }) =>
           r.kind === "qa" ? (
             <View style={{ marginBottom: 8 }}>
@@ -99,8 +99,8 @@ export default function Regole() {
               <QAItem n={r.it[2]} q={r.it[3]} a={r.it[4]} d={r.it[5]} now={now} />
             </View>
           ) : (
-            <View style={{ marginBottom: 8, borderWidth: 1, borderColor: t.line, borderRadius: 12, backgroundColor: t.surface }}>
-              <Pressable onPress={() => setOpen({ ...open, [r.k]: !open[r.k] })} style={{ minHeight: 50, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <View style={{ borderBottomWidth: 1, borderColor: t.line }}>
+              <Pressable onPress={() => setOpen({ ...open, [r.k]: !open[r.k] })} style={{ minHeight: 54, flexDirection: "row", alignItems: "center", gap: 10 }}>
                 <View style={{ flex: 1 }}>
                   <Rich text={voce(r.cat, r.title)} style={{ color: t.ink, fontWeight: "600", fontSize: 15, lineHeight: 22 }} />
                 </View>
@@ -110,7 +110,7 @@ export default function Regole() {
                 </Svg>
               </Pressable>
               {open[r.k] ? (
-                <View style={{ gap: 8, paddingHorizontal: 8, paddingBottom: 8 }}>
+                <View style={{ gap: 8, paddingBottom: 14 }}>
                   {r.list.map((x) => (
                     <QAItem key={x[2]} n={x[2]} q={x[3]} a={x[4]} d={x[5]} now={now} />
                   ))}

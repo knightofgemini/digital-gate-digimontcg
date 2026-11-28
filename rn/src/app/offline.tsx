@@ -10,7 +10,7 @@ import { DISPLAY, Text } from "../Text";
 import { SETBY, SETS, numOf, useData } from "../data";
 import { haveStats } from "../imgstore";
 import { AVG, OFF, PAGE, RUN, choose, count, deleteAll, deleteKind, deleteSet, items, label, mb, missing, pause, setAuto, start, useOffline } from "../offline";
-import { useTheme } from "../theme";
+import { FS, R as RR, useTheme } from "../theme";
 import { Screen, useBarState } from "../chrome";
 import { Btn, Progress } from "../visual";
 import { ConfirmBox } from "../deckui";
@@ -24,7 +24,7 @@ const num = (n: number) => n.toLocaleString("it-IT");
 function SmallBtn({ icon, color, onPress, disabled, label, w = 2.2 }: { icon: string; color: string; onPress: () => void; disabled?: boolean; label: string; w?: number }) {
   const t = useTheme();
   return (
-    <Pressable onPress={onPress} disabled={disabled} accessibilityLabel={label} style={{ width: 40, height: 40, borderRadius: 11, borderWidth: 1, borderColor: t.line, backgroundColor: t.bg, alignItems: "center", justifyContent: "center", opacity: disabled ? 0.45 : 1 }}>
+    <Pressable onPress={onPress} disabled={disabled} accessibilityLabel={label} style={{ width: 40, height: 40, borderRadius: RR.btn, borderWidth: 1, borderColor: t.line, alignItems: "center", justifyContent: "center", opacity: disabled ? 0.45 : 1 }}>
       <Svg width={20} height={20} viewBox="0 0 24 24">
         <Path d={icon} stroke={color} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" fill="none" />
       </Svg>
@@ -34,7 +34,7 @@ function SmallBtn({ icon, color, onPress, disabled, label, w = 2.2 }: { icon: st
 // titoletto (.offh)
 function H({ children }: { children: string }) {
   const t = useTheme();
-  return <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.5, letterSpacing: 1.85, textTransform: "uppercase", marginTop: 22, marginBottom: 10 }}>{children}</Text>;
+  return <Text accessibilityRole="header" style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.xl, marginTop: 28, marginBottom: 10 }}>{children}</Text>;
 }
 
 type Ask = { title: string[]; text: string; ok: string; go: () => void };
@@ -69,15 +69,15 @@ export default function Offline() {
 
   return (
     <Screen bs={bar} title="Immagini offline">
-      <ScrollView onScroll={bar.onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: 28 + 24 }}>
+      <ScrollView onScroll={bar.onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8 + bar.pad, paddingBottom: 28 + 24 }}>
         <Text style={{ color: t.ink2, fontSize: 14.7, lineHeight: 23, marginTop: -4, marginBottom: 14 }}>
           {"Scarica le immagini nel dispositivo: compaiono subito e funzionano anche senza internet. Restano salvate anche quando aggiorni l'app." + (BGD ? " Lo scaricamento continua anche con l'app in sottofondo." : " Lo scaricamento continua finché l'app resta aperta, anche se cambi schermata.")}
         </Text>
 
         {/* stato */}
-        <View style={{ borderWidth: 1, borderColor: t.line, borderRadius: 12, backgroundColor: t.surface, paddingVertical: 14, paddingHorizontal: 16, marginBottom: 10 }}>
+        <View style={{ borderTopWidth: 1, borderBottomWidth: 1, borderColor: t.line, paddingVertical: 14, marginBottom: 10 }}>
           <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
-            <Text style={{ color: t.ink, fontWeight: "600", fontSize: 16.8 }}>{num(nAll) + (nAll === 1 ? " immagine salvata" : " immagini salvate")}</Text>
+            <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.xl }}>{num(nAll) + (nAll === 1 ? " immagine salvata" : " immagini salvate")}</Text>
             {nAll ? <Text style={{ color: t.ink2, fontSize: 13.6 }}>{"circa " + mb(S.w)}</Text> : null}
           </View>
           <Text style={{ color: t.ink2, fontSize: 13.1, marginTop: 4 }}>{num(S.nF) + " carte grandi · " + num(S.nT) + " miniature · " + num(S.nO) + " banner, confezioni e loghi"}</Text>
@@ -106,7 +106,7 @@ export default function Offline() {
 
         {/* APK: se l'app non è esclusa dal risparmio energetico, Android può fermare lo scaricamento a schermo spento */}
         {BGD && !bat ? (
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: t.dark ? "#885247" : "#d99e8b", borderRadius: 12, backgroundColor: t.surface, paddingVertical: 14, paddingHorizontal: 16, marginBottom: 10 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12, borderLeftWidth: 3, borderColor: t.accent, paddingVertical: 10, paddingLeft: 14, paddingRight: 4, marginBottom: 10 }}>
             <View style={{ flex: 1, gap: 3 }}>
               <Text style={{ color: t.ink, fontWeight: "600", fontSize: 15.2 }}>Scaricamento a schermo spento</Text>
               <Text style={{ color: t.ink2, fontSize: 13.1, lineHeight: 19 }}>Il risparmio energetico di Android può interromperlo. Consenti all'app di funzionare in sottofondo senza limiti.</Text>
@@ -130,9 +130,9 @@ export default function Offline() {
           const nk = sc === "t" ? S.nT : S.nF + S.nO;
           const dis = running || (cur && all);
           return (
-            <View key={sc} style={{ borderWidth: 1, borderColor: cur ? t.accent : t.line, borderRadius: 12, backgroundColor: t.surface, paddingVertical: 14, paddingHorizontal: 16, marginBottom: 10, boxShadow: cur ? `inset 0 0 0 1px ${t.accent}` : undefined }}>
+            <View key={sc} style={{ borderTopWidth: 1, borderColor: t.line, paddingVertical: 16, paddingLeft: cur ? 12 : 0, borderLeftWidth: cur ? 3 : 0, borderLeftColor: t.accent}}>
               <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
-                <Text style={{ color: t.ink, fontWeight: "600", fontSize: 16 }}>{title}</Text>
+                <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.lg }}>{title}</Text>
                 <Text style={{ color: t.ink2, fontSize: 13.6 }}>{"circa " + mb(L.w || 0)}</Text>
               </View>
               <Text style={{ color: t.ink2, fontSize: 14.1, lineHeight: 21, marginTop: 6, marginBottom: 12 }}>
@@ -169,7 +169,7 @@ export default function Offline() {
         })}
 
         {/* aggiornamenti automatici in sottofondo (.offauto) */}
-        <Pressable onPress={() => setAuto(!OFF.auto)} accessibilityRole="checkbox" accessibilityState={{ checked: OFF.auto }} style={{ flexDirection: "row", alignItems: "flex-start", gap: 12, borderWidth: 1, borderColor: t.line, borderRadius: 12, backgroundColor: t.surface, paddingVertical: 14, paddingHorizontal: 16, marginBottom: 10 }}>
+        <Pressable onPress={() => setAuto(!OFF.auto)} accessibilityRole="checkbox" accessibilityState={{ checked: OFF.auto }} style={{ flexDirection: "row", alignItems: "flex-start", gap: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: t.line, paddingVertical: 16}}>
           <View style={{ width: 20, height: 20, marginTop: 2, borderRadius: 4, borderWidth: OFF.auto ? 0 : 1.5, borderColor: t.ink2, backgroundColor: OFF.auto ? t.accent : t.bg, alignItems: "center", justifyContent: "center" }}>
             {OFF.auto ? (
               <Svg width={14} height={14} viewBox="0 0 24 24">
@@ -185,7 +185,7 @@ export default function Offline() {
 
         <H>Per prodotto</H>
         <Text style={{ color: t.ink2, fontSize: 14.7, lineHeight: 23, marginTop: -4, marginBottom: 14 }}>Solo i prodotti che ti interessano, in HD. Il cestino elimina le immagini di quel prodotto.</Text>
-        <View style={{ borderWidth: 1, borderColor: t.line, borderRadius: 12, backgroundColor: t.surface, paddingVertical: 4 }}>
+        <View style={{ borderTopWidth: 1, borderBottomWidth: 1, borderColor: t.line }}>
           {sets.map((x, i) => {
             const L = items(x.id),
               have = count(L),
@@ -196,7 +196,7 @@ export default function Offline() {
               hF = count(Lf),
               pHd = Math.floor((hF / Math.max(1, Lf.length)) * 100);
             return (
-              <View key={x.id} style={{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 52, paddingLeft: 16, paddingRight: 8, borderTopWidth: i ? 1 : 0, borderColor: t.line }}>
+              <View key={x.id} style={{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 56, paddingRight: 0, borderTopWidth: i ? 1 : 0, borderColor: t.line }}>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={{ color: t.ink, fontWeight: "600", fontSize: 14.4, lineHeight: 19 }}>{x.code}</Text>
                   <Text style={{ color: t.ink2, fontSize: 12.8, lineHeight: 17 }} numberOfLines={1}>
@@ -222,7 +222,7 @@ export default function Offline() {
         <Pressable
           onPress={off(() => setAsk({ title: ["Eliminare tutte le immagini salvate?"], text: "Miniature, carte grandi, banner e confezioni verranno riscaricati da internet quando li guardi.", ok: "Elimina", go: deleteAll }))}
           disabled={running}
-          style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 18, minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: t.dark ? "#6e3a44" : "#e6a3a1", backgroundColor: t.surface, opacity: running ? 0.5 : 1 }}
+          style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 18, minHeight: 48, borderRadius: RR.btn, borderWidth: 1, borderColor: t.dark ? "#6e3a44" : "#e6a3a1", opacity: running ? 0.5 : 1 }}
         >
           <Svg width={20} height={20} viewBox="0 0 24 24">
             <Path d={ICO_TRASH} stroke={t.cards.Red} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />

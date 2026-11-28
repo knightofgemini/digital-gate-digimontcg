@@ -11,7 +11,7 @@ import { EMPTY, Filters, allVers, cardMatches } from "../../filters";
 import { CardList, CountRow, Heart, ViewToggle } from "../../items";
 import { bestVal, cmVal, ctVal, eurN, eurT, usePrices } from "../../prices";
 import { S, favCards, favCount, listById, listDelete, listNew, owned, setStats, useStore } from "../../store";
-import { useTheme } from "../../theme";
+import { FS, R, useTheme } from "../../theme";
 import { Logo } from "../../ui";
 import { Screen, TABNAV, goTab } from "../../chrome";
 import { Btn, ProgLine, SecHead } from "../../visual";
@@ -30,7 +30,7 @@ const FSORTS: [string, string][] = [
 function Seg({ view, setView, miss }: { view: string; setView: (v: "all" | "fav" | "wish") => void; miss: number }) {
   const t = useTheme();
   return (
-    <View style={{ flexDirection: "row", padding: 3, borderRadius: 12, backgroundColor: t.surface2, marginTop: 2, marginBottom: 12 }}>
+    <View style={{ flexDirection: "row", padding: 3, borderRadius: R.btn + 2, backgroundColor: t.surface2, marginTop: 6, marginBottom: 14 }}>
       {(
         [
           ["all", "Tutte"],
@@ -53,13 +53,13 @@ function Seg({ view, setView, miss }: { view: string; setView: (v: "all" | "fav"
 function Empty({ eyebrow, title, text, heart, children }: { eyebrow: string; title: string; text: string; heart?: boolean; children: ReactNode }) {
   const t = useTheme();
   return (
-    <View style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 14, paddingVertical: 34, paddingHorizontal: 18, alignItems: "center" }}>
-      <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.2, letterSpacing: 2, textTransform: "uppercase" }}>{eyebrow}</Text>
+    <View style={{ paddingVertical: 36, paddingHorizontal: 8, alignItems: "center" }}>
+      <Text style={{ color: t.ink2, fontSize: FS.sm }}>{eyebrow}</Text>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8, marginBottom: 6 }}>
         {heart ? <Heart on size={20} color={t.accent} /> : null}
-        <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 20.8 }}>{title}</Text>
+        <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.page, textAlign: "center" }}>{title}</Text>
       </View>
-      <Text style={{ color: t.ink2, textAlign: "center", marginBottom: 16 }}>{text}</Text>
+      <Text style={{ color: t.ink2, fontSize: FS.md, lineHeight: 22, textAlign: "center", marginBottom: 20 }}>{text}</Text>
       <View style={{ alignSelf: "stretch", gap: 8 }}>{children}</View>
     </View>
   );
@@ -169,7 +169,7 @@ export default function Collezione() {
     count = (
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 4, marginBottom: 8 }}>
         <Pressable onPress={() => setSortOpen(true)} accessibilityLabel="Ordina" style={{ flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 1 }}>
-          <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "500", fontSize: 12.5, letterSpacing: 1.5, textTransform: "uppercase" }}>{list.length + (list.length === 1 ? " carta" : " carte") + " · "}</Text>
+          <Text style={{ color: t.ink2, fontSize: FS.sm }}>{list.length.toLocaleString("it-IT") + (list.length === 1 ? " carta" : " carte") + " · "}</Text>
           <Text style={{ color: t.ink, fontWeight: "600", fontSize: 13.6 }} numberOfLines={1}>
             {FSORTS.find((x) => x[0] === sort)![1]} ▾
           </Text>
@@ -250,9 +250,9 @@ function Summary({ allSets, setAllSets }: { allSets: boolean; setAllSets: (v: bo
     <View>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
         {tiles.map(([l, v, sub, note]) => (
-          <View key={l} style={{ width: "48.6%", flexGrow: 1, backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 16 }}>
-            <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.9, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 }}>{l}</Text>
-            <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 23.2, lineHeight: 26, fontVariant: ["tabular-nums"] }}>
+          <View key={l} style={{ width: "48.6%", flexGrow: 1, borderTopWidth: 1, borderColor: t.line, paddingTop: 12, paddingBottom: 8 }}>
+            <Text style={{ color: t.ink2, fontSize: FS.sm, marginBottom: 4 }}>{l}</Text>
+            <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 28, lineHeight: 32, fontVariant: ["tabular-nums"] }}>
               {v}
               {sub ? <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "700", fontSize: 15.2 }}>{" " + sub}</Text> : null}
             </Text>
@@ -263,13 +263,13 @@ function Summary({ allSets, setAllSets }: { allSets: boolean; setAllSets: (v: bo
       {started.length ? (
         <>
           <SecHead top={22} title="Per prodotto" link={started.length > lim ? (allSets ? "Mostra meno" : "Mostra tutti (" + started.length + ")") : undefined} onLink={() => setAllSets(!allSets)} />
-          <View style={{ gap: 8 }}>
+          <View style={{ gap: 0 }}>
             {(allSets ? started : started.slice(0, lim)).map((x) => {
               const st = stats[x.id];
               const pc = Math.floor((st.h / st.n) * 100);
               const full = st.h === st.n;
               return (
-                <Pressable key={x.id} onPress={() => router.push({ pathname: "/prodotto/[id]", params: { id: x.id, from: "coll" } })} style={{ paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1, borderColor: t.line, borderRadius: 12, backgroundColor: t.surface }}>
+                <Pressable key={x.id} onPress={() => router.push({ pathname: "/prodotto/[id]", params: { id: x.id, from: "coll" } })} style={{ paddingVertical: 12, borderTopWidth: 1, borderColor: t.line}}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
                     <View style={{ width: 84, height: 32, justifyContent: "center" }}>
                       <Logo code={x.code} />
@@ -302,8 +302,8 @@ function Lists({ flist, setFlist }: { flist: string; setFlist: (s: string) => vo
   const chip = (id: string, label: string) => {
     const on = flist === id;
     return (
-      <Pressable key={id || "all"} onPress={() => setFlist(id)} style={{ minHeight: 36, paddingHorizontal: 14, justifyContent: "center", borderRadius: 999, borderWidth: 1, borderColor: on ? t.accent : t.line, backgroundColor: on ? t.accentSoft : t.surface }}>
-        <Text style={{ color: on ? t.accent : t.ink, fontWeight: on ? "600" : "500", fontSize: 13.6, lineHeight: 18 }}>{label}</Text>
+      <Pressable key={id || "all"} onPress={() => setFlist(id)} style={{ minHeight: 36, paddingHorizontal: 14, justifyContent: "center", borderRadius: R.chip, borderWidth: 1, borderColor: on ? t.cyan : t.line, backgroundColor: on ? t.cyanSoft : t.surface }}>
+        <Text style={{ color: t.ink, fontWeight: on ? "600" : "500", fontSize: FS.sm, lineHeight: 18 }}>{label}</Text>
       </Pressable>
     );
   };
@@ -318,13 +318,13 @@ function Lists({ flist, setFlist }: { flist: string; setFlist: (s: string) => vo
       {S.fav.l.map((L) => chip(L.id, L.n + " · " + Object.keys(L.k).filter((k) => S.fav.f[k]).length))}
       {nw != null ? (
         <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
-          <TextInput autoFocus value={nw} onChangeText={setNw} placeholder="Nome della lista" placeholderTextColor={t.ink2} maxLength={40} onSubmitEditing={create} style={{ width: 160, minHeight: 36, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: t.accent, backgroundColor: t.surface, color: t.ink, fontWeight: "500", fontSize: 14.4 }} />
-          <Pressable onPress={create} style={{ minHeight: 36, paddingHorizontal: 14, justifyContent: "center", borderRadius: 999, backgroundColor: t.accent }}>
+          <TextInput autoFocus value={nw} onChangeText={setNw} placeholder="Nome della lista" placeholderTextColor={t.ink2} maxLength={40} onSubmitEditing={create} style={{ width: 160, minHeight: 36, paddingHorizontal: 12, borderRadius: R.chip, borderWidth: 1, borderColor: t.accent, backgroundColor: t.surface, color: t.ink, fontWeight: "500", fontSize: 14.4 }} />
+          <Pressable onPress={create} style={{ minHeight: 36, paddingHorizontal: 14, justifyContent: "center", borderRadius: R.chip, backgroundColor: t.accent }}>
             <Text style={{ color: t.accentInk, fontWeight: "600", fontSize: 13.6 }}>Crea</Text>
           </Pressable>
         </View>
       ) : (
-        <Pressable onPress={() => setNw("")} style={{ minHeight: 36, paddingHorizontal: 14, justifyContent: "center", borderRadius: 999, borderWidth: 1, borderStyle: "dashed", borderColor: t.line }}>
+        <Pressable onPress={() => setNw("")} style={{ minHeight: 36, paddingHorizontal: 14, justifyContent: "center", borderRadius: R.chip, borderWidth: 1, borderStyle: "dashed", borderColor: t.line }}>
           <Text style={{ color: t.ink2, fontWeight: "500", fontSize: 13.6, lineHeight: 18 }}>+ Nuova lista</Text>
         </Pressable>
       )}
@@ -375,7 +375,7 @@ function WishStats({ list }: { list: Card[] }) {
   });
   const nN = (n: number) => (n ? (n === 1 ? "1 carta senza prezzo" : n + " carte senza prezzo") : "");
   return (
-    <View style={{ gap: 10, padding: 14, marginBottom: 12, backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 14 }}>
+    <View style={{ gap: 10, paddingVertical: 14, marginBottom: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: t.line }}>
       <Text style={{ color: t.ink2, fontSize: 13.6 }}>Per completare le preferite{list.length ? " (" + list.length + (list.length === 1 ? " carta)" : " carte)") : ""}</Text>
       <View style={{ flexDirection: "row", gap: 10 }}>
         {(

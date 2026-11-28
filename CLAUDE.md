@@ -391,6 +391,14 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   intero su fondo dello stesso banner sfocato (mai scritte tagliate); avanzamento solo se hai carte del set. **Griglia
   carte** (`GridTile`) senza riquadro, cuore sopra l'immagine. **Scheda carta**: carta fino a 310 dp, fondo tinto col
   colore della carta dietro la fila, dati (Tipo, Livello, Costo, DP, Colore) senza caselle, sezioni senza riquadri.
+  **Resto delle pagine (28 novembre 2026, richiesta dell'utente "anche nelle rimanenti pagine")**: `Screen`/`AppBar` con
+  `back` (freccia indietro accanto al titolo): dettaglio prodotto (titolo = codice, tolto `BackLink`) e dettaglio mazzo
+  (titolo "Mazzo", nome modificabile sotto). Niente riquadri: voci di Informazioni, Regole, Domande e risposte, Dettagli
+  del prodotto, opzioni e prodotti di Immagini offline, riepilogo e set della Collezione, numeri del mazzo diventano righe
+  separate da fili; avvisi (spoiler in arrivo, risparmio energetico, opzione scelta) con il filo arancione a sinistra;
+  `Panel` e `SecHead` di `visual.tsx` senza riquadro e con titolo Chakra; `Btn` secondario solo contorno; filtri scelti in
+  azzurro tenue (Regole, liste delle preferite); titoli dei fogli (Altro, Carte nuove) Chakra 24 dritti; raggi dei fogli,
+  pulsanti e campi dai gettoni `R`.
 - **Prove più veloci (7 novembre 2026)**: in `apk.yml` e `prova-emulatore.yml` si conservano tra una build e l'altra i
   file di Gradle, i suoi risultati riutilizzabili (`org.gradle.caching=true`) e le parti in C++ (ccache, finora poche
   riuse); emulatore salvato dopo il primo avvio (cache `avd-…`). APK di prova da 18 a 11 minuti. `prova-emulatore.yml`

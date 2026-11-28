@@ -14,7 +14,7 @@ import { DISPLAY, Text, TextInput } from "./Text";
 import { COLORS, SETBY, fold, useData } from "./data";
 import { DDN, EMPTY, Filters, Kind, MARKV, MULTI, ddFix, ddKinds, ddOptions, ddShown, ddValues, fl } from "./filters";
 import { useKbH } from "./chrome";
-import { useTheme } from "./theme";
+import { R, FS, useTheme } from "./theme";
 import { Chevron, FltChip } from "./BottomBar";
 
 // segno ★ / ★★ / SP nelle tendine e nelle etichette (rarIcon)
@@ -157,7 +157,7 @@ export function FilterSheet({ visible, f: f0, setF: setF0, onClose, count, lockE
         ) : null}
         </>
       }
-      style={{ backgroundColor: t.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: t.line, boxShadow: "0 -14px 36px rgba(0,0,0,.35)", paddingHorizontal: 14, paddingBottom: 14 + ins.bottom }}
+      style={{ backgroundColor: t.bg, borderTopLeftRadius: R.sheet, borderTopRightRadius: R.sheet, borderTopWidth: 1, borderColor: t.line, boxShadow: "0 -14px 36px rgba(0,0,0,.35)", paddingHorizontal: 14, paddingBottom: 14 + ins.bottom }}
     >
         <Pressable onPress={onClose} accessibilityLabel="Chiudi i filtri" style={{ height: 26, alignItems: "center", justifyContent: "center" }}>
           <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: t.line }} />
@@ -205,7 +205,7 @@ export function FilterSheet({ visible, f: f0, setF: setF0, onClose, count, lockE
             );
           })}
         </ScrollView>
-        <Pressable onPress={onClose} style={{ marginTop: 14, height: 52, borderRadius: 14, backgroundColor: t.accent, alignItems: "center", justifyContent: "center" }}>
+        <Pressable onPress={onClose} style={{ marginTop: 14, height: 52, borderRadius: R.btn, backgroundColor: t.accent, alignItems: "center", justifyContent: "center" }}>
           <Text style={{ color: t.accentInk, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16 }}>Mostra {count + (count === 1 ? " carta" : " carte")}</Text>
         </Pressable>
     </Sheet>

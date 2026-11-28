@@ -23,7 +23,7 @@ import { ActiveChips, FilterSheet, fltCount } from "../../FilterSheet";
 import { EMPTY, Filters, anyFlt, cardMatches, qmHolder, srcCards } from "../../filters";
 import { openCard } from "../../nav";
 import { owned, saveDecks, useStore } from "../../store";
-import { useTheme } from "../../theme";
+import { FS, R, useTheme } from "../../theme";
 import { toast } from "../../toast";
 import { ColorBand, common } from "../../ui";
 import { Screen, setTabHidden, useKbH, useKbd, useBarState } from "../../chrome";
@@ -168,16 +168,12 @@ export default function Mazzo() {
   }
 
   return (
-    <Screen bs={bar}>
+    <Screen bs={bar} title="Mazzo" back={() => (router.canGoBack() ? router.back() : router.replace("/mazzi"))}>
       <View pointerEvents="none" onLayout={(e) => setAreaH(Math.round(e.nativeEvent.layout.height))} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />
       <ScrollView ref={scroll} onLayout={(e) => void (viewH.current = e.nativeEvent.layout.height)} onScroll={(e) => ((scrollY.current = e.nativeEvent.contentOffset.y), bar.onScroll(e))} scrollEventThrottle={16} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: add ? Math.max(winH * 0.64, areaH) : view === "deck" ? 100 : 28 }}>
         {/* intestazione (.mdkh): indietro, nome del mazzo, freccia che apre le azioni */}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginHorizontal: -6, marginTop: 10, marginBottom: 8 }}>
-          <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/mazzi"))} accessibilityLabel="I miei mazzi" style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
-            <Svg width={22} height={22} viewBox="0 0 24 24">
-              <Path d="M15 5l-7 7 7 7" stroke={t.ink} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            </Svg>
-          </Pressable>
+        {/* indietro nella barra in alto (28 novembre 2026, una sola intestazione); qui nome del mazzo e azioni */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginRight: -6, marginTop: 6, marginBottom: 8 }}>
           <TextInput
             value={name}
             onChangeText={setName}
@@ -190,9 +186,9 @@ export default function Mazzo() {
               setName(d.name);
             }}
             onSubmitEditing={commitName}
-            style={{ flex: 1, minWidth: 0, color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 19.2, paddingVertical: 6, borderBottomWidth: 1.5, borderStyle: "dashed", borderColor: nameFocus ? t.accent : "transparent" }}
+            style={{ flex: 1, minWidth: 0, color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.page, paddingVertical: 6, borderBottomWidth: 1.5, borderStyle: "dashed", borderColor: nameFocus ? t.accent : "transparent" }}
           />
-          <Pressable onPress={() => setActs(!acts)} accessibilityLabel={(acts ? "Nascondi" : "Mostra") + " le azioni del mazzo: esporta, importa, svuota, copertina, elimina"} accessibilityState={{ expanded: acts }} style={{ width: 44, height: 44, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, alignItems: "center", justifyContent: "center" }}>
+          <Pressable onPress={() => setActs(!acts)} accessibilityLabel={(acts ? "Nascondi" : "Mostra") + " le azioni del mazzo: esporta, importa, svuota, copertina, elimina"} accessibilityState={{ expanded: acts }} style={{ width: 44, height: 44, borderRadius: R.btn, alignItems: "center", justifyContent: "center" }}>
             <Chevron color={t.ink} up={acts} />
           </Pressable>
         </View>
@@ -231,7 +227,7 @@ export default function Mazzo() {
         ) : null}
 
         {/* conteggi + curva + stato (.dstat) */}
-        <View style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 12, padding: 12, flexDirection: "row", flexWrap: "wrap", columnGap: 12, rowGap: 12 }}>
+        <View style={{ borderTopWidth: 1, borderBottomWidth: 1, borderColor: t.line, paddingVertical: 14, flexDirection: "row", flexWrap: "wrap", columnGap: 16, rowGap: 14 }}>
           {(
             [
               ["Principale", st.main, 50, st.main === 50],
@@ -239,14 +235,14 @@ export default function Mazzo() {
             ] as [string, number, number, boolean][]
           ).map(([l, v, mx, ok]) => (
             <View key={l} style={{ flex: 1, minWidth: 120 }}>
-              <Text style={{ color: t.ink2, fontSize: 11.2, letterSpacing: 0.9, textTransform: "uppercase", lineHeight: 16 }}>{l}</Text>
-              <Text style={{ color: ok ? t.ok : t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 19.2 }}>{v + " / " + mx}</Text>
+              <Text style={{ color: t.ink2, fontSize: FS.sm, lineHeight: 18 }}>{l}</Text>
+              <Text style={{ color: ok ? t.ok : t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 24, fontVariant: ["tabular-nums"] }}>{v + " / " + mx}</Text>
               <Progress h={v} n={mx} color={v > mx ? t.cards.Red : undefined} style={{ marginTop: 6 }} />
             </View>
           ))}
           {st.main > 0 ? (
             <View style={{ width: "100%", marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderColor: t.line }}>
-              <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 10.6, letterSpacing: 1.3, textTransform: "uppercase", marginBottom: 6 }}>{view === "deck" ? "Curva · tocca un livello per andarci" : "Curva dei livelli"}</Text>
+              <Text style={{ color: t.ink2, fontSize: FS.sm, marginBottom: 6 }}>{view === "deck" ? "Curva · tocca un livello per andarci" : "Curva dei livelli"}</Text>
               <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 6, height: 74 }}>
                 {curve.map(([g, n]) => (
                   <Pressable key={g} disabled={!n || view !== "deck"} onPress={() => goTo(g)} accessibilityLabel={"Vai a " + g} style={{ flex: 1, height: "100%", alignItems: "center", justifyContent: "flex-end", gap: 3 }}>
@@ -259,18 +255,18 @@ export default function Mazzo() {
             </View>
           ) : null}
           {!st.problems.length ? (
-            <View style={{ width: "100%", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10, backgroundColor: "rgba(74,222,128,.14)" }}>
+            <View style={{ width: "100%", borderRadius: R.chip, paddingVertical: 8, paddingHorizontal: 10, backgroundColor: "rgba(74,222,128,.14)" }}>
               <Text style={{ color: t.ok, fontWeight: "600", fontSize: 13.6 }}>✓ Mazzo valido secondo le regole e la lista ban in vigore dal {banEffective()}.</Text>
             </View>
           ) : (
             <>
               {st.main < 50 ? (
-                <View style={{ width: "100%", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10, backgroundColor: t.accentSoft }}>
+                <View style={{ width: "100%", borderRadius: R.chip, paddingVertical: 8, paddingHorizontal: 10, backgroundColor: t.accentSoft }}>
                   <Text style={{ color: t.accent, fontWeight: "600", fontSize: 13.6 }}>{"Bozza · " + (50 - st.main === 1 ? "manca 1 carta" : "mancano " + (50 - st.main) + " carte") + " al mazzo principale"}</Text>
                 </View>
               ) : null}
               {others.length ? (
-                <View style={{ width: "100%", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10, gap: 3, backgroundColor: "rgba(239,91,85,.12)" }}>
+                <View style={{ width: "100%", borderRadius: R.chip, paddingVertical: 8, paddingHorizontal: 10, gap: 3, backgroundColor: "rgba(239,91,85,.12)" }}>
                   {others.map((x) => (
                     <View key={x} style={{ flexDirection: "row", gap: 8, paddingLeft: 4 }}>
                       <Text style={{ color: t.ink, fontSize: 13.6 }}>•</Text>
@@ -284,7 +280,7 @@ export default function Mazzo() {
         </View>
 
         {/* Mazzo / Statistiche (.mseg) */}
-        <View style={{ flexDirection: "row", padding: 3, borderRadius: 12, backgroundColor: t.surface2, marginVertical: 12 }}>
+        <View style={{ flexDirection: "row", padding: 3, borderRadius: R.btn + 2, backgroundColor: t.surface2, marginVertical: 14 }}>
           {(
             [
               ["deck", "Mazzo · " + tot],
@@ -317,7 +313,7 @@ export default function Mazzo() {
               return (
                 <View key={g} onLayout={(e) => (pos.current[g] = e.nativeEvent.layout.y)}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                    <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16.3 }}>{g}</Text>
+                    <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.xl }}>{g}</Text>
                     <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 13.6 }}>{n + (n === 1 ? " carta" : " carte")}</Text>
                     <Pressable onPress={() => addTo(g)} accessibilityLabel={"Aggiungi carte a " + g} style={{ marginLeft: "auto", minHeight: 38, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, flexDirection: "row", alignItems: "center", gap: 5 }}>
                       <Text style={{ color: t.accent, fontSize: 17.6, lineHeight: 18 }}>+</Text>
@@ -353,7 +349,7 @@ export default function Mazzo() {
               );
             })}
             {!groups.length ? (
-              <View style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 14, paddingVertical: 34, paddingHorizontal: 18, alignItems: "center", gap: 16 }}>
+              <View style={{ paddingVertical: 36, paddingHorizontal: 8, alignItems: "center", gap: 16 }}>
                 <Text style={{ color: t.ink2, textAlign: "center" }}>Il mazzo è vuoto: cerca le carte e aggiungile con +, oppure importa una lista dalla freccia in alto.</Text>
                 <Btn label="Aggiungi carte" pri icon={ICO_PLUS} onPress={() => openAdd()} />
               </View>
@@ -377,7 +373,7 @@ export default function Mazzo() {
             </Defs>
             <Rect width="10" height="100" fill="url(#dkbarfade)" />
           </Svg>
-          <Pressable onPress={() => openAdd()} style={{ flex: 1, minWidth: 0, height: 48, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, boxShadow: "0 6px 18px rgba(0,0,0,.18)" }}>
+          <Pressable onPress={() => openAdd()} style={{ flex: 1, minWidth: 0, height: 48, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, borderRadius: R.btn, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, boxShadow: "0 6px 18px rgba(0,0,0,.18)" }}>
             <SearchIcon color={t.accent} />
             <Text style={{ color: t.ink2, fontSize: 16 }} numberOfLines={1}>
               Cerca e aggiungi carte…
@@ -640,7 +636,7 @@ function AddSheet({ d, f0, openF, focus, areaH, barH, onCover, onFocusQ, onF, on
         <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: t.line }} />
       </Pressable>
       <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
-        <View style={{ flex: 1, minWidth: 0, height: 46, borderRadius: 12, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, justifyContent: "center" }}>
+        <View style={{ flex: 1, minWidth: 0, height: 46, borderRadius: R.btn, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, justifyContent: "center" }}>
           <View pointerEvents="none" style={{ position: "absolute", left: 13 }}>
             <SearchIcon color={t.accent} />
           </View>

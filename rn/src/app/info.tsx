@@ -8,7 +8,7 @@ import { DISPLAY, Text } from "../Text";
 import { BAN } from "../data";
 import { fmtDate } from "../prices";
 import { exportText } from "../store";
-import { useTheme } from "../theme";
+import { FS, R, useTheme } from "../theme";
 import { Screen, useBarState } from "../chrome";
 import { Btn } from "../visual";
 import { Backup } from "../Backup";
@@ -18,14 +18,14 @@ function Sec({ title, text, open: o0 }: { title: string; text: string; open?: bo
   const t = useTheme();
   const [open, setOpen] = useState(!!o0);
   return (
-    <View style={{ borderWidth: 1, borderColor: t.line, borderRadius: 12, backgroundColor: t.surface, marginBottom: 10 }}>
-      <Pressable onPress={() => setOpen(!open)} accessibilityState={{ expanded: open }} style={{ minHeight: 52, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-        <Text style={{ color: t.ink, fontWeight: "600", flexShrink: 1 }}>{title}</Text>
+    <View style={{ borderBottomWidth: 1, borderColor: t.line }}>
+      <Pressable onPress={() => setOpen(!open)} accessibilityState={{ expanded: open }} style={{ minHeight: 56, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+        <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.lg, flexShrink: 1 }}>{title}</Text>
         <Svg width={18} height={18} viewBox="0 0 24 24" style={{ transform: [{ rotate: open ? "180deg" : "0deg" }] }}>
           <Path d="M5 9l7 7 7-7" stroke={t.ink} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" fill="none" />
         </Svg>
       </Pressable>
-      {open ? <Text style={{ color: t.ink2, fontSize: 14.7, lineHeight: 23.5, paddingHorizontal: 16, paddingBottom: 16 }}>{text}</Text> : null}
+      {open ? <Text style={{ color: t.ink2, fontSize: FS.md, lineHeight: 23, paddingBottom: 18 }}>{text}</Text> : null}
     </View>
   );
 }
@@ -43,10 +43,10 @@ export default function Info() {
   ];
   return (
     <Screen bs={bar} title="Informazioni">
-      <ScrollView onScroll={bar.onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 4 + bar.pad, paddingBottom: 28 }}>
-        <View style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 14, padding: 14, marginBottom: 14 }}>
-          <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.2, letterSpacing: 2, textTransform: "uppercase" }}>Backup dei tuoi dati</Text>
-          <Text style={{ color: t.ink, marginTop: 14, marginBottom: 4 }}>Copia in un testo la collezione, le preferite (con liste e avvisi) e i mazzi, per conservarli o incollarli su un altro telefono.</Text>
+      <ScrollView onScroll={bar.onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8 + bar.pad, paddingBottom: 28 }}>
+        <View style={{ marginTop: 8, marginBottom: 20 }}>
+          <Text accessibilityRole="header" style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.xl }}>Backup dei tuoi dati</Text>
+          <Text style={{ color: t.ink2, fontSize: FS.md, lineHeight: 22, marginTop: 6, marginBottom: 4 }}>Copia in un testo la collezione, le preferite (con liste e avvisi) e i mazzi, per conservarli o incollarli su un altro telefono.</Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginVertical: 10 }}>
             <Btn
               label="Copia backup"

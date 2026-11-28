@@ -15,7 +15,7 @@ import { EMPTY, Filters, cardMatches, qmHolder } from "../../filters";
 import { CountRow, GridTile, ListRow } from "../../items";
 import { usePrices } from "../../prices";
 import { S, owned, setStats, useStore } from "../../store";
-import { useTheme } from "../../theme";
+import { FS, R, useTheme } from "../../theme";
 import { Screen, useBarState } from "../../chrome";
 import { ProdVisual, Progress } from "../../visual";
 import { artFor, logoArt } from "../../homeArt";
@@ -29,15 +29,6 @@ const spoilerN = (id: string) => cardsOfSet(id).filter((c) => !c.suf).length;
 function allCards(q: string, f: Filters) {
   if (router.canDismiss()) router.dismissAll();
   router.navigate({ pathname: "/carte", params: { q, flt: JSON.stringify({ ...f, exp: "" }), fo: "1", t: String(Date.now()) } });
-}
-
-function BackLink({ label }: { label: string }) {
-  const t = useTheme();
-  return (
-    <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace("/prodotti"))} hitSlop={8} style={{ alignSelf: "flex-start", paddingTop: 10, paddingBottom: 4 }}>
-      <Text style={{ color: t.blue, fontWeight: "600", fontSize: 14.4 }}>{label}</Text>
-    </Pressable>
-  );
 }
 
 export default function Prodotto() {
@@ -91,9 +82,8 @@ export default function Prodotto() {
 
   if (!set && !up)
     return (
-      <Screen bs={bar}>
+      <Screen bs={bar} title="Prodotto" back={() => (router.canGoBack() ? router.back() : router.replace("/prodotti"))}>
         <View style={{ paddingHorizontal: 14, paddingTop: bar.pad }}>
-          <BackLink label="← Indietro" />
           <Text style={{ color: t.ink2, textAlign: "center", paddingVertical: 48 }}>Prodotto non trovato.</Text>
         </View>
       </Screen>
@@ -102,14 +92,13 @@ export default function Prodotto() {
   // ---- prodotto in arrivo senza carte: solo la scheda
   if (up && !set)
     return (
-      <Screen bs={bar}>
+      <Screen bs={bar} title={up.code} back={() => (router.canGoBack() ? router.back() : router.replace("/prodotti"))}>
         <SectionList
           sections={[]}
           renderItem={() => null} onScroll={bar.onScroll} scrollEventThrottle={16}
           contentContainerStyle={{ paddingHorizontal: 14, paddingTop: bar.pad, paddingBottom: 28 }}
           ListHeaderComponent={
             <View>
-              <BackLink label={from === "home" ? "← Home" : "← Indietro"} />
               <View style={{ marginTop: 4, marginBottom: 6 }}>
                 <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 18.4 }} numberOfLines={1} adjustsFontSizeToFit>
                   {up.code} · {up.name}
@@ -131,21 +120,20 @@ export default function Prodotto() {
   const stt = setStats()[s.id];
   const head = q ? null : (
     <View>
-      <BackLink label={from === "home" ? "← Home" : fromColl ? "← La mia collezione" : "← Tutti i set"} />
       {BANNERS[s.code] || (p && (p.lg || p.pk)) || artFor(s.code, "prod") || logoArt(s.code) ? (
-        <View style={{ borderRadius: 14, overflow: "hidden", marginTop: 6 }}>
+        <View style={{ borderRadius: R.img, overflow: "hidden", marginTop: 8 }}>
           <ProdVisual code={s.code} />
         </View>
       ) : null}
-      <View style={{ marginTop: 4, marginBottom: 10, gap: 10 }}>
+      <View style={{ marginTop: 12, marginBottom: 12, gap: 12 }}>
         <View>
-          <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.2, letterSpacing: 2, textTransform: "uppercase" }}>{(s.type === "AL" ? "" : TYPES[s.type] + " · ") + s.code}</Text>
-          <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 24, lineHeight: 28, marginTop: 2 }}>{s.name}</Text>
+          <Text style={{ color: t.ink2, fontSize: FS.sm }}>{(s.type === "AL" ? "" : TYPES[s.type] + " · ") + s.code}</Text>
+          <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 28, lineHeight: 33, marginTop: 2 }}>{s.name}</Text>
           {hasDate && !p ? <Text style={{ color: t.ink2, fontSize: 13.6 }}>Uscita: {monthLabel(s.date)}</Text> : null}
         </View>
         {fromColl && stt && stt.n ? (
-          <View style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 }}>
-            <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.2, letterSpacing: 2, textTransform: "uppercase" }}>La tua collezione</Text>
+          <View style={{ borderTopWidth: 1, borderBottomWidth: 1, borderColor: t.line, paddingVertical: 12 }}>
+            <Text style={{ color: t.ink2, fontSize: FS.sm }}>La tua collezione</Text>
             <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 25.6, fontVariant: ["tabular-nums"] }}>
               {stt.h} <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 14.4 }}>/ {stt.n}</Text>
             </Text>
@@ -155,7 +143,7 @@ export default function Prodotto() {
         ) : null}
       </View>
       {soonSet(s) ? (
-        <View style={{ gap: 4, marginTop: 4, marginBottom: 12, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1, borderColor: t.dark ? "#6b3a2c" : "#efb79d", backgroundColor: t.dark ? "#1f1d27" : "#fdf1ec" }}>
+        <View style={{ gap: 4, marginTop: 4, marginBottom: 14, paddingVertical: 4, paddingLeft: 14, borderLeftWidth: 3, borderColor: t.accent }}>
           <Text style={{ color: t.accent, fontWeight: "700", fontSize: 14.4 }}>In arrivo · {(() => {
             const su = UPCOMING.find((x) => x.code === s.code);
             return su ? upWhen(su) : monthLabel(s.date);
@@ -178,7 +166,7 @@ export default function Prodotto() {
   );
 
   return (
-    <Screen bs={bar}>
+    <Screen bs={bar} title={s.code} back={() => (router.canGoBack() ? router.back() : router.replace("/prodotti"))}>
       <SectionList
         key={s.id}
         sections={sections}
@@ -245,9 +233,9 @@ function Details({ title, open: o0, children }: { title: string; open: boolean; 
   const t = useTheme();
   const [open, setOpen] = useState(o0);
   return (
-    <View style={{ marginBottom: 6, borderWidth: 1, borderColor: t.line, borderRadius: 12, backgroundColor: t.surface }}>
-      <Pressable onPress={() => setOpen(!open)} accessibilityState={{ expanded: open }} style={{ minHeight: 46, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <Text style={{ color: t.ink, fontWeight: "600" }}>{title}</Text>
+    <View style={{ marginBottom: 6, borderTopWidth: 1, borderBottomWidth: 1, borderColor: t.line }}>
+      <Pressable onPress={() => setOpen(!open)} accessibilityState={{ expanded: open }} style={{ minHeight: 54, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.lg }}>{title}</Text>
         <Svg width={18} height={18} viewBox="0 0 24 24" style={{ transform: [{ rotate: open ? "180deg" : "0deg" }] }}>
           <Path d="M5 9l7 7 7-7" stroke={t.ink} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" fill="none" />
         </Svg>
@@ -308,7 +296,7 @@ function ProdBox({ code, type, kind, fallback, inDetails }: { code: string; type
       "Rarità",
       <View key="r" style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
         {p.rar.map((x, i) => (
-          <View key={i} style={{ flexDirection: "row", alignItems: "baseline", gap: 6, paddingVertical: 3, paddingHorizontal: 10, borderRadius: 999, backgroundColor: t.surface2 }}>
+          <View key={i} style={{ flexDirection: "row", alignItems: "baseline", gap: 6, paddingVertical: 3, paddingHorizontal: 10, borderRadius: R.chip, backgroundColor: t.surface2 }}>
             <Text style={{ color: t.ink, fontSize: 12.5, lineHeight: 17 }}>{x[0]}</Text>
             <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 12.5 }}>{String(x[1])}</Text>
           </View>
@@ -318,12 +306,12 @@ function ProdBox({ code, type, kind, fallback, inDetails }: { code: string; type
   const pk = packUrl(code);
   const Row = ({ k, v, last, top }: { k: string; v: ReactNode; last?: boolean; top?: boolean }) => (
     <View style={{ flexDirection: "row", gap: 6, paddingVertical: 6, borderBottomWidth: last ? 0 : 1, borderTopWidth: top ? 1 : 0, borderColor: t.line, alignItems: "baseline" }}>
-      <Text style={{ width: 74, color: t.ink2, fontFamily: DISPLAY, fontWeight: "500", fontSize: 10.2, letterSpacing: 0.4, textTransform: "uppercase" }}>{k}</Text>
-      <View style={{ flex: 1, minWidth: 0 }}>{typeof v === "string" ? <Text style={{ color: t.ink, fontSize: 13.8 }}>{v}</Text> : v}</View>
+      <Text style={{ width: 84, color: t.ink2, fontSize: FS.sm }}>{k}</Text>
+      <View style={{ flex: 1, minWidth: 0 }}>{typeof v === "string" ? <Text style={{ color: t.ink, fontSize: FS.md }}>{v}</Text> : v}</View>
     </View>
   );
   return (
-    <View style={[{ backgroundColor: t.surface, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14 }, inDetails ? { paddingTop: 0 } : { borderWidth: 1, borderColor: t.line, marginTop: 8, marginBottom: 4 }]}>
+    <View style={[{ paddingVertical: 12 }, inDetails ? { paddingTop: 0 } : { borderTopWidth: 1, borderBottomWidth: 1, borderColor: t.line, marginTop: 8, marginBottom: 4 }]}>
       <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
         {pk ? <Image source={pk} style={{ width: 80, height: 150, maxHeight: 170 }} contentFit="contain" cachePolicy="disk" accessibilityLabel={"Confezione di " + code} /> : null}
         <View style={{ flex: 1, minWidth: 0 }}>

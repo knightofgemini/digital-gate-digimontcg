@@ -7,7 +7,7 @@ import { Text, TextInput } from "./Text";
 import * as Clipboard from "expo-clipboard";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { exportText, importText } from "./store";
-import { useTheme } from "./theme";
+import { R, FS, useTheme } from "./theme";
 
 // ---- Backup: esporta (copia o condividi il testo) e importa (incolla il testo, unendo o sostituendo)
 export function Backup({ visible, onClose }: { visible: boolean; onClose: () => void }) {
@@ -22,7 +22,7 @@ export function Backup({ visible, onClose }: { visible: boolean; onClose: () => 
   }
   return (
     <Sheet visible={visible} onClose={onClose} maxH={0.90} scrim="rgba(0,0,0,.55)">
-      <SafeAreaView edges={["bottom"]} style={{ backgroundColor: t.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, flexShrink: 1 }}>
+      <SafeAreaView edges={["bottom"]} style={{ backgroundColor: t.bg, borderTopLeftRadius: R.sheet, borderTopRightRadius: R.sheet, flexShrink: 1 }}>
         <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
           <Text style={{ color: t.ink, fontSize: 20, fontWeight: "800" }}>Backup</Text>
           <Text style={{ color: t.ink2, marginTop: 4, lineHeight: 20 }}>Collezione, preferite, liste e mazzi in un testo da conservare o da incollare su un altro telefono (anche dall'app attuale di Digital Gate).</Text>
@@ -89,7 +89,7 @@ export function Backup({ visible, onClose }: { visible: boolean; onClose: () => 
           <Text style={{ color: t.ink2, fontSize: 12, marginTop: 6, lineHeight: 17 }}>Unisci aggiunge i dati a quelli che hai (per ogni carta tiene il numero di copie più alto). Sostituisci cancella i dati di questo telefono e mette quelli del backup.</Text>
           {!!msg && <Text style={{ color: t.ink, fontWeight: "700", marginTop: 10 }}>{msg}</Text>}
         </ScrollView>
-        <Pressable onPress={onClose} style={{ margin: 16, marginTop: 4, backgroundColor: t.surface2, borderRadius: 12, paddingVertical: 14, alignItems: "center" }}>
+        <Pressable onPress={onClose} style={{ margin: 16, marginTop: 4, backgroundColor: t.surface2, borderRadius: R.btn, paddingVertical: 14, alignItems: "center" }}>
           <Text style={{ color: t.ink, fontWeight: "800", fontSize: 16 }}>Chiudi</Text>
         </Pressable>
       </SafeAreaView>

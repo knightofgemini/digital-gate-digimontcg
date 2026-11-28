@@ -11,7 +11,7 @@ import { Sheet } from "./Sheet";
 import { DISPLAY, Text } from "./Text";
 import { FitText } from "./fit";
 import { ColorBand } from "./ui";
-import { useTheme } from "./theme";
+import { R, FS, useTheme } from "./theme";
 import { BYKEY, Card, MONTHS, SETBY, thumbUrl } from "./data";
 import { News, NewsCard, NewsGroup, newsSeen, startupNews } from "./dataupd";
 import { openCard, openSet } from "./nav";
@@ -203,7 +203,7 @@ export function NewsHost() {
     setTimeout(() => openCard(c, live(g)), 260);
   };
   const one = n.groups.length === 1 ? n.groups[0] : null;
-  const btn = { flex: 1, minHeight: 50, borderRadius: 14, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 } as const;
+  const btn = { flex: 1, minHeight: 50, borderRadius: R.btn, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 } as const;
 
   return (
     <Sheet visible={vis} onClose={close} maxH={0.9} scrim="rgba(4,8,18,.6)" style={{ backgroundColor: t.surface, borderTopWidth: 1, borderColor: t.line, borderTopLeftRadius: 22, borderTopRightRadius: 22, boxShadow: "0 -12px 32px rgba(0,0,0,.35)" }}>
@@ -211,13 +211,13 @@ export function NewsHost() {
       <View style={{ paddingTop: 8, paddingHorizontal: 16 }}>
         <View style={{ alignSelf: "center", width: 40, height: 5, borderRadius: 3, backgroundColor: t.line }} />
         <Text style={{ color: t.cyan, fontFamily: DISPLAY, fontWeight: "700", fontSize: 12, letterSpacing: 1.6, marginTop: 12 }}>{when(n.at).toUpperCase()}</Text>
-        <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontStyle: "italic", textTransform: "uppercase", fontSize: 26, lineHeight: 31, marginTop: 2 }}>{n.n ? "Carte nuove" : n.c ? "Carte corrette" : "Immagini aggiornate"}</Text>
+        <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.page, lineHeight: 30, marginTop: 2 }}>{n.n ? "Carte nuove" : n.c ? "Carte corrette" : "Immagini aggiornate"}</Text>
         <Text style={{ color: t.ink2, fontSize: 14.4, lineHeight: 20, marginTop: 2 }}>{summary(n) + "."}</Text>
       </View>
 
       <ScrollView style={{ flexGrow: 0, flexShrink: 1 }} contentContainerStyle={{ paddingTop: 12, paddingHorizontal: 16, paddingBottom: 8, gap: 14 }}>
         {n.groups.map((g) => (
-          <View key={g.id} style={{ borderWidth: 1, borderColor: t.line, borderRadius: 14, overflow: "hidden", backgroundColor: t.bg }}>
+          <View key={g.id} style={{ borderWidth: 1, borderColor: t.line, borderRadius: R.img, overflow: "hidden", backgroundColor: t.bg }}>
             {/* intestazione del prodotto: tocco = pagina del prodotto */}
             <Pressable onPress={() => goGroup(g)} accessibilityLabel={"Apri " + g.code + " " + g.name} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: t.surface2 }}>
               <View style={{ flex: 1, minWidth: 0 }}>

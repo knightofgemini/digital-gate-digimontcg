@@ -8,7 +8,7 @@ import { File, Paths } from "expo-file-system";
 import { documentDirectory, writeAsStringAsync } from "expo-file-system/legacy";
 import { DISPLAY, Text } from "./Text";
 import { Rich } from "./rich";
-import { useTheme } from "./theme";
+import { FS, R, useTheme } from "./theme";
 import Svg, { Path } from "react-native-svg";
 
 // [numero, domanda, risposta, data] e, per le regole, [categoria, voce, numero, domanda, risposta, data]
@@ -115,8 +115,8 @@ export function QASection({ code, H3 }: { code: string; H3: any }) {
   return (
     <View style={{ marginTop: 4, marginBottom: 14 }}>
       <Text style={H3}>Domande e risposte</Text>
-      <View style={{ borderWidth: 1, borderColor: t.line, borderRadius: 12, backgroundColor: t.surface }}>
-        <Pressable onPress={() => setOpen(!open)} accessibilityState={{ expanded: open }} style={{ minHeight: 52, paddingHorizontal: 14, paddingVertical: 8, flexDirection: "row", alignItems: "center", gap: 10 }}>
+      <View style={{ borderTopWidth: 1, borderBottomWidth: 1, borderColor: t.line }}>
+        <Pressable onPress={() => setOpen(!open)} accessibilityState={{ expanded: open }} style={{ minHeight: 56, paddingVertical: 8, flexDirection: "row", alignItems: "center", gap: 10 }}>
           <View style={{ flex: 1 }}>
             <Text style={{ color: t.ink, fontWeight: "600", fontSize: 15 }}>Risposte ufficiali di Bandai</Text>
             <Text style={{ color: t.ink2, fontSize: 12.5, marginTop: 1 }}>{list.length === 1 ? "1 domanda" : list.length + " domande"} su questa carta</Text>
@@ -132,7 +132,7 @@ export function QASection({ code, H3 }: { code: string; H3: any }) {
           </Svg>
         </Pressable>
         {open ? (
-          <View style={{ gap: 8, paddingHorizontal: 8, paddingBottom: 8 }}>
+          <View style={{ gap: 8, paddingBottom: 12 }}>
             {list.map(([n, q, a, d]) => (
               <QAItem key={n} n={n} q={q} a={a} d={d} now={now} />
             ))}
@@ -147,7 +147,7 @@ export function QAItem({ n, q, a, d, now }: { n: number; q: string; a: string; d
   const t = useTheme();
   const nuova = d && now - Date.parse(d) < 30 * 86400000;
   return (
-    <View style={{ backgroundColor: t.surface, borderColor: t.line, borderWidth: 1, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 }}>
+    <View style={{ backgroundColor: t.surface, borderRadius: R.btn, paddingVertical: 12, paddingHorizontal: 12 }}>
       <View style={{ flexDirection: "row", gap: 10 }}>
         <Badge l="Q" bg={t.accent} ink={t.accentInk} />
         <View style={{ flex: 1 }}>

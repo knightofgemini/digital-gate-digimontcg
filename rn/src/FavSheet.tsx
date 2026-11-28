@@ -11,7 +11,7 @@ import { Card, SETBY, hostSet, verLabel } from "./data";
 import { Heart, ListsIcon } from "./items";
 import { bestVal, cmVal, ctVal, eurN } from "./prices";
 import { S, favCount, favSet, isFav, listNew, listToggle, setAlert, useStore } from "./store";
-import { useTheme } from "./theme";
+import { R, FS, useTheme } from "./theme";
 import { favSheetRef } from "./toast";
 
 // foglio aperto da "Liste e avviso" dell'avviso in basso, in qualunque pagina
@@ -160,7 +160,7 @@ export function FavSheet({ c: cOpen, onClose }: { c: Card | null; onClose: () =>
               </View>
             </View>
           </View>
-          <Pressable onPress={close} style={{ minHeight: 50, borderRadius: 14, backgroundColor: t.accent, alignItems: "center", justifyContent: "center" }}>
+          <Pressable onPress={close} style={{ minHeight: 50, borderRadius: R.btn, backgroundColor: t.accent, alignItems: "center", justifyContent: "center" }}>
             <Text style={{ color: t.accentInk, fontWeight: "600", fontSize: 16 }}>Fine</Text>
           </Pressable>
         </SheetScrollView>

@@ -381,7 +381,7 @@ function SchHead({ title, hint, top = 16 }: { title: string; hint?: string; top?
   const t = useTheme();
   return (
     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", gap: 8, marginTop: top, marginBottom: 8 }}>
-      <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "700", fontSize: 11.8, letterSpacing: 1.2, textTransform: "uppercase" }}>{title}</Text>
+      <Text accessibilityRole="header" style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 17 }}>{title}</Text>
       {hint ? <Text style={{ color: t.ink2, fontWeight: "500", fontSize: 12.5 }}>{hint}</Text> : null}
     </View>
   );

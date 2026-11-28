@@ -6,7 +6,7 @@ import { Image } from "expo-image";
 import Svg, { Circle, Defs, Path, RadialGradient, LinearGradient, Rect, Stop } from "react-native-svg";
 import { DISPLAY, Text } from "./Text";
 import { PRODUCTS, SITE, bannerUrl, logoUrl, packUrl } from "./data";
-import { useTheme } from "./theme";
+import { FS, R, useTheme } from "./theme";
 import { CutImg, LogoLay, artFor, logoArt, useHomeArt } from "./homeArt";
 
 const stroke = (color: string, w = 2) => ({ stroke: color, strokeWidth: w, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, fill: "none" });
@@ -144,7 +144,7 @@ export function Btn({ label, pri, icon, onPress, style, height = 42, fs = 14.1 }
   const t = useTheme();
   const ink = pri ? t.accentInk : t.ink;
   return (
-    <Pressable onPress={onPress} style={[{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height, paddingHorizontal: 16, borderRadius: 10, borderWidth: 1, borderColor: pri ? t.accent : t.line, backgroundColor: pri ? t.accent : t.surface }, style]}>
+    <Pressable onPress={onPress} style={[{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height, paddingHorizontal: 16, borderRadius: R.btn, borderWidth: 1, borderColor: pri ? t.accent : t.line, backgroundColor: pri ? t.accent : "transparent" }, style]}>
       {icon ? (
         <Svg width={16} height={16} viewBox="0 0 24 24">
           <Path {...stroke(ink, 2.2)} d={icon} />
@@ -162,7 +162,7 @@ export function SecHead({ title, link, onLink, top = 30 }: { title: string; link
   const t = useTheme();
   return (
     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", gap: 12, marginTop: top, marginBottom: 12 }}>
-      <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 12.5, letterSpacing: 2.5, textTransform: "uppercase" }}>{title}</Text>
+      <Text accessibilityRole="header" style={{ flex: 1, color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.xl, lineHeight: 25 }}>{title}</Text>
       {link ? (
         <Pressable onPress={onLink} hitSlop={8} style={{ paddingVertical: 4 }}>
           <Text style={{ color: t.cyan, fontWeight: "600", fontSize: 13.6 }}>{link}</Text>
@@ -176,8 +176,8 @@ export function SecHead({ title, link, onLink, top = 30 }: { title: string; link
 export function Panel({ title, children, style }: { title?: string; children: ReactNode; style?: ViewStyle }) {
   const t = useTheme();
   return (
-    <View style={[{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.line, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 18 }, style]}>
-      {title ? <Text style={{ color: t.ink2, fontFamily: DISPLAY, fontWeight: "600", fontSize: 11.5, letterSpacing: 1.85, textTransform: "uppercase", marginBottom: 12 }}>{title}</Text> : null}
+    <View style={[{ borderTopWidth: 1, borderColor: t.line, paddingVertical: 16 }, style]}>
+      {title ? <Text accessibilityRole="header" style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.lg, marginBottom: 10 }}>{title}</Text> : null}
       {children}
     </View>
   );

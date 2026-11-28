@@ -10,7 +10,7 @@ import { fullUrl } from "../../data";
 import { deckColors, deckCover, deckState, deckStats, newDeck } from "../../decks";
 import { openDeck } from "../../nav";
 import { S, useStore } from "../../store";
-import { useTheme } from "../../theme";
+import { FS, R, useTheme } from "../../theme";
 import { Screen, useBarState } from "../../chrome";
 import { Btn, ICO_PLUS, Progress } from "../../visual";
 import { BanNote, DBadge, ImportPanel } from "../../deckui";
@@ -39,14 +39,14 @@ export default function Mazzi() {
             }}
           />
         ) : null}
-        <View style={{ gap: 14 }}>
+        <View style={{ gap: 24 }}>
           {decks.map((d) => {
             const st = deckStats(d);
             const [k, label] = deckState(st);
             const cv = deckCover(d);
             return (
-              <Pressable key={d.id} onPress={() => openDeck(d.id)} style={{ borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, borderRadius: 12, overflow: "hidden" }}>
-                <View style={{ height: 130, overflow: "hidden" }}>
+              <Pressable key={d.id} onPress={() => openDeck(d.id)} style={{}}>
+                <View style={{ height: 150, overflow: "hidden", borderRadius: R.img }}>
                   <Svg style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100">
                     <Defs>
                       <RadialGradient id={"dk" + d.id} cx="30" cy="15" rx="77" ry="63" gradientUnits="userSpaceOnUse">
@@ -58,9 +58,9 @@ export default function Mazzi() {
                   </Svg>
                   {cv ? <Image source={fullUrl(cv)} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" contentPosition={{ left: "50%", top: "22%" }} cachePolicy="disk" /> : null}
                 </View>
-                <View style={{ paddingTop: 12, paddingHorizontal: 14, paddingBottom: 14, gap: 6 }}>
+                <View style={{ paddingTop: 10, paddingBottom: 6, gap: 6 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                    <Text style={{ flex: 1, color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: 16.3 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                    <Text style={{ flex: 1, color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.xl }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                       {d.name}
                     </Text>
                     <View style={{ flexDirection: "row", gap: 4 }}>
@@ -72,13 +72,13 @@ export default function Mazzi() {
                     </View>
                   </View>
                   <DBadge k={k} label={label} />
-                  <Text style={{ color: t.ink2, fontSize: 12.8 }}>{"Principale " + st.main + "/50 · Digi-Egg " + st.egg + "/5"}</Text>
+                  <Text style={{ color: t.ink2, fontSize: FS.sm }}>{"Principale " + st.main + "/50 · Digi-Egg " + st.egg + "/5"}</Text>
                   <Progress h={Math.min(st.main, 50)} n={50} style={{ marginTop: 2 }} />
                 </View>
               </Pressable>
             );
           })}
-          <Pressable onPress={create} style={{ minHeight: 110, alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1, borderStyle: "dashed", borderColor: t.line, backgroundColor: t.surface, borderRadius: 12 }}>
+          <Pressable onPress={create} style={{ minHeight: 110, alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1, borderStyle: "dashed", borderColor: t.line, borderRadius: R.img }}>
             <Svg width={30} height={30} viewBox="0 0 24 24">
               <Path d={ICO_PLUS} stroke={t.accent} strokeWidth={2.2} strokeLinecap="round" fill="none" />
             </Svg>

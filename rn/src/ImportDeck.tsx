@@ -5,7 +5,7 @@ import { Sheet } from "./Sheet";
 import { Text, TextInput } from "./Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { parseDeck } from "./decks";
-import { useTheme } from "./theme";
+import { R, FS, useTheme } from "./theme";
 import { toast } from "./toast";
 
 // incolla una lista (una carta per riga, es. "4 Agumon BT1-010" o "4 BT14-002")
@@ -14,7 +14,7 @@ export function ImportDeck({ visible, label, onClose, onDone }: { visible: boole
   const [txt, setTxt] = useState("");
   return (
     <Sheet visible={visible} onClose={onClose} maxH={0.85} scrim="rgba(0,0,0,.55)">
-      <SafeAreaView edges={["bottom"]} style={{ backgroundColor: t.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 16, flexShrink: 1 }}>
+      <SafeAreaView edges={["bottom"]} style={{ backgroundColor: t.bg, borderTopLeftRadius: R.sheet, borderTopRightRadius: R.sheet, padding: 16, flexShrink: 1 }}>
         <Text style={{ color: t.ink, fontSize: 20, fontWeight: "800" }}>Importa una lista</Text>
         <TextInput
           value={txt}
