@@ -1,0 +1,22 @@
+pid 4555
+giro 1 FERMA 20s: CPU app 10.3%, fotogrammi 112, lenti 97 (86.61%)
+   thread: RenderThread 8.3%, mqt_v_js 1.0%, imon.settracker 0.9%, Profile Saver 0.1%, Jit thread pool 0.1%
+pid ora 4555 finestra ['mCurrentFocus=Window{6a52a58 u0 com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity}']
+giro 1 SCORRE 16s: CPU app 7.8%, fotogrammi 50, lenti 41 (82.00%), 50/90/95/99 69ms/105ms/113ms/121ms, UI lento 15, scadenze mancate 41
+   thread: RenderThread 6.1%, imon.settracker 0.8%, mqt_v_js 0.7%, usercontent.com 0.0%, usercontent.com 0.0%
+giro 1 FILE: fotogrammi 0, lenti 0 (0.00%), 50/90/95/99 4950ms/4950ms/4950ms/4950ms
+giro 1 SCHEDE: fotogrammi 0, lenti 0 (0.00%), 90/99 4950ms/4950ms
+giro 2 FERMA 20s: CPU app 0.4%, fotogrammi 0, lenti 0 (0.00%)
+   thread: imon.settracker 0.4%, usercontent.com 0.0%, usercontent.com 0.0%, tj3 TaskRunner 0.0%, queued-work-loo 0.0%
+pid ora 4555 finestra ['mCurrentFocus=Window{6a52a58 u0 com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity}']
+giro 2 SCORRE 16s: CPU app 4.3%, fotogrammi 20, lenti 14 (70.00%), 50/90/95/99 61ms/150ms/500ms/500ms, UI lento 5, scadenze mancate 14
+   thread: RenderThread 3.7%, imon.settracker 0.4%, mqt_v_js 0.1%, usercontent.com 0.0%, usercontent.com 0.0%
+giro 2 FILE: fotogrammi 0, lenti 0 (0.00%), 50/90/95/99 4950ms/4950ms/4950ms/4950ms
+giro 2 SCHEDE: fotogrammi 0, lenti 0 (0.00%), 90/99 4950ms/4950ms
+giro 3 FERMA 20s: CPU app 0.4%, fotogrammi 0, lenti 0 (0.00%)
+   thread: imon.settracker 0.4%, usercontent.com 0.0%, usercontent.com 0.0%, tj3 TaskRunner 0.0%, queued-work-loo 0.0%
+pid ora 4555 finestra ['mCurrentFocus=Window{6a52a58 u0 com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity}']
+giro 3 SCORRE 15s: CPU app 4.4%, fotogrammi 19, lenti 15 (78.95%), 50/90/95/99 97ms/250ms/250ms/250ms, UI lento 7, scadenze mancate 15
+   thread: RenderThread 4.0%, imon.settracker 0.5%, mqt_v_js 0.1%, usercontent.com 0.0%, usercontent.com 0.0%
+giro 3 FILE: fotogrammi 0, lenti 0 (0.00%), 50/90/95/99 4950ms/4950ms/4950ms/4950ms
+giro 3 SCHEDE: fotogrammi 0, lenti 0 (0.00%), 90/99 4950ms/4950ms

@@ -1,0 +1,236 @@
+ACTIVITY MANAGER RUNNING PROCESSES (dumpsys activity processes)
+  All known processes:
+  *APP* UID 10138 ProcessRecord{a8bc1d7 1729:com.google.android.youtube/u0a138}
+    user #0 uid=10138 gids={3003, 50138, 20138, 9997}
+    mRequiredAbi=x86_64 instructionSet=x86_64
+    class=com.google.android.apps.youtube.app.YouTubeTikTokRoot_Application
+    dir=/product/app/YouTube/YouTube.apk publicDir=/product/app/YouTube/YouTube.apk data=/data/user/0/com.google.android.youtube
+    packageList={com.google.android.youtube}
+    packageDependencies={com.google.android.gms}
+    compat={420dpi}
+    thread=android.app.IApplicationThread$Stub$Proxy@a99abe7
+    pid=1729
+    lastActivityTime=-3m55s978ms    startUptimeTime=-5m17s320ms    startElapsedTime=-5m17s320ms
+    startSeq=27
+    mountMode=DEFAULT
+    lastCpuTime=0
+    lastPssTime=-4m48s910ms pssProcState=19 pssStatType=0 nextPssTime=+6m4s28ms
+    lastPss=56MB lastSwapPss=7.2MB lastCachedPss=56MB lastCachedSwapPss=7.2MB lastRss=162MB
+    trimMemoryLevel=0
+    procStateMemTracker: best=4 (4=4 1.0x) / pending state=4 highest=4 1.5x
+    lastRequestedGc=-5m16s405ms lastLowMemory=-5m16s405ms reportLowMemory=false
+    currentHostingComponentTypes=0x0 historicalHostingComponentTypes=0x220
+    adjSeq=13160 lruSeq=3228
+    oom adj: max=1001 curRaw=975 setRaw=975 cur=975 set=975
+    mCurSchedGroup=0 setSchedGroup=0 systemNoUi=false
+    curProcState=19 mRepProcState=19 setProcState=19 lastStateTime=-3m55s972ms
+    curCapability=------ setCapability=------
+
+    cached=true empty=true
+    whenUnimportant=-3m55s978ms
+    mConnections:
+      - ConnectionRecord{cb4a25f u0 CR WPRI com.android.chrome/org.chromium.chrome.browser.customtabs.CustomTabsConnectionService:@96feafe flags=0x21}
+    Published Providers:
+      - com.google.android.apps.youtube.app.common.util.MainAppFileProviderCompat
+        -> ContentProviderRecord{178c394 u0 com.google.android.youtube/com.google.android.apps.youtube.app.common.util.MainAppFileProviderCompat}
+      - com.google.android.libraries.user.profile.photopicker.common.fileprovider.PhotoPickerFileProvider
+        -> ContentProviderRecord{47a8e3d u0 com.google.android.youtube/com.google.android.libraries.user.profile.photopicker.common.fileprovider.PhotoPickerFileProvider}
+      - com.google.android.apps.youtube.app.search.suggest.YouTubeSuggestionProvider
+        -> ContentProviderRecord{fb35632 u0 com.google.android.youtube/com.google.android.apps.youtube.app.search.suggest.YouTubeSuggestionProvider}
+      - com.google.mlkit.common.internal.MlKitInitProvider
+        -> ContentProviderRecord{4b1f83 u0 com.google.android.youtube/com.google.mlkit.common.internal.MlKitInitProvider}
+    Connected Providers:
+      - 5e88500/com.android.providers.settings/.SettingsProvider->1729:com.google.android.youtube/u0a138 s1/1 u0/0 +5m14s986ms
+    mReceivers:
+      - ReceiverList{6155ac 1729 com.google.android.youtube/10138/u0 remote:dcf575f}
+      - ReceiverList{1048639 1729 com.google.android.youtube/10138/u0 remote:7a7ee00}
+      - ReceiverList{13b81dc 1729 com.google.android.youtube/10138/u0 remote:307b8ae}
+      - ReceiverList{1dfeaef 1729 com.google.android.youtube/10138/u0 remote:f2fbbce}
+      - ReceiverList{7c7badd 1729 com.google.android.youtube/10138/u0 remote:6823eb4}
+      - ReceiverList{8288863 1729 com.google.android.youtube/10138/u0 remote:3335692}
+      - ReceiverList{91147bf 1729 com.google.android.youtube/10138/u0 remote:82c49de}
+      - ReceiverList{9f58324 1729 com.google.android.youtube/10138/u0 remote:6ba6fb7}
+      - ReceiverList{f6a470b 1729 com.google.android.youtube/10138/u0 remote:18fc6da}
+    lastCompactTime=122002 lastCompactProfile=FULL
+    hasPendingCompaction=false    isFreezeExempt=false isPendingFreeze=true isFrozen=false
+    earliestFreezableTimeMs=+3s504ms
+     Configuration={1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h842dp 420dpi nrml long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 128 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.153 fontWeightAdjustment=0}
+     OverrideConfiguration={0.0 ?mcc0mnc ?localeList ?layoutDir ?swdp ?wdp ?hdp ?density ?lsize ?long ?ldr ?wideColorGamut ?orien ?uimode ?night ?touch ?keyb/?/? ?nav/? winConfig={ mBounds=Rect(0, 0 - 0, 0) mAppBounds=null mMaxBounds=Rect(0, 0 - 0, 0) mDisplayRotation=undefined mWindowingMode=undefined mDisplayWindowingMode=undefined mActivityType=undefined mAlwaysOnTop=undefined mRotation=undefined} as.3 ?fontWeightAdjustment}
+     mLastReportedConfiguration={1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h842dp 420dpi nrml long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 128 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.153 fontWeightAdjustment=0}
+  *APP* UID 10173 ProcessRecord{301d057 1519:com.google.android.ext.services/u0a173}
+    user #0 uid=10173 gids={50173, 20173, 9997}
+    processInfo:
+      deny: android.permission.INTERNET
+    mRequiredAbi=x86_64 instructionSet=x86_64
+    class=android.ext.services.ExtServicesApplication
+    dir=/apex/com.android.extservices/priv-app/GoogleExtServices@340818080/GoogleExtServices.apk publicDir=/apex/com.android.extservices/priv-app/GoogleExtServices@340818080/GoogleExtServices.apk data=/data/user/0/com.google.android.ext.services
+    packageList={com.google.android.ext.services}
+    compat={420dpi}
+    thread=android.app.IApplicationThread$Stub$Proxy@a86d139
+    pid=1519
+    lastActivityTime=-46s317ms    startUptimeTime=-5m18s416ms    startElapsedTime=-5m18s416ms
+    startSeq=16
+    mountMode=DEFAULT
+    lastPssTime=-3m56s397ms pssProcState=5 pssStatType=0 nextPssTime=+6m3s589ms
+    lastPss=5.9MB lastSwapPss=1.9MB lastCachedPss=4.6MB lastCachedSwapPss=3.3MB lastRss=71MB
+    trimMemoryLevel=0
+    procStateMemTracker: best=2 (2=2 1.5x, 4=4 1.5x)
+    lastRequestedGc=-5m18s250ms lastLowMemory=-5m18s250ms reportLowMemory=false
+    currentHostingComponentTypes=0x200 historicalHostingComponentTypes=0x200
+    reportedInteraction=true time=-4m45s883ms
+    adjSeq=13186 lruSeq=4076
+    oom adj: max=1001 curRaw=100 setRaw=100 cur=100 set=100
+    mCurSchedGroup=2 setSchedGroup=2 systemNoUi=false
+    curProcState=5 mRepProcState=5 setProcState=5 lastStateTime=-4m45s884ms
+    curCapability=LCMNFU setCapability=LCMNFU
+
+    cached=false empty=true
+    Services:
+      - ServiceRecord{6bbfc54 u0 com.google.android.ext.services/android.ext.services.autofill.InlineSuggestionRenderServiceImpl}
+    Connected Providers:
+      - 5e88500/com.android.providers.settings/.SettingsProvider->1519:com.google.android.ext.services/u0a173 s1/1 u0/0 +5m18s111ms
+    lastCompactTime=48624 lastCompactProfile=FULL
+    hasPendingCompaction=false    isFreezeExempt=false isPendingFreeze=false isFrozen=false
+    earliestFreezableTimeMs=-4m49s949ms
+     Configuration={1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h842dp 420dpi nrml long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 128 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.163 fontWeightAdjustment=0}
+     OverrideConfiguration={0.0 ?mcc0mnc ?localeList ?layoutDir ?swdp ?wdp ?hdp ?density ?lsize ?long ?ldr ?wideColorGamut ?orien ?uimode ?night ?touch ?keyb/?/? ?nav/? winConfig={ mBounds=Rect(0, 0 - 0, 0) mAppBounds=null mMaxBounds=Rect(0, 0 - 0, 0) mDisplayRotation=undefined mWindowingMode=undefined mDisplayWindowingMode=undefined mActivityType=undefined mAlwaysOnTop=undefined mRotation=undefined} as.3 ?fontWeightAdjustment}
+     mLastReportedConfiguration={1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h842dp 420dpi nrml long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 128 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.163 fontWeightAdjustment=0}
+  *APP* UID 1000 ProcessRecord{94147eb 3596:com.android.dynsystem/1000}
+    user #0 uid=1000 gids={1065, 3002, 3003, 3001, 3007, 1007, 1000, 9997, 1077}
+    mRequiredAbi=x86_64 instructionSet=x86_64
+    dir=/system/priv-app/DynamicSystemInstallationService/DynamicSystemInstallationService.apk publicDir=/system/priv-app/DynamicSystemInstallationService/DynamicSystemInstallationService.apk data=/data/user/0/com.android.dynsystem
+    packageList={com.android.dynsystem}
+    compat={420dpi}
+    thread=android.app.IApplicationThread$Stub$Proxy@a3ca37e
+    pid=3596
+    lastActivityTime=-5m1s539ms    startUptimeTime=-5m1s813ms    startElapsedTime=-5m1s813ms
+    startSeq=54
+    mountMode=DEFAULT
+    lastCpuTime=0
+    lastPssTime=-4m21s40ms pssProcState=19 pssStatType=0 nextPssTime=+5m38s943ms
+    lastPss=4.2MB lastSwapPss=3.1MB lastCachedPss=4.2MB lastCachedSwapPss=3.1MB lastRss=65MB
+    trimMemoryLevel=0
+    procStateMemTracker: best=4 (4=4 1.5x)
+    lastRequestedGc=-5m1s539ms lastLowMemory=-5m1s539ms reportLowMemory=false
+    currentHostingComponentTypes=0x0 historicalHostingComponentTypes=0x20
+    adjSeq=13160 lruSeq=843
+    oom adj: max=1001 curRaw=999 setRaw=999 cur=999 set=999
+    mCurSchedGroup=0 setSchedGroup=0 systemNoUi=false
+    curProcState=19 mRepProcState=19 setProcState=19 lastStateTime=-5m1s539ms
+    curCapability=------ setCapability=------
+
+    cached=true empty=true
+    whenUnimportant=-5m47s725ms
+    lastCompactTime=81756 lastCompactProfile=FULL
+    hasPendingCompaction=false    isFreezeExempt=false isPendingFreeze=true isFrozen=false
+    earliestFreezableTimeMs=+3s498ms
+     Configuration={1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h842dp 420dpi nrml long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 128 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.140 fontWeightAdjustment=0}
+     OverrideConfiguration={0.0 ?mcc0mnc ?localeList ?layoutDir ?swdp ?wdp ?hdp ?density ?lsize ?long ?ldr ?wideColorGamut ?orien ?uimode ?night ?touch ?keyb/?/? ?nav/? winConfig={ mBounds=Rect(0, 0 - 0, 0) mAppBounds=null mMaxBounds=Rect(0, 0 - 0, 0) mDisplayRotation=undefined mWindowingMode=undefined mDisplayWindowingMode=undefined mActivityType=undefined mAlwaysOnTop=undefined mRotation=undefined} ?fontWeightAdjustment}
+     mLastReportedConfiguration={1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h842dp 420dpi nrml long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 128 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.140 fontWeightAdjustment=0}
+  *APP* UID 10132 ProcessRecord{6f58489 5005:com.google.android.googlequicksearchbox/u0a132}
+    user #0 uid=10132 gids={1005, 3002, 3003, 3001, 50132, 20132, 9997}
+    mRequiredAbi=x86_64 instructionSet=x86_64
+    class=com.google.android.apps.gsa.binaries.velvet.app.VelvetRoot_Application
+    manageSpaceActivityName=com.google.android.apps.gsa.managespace.VelvetManageSpaceActivity
+    dir=/product/priv-app/Velvet/Velvet.apk publicDir=/product/priv-app/Velvet/Velvet.apk data=/data/user/0/com.google.android.googlequicksearchbox
+    packageList={com.google.android.googlequicksearchbox}
+    compat={420dpi}
+    thread=android.app.IApplicationThread$Stub$Proxy@71630df
+    pid=5005
+    lastActivityTime=-3m56s212ms    startUptimeTime=-4m37s151ms    startElapsedTime=-4m37s151ms
+    startSeq=75
+    mountMode=DEFAULT
+    lastCpuTime=0
+    lastPssTime=-3m57s36ms pssProcState=19 pssStatType=0 nextPssTime=+6m2s959ms
+    lastPss=30MB lastSwapPss=7.6MB lastCachedPss=30MB lastCachedSwapPss=7.6MB lastRss=137MB
+    trimMemoryLevel=0
+    procStateMemTracker: best=4 (4=4 1.5x)
+    lastRequestedGc=-4m37s86ms lastLowMemory=-4m37s86ms reportLowMemory=false
+    currentHostingComponentTypes=0x0 historicalHostingComponentTypes=0x20
+    adjSeq=13160 lruSeq=3208
+    oom adj: max=1001 curRaw=985 setRaw=985 cur=985 set=985
+    mCurSchedGroup=0 setSchedGroup=0 systemNoUi=false
+    curProcState=19 mRepProcState=19 setProcState=19 lastStateTime=-4m37s85ms
+    curCapability=------ setCapability=------
+
+    cached=true empty=true
+    whenUnimportant=-5m47s725ms
+    Published Providers:
+      - com.android.launcher3.LauncherProvider
+        -> ContentProviderRecord{2d0f12c u0 com.google.android.googlequicksearchbox/com.android.launcher3.LauncherProvider}
+      - com.google.android.apps.gsa.contentprovider.initializer.DefaultInitializer
+        -> ContentProviderRecord{7a47f5 u0 com.google.android.googlequicksearchbox/com.google.android.apps.gsa.contentprovider.initializer.DefaultInitializer}
+      - androidx.core.content.FileProvider
+        -> ContentProviderRecord{27b798a u0 com.google.android.googlequicksearchbox/androidx.core.content.FileProvider}
+    Connected Providers:
+      - 5e88500/com.android.providers.settings/.SettingsProvider->5005:com.google.android.googlequicksearchbox/u0a132 s1/1 u0/0 +4m36s919ms
+    mReceivers:
+      - ReceiverList{1a75b96 5005 com.google.android.googlequicksearchbox/10132/u0 remote:7f77ab1}
+      - ReceiverList{218148e 5005 com.google.android.googlequicksearchbox/10132/u0 remote:9741c89}
+      - ReceiverList{4001ffe 5005 com.google.android.googlequicksearchbox/10132/u0 remote:706fb9}
+      - ReceiverList{e90dbb4 5005 com.google.android.googlequicksearchbox/10132/u0 remote:2609087}
+    lastCompactTime=172119 lastCompactProfile=FULL
+    hasPendingCompaction=false    isFreezeExempt=false isPendingFreeze=true isFrozen=false
+    earliestFreezableTimeMs=+3s499ms
+     Configuration={1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h842dp 420dpi nrml long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 128 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.140 fontWeightAdjustment=0}
+     OverrideConfiguration={0.0 ?mcc0mnc ?localeList ?layoutDir ?swdp ?wdp ?hdp ?density ?lsize ?long ?ldr ?wideColorGamut ?orien ?uimode ?night ?touch ?keyb/?/? ?nav/? winConfig={ mBounds=Rect(0, 0 - 0, 0) mAppBounds=null mMaxBounds=Rect(0, 0 - 0, 0) mDisplayRotation=undefined mWindowingMode=undefined mDisplayWindowingMode=undefined mActivityType=undefined mAlwaysOnTop=undefined mRotation=undefined} ?fontWeightAdjustment}
+     mLastReportedConfiguration={1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h842dp 420dpi nrml long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 128 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.140 fontWeightAdjustment=0}
+  *APP* UID 10089 ProcessRecord{e9c16f8 2609:com.android.providers.calendar/u0a89}
+    user #0 uid=10089 gids={1065, 3003, 50089, 20089, 9997}
+    mRequiredAbi=x86_64 instructionSet=null
+    dir=/system/priv-app/CalendarProvider/CalendarProvider.apk publicDir=/system/priv-app/CalendarProvider/CalendarProvider.apk data=/data/user/0/com.android.providers.calendar
+    packageList={com.android.providers.calendar}
+    compat={420dpi}
+    thread=android.app.IApplicationThread$Stub$Proxy@856fbfb
+    pid=2609
+    lastActivityTime=-4m56s338ms    startUptimeTime=-5m12s288ms    startElapsedTime=-5m12s288ms
+    startSeq=43
+    mountMode=DEFAULT
+    lastCpuTime=0
+    lastPssTime=-4m15s102ms pssProcState=19 pssStatType=0 nextPssTime=+5m44s896ms
+    lastPss=5.3MB lastSwapPss=4.0MB lastCachedPss=5.3MB lastCachedSwapPss=4.0MB lastRss=73MB
+    trimMemoryLevel=0
+    procStateMemTracker: best=4 (4=4 1.5x)
+    lastRequestedGc=-5m11s671ms lastLowMemory=-5m11s671ms reportLowMemory=false
+    currentHostingComponentTypes=0x0 historicalHostingComponentTypes=0x260
+    adjSeq=13160 lruSeq=1073
+    oom adj: max=1001 curRaw=999 setRaw=999 cur=999 set=999
+    mCurSchedGroup=0 setSchedGroup=0 systemNoUi=false
+    curProcState=19 mRepProcState=19 setProcState=19 lastStateTime=-4m56s332ms
+    curCapability=------ setCapability=------
+
+    cached=true empty=true
+    whenUnimportant=-4m56s338ms
+    lastProviderTime=-5m0s47ms
+    Published Providers:
+      - com.android.providers.calendar.CalendarProvider2
+        -> ContentProviderRecord{cf1f418 u0 com.android.providers.calendar/.CalendarProvider2}
+    Connected Providers:
+      - 5e88500/com.android.providers.settings/.SettingsProvider->2609:com.android.providers.calendar/u0a89 s1/1 u0/0 +5m11s569ms
+    mReceivers:
+      - ReceiverList{8fba5bb 2609 com.android.providers.calendar/10089/u0 remote:705b24a}
+      - ReceiverList{af4a916 2609 com.android.providers.calendar/10089/u0 remote:b1b8e31}
+    lastCompactTime=78773 lastCompactProfile=FULL
+    hasPendingCompaction=false    isFreezeExempt=false isPendingFreeze=true isFrozen=false
+    earliestFreezableTimeMs=+3s498ms
+     Configuration={1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h842dp 420dpi nrml long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 128 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.140 fontWeightAdjustment=0}
+     OverrideConfiguration={0.0 ?mcc0mnc ?localeList ?layoutDir ?swdp ?wdp ?hdp ?density ?lsize ?long ?ldr ?wideColorGamut ?orien ?uimode ?night ?touch ?keyb/?/? ?nav/? winConfig={ mBounds=Rect(0, 0 - 0, 0) mAppBounds=null mMaxBounds=Rect(0, 0 - 0, 0) mDisplayRotation=undefined mWindowingMode=undefined mDisplayWindowingMode=undefined mActivityType=undefined mAlwaysOnTop=undefined mRotation=undefined} ?fontWeightAdjustment}
+     mLastReportedConfiguration={1.0 310mcc260mnc [en_US] ldltr sw411dp w411dp h842dp 420dpi nrml long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 128 - 1080, 2337) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.140 fontWeightAdjustment=0}
+  *APP* UID 10125 ProcessRecord{c7564b9 3407:com.google.android.onetimeinitializer/u0a125}
+    user #0 uid=10125 gids={50125, 20125, 9997}
+    mRequiredAbi=x86_64 instructionSet=null
+    dir=/product/priv-app/GoogleOneTimeInitializer/GoogleOneTimeInitializer.apk publicDir=/product/priv-app/GoogleOneTimeInitializer/GoogleOneTimeInitializer.apk data=/data/user/0/com.google.android.onetimeinitializer
+    packageList={com.google.android.onetimeinitializer}
+    compat={420dpi}
+    thread=android.app.IApplicationThread$Stub$Proxy@df46e71
+    pid=3407
+    lastActivityTime=-5m3s407ms    startUptimeTime=-5m3s578ms    startElapsedTime=-5m3s578ms
+    startSeq=52
+    mountMode=DEFAULT
+    lastCpuTime=0
+    lastPssTime=-4m20s996ms pssProcState=19 pssStatType=0 nextPssTime=+5m38s943ms
+    lastPss=4.3MB lastSwapPss=3.0MB lastCachedPss=4.3MB lastCachedSwapPss=3.0MB lastRss=66MB
+    trimMemoryLevel=0
+    procStateMemTracker: best=4 (4=4 1.5x)
+    lastRequestedGc=-5m3s407ms lastLowMemory=-5m3s407ms reportLowMemory=false
+    currentHostingComponen
