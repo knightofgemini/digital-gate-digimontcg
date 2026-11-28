@@ -1,0 +1,19 @@
+pid 4067
+giro 1 FERMA 20s: CPU app 32.8%, fotogrammi 586, lenti 578 (98.63%)
+   thread: RenderThread 31.6%, imon.settracker 0.9%, mqt_v_js 0.2%, binder:4067_6 0.1%, binder:4067_3 0.1%
+giro 1 SCORRE 18s: CPU app 38.6%, fotogrammi 566, lenti 560 (98.94%), 50/90/95/99 121ms/150ms/150ms/250ms, UI lento 312, scadenze mancate 560
+   thread: RenderThread 36.9%, imon.settracker 0.9%, mqt_v_js 0.3%, binder:4067_7 0.1%, binder:4067_5 0.1%
+giro 1 FILE: fotogrammi 152, lenti 149 (98.03%), 50/90/95/99 121ms/150ms/150ms/200ms
+giro 1 SCHEDE: fotogrammi 100, lenti 99 (99.00%), 90/99 150ms/300ms
+giro 2 FERMA 20s: CPU app 40.1%, fotogrammi 565, lenti 562 (99.47%)
+   thread: RenderThread 38.7%, imon.settracker 0.9%, mqt_v_js 0.3%, Jit thread pool 0.1%, binder:4067_8 0.1%
+giro 2 SCORRE 17s: CPU app 41.3%, fotogrammi 548, lenti 540 (98.54%), 50/90/95/99 117ms/150ms/150ms/200ms, UI lento 290, scadenze mancate 540
+   thread: RenderThread 40.8%, imon.settracker 0.9%, mqt_v_js 0.3%, binder:4067_7 0.1%, binder:4067_3 0.1%
+giro 2 FILE: fotogrammi 161, lenti 160 (99.38%), 50/90/95/99 113ms/150ms/150ms/150ms
+giro 2 SCHEDE: fotogrammi 113, lenti 112 (99.12%), 90/99 150ms/250ms
+giro 3 FERMA 20s: CPU app 53.0%, fotogrammi 571, lenti 562 (98.42%)
+   thread: RenderThread 51.6%, imon.settracker 1.0%, mqt_v_js 0.4%, binder:4067_2 0.1%, binder:4067_1 0.1%
+giro 3 SCORRE 17s: CPU app 54.1%, fotogrammi 510, lenti 498 (97.65%), 50/90/95/99 117ms/150ms/150ms/250ms, UI lento 277, scadenze mancate 498
+   thread: RenderThread 53.0%, imon.settracker 1.1%, mqt_v_js 0.2%, binder:4067_8 0.1%, binder:4067_3 0.1%
+giro 3 FILE: fotogrammi 173, lenti 173 (100.00%), 50/90/95/99 117ms/150ms/150ms/150ms
+giro 3 SCHEDE: fotogrammi 100, lenti 99 (99.00%), 90/99 150ms/150ms
