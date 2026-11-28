@@ -390,7 +390,9 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   sopra l'immagine; con taglio "cover" dell'editor o `COVERS` l'immagine riempie tutto (`SetArt`), altrimenti banner
   intero su fondo dello stesso banner sfocato (mai scritte tagliate); avanzamento solo se hai carte del set. **Griglia
   carte** (`GridTile`) senza riquadro, cuore sopra l'immagine. **Scheda carta**: carta fino a 310 dp, fondo tinto col
-  colore della carta dietro la fila, dati (Tipo, Livello, Costo, DP, Colore) senza caselle, sezioni senza riquadri.
+  colore della carta dietro la fila (dal 28 novembre, richiesta dell'utente, parte dal bordo alto dello schermo, dietro barra di
+  stato e intestazione trasparente, e scorre via con la pagina), dati (Tipo, Livello, Costo, DP, Colore) senza caselle,
+  sezioni senza riquadri.
   **Resto delle pagine (28 novembre 2026, richiesta dell'utente "anche nelle rimanenti pagine")**: `Screen`/`AppBar` con
   `back` (freccia indietro accanto al titolo): dettaglio prodotto (titolo = codice, tolto `BackLink`) e dettaglio mazzo
   (titolo "Mazzo", nome modificabile sotto). Niente riquadri: voci di Informazioni, Regole, Domande e risposte, Dettagli

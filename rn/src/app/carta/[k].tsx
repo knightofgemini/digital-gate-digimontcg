@@ -405,9 +405,25 @@ function CardPage({ c, setC, width, deck, strip, fade, sv, fan, exitTo }: { c: C
         vedere la barra della pagina sotto, col logo, già a metà strada) */}
     <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: t.bg, opacity: moved.interpolate({ inputRange: [0, winH * 0.4, winH], outputRange: [1, 0.85, 0], extrapolate: "clamp" }) }]} />
     <Animated.View style={{ flex: 1, transform: [{ translateY: moved }] }}>
-    <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }} edges={["top"]}>
+    {/* fondo della scheda e, sopra, la sfumatura col colore della carta: parte dal bordo alto dello schermo (dietro barra
+        di stato e intestazione) e scende fino sotto la carta; scorre via insieme alla pagina (28 novembre 2026, richiesta
+        dell'utente: "il gradiente colorato fino a sopra") */}
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: t.bg }]} />
+    <Animated.View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, height: (headB + Math.round((cw * 7) / 5) + 70), transform: [{ translateY: Animated.multiply(scrollY, -1) }] }}>
+      <Svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 100">
+        <Defs>
+          <LinearGradient id="ctint" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={t.cards[c.colors[0]] || t.line} stopOpacity={t.dark ? 0.4 : 0.26} />
+            <Stop offset="0.45" stopColor={t.cards[c.colors[0]] || t.line} stopOpacity={t.dark ? 0.22 : 0.14} />
+            <Stop offset="1" stopColor={t.cards[c.colors[0]] || t.line} stopOpacity={0} />
+          </LinearGradient>
+        </Defs>
+        <Rect width="10" height="100" fill="url(#ctint)" />
+      </Svg>
+    </Animated.View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "transparent" }} edges={["top"]}>
       {/* intestazione (.chead): chiusura, nome del prodotto con "Carta N di M", cuore e liste */}
-      <View onLayout={(e) => setHeadB(Math.round(e.nativeEvent.layout.y + e.nativeEvent.layout.height))} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 14, paddingRight: 8, paddingTop: 10, paddingBottom: 10, borderBottomWidth: 1, borderColor: t.line, backgroundColor: t.bg }}>
+      <View onLayout={(e) => setHeadB(Math.round(e.nativeEvent.layout.y + e.nativeEvent.layout.height))} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 14, paddingRight: 8, paddingTop: 10, paddingBottom: 10 }}>
         <Pressable onPress={close} accessibilityLabel="Chiudi" style={headBtn(t)}>
           <Svg width={20} height={20} viewBox="0 0 24 24">
             <Path d="M6 6l12 12M18 6L6 18" stroke={t.ink} strokeWidth={2} strokeLinecap="round" />
@@ -428,18 +444,6 @@ function CardPage({ c, setC, width, deck, strip, fade, sv, fan, exitTo }: { c: C
       </View>
       {/* overScrollMode never: niente effetto elastico di Android in cima e in fondo (la scheda "rimbalzava", segnalato dall'utente) */}
       <Animated.ScrollView ref={scrollRef} onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} overScrollMode="never" bounces={false} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 14 + footH, width: maxW, alignSelf: "center" }} nestedScrollEnabled>
-        {/* fondo appena tinto con il colore della carta dietro la fila (28 novembre 2026, ritocco "Carta protagonista") */}
-        <View pointerEvents="none" style={{ position: "absolute", top: 0, left: -((width - maxW) / 2), width, height: Math.round((cw * 7) / 5) + 60 }}>
-          <Svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 100">
-            <Defs>
-              <LinearGradient id="ctint" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor={t.cards[c.colors[0]] || t.line} stopOpacity={t.dark ? 0.34 : 0.2} />
-                <Stop offset="1" stopColor={t.cards[c.colors[0]] || t.line} stopOpacity={0} />
-              </LinearGradient>
-            </Defs>
-            <Rect width="10" height="100" fill="url(#ctint)" />
-          </Svg>
-        </View>
         {/* fila delle carte a ventaglio (precedente e successiva ai lati) */}
         {strip}
 

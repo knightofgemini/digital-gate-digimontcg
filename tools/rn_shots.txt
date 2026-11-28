@@ -1,1 +1,1 @@
-ex3|EX3-024,pagina:carte,pagina:prodotto/bt25
+ex3|EX3-024,bt27|BT27-008,ex3|EX3-034
