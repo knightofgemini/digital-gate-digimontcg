@@ -332,6 +332,9 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   o si lascia la pagina, riprendendo da dove era. Esito: Home ferma o scorsa in basso 0 fotogrammi; con In evidenza in
   vista la capsula ridisegna di continuo (sull'emulatore senza scheda grafica costa molto, sul telefono poco); a scatti
   di 0,4 s erano ~7 fotogrammi/s (ripiego se l'utente la sente ancora pesante).
+  **28 novembre 2026** (ritocco grafico, In evidenza a tutta larghezza; segnalato dall'utente: "è tornato il lag"):
+  capsula di nuovo **a passi** (`CAPS_STEP` = 250 ms, `setInterval` in `Carousel`): sull'emulatore Home ferma da ~29 a
+  ~5 fotogrammi/s (rami `perf-main`, `perf-grafica`, `perf-passi`, `perf-strato` = In evidenza in uno strato, peggio).
 - **Intro fluida (17 novembre 2026, segnalato dall'utente: la parte finale dell'intro andava a scatti)**: durante
   l'intro la Home rimanda il lavoro non visibile: la capsula di In evidenza parte 600 ms dopo la fine dell'intro e le
   sezioni sotto lo schermo (Usciti di recente, All'orizzonte, Set da completare, Riprendi il mazzo) si montano 200 ms
