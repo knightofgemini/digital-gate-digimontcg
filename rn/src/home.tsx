@@ -225,7 +225,7 @@ function Carousel({ w, children, dots, onIndex, auto, gap = GAP, edge = 14 }: { 
             k === i && running ? (
               // capsula con il contorno arancione, che si riempie da sinistra (16 novembre 2026, richiesta dell'utente)
               <View key={k} style={{ width: DOT_RUN, height: DOT_H, borderRadius: DOT_H / 2, borderWidth: 1.5, borderColor: t.accent }}>
-                <Animated.View style={{ width: FILL_W, height: DOT_H - 3, borderRadius: (DOT_H - 3) / 2, backgroundColor: t.accent, transformOrigin: "left", transform: [{ scaleX: fill }] }} />
+                <Animated.View style={{ width: FILL_W, height: DOT_H - 3, borderRadius: (DOT_H - 3) / 2, backgroundColor: t.accent, transformOrigin: "left", transform: [{ scaleX: 0.5 }] }} />
               </View>
             ) : (
               <View key={k} style={{ width: k === i ? 18 : 6, height: 6, borderRadius: 3, backgroundColor: k === i ? t.accent : t.line }} />
