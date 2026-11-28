@@ -4,7 +4,7 @@
 // Ultimi spoiler: sezione a sé (SpoilerRow, scelta dell'utente tra due proposte; scartate le miniature nel banner).
 // Stili solo di questa pagina: i componenti condivisi (Banner, SecHead, Progress…) restano come sono.
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { AccessibilityInfo, Animated, Easing, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { AccessibilityInfo, Animated, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { Image } from "expo-image";
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
@@ -41,6 +41,8 @@ const DOT_RUN = 28;
 const DOT_H = 9;
 // parte interna della capsula (meno il contorno)
 const FILL_W = DOT_RUN - 3;
+// passo del riempimento della capsula (ms): 4 aggiornamenti al secondo invece di uno a ogni fotogramma
+const CAPS_STEP = 250;
 // vero un po' dopo la fine dell'intro: la Home intanto non fa lavori che si possono rimandare (capsula di In evidenza,
 // sezioni sotto lo schermo), così la sfumatura finale dell'intro resta fluida (17 novembre 2026, segnalato dall'utente)
 export function useAfterIntro(delay: number) {
@@ -124,14 +126,14 @@ function Carousel({ w, children, dots, onIndex, auto, gap = GAP, edge = 14 }: { 
   geo.current = { w, n, gap };
   const [seen, setSeen] = useState(true);
   const [still, setStill] = useState(false);
-  // riempimento della capsula: animazione continua fatta dal telefono (non da JavaScript), senza ritagli (la parte
-  // piena si allarga da sinistra, scaleX), che si ferma quando In evidenza esce dallo schermo o si cambia pagina e
-  // riprende da dove era. Quando la capsula è piena si passa alla scheda dopo. 17 novembre 2026, scelta dell'utente:
-  // riempimento continuo ma app leggera (prima: scatti di 0,4 s; ancora prima un'animazione con ritaglio che,
-  // insieme alle immagini dei tagli ricaricate di continuo, ridisegnava la Home senza sosta)
+  // riempimento della capsula a piccoli passi (CAPS_STEP), non più con un'animazione continua: con In evidenza a tutta
+  // larghezza (28 novembre 2026) ridisegnare lo schermo a ogni fotogramma appesantiva la Home (segnalato dall'utente).
+  // Si ferma quando In evidenza esce dallo schermo o si cambia pagina e riprende da dove era; quando la capsula è piena
+  // si passa alla scheda dopo. Storia: 16 novembre animazione con ritaglio, poi scatti di 0,4 s, 17 novembre
+  // animazione continua fatta dal telefono, 28 novembre di nuovo a passi.
   const fill = useRef(new Animated.Value(0)).current;
-  const anim = useRef<Animated.CompositeAnimation | null>(null);
-  const pos = useRef(0); // punto raggiunto (0-1) quando l'animazione è ferma
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pos = useRef(0); // punto raggiunto (0-1)
   const autoAt = useRef(0); // momento dell'ultimo passaggio automatico (il suo fine scorrimento non riparte da capo)
   const [inView, setInView] = useState(HERO_VIS.v);
   const running = !!auto && n > 1 && seen && !still;
@@ -140,27 +142,29 @@ function Carousel({ w, children, dots, onIndex, auto, gap = GAP, edge = 14 }: { 
   const activeRef = useRef(active);
   activeRef.current = active;
   const stop = () => {
-    const a = anim.current;
-    anim.current = null;
-    if (a) a.stop();
-    fill.stopAnimation((v) => (pos.current = v));
+    if (timer.current) clearInterval(timer.current);
+    timer.current = null;
   };
   const go = (from: number) => {
     stop();
     pos.current = from;
     fill.setValue(from);
     if (!activeRef.current || !auto) return;
-    const a = Animated.timing(fill, { toValue: 1, duration: Math.max(60, (1 - from) * auto), easing: Easing.linear, useNativeDriver: true });
-    anim.current = a;
-    a.start(({ finished }) => {
-      if (!finished || anim.current !== a) return;
-      anim.current = null;
+    const inc = CAPS_STEP / auto;
+    timer.current = setInterval(() => {
+      const v = pos.current + inc;
+      if (v < 0.999) {
+        pos.current = v;
+        fill.setValue(v);
+        return;
+      }
+      stop();
       const g = geo.current;
       const k = (cur.current + 1) % g.n;
       autoAt.current = Date.now();
       ref.current?.scrollTo({ x: k * (g.w + g.gap), animated: true });
       go(0);
-    });
+    }, CAPS_STEP);
   };
   useFocusEffect(
     useCallback(() => {
