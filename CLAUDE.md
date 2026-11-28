@@ -377,6 +377,20 @@ l'app prende da internet (carte nuove, immagini, prezzi, copia del motore della 
   resta dalla più recente); le voci seguono l'ordine del sito. `tools/rn_shots.txt` accetta anche `?parola` (scrive nel
   campo con la tastiera) e `pagina:regole@Voce+%x;y` (più tocchi, anche a un punto dello schermo) e
   `@~testo` (scritta che contiene il testo).
+- **Ritocco grafico (28 novembre 2026, ramo `ritocco-grafica`, scelta dell'utente tra 6 direzioni fotografate e una
+  proposta "Digital Archive" scartata)**: Home e Prodotti nello stile **"Galleria"**, il resto nello stile **"Carta
+  protagonista"**, **niente angoli smussati a 45°**. Colori e font di sempre. Gettoni in `theme.ts` (`FS` testo, `SP`
+  spazi, `R` raggi) da usare al posto dei numeri sparsi. **Una sola intestazione**: `Screen`/`AppBar` con `title` (titolo
+  della pagina nella barra in alto, Chakra 24 dritto; `PageTitle` tolto dalle pagine), marchio solo in Home; Home con
+  `overlay` (barra trasparente sopra In evidenza, piena con `solid` quando l'illustrazione esce). Barra in basso: lineetta
+  arancione sopra la scheda attiva (niente pastiglia). **Home**: In evidenza a tutta larghezza alto `HERO_H` (420), sfumato
+  verso lo sfondo, scritte sotto (etichetta · codice · tipo, titolo 34, pulsante non a tutta larghezza); `Carousel` con
+  `gap`/`edge`; La tua collezione = numeri grandi (carte e mazzi); titoli di sezione Chakra 24; Ultimi spoiler 132 dp;
+  Usciti di recente più larghi, nome sopra il codice. **Prodotti**: copertine verticali (1:1,4) con codice, mese e nome
+  sopra l'immagine; con taglio "cover" dell'editor o `COVERS` l'immagine riempie tutto (`SetArt`), altrimenti banner
+  intero su fondo dello stesso banner sfocato (mai scritte tagliate); avanzamento solo se hai carte del set. **Griglia
+  carte** (`GridTile`) senza riquadro, cuore sopra l'immagine. **Scheda carta**: carta fino a 310 dp, fondo tinto col
+  colore della carta dietro la fila, dati (Tipo, Livello, Costo, DP, Colore) senza caselle, sezioni senza riquadri.
 - **Prove più veloci (7 novembre 2026)**: in `apk.yml` e `prova-emulatore.yml` si conservano tra una build e l'altra i
   file di Gradle, i suoi risultati riutilizzabili (`org.gradle.caching=true`) e le parti in C++ (ccache, finora poche
   riuse); emulatore salvato dopo il primo avvio (cache `avd-…`). APK di prova da 18 a 11 minuti. `prova-emulatore.yml`
