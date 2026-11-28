@@ -154,7 +154,8 @@ export function Rich({ text, style, noKw }: { text: string; style?: TextStyle; n
   const fs = style?.fontSize || 14;
   const maxW = w ? w - fs * 0.2 : undefined;
   // nella spiegazione di una keyword i tag bianchi hanno il bordino (.kwexb .ico.trt)
-  const edge = noKw ? t.line : undefined;
+  // (anche nel tema chiaro: senza riquadri intorno ai testi il bianco sparirebbe sul fondo chiaro, 28 novembre 2026)
+  const edge = noKw || !t.dark ? t.line : undefined;
   // una riga alla volta: la spiegazione di una keyword si apre subito dopo la sua riga (più spiegazioni nell'ordine delle keyword)
   const lines = String(text).split("\n");
   const out: any[] = [];

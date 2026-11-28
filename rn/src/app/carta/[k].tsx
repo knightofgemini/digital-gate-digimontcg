@@ -433,7 +433,7 @@ function CardPage({ c, setC, width, deck, strip, fade, sv, fan, exitTo }: { c: C
           <Svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 100">
             <Defs>
               <LinearGradient id="ctint" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor={t.cards[c.colors[0]] || t.line} stopOpacity={t.dark ? 0.26 : 0.2} />
+                <Stop offset="0" stopColor={t.cards[c.colors[0]] || t.line} stopOpacity={t.dark ? 0.34 : 0.2} />
                 <Stop offset="1" stopColor={t.cards[c.colors[0]] || t.line} stopOpacity={0} />
               </LinearGradient>
             </Defs>

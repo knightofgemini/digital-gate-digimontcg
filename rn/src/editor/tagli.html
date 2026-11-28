@@ -62,7 +62,7 @@ h1 { font-family: var(--display); font-weight: 700; font-size: 26px; margin: 0; 
 .guides::after { top: 33.33%; bottom: 33.33%; left: 0; right: 0; border-top: 1px solid rgba(255,255,255,.35); border-bottom: 1px solid rgba(255,255,255,.35); background: none; }
 
 /* In evidenza: come HeroSlide */
-.hero { width: 100%; max-width: 440px; aspect-ratio: 1.313; border-radius: 16px; }
+.hero { width: 100%; max-width: 440px; aspect-ratio: 0.98; border-radius: 0; }
 .mini-f.hero { border-radius: 8px; }
 .hero .fade { position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(to bottom, rgba(11,17,32,.15) 0%, rgba(11,17,32,.15) 18%, rgba(11,17,32,.25) 35%, rgba(11,17,32,.91) 66%, #0b1120 100%); }
@@ -320,7 +320,7 @@ button.b:disabled { opacity: .45; cursor: default; }
 (() => {
   // Riquadri dell'app (stesse proporzioni di rn/src/home.tsx)
   const SECS = [
-    { id: "hero", name: "In evidenza", ar: 1.313, rule: "Zoom forte, soggetto al centro e sollevato sopra il nome. Il riquadro cambia forma con la larghezza del telefono: controlla le anteprime in fondo." },
+    { id: "hero", name: "In evidenza", ar: 0.98, rule: "A tutta larghezza, alto 420: soggetto al centro e sollevato sopra il nome (la parte bassa sfuma nella pagina). Il riquadro cambia forma con la larghezza del telefono: controlla le anteprime in fondo." },
     { id: "cover", name: "Set da completare", ar: 65 / 91, rule: "Zoom medio, testa e busto, niente scritte tagliate" },
     { id: "square", name: "All'orizzonte", ar: 1, rule: "Riquadro quadrato della linea del tempo" },
   ];
@@ -353,7 +353,8 @@ button.b:disabled { opacity: .45; cursor: default; }
     const x0 = st.cx * img.w - v.w / 2, y0 = st.cy * img.h - v.h / 2;
     return { x0, y0, x1: x0 + v.w, y1: y0 + v.h };
   }
-  // In evidenza: nell'app il riquadro è largo (schermo − 50) e alto 276, quindi cambia forma da telefono a telefono.
+  // In evidenza: nell'app il riquadro è largo quanto lo schermo e alto 420 (28 novembre 2026, ritocco grafico; prima
+  // schermo − 50 × 276), quindi cambia forma da telefono a telefono.
   // Il taglio salvato fissa centro e altezza (sul telefono medio); sugli altri si vede più o meno ai lati,
   // sempre con lo stesso centro, come fa l'app con l'immagine preparata da tools/apply_home_cuts.py.
   const PHONES = [
@@ -362,7 +363,7 @@ button.b:disabled { opacity: .45; cursor: default; }
     { id: "l", name: "Grande", dp: 448 },
     { id: "f", name: "Pieghevole aperto", dp: 600 },
   ];
-  const heroAr = (dp) => (dp - 50) / 276;
+  const heroAr = (dp) => dp / 420;
   let phone = "m";
   function shownRect(img, sec, st, ar) {
     const ref = rectOf(img, sec.ar, st);
@@ -536,15 +537,15 @@ button.b:disabled { opacity: .45; cursor: default; }
 
       // telefoni e catena (solo In evidenza)
       let phoneRow = null, chainBtn = null, chainTxt = null, minis = [];
-      // In evidenza: il riquadro ha le misure vere dell'app (larghezza del telefono − 50, alto 276) con scritte e pulsante
+      // In evidenza: il riquadro ha le misure vere dell'app (larghezza del telefono, alto 420) con scritte e pulsante
       // della stessa grandezza, e si rimpicciolisce tutto insieme se non sta nello schermo (prima si rimpiccioliva solo
       // il riquadro e su "Pieghevole aperto" il pulsante restava tagliato)
       const sizeHero = () => {
-        const p = phoneOf(phone), bw = p.dp - 50, avail = holder ? holder.clientWidth : 0;
+        const p = phoneOf(phone), bw = p.dp, avail = holder ? holder.clientWidth : 0;
         const k = avail > 0 ? Math.min(1, avail / bw) : 1;
-        frame.style.width = bw + "px"; frame.style.height = "276px"; frame.style.maxWidth = "none"; frame.style.aspectRatio = "auto";
+        frame.style.width = bw + "px"; frame.style.height = "420px"; frame.style.maxWidth = "none"; frame.style.aspectRatio = "auto";
         frame.style.transformOrigin = "0 0"; frame.style.transform = k < 1 ? "scale(" + k + ")" : "";
-        if (holder) holder.style.height = Math.round(276 * k) + "px";
+        if (holder) holder.style.height = Math.round(420 * k) + "px";
       };
       const refreshPhones = () => {
         if (!phoneRow) return;
@@ -588,7 +589,7 @@ button.b:disabled { opacity: .45; cursor: default; }
         for (const p of PHONES) {
           const cell = document.createElement("div"); cell.className = "mini";
           const f = document.createElement("div"); f.className = "frame hero mini-f";
-          f.style.width = Math.round((p.dp - 50) * 0.42) + "px"; f.style.aspectRatio = String(heroAr(p.dp)); f.style.cursor = "pointer";
+          f.style.width = Math.round(p.dp * 0.3) + "px"; f.style.aspectRatio = String(heroAr(p.dp)); f.style.cursor = "pointer";
           f.title = "Modifica " + p.name.toLowerCase();
           const im = document.createElement("img"); im.alt = ""; im.draggable = false; im.src = BLOB(img.asset);
           const fade = document.createElement("div"); fade.className = "fade";
