@@ -351,7 +351,7 @@ function HeroSlide({ h, w }: { h: HeroData; w: number }) {
   // "Uscito di recente · PB23 · Premium Bandai" (senza ripetere "Uscito" alla fine)
   const eyebrow = h.eyebrow.replace(/ · Uscito$/, "");
   return (
-    <Pressable onPress={h.go} accessibilityRole="button" accessibilityLabel={h.badge.toLowerCase() + ": " + h.code + " " + h.name + ", " + h.when + ". " + h.cta} style={{ width: w, height: HERO_H, overflow: "hidden", backgroundColor: HERO.bg, justifyContent: "flex-end" }}>
+    <Pressable onPress={h.go} accessibilityRole="button" accessibilityLabel={h.badge.toLowerCase() + ": " + h.code + " " + h.name + ", " + h.when + ". " + h.cta} renderToHardwareTextureAndroid style={{ width: w, height: HERO_H, overflow: "hidden", backgroundColor: HERO.bg, justifyContent: "flex-end" }}>
       {/* taglio scelto nell'editor dell'app (homeArt.tsx), poi l'illustrazione dentro l'APK (covers.ts), poi il banner */}
       {cut ? (
         <CutImg a={cut} />
