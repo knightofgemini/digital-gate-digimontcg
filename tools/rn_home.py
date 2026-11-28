@@ -138,12 +138,12 @@ def tabs():
 
 
 def home():
-    # tocca Home nella barra in basso finché in alto non c'è il titolo "Home" (una pagina aperta sopra, come il mazzo,
-    # va chiusa prima con indietro)
+    # tocca Home nella barra in basso finché in alto non c'è il marchio "Digital Gate" (dal 28 novembre 2026 la Home non
+    # ha più il titolo "Home"; una pagina aperta sopra, come il mazzo, va chiusa prima con indietro)
     for _ in range(6):
         tabs()
         tap("^Home$", wait=2, ymin=0.85)
-        if finds("^Home$", 0.0, 0.3):
+        if finds("(?i)^digital gate$", 0.0, 0.15):
             break
         back()
     top()

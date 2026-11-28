@@ -348,6 +348,8 @@ function HeroSlide({ h, w }: { h: HeroData; w: number }) {
   const art = HERO_ART[h.code];
   const b = bannerUrl(h.code);
   const label = h.spoil ? "Nuovi spoiler" : h.badge === "IN ARRIVO" ? "In arrivo" : "Uscito di recente";
+  // "Uscito di recente · PB23 · Premium Bandai" (senza ripetere "Uscito" alla fine)
+  const eyebrow = h.eyebrow.replace(/ · Uscito$/, "");
   return (
     <Pressable onPress={h.go} accessibilityRole="button" accessibilityLabel={h.badge.toLowerCase() + ": " + h.code + " " + h.name + ", " + h.when + ". " + h.cta} style={{ width: w, height: HERO_H, overflow: "hidden", backgroundColor: HERO.bg, justifyContent: "flex-end" }}>
       {/* taglio scelto nell'editor dell'app (homeArt.tsx), poi l'illustrazione dentro l'APK (covers.ts), poi il banner */}
@@ -368,8 +370,9 @@ function HeroSlide({ h, w }: { h: HeroData; w: number }) {
             <LinearGradient id={"heroFade" + h.key} x1="0" y1="0" x2="0" y2="1">
               <Stop offset="0" stopColor="#05080f" stopOpacity={0.6} />
               <Stop offset="0.2" stopColor="#05080f" stopOpacity={0} />
-              <Stop offset="0.42" stopColor={t.bg} stopOpacity={0} />
-              <Stop offset="0.8" stopColor={t.bg} stopOpacity={0.88} />
+              <Stop offset="0.36" stopColor={t.bg} stopOpacity={0} />
+              <Stop offset="0.62" stopColor={t.bg} stopOpacity={0.82} />
+              <Stop offset="0.78" stopColor={t.bg} stopOpacity={0.96} />
               <Stop offset="1" stopColor={t.bg} stopOpacity={1} />
             </LinearGradient>
           </Defs>
@@ -379,7 +382,7 @@ function HeroSlide({ h, w }: { h: HeroData; w: number }) {
       {cut ? <CutLogo code={h.code} a={cut} /> : null}
       <View style={{ paddingHorizontal: 16, paddingBottom: 6 }}>
         <Text style={{ color: h.spoil ? t.accent : t.ink2, fontSize: FS.sm, lineHeight: 18, fontWeight: "500", marginBottom: 2 }} numberOfLines={1}>
-          {label + " · " + h.eyebrow}
+          {label + " · " + eyebrow}
         </Text>
         <Text style={{ color: t.ink, fontFamily: DISPLAY, fontWeight: "700", fontSize: FS.hero, lineHeight: 38, letterSpacing: -0.6, marginBottom: 14 }} numberOfLines={2}>
           {h.name}
